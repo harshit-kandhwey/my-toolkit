@@ -10,21 +10,26 @@ Personal reference repository for DevOps & Cloud engineering — reusable config
 
 ```
 my-toolkit/
-├── terraform/          # Reusable Terraform modules and snippets
-├── cloudformation/     # Reusable CFT templates
-├── linux/              # Linux commands and shell cheatsheets
-└── notes/              # Study notes and learning references
+├── aws/
+│   ├── AWS-Access-Policies/    # Reusable IAM & S3 bucket policies
+│   └── cloudformation/         # Reusable CFT templates
+├── terraform/                  # Reusable Terraform modules and snippets
+├── linux/                      # Linux commands and shell cheatsheets
+└── notes/                      # Study notes and learning references
 ```
 
 ---
 
 ## 🔧 What's Inside
 
+### `aws/`
+AWS-specific configs and policies, organized by service.
+
+- **`AWS-Access-Policies/`** — Reusable IAM and resource-based policies for common patterns (e.g. S3 cross-account access, scoped folder access).
+- **`cloudformation/`** — CloudFormation templates for common AWS infrastructure patterns.
+
 ### `terraform/`
 Reusable modules and config snippets across environments — VPC, EC2, ECS, RDS, IAM, S3, and more. Structured for multi-env setups (dev/prod) with remote state patterns.
-
-### `cloudformation/`
-CloudFormation templates for common AWS infrastructure patterns. Quick-start stacks I've written and reuse across projects.
 
 ### `linux/`
 Linux command references, Bash snippets, and shell scripting patterns — mostly for Ubuntu, RHEL, and Amazon Linux environments.
