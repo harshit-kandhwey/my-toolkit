@@ -1,0 +1,21 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "DelegateS3AccessToCrossAccountUser",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "<IAM_User_ARN>" # Replace <IAM_User_ARN> with the Target User's ARN with whom S3 bucket is to be shared.
+        },
+        "Action": [
+          "s3:PutObject",
+          "s3:PutObjectAcl",
+          "s3:ListBucket" # Attach policies as per requirement.
+        ],
+        "Resource": [
+          "<S3_Bucket_ARN>", # Replace <S3_Bucket_ARN> with ARN of Bucket to be shared.
+          "<S3_Bucket_ARN>/*", # Replace <S3_Bucket_ARN> with ARN of Bucket to be shared.
+        ]
+      }
+    ]
+  }
