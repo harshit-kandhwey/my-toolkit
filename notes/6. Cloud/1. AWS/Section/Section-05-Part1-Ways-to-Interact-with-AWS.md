@@ -44,12 +44,14 @@
 - **Verify:** `aws --version` → `aws-cli/2.x.x Python/3.x.x ...`
 
 ### Configuration
+
 - `aws configure` prompts for: **Access Key ID**, **Secret Access Key** (never root), **default Region**, **default output format** (json/text/table/yaml).
 - Stored in `~/.aws/credentials` (secrets) and `~/.aws/config` (Region, format, **named profiles**).
 - Named profiles: `aws configure --profile dev-account`; `aws s3 ls --profile dev-account`.
 - **Modern best practice:** avoid long-lived keys — use `aws sso login` (IAM Identity Center) or assumed roles with short-lived, auto-rotated credentials.
 
 ### Command: `aws s3 ls`
+
 - **Purpose:** confirm credentials work; list S3 buckets — a common first sanity check.
 - **Syntax:** `aws s3 ls`
 - **Common options:** `--profile <name>`, `--region <region>`, `--output json|table|text`, `--query '<JMESPath>'`.
@@ -67,6 +69,7 @@
 - **Troubleshooting:** `--debug` shows the full HTTP request/response.
 
 ### Enterprise Usage
+
 - Backbone of shell automation and CI/CD steps; wrapped in standardized scripts/Makefiles for consistency.
 
 ---
@@ -78,6 +81,7 @@
 - **Available:** Python (Boto3), JavaScript/TypeScript, Java, .NET/C#, Go, Ruby, PHP, others — each idiomatic, same underlying API.
 
 ### Example (Boto3)
+
 ```python
 import boto3
 s3 = boto3.client('s3', region_name='us-east-1')
@@ -85,11 +89,13 @@ response = s3.list_buckets()
 for bucket in response['Buckets']:
     print(bucket['Name'])
 ```
+
 - `list_buckets()` = same underlying API action as `aws s3 ls`.
 - **Credential resolution order:** env vars → `~/.aws/credentials` → attached IAM role (EC2/Lambda) → explicit in-code credentials (discouraged — never hardcode secrets).
 - **Common error:** `NoCredentialsError` — same root cause as CLI's missing-credentials error.
 
 ### Enterprise Usage
+
 - Dominant method for application-level AWS integration (web backend ↔ DynamoDB, Lambda ↔ SQS, pipeline ↔ S3).
 - **Best practice:** compute resources (EC2/Lambda/ECS) use attached **IAM roles**; never embed long-lived keys in app code/config.
 
@@ -128,14 +134,14 @@ for bucket in response['Buckets']:
 
 ## 9. Comparison Matrix
 
-| Interface | Best for | Not ideal for | Credential type | Repeatable? |
-|-----------|----------|---------------|-----------------|-------------|
-| Console | Learning, exploration, monitoring, investigation | High-volume/repeated tasks, auditable automation | Password + MFA (session) | No — manual |
-| CLI | Scripting, quick ops, CI/CD steps | Complex application logic | Access keys / SSO / assumed role | Yes, via scripts |
-| SDK | Application code integration | One-off human tasks | Same as CLI, in-code | Yes, part of app |
-| CloudShell | Zero-install quick tasks, unfamiliar machines | Heavy/long-running automation | Inherited Console session | Somewhat |
-| Direct API/HTTPS | Building own tooling | Everyday human use | Manually signed (SigV4) | Yes |
-| IaC (CFN/CDK/Terraform) | Enterprise version-controlled infra | Quick one-off exploration | Same as CLI/SDK, tool-used | Yes — the point |
+| Interface               | Best for                                         | Not ideal for                                    | Credential type                  | Repeatable?      |
+| ----------------------- | ------------------------------------------------ | ------------------------------------------------ | -------------------------------- | ---------------- |
+| Console                 | Learning, exploration, monitoring, investigation | High-volume/repeated tasks, auditable automation | Password + MFA (session)         | No — manual      |
+| CLI                     | Scripting, quick ops, CI/CD steps                | Complex application logic                        | Access keys / SSO / assumed role | Yes, via scripts |
+| SDK                     | Application code integration                     | One-off human tasks                              | Same as CLI, in-code             | Yes, part of app |
+| CloudShell              | Zero-install quick tasks, unfamiliar machines    | Heavy/long-running automation                    | Inherited Console session        | Somewhat         |
+| Direct API/HTTPS        | Building own tooling                             | Everyday human use                               | Manually signed (SigV4)          | Yes              |
+| IaC (CFN/CDK/Terraform) | Enterprise version-controlled infra              | Quick one-off exploration                        | Same as CLI/SDK, tool-used       | Yes — the point  |
 
 ---
 
@@ -158,13 +164,13 @@ for bucket in response['Buckets']:
 
 ## 12. Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `Unable to locate credentials` (CLI) | `aws configure` never run / wrong profile | Run `aws configure` or specify `--profile` |
-| `NoCredentialsError` (SDK) | No credentials in resolution chain | Set env vars, configure credentials file, or attach IAM role |
-| `AccessDenied` any interface | IAM policy doesn't permit action | Review/adjust IAM policy (Part 2) |
-| Console shows different data than CLI | Mismatched Region | Confirm Region matches in both |
-| CLI works locally, fails in CI/CD | CI lacks same credentials/profile | Configure CI-specific (ideally assumed role) credentials |
+| Symptom                               | Cause                                     | Fix                                                          |
+| ------------------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| `Unable to locate credentials` (CLI)  | `aws configure` never run / wrong profile | Run `aws configure` or specify `--profile`                   |
+| `NoCredentialsError` (SDK)            | No credentials in resolution chain        | Set env vars, configure credentials file, or attach IAM role |
+| `AccessDenied` any interface          | IAM policy doesn't permit action          | Review/adjust IAM policy (Part 2)                            |
+| Console shows different data than CLI | Mismatched Region                         | Confirm Region matches in both                               |
+| CLI works locally, fails in CI/CD     | CI lacks same credentials/profile         | Configure CI-specific (ideally assumed role) credentials     |
 
 ---
 

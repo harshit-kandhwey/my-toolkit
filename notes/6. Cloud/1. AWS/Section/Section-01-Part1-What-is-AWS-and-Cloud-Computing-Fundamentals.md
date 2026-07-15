@@ -8,7 +8,7 @@
 
 **Plain-language:** Amazon Web Services (AWS) is a subsidiary of Amazon that rents out computing resources — servers, storage, databases, networking, and hundreds of higher-level services — over the internet, on demand, charging only for what you use. Instead of buying physical machines, you request them via a web console or an API, use them for minutes or years, and release them.
 
-**Precise:** AWS is a **public cloud provider** offering **on-demand delivery of IT resources and services over the internet with pay-as-you-go pricing**. *On-demand* = provisioned programmatically in seconds without procurement. *Pay-as-you-go* = billing metered by actual consumption (compute-seconds, GB-months, requests).
+**Precise:** AWS is a **public cloud provider** offering **on-demand delivery of IT resources and services over the internet with pay-as-you-go pricing**. _On-demand_ = provisioned programmatically in seconds without procurement. _Pay-as-you-go_ = billing metered by actual consumption (compute-seconds, GB-months, requests).
 
 > 💡 **Mental model — utility computing:** AWS is like electricity from a utility. You don't build a power plant to run a lamp; you plug in, draw the wattage you need, and pay per kWh. AWS applies this utility model to computing.
 
@@ -19,6 +19,7 @@
 ### 2.1 What existed before: on-premises ("on-prem")
 
 To run an application before cloud, a company had to:
+
 1. Forecast demand months ahead.
 2. Buy physical servers for the **peak** forecast (large capital purchase).
 3. Wait weeks/months for procurement, shipping, installation.
@@ -28,14 +29,14 @@ To run an application before cloud, a company had to:
 
 ### 2.2 Problems → cloud solutions
 
-| On-prem problem | Why it hurt | How cloud solves it |
-|-----------------|-------------|--------------------|
-| Huge upfront capital (CapEx) | Paid for peak before earning revenue | Convert to OpEx — pay monthly for usage |
-| Capacity guessing | Too high = waste; too low = outages | Elasticity — auto scale to real demand |
-| Slow procurement | Weeks–months killed agility | Provision in seconds via API |
-| Undifferentiated heavy lifting | Time on racking/cooling, not product | AWS operates physical layer |
-| Hard to go global | Needed a data center per continent | Deploy to Regions worldwide in minutes |
-| Idle DR capacity | Standby site fully paid but unused | Pay for standby only when spun up |
+| On-prem problem                | Why it hurt                          | How cloud solves it                     |
+| ------------------------------ | ------------------------------------ | --------------------------------------- |
+| Huge upfront capital (CapEx)   | Paid for peak before earning revenue | Convert to OpEx — pay monthly for usage |
+| Capacity guessing              | Too high = waste; too low = outages  | Elasticity — auto scale to real demand  |
+| Slow procurement               | Weeks–months killed agility          | Provision in seconds via API            |
+| Undifferentiated heavy lifting | Time on racking/cooling, not product | AWS operates physical layer             |
+| Hard to go global              | Needed a data center per continent   | Deploy to Regions worldwide in minutes  |
+| Idle DR capacity               | Standby site fully paid but unused   | Pay for standby only when spun up       |
 
 > 🔑 **CapEx vs OpEx:** CapEx = one-time purchase of an owned asset (buy 100 servers). OpEx = ongoing metered cost for a consumed service (rent server-time by the second). AWS's core pitch: **"trade capital expense for variable expense."**
 
@@ -69,13 +70,13 @@ To run an application before cloud, a company had to:
 
 ## 4. Core Terminology
 
-- **Cloud computing** — on-demand delivery of IT resources over the internet, pay-as-you-go. Pillars: *on-demand*, *internet*, *metered*.
+- **Cloud computing** — on-demand delivery of IT resources over the internet, pay-as-you-go. Pillars: _on-demand_, _internet_, _metered_.
 - **Provisioning** — creating/allocating a resource; programmatic and near-instant in cloud.
-- **Elasticity** — automatic, **bidirectional** capacity adjustment to match demand in near-real-time (scales *down* too).
+- **Elasticity** — automatic, **bidirectional** capacity adjustment to match demand in near-real-time (scales _down_ too).
 - **Scalability** — handling more load by adding resources. **Vertical** = bigger machine; **Horizontal** = more machines. Cloud favors horizontal.
 - **Agility** — speed to build, change, experiment.
 - **High Availability (HA)** — keep running despite failures (e.g., 99.99% uptime) via redundancy across failure domains.
-- **Fault tolerance** — continue operating *correctly* even when a component fails, often invisibly.
+- **Fault tolerance** — continue operating _correctly_ even when a component fails, often invisibly.
 - **Latency** — travel-time delay for data; reduced by placing resources near users.
 - **Resiliency / Durability** — resiliency = recover from failure; durability = safety of stored data from loss (e.g., S3 "eleven nines").
 - **Multi-tenancy** — multiple isolated customers share physical hardware; enables economies of scale.
@@ -87,13 +88,13 @@ To run an application before cloud, a company had to:
 
 Full stack (bottom → top): data-center facility → networking → storage → servers → virtualization → OS → middleware → runtime → data → application.
 
-| Model | Provider manages | You manage | AWS example | Analogy |
-|-------|-----------------|------------|-------------|---------|
-| On-prem | Nothing | Everything | Own data center | Own the whole house |
-| **IaaS** | HW, virtualization, networking, facility | OS, runtime, app, data | **EC2** | Empty apartment; bring furniture |
-| **PaaS** | Up to runtime/OS | App + data | **Elastic Beanstalk, RDS** | Furnished apartment |
-| **FaaS** (serverless) | All but your function | Function code | **Lambda** | Hotel room by the hour |
-| **SaaS** | Entire stack incl. app | Usage/config only | **WorkMail, Chime** | Stay at a hotel |
+| Model                 | Provider manages                         | You manage             | AWS example                | Analogy                          |
+| --------------------- | ---------------------------------------- | ---------------------- | -------------------------- | -------------------------------- |
+| On-prem               | Nothing                                  | Everything             | Own data center            | Own the whole house              |
+| **IaaS**              | HW, virtualization, networking, facility | OS, runtime, app, data | **EC2**                    | Empty apartment; bring furniture |
+| **PaaS**              | Up to runtime/OS                         | App + data             | **Elastic Beanstalk, RDS** | Furnished apartment              |
+| **FaaS** (serverless) | All but your function                    | Function code          | **Lambda**                 | Hotel room by the hour           |
+| **SaaS**              | Entire stack incl. app                   | Usage/config only      | **WorkMail, Chime**        | Stay at a hotel                  |
 
 > 🎯 **Interview tip:** Name the responsibility boundary: "With EC2 (IaaS) I patch the guest OS; with Lambda (FaaS) AWS patches the runtime and I only own my function code." Moving up the stack = less burden, less control.
 
@@ -104,7 +105,7 @@ Full stack (bottom → top): data-center facility → networking → storage →
 - **Public cloud** — provider-owned, shared across many customers over the internet (AWS). Max agility/scale; own no hardware.
 - **Private cloud** — cloud-style infra dedicated to one organization; for strict compliance/residency/legacy; less elasticity.
 - **Hybrid cloud** — deliberate public + private/on-prem combination, connected (AWS Outposts, Direct Connect, Storage Gateway).
-- **Multi-cloud** — two or more *public* providers (AWS + Azure) to avoid lock-in / meet regulation / best-of-breed; adds complexity.
+- **Multi-cloud** — two or more _public_ providers (AWS + Azure) to avoid lock-in / meet regulation / best-of-breed; adds complexity.
 
 > 💡 Hybrid = public + private/on-prem. Multi-cloud = 2+ public clouds. Don't confuse them.
 
@@ -145,19 +146,19 @@ Full stack (bottom → top): data-center facility → networking → storage →
 ## 10. Interview Questions (with model answers)
 
 **🟢 What is cloud computing?**
-On-demand delivery of IT resources over the internet with pay-as-you-go pricing; provision programmatically in seconds, pay for consumption. *Probes:* on-demand + internet + metered.
+On-demand delivery of IT resources over the internet with pay-as-you-go pricing; provision programmatically in seconds, pay for consumption. _Probes:_ on-demand + internet + metered.
 
 **🟢 Difference between IaaS, PaaS, SaaS?**
-Differ by how much of the stack the provider manages: IaaS (EC2) = infra, you manage OS+; PaaS (Beanstalk) = platform, you bring code+data; SaaS = finished app, you manage usage/config. Up the stack trades control for reduced burden. *Probes:* responsibility boundary + examples.
+Differ by how much of the stack the provider manages: IaaS (EC2) = infra, you manage OS+; PaaS (Beanstalk) = platform, you bring code+data; SaaS = finished app, you manage usage/config. Up the stack trades control for reduced burden. _Probes:_ responsibility boundary + examples.
 
 **🟡 Why move from on-prem to AWS? Trade-offs?**
-Pull: CapEx→OpEx, elasticity, faster provisioning, offload heavy lifting, go global. Trade-offs: possibly costlier for steady loads, learning curve, less low-level control, need to re-architect for resilience. Workload-dependent. *Probes:* balanced judgment.
+Pull: CapEx→OpEx, elasticity, faster provisioning, offload heavy lifting, go global. Trade-offs: possibly costlier for steady loads, learning curve, less low-level control, need to re-architect for resilience. Workload-dependent. _Probes:_ balanced judgment.
 
 **🟡 Elasticity vs scalability?**
-Scalability = handle more load by adding resources (vertical/horizontal). Elasticity = automatic, bidirectional real-time adjustment incl. scaling down for cost. All elastic systems scale; not all scalable systems are elastic. *Probes:* the "scales down too" nuance.
+Scalability = handle more load by adding resources (vertical/horizontal). Elasticity = automatic, bidirectional real-time adjustment incl. scaling down for cost. All elastic systems scale; not all scalable systems are elastic. _Probes:_ the "scales down too" nuance.
 
 **🔴 Client says cloud is less secure than their data center — respond.**
-Reframe via Shared Responsibility Model: AWS secures underlying infra to standards few can match; customer secures what they put in the cloud (IAM, encryption, network, data). Most breaches = customer misconfiguration. Real question: "are we configuring our side correctly?" — AWS provides IAM/KMS/GuardDuty/Config to do so. *Probes:* shared security + stakeholder handling.
+Reframe via Shared Responsibility Model: AWS secures underlying infra to standards few can match; customer secures what they put in the cloud (IAM, encryption, network, data). Most breaches = customer misconfiguration. Real question: "are we configuring our side correctly?" — AWS provides IAM/KMS/GuardDuty/Config to do so. _Probes:_ shared security + stakeholder handling.
 
 ---
 

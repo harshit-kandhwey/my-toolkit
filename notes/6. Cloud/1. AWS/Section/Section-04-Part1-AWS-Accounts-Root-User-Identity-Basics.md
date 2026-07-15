@@ -27,6 +27,7 @@
 ## 3. Creating an Account — What Happens
 
 Sign-up requires email, password, account name, payment info, identity verification. Creates:
+
 1. **12-digit Account ID** (e.g., `123456789012`) — permanent unique identifier used in ARNs and cross-account trust.
 2. **The Root User** — tied to sign-up email (see §4).
 3. **Free Tier eligibility window** for new accounts (§6).
@@ -38,12 +39,15 @@ Sign-up requires email, password, account name, payment info, identity verificat
 ## 4. The Root User
 
 ### 4.1 Definition
+
 Automatically created identity, identified by account sign-up **email + password**, with **complete, unrestricted access** to everything — no permission it lacks.
 
 ### 4.2 Why Dangerous
+
 Unlimited power, no guardrails → highest-value attacker target. Unlike IAM identities, **root's permissions cannot be restricted by policy**.
 
 ### 4.3 Root-Only Actions
+
 - Change root **email/password**.
 - **Close the AWS account**.
 - Change the **AWS Support plan**.
@@ -53,6 +57,7 @@ Unlimited power, no guardrails → highest-value attacker target. Unlike IAM ide
 > 🎯 Mental model: root = account-level, one-time admin tasks AWS deliberately withholds from IAM — not for daily work.
 
 ### 4.4 Root Best Practices
+
 1. **Never use root for daily tasks** — create an admin IAM identity immediately (ideally via IAM Identity Center).
 2. **Enable MFA on root immediately** — hardware key or authenticator app, not SMS.
 3. **Do not create root access keys**; delete any that exist.
@@ -68,7 +73,7 @@ Unlimited power, no guardrails → highest-value attacker target. Unlike IAM ide
 ## 5. IAM — First Look (full depth Part 2)
 
 - **IAM users** — individual identities with own credentials (modern best practice favors IAM Identity Center federation over long-lived users).
-- **IAM roles** — temporary identities anyone/anything can *assume* for limited-time permissions; the modern default for human and service-to-service access.
+- **IAM roles** — temporary identities anyone/anything can _assume_ for limited-time permissions; the modern default for human and service-to-service access.
 - **IAM policies** — JSON documents defining allowed/denied actions; the mechanism for giving less power than root (least privilege).
 - **MFA** — second proof of identity beyond password; mandatory on root, strongly encouraged everywhere.
 
@@ -117,12 +122,12 @@ Unlimited power, no guardrails → highest-value attacker target. Unlike IAM ide
 
 ## 10. Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Locked out of root | No backup MFA / stale recovery contact | Use AWS account recovery via registered email; keep contacts current |
-| Unexpected charges despite "Free Tier" | Exceeded allowance / non-covered service / past 12-month window | Check Billing/Cost Explorer; set billing alarms; verify current terms |
-| Admin locked themselves out | Over-restrictive policy on the only admin identity | Use root's unique recovery power to restore access; avoid single-admin setups |
-| Unexplained periodic root logins | Root creds known/used by more than intended, or compromised | Rotate password, check CloudTrail, ensure no access keys exist, restrict knowledge of creds |
+| Symptom                                | Cause                                                           | Fix                                                                                         |
+| -------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Locked out of root                     | No backup MFA / stale recovery contact                          | Use AWS account recovery via registered email; keep contacts current                        |
+| Unexpected charges despite "Free Tier" | Exceeded allowance / non-covered service / past 12-month window | Check Billing/Cost Explorer; set billing alarms; verify current terms                       |
+| Admin locked themselves out            | Over-restrictive policy on the only admin identity              | Use root's unique recovery power to restore access; avoid single-admin setups               |
+| Unexplained periodic root logins       | Root creds known/used by more than intended, or compromised     | Rotate password, check CloudTrail, ensure no access keys exist, restrict knowledge of creds |
 
 ---
 

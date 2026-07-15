@@ -10,8 +10,8 @@
 
 **Precise:** AWS's framework dividing security/compliance obligations:
 
-> **AWS = security *OF* the cloud** (hardware, data centers, host OS/hypervisor, global network).
-> **Customer = security *IN* the cloud** (data, IAM/access, guest OS, app code, network/firewall config).
+> **AWS = security _OF_ the cloud** (hardware, data centers, host OS/hypervisor, global network).
+> **Customer = security _IN_ the cloud** (data, IAM/access, guest OS, app code, network/firewall config).
 
 > 💡 **Mental model — apartment building:** AWS = landlord (structure, foundation, main-entrance locks, electrical). You = tenant (who gets a key to your unit, whether you lock your door, what's inside). Break-in through your unlocked door = your fault; foundation collapse = landlord's.
 
@@ -46,6 +46,7 @@
 │  • Physical security of data centers          │
 └──────────────────────────────────────────────┘
 ```
+
 The dividing line **moves by service type** (see §6).
 
 ---
@@ -77,34 +78,37 @@ The dividing line **moves by service type** (see §6).
 ## 6. How the Line Shifts by Service Type
 
 ### 6.1 IaaS — EC2, EBS, VPC
+
 - Most customer responsibility: guest OS + patching, installed software, app, IAM, security groups, network config, data.
 - AWS: hypervisor and below.
-- *AWS patches the hypervisor; YOU patch the guest OS.*
+- _AWS patches the hypervisor; YOU patch the guest OS._
 
 ### 6.2 Managed — RDS, EMR, ECS-on-EC2
+
 - AWS also manages OS + platform/engine (incl. OS patching).
 - Customer: data, IAM, firewall (security groups), some network/engine settings.
 
 ### 6.3 Abstracted / serverless — S3, DynamoDB, Lambda, SQS
+
 - AWS manages the whole platform (OS, runtime, scaling, patching).
 - Customer: data, IAM/resource policies, client-side encryption, enabling server-side encryption/access controls.
 - "Leaky S3 bucket" = 100% customer misconfiguration.
 
 **Responsibility line by service type:**
 
-| Layer | IaaS (EC2) | Managed (RDS) | Abstracted (S3/Lambda) |
-|-------|:---------:|:-------------:|:----------------------:|
-| Customer data | Customer | Customer | Customer |
-| IAM / policies | Customer | Customer | Customer |
-| App code | Customer | N/A | Customer (Lambda) |
-| Guest OS + patching | Customer | AWS | AWS |
-| Platform / engine | Customer | AWS | AWS |
-| Firewall / SGs | Customer | Customer | via IAM/policy |
-| Encryption enablement | Customer | Customer | Customer |
-| Hypervisor | AWS | AWS | AWS |
-| Hardware / physical / net infra | AWS | AWS | AWS |
+| Layer                           | IaaS (EC2) | Managed (RDS) | Abstracted (S3/Lambda) |
+| ------------------------------- | :--------: | :-----------: | :--------------------: |
+| Customer data                   |  Customer  |   Customer    |        Customer        |
+| IAM / policies                  |  Customer  |   Customer    |        Customer        |
+| App code                        |  Customer  |      N/A      |   Customer (Lambda)    |
+| Guest OS + patching             |  Customer  |      AWS      |          AWS           |
+| Platform / engine               |  Customer  |      AWS      |          AWS           |
+| Firewall / SGs                  |  Customer  |   Customer    |     via IAM/policy     |
+| Encryption enablement           |  Customer  |   Customer    |        Customer        |
+| Hypervisor                      |    AWS     |      AWS      |          AWS           |
+| Hardware / physical / net infra |    AWS     |      AWS      |          AWS           |
 
-> 🎯 "Who patches the OS?" → *It depends on the service.* EC2 = customer; RDS/Lambda = AWS.
+> 🎯 "Who patches the OS?" → _It depends on the service._ EC2 = customer; RDS/Lambda = AWS.
 
 ---
 
@@ -128,15 +132,15 @@ The dividing line **moves by service type** (see §6).
 
 ## 9. Security Failures Mapped to the Model
 
-| Incident | Responsible | Why |
-|----------|-------------|-----|
-| Public S3 bucket leak | Customer | Bucket policy/access is customer-side |
-| Over-permissive IAM abused | Customer | IAM design is customer-side |
-| Unpatched EC2 guest OS | Customer | Guest OS patching is customer-side (IaaS) |
-| Leaked access keys on GitHub | Customer | Credential hygiene is customer-side |
-| Hypervisor vulnerability | AWS | Virtualization is AWS-side |
-| Physical intrusion | AWS | Physical security is AWS-side |
-| RDS managed-OS unpatched | AWS | AWS patches managed OS |
+| Incident                     | Responsible | Why                                       |
+| ---------------------------- | ----------- | ----------------------------------------- |
+| Public S3 bucket leak        | Customer    | Bucket policy/access is customer-side     |
+| Over-permissive IAM abused   | Customer    | IAM design is customer-side               |
+| Unpatched EC2 guest OS       | Customer    | Guest OS patching is customer-side (IaaS) |
+| Leaked access keys on GitHub | Customer    | Credential hygiene is customer-side       |
+| Hypervisor vulnerability     | AWS         | Virtualization is AWS-side                |
+| Physical intrusion           | AWS         | Physical security is AWS-side             |
+| RDS managed-OS unpatched     | AWS         | AWS patches managed OS                    |
 
 > ⚠️ Most headline "cloud breaches" are in the customer column.
 
@@ -161,7 +165,7 @@ The dividing line **moves by service type** (see §6).
 
 ## 12. Interview Questions (with model answers)
 
-**🟢 What is the Shared Responsibility Model?** Divides duties: AWS = security *of* the cloud (physical, hardware, network, virtualization); customer = security *in* the cloud (data, IAM, guest OS/firewall for EC2, app, encryption). Both must act.
+**🟢 What is the Shared Responsibility Model?** Divides duties: AWS = security _of_ the cloud (physical, hardware, network, virtualization); customer = security _in_ the cloud (data, IAM, guest OS/firewall for EC2, app, encryption). Both must act.
 
 **🟡 Who patches the OS?** Depends on service. IaaS (EC2): customer patches guest OS, AWS the hypervisor. Managed/abstracted (RDS, Lambda, S3): AWS patches OS/runtime. Line shifts toward AWS as service becomes more managed.
 

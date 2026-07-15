@@ -53,15 +53,17 @@ models
 ## 3. Progressive Hands-On Labs — Part 1
 
 ### 🧪 Lab 1 (Beginner) — Account Hygiene Audit
+
 1. Log in to your AWS account (create one if needed).
 2. IAM Console → check root MFA; enable if not present (authenticator app recommended).
 3. Check for root access keys; delete any that exist.
 4. Create an IAM administrator identity (or set up IAM Identity Center); log out of root.
 5. Log back in with the new identity and confirm Console navigation works.
 
-*Success:* never need root again except to demonstrate a root-only action.
+_Success:_ never need root again except to demonstrate a root-only action.
 
 ### 🧪 Lab 2 (Beginner) — Explore Global Infrastructure
+
 1. Open the Region selector; note visible Region count.
 2. In CloudShell:
    ```bash
@@ -70,28 +72,31 @@ models
    ```
 3. Note the AZ Name → AZ ID mapping.
 
-*Success:* first real AWS CLI commands run, inside CloudShell, zero local install.
+_Success:_ first real AWS CLI commands run, inside CloudShell, zero local install.
 
 ### 🧪 Lab 3 (Intermediate) — Set Up Cost Guardrails
+
 1. AWS Budgets → create a $5 (or comfort-level) cost budget with 80%/100% alerts.
 2. Explore Cost Explorer's filter/grouping UI even at $0 spend.
 3. Pricing Calculator → estimate "one small EC2 instance running 24/7 for a month."
 
-*Success:* an active Budget alert protects against exceeding your comfort threshold in later labs.
+_Success:_ an active Budget alert protects against exceeding your comfort threshold in later labs.
 
 ### 🧪 Lab 4 (Intermediate) — Multi-Interface Consistency Check
+
 1. Console → note S3 bucket list (empty is fine).
 2. CloudShell → `aws s3 ls`, compare.
 3. (Optional) `pip install boto3` in CloudShell, run `s3.list_buckets()`, compare again.
 
-*Success:* all three interfaces show identical results — proof they're different doors into the same account state.
+_Success:_ all three interfaces show identical results — proof they're different doors into the same account state.
 
 ### 🧪 Lab 5 (Capstone) — Foundations Readiness Review
+
 1. Write a checklist: root MFA status, root access keys present/absent, admin IAM identity exists, current support plan, cost Budget active, primary Region(s) and why.
 2. Run Trusted Advisor; note which checks are available at your support tier.
 3. Save the document — extend it in later Parts.
 
-*Success:* a living "account health" document, a simplified but realistic enterprise artifact.
+_Success:_ a living "account health" document, a simplified but realistic enterprise artifact.
 
 ---
 
@@ -116,17 +121,17 @@ Create the account (§4) → root generated with unrestricted access → secure 
 
 ## 5. Related Technologies (forward links, consolidated)
 
-| Concept touched in Part 1 | Fully covered in |
-|---|---|
-| IAM users/roles/policies, IAM Identity Center, Organizations, SCPs, KMS, GuardDuty | Part 2 |
-| EC2, purchasing models in depth, Auto Scaling, containers, serverless | Part 3 |
-| VPC, subnets, SGs vs NACLs, Route 53, CloudFront, Direct Connect | Part 4 |
-| S3 storage classes, EBS, EFS, backup strategies | Part 5 |
-| RDS, Aurora, DynamoDB and other databases | Part 6 |
-| SQS, SNS, EventBridge, Step Functions, Kinesis | Part 7 |
-| CloudWatch, CloudTrail, Config, Systems Manager, Trusted Advisor in depth | Part 8 |
-| CloudFormation, CDK, Terraform, CI/CD pipelines | Part 9 |
-| Well-Architected Framework, DR strategies, FinOps, migration (6 Rs), capstone interview mastery | Part 10 |
+| Concept touched in Part 1                                                                       | Fully covered in |
+| ----------------------------------------------------------------------------------------------- | ---------------- |
+| IAM users/roles/policies, IAM Identity Center, Organizations, SCPs, KMS, GuardDuty              | Part 2           |
+| EC2, purchasing models in depth, Auto Scaling, containers, serverless                           | Part 3           |
+| VPC, subnets, SGs vs NACLs, Route 53, CloudFront, Direct Connect                                | Part 4           |
+| S3 storage classes, EBS, EFS, backup strategies                                                 | Part 5           |
+| RDS, Aurora, DynamoDB and other databases                                                       | Part 6           |
+| SQS, SNS, EventBridge, Step Functions, Kinesis                                                  | Part 7           |
+| CloudWatch, CloudTrail, Config, Systems Manager, Trusted Advisor in depth                       | Part 8           |
+| CloudFormation, CDK, Terraform, CI/CD pipelines                                                 | Part 9           |
+| Well-Architected Framework, DR strategies, FinOps, migration (6 Rs), capstone interview mastery | Part 10          |
 
 ---
 

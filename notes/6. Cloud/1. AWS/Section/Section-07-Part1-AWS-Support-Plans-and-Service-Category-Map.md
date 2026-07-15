@@ -14,7 +14,7 @@
 
 ## 2. Why Support Plans Exist
 
-- Consumption-based infrastructure means *you* operate the system — AWS doesn't auto-detect your app breaking; docs alone aren't enough for production-critical issues.
+- Consumption-based infrastructure means _you_ operate the system — AWS doesn't auto-detect your app breaking; docs alone aren't enough for production-critical issues.
 - Tiered support lets customers choose their own risk/cost trade-off — a hobby project and a bank's trading platform have very different needs.
 - Paid tiers largely scale with **monthly AWS spend** (percentage-based fee), tracking support cost to operational scale and stakes.
 
@@ -22,13 +22,13 @@
 
 ## 3. The AWS Support Plans
 
-| Plan | Cost | Who it's for | Key characteristics |
-|------|------|---------------|---------------------|
-| **Basic** | Free, included always | Everyone by default | Docs, whitepapers, re:Post, limited Trusted Advisor checks; no technical support cases beyond account/billing |
-| **Developer** | Low flat monthly fee | Individual devs, early experimentation | Business-hours **email-only** support; general architectural guidance; response in many hours |
-| **Business** | % of usage (with minimum) | Production workloads, most companies | **24/7 phone/chat/email**; faster response (<1hr for urgent); full Trusted Advisor; Support API access |
-| **Enterprise On-Ramp** | % of usage (higher min) | Mid-sized orgs growing into mission-critical | Everything in Business + TAM-adjacent guidance, faster urgent-tier response, some proactive guidance |
-| **Enterprise** | % of usage (highest min) | Large enterprises, mission-critical workloads | Everything above + dedicated **TAM**, fastest (minutes) response, proactive reviews, concierge support/training |
+| Plan                   | Cost                      | Who it's for                                  | Key characteristics                                                                                             |
+| ---------------------- | ------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Basic**              | Free, included always     | Everyone by default                           | Docs, whitepapers, re:Post, limited Trusted Advisor checks; no technical support cases beyond account/billing   |
+| **Developer**          | Low flat monthly fee      | Individual devs, early experimentation        | Business-hours **email-only** support; general architectural guidance; response in many hours                   |
+| **Business**           | % of usage (with minimum) | Production workloads, most companies          | **24/7 phone/chat/email**; faster response (<1hr for urgent); full Trusted Advisor; Support API access          |
+| **Enterprise On-Ramp** | % of usage (higher min)   | Mid-sized orgs growing into mission-critical  | Everything in Business + TAM-adjacent guidance, faster urgent-tier response, some proactive guidance            |
+| **Enterprise**         | % of usage (highest min)  | Large enterprises, mission-critical workloads | Everything above + dedicated **TAM**, fastest (minutes) response, proactive reviews, concierge support/training |
 
 > ⚠️ Exact SLAs/percentages/minimums change — verify on AWS's official Support comparison page; treat relative ordering/qualitative traits as durable.
 
@@ -36,7 +36,7 @@
 
 ## 4. Technical Account Manager (TAM)
 
-- Named, ongoing AWS contact (Enterprise tier; lighter form at Enterprise On-Ramp) who understands *your* environment over time.
+- Named, ongoing AWS contact (Enterprise tier; lighter form at Enterprise On-Ramp) who understands _your_ environment over time.
 - Does: proactive architecture guidance, operational reviews, major-event planning (launches), incident escalation point.
 - Frequently referenced in enterprise architecture/incident-response discussions.
 
@@ -81,19 +81,19 @@
 
 ## 9. AWS Service Category Map
 
-| Category | Covers | Example services | Course Part |
-|----------|--------|-------------------|-------------|
-| Compute | Running code/servers/containers | EC2, Lambda, ECS, EKS, Fargate, Beanstalk, Batch, Lightsail | Part 3 |
-| Storage | Files, objects, blocks | S3, EBS, EFS, FSx, Storage Gateway | Part 5 |
-| Database | Managed data stores | RDS, Aurora, DynamoDB, ElastiCache, Redshift, DocumentDB, Neptune | Part 6 |
-| Networking & Content Delivery | Connectivity, content distribution | VPC, Route 53, CloudFront, API Gateway, Direct Connect, Transit Gateway | Part 4 |
-| Security, Identity & Compliance | Access control, protection, governance | IAM, IAM Identity Center, KMS, Secrets Manager, GuardDuty, Security Hub, WAF, Shield, Organizations | Part 2 |
-| Management & Governance | Operating/monitoring the platform | CloudWatch, CloudTrail, Config, Systems Manager, Trusted Advisor, Health Dashboard | Part 8 |
-| Developer Tools | Building, testing, deploying | CodePipeline, CodeBuild, CodeDeploy | Part 9 |
-| Application Integration | Connecting distributed components | SQS, SNS, EventBridge, Step Functions | Part 7 |
-| Analytics & Streaming | Processing/analyzing data at scale | Kinesis, MSK, Redshift | Part 7 |
-| Machine Learning | AI/ML | SageMaker + purpose-built AI services | Part 10 (related tech) |
-| Migration & Transfer | Moving data/workloads into AWS | DMS, Application Migration Service, Snow family | Part 10 |
+| Category                        | Covers                                 | Example services                                                                                    | Course Part            |
+| ------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------- |
+| Compute                         | Running code/servers/containers        | EC2, Lambda, ECS, EKS, Fargate, Beanstalk, Batch, Lightsail                                         | Part 3                 |
+| Storage                         | Files, objects, blocks                 | S3, EBS, EFS, FSx, Storage Gateway                                                                  | Part 5                 |
+| Database                        | Managed data stores                    | RDS, Aurora, DynamoDB, ElastiCache, Redshift, DocumentDB, Neptune                                   | Part 6                 |
+| Networking & Content Delivery   | Connectivity, content distribution     | VPC, Route 53, CloudFront, API Gateway, Direct Connect, Transit Gateway                             | Part 4                 |
+| Security, Identity & Compliance | Access control, protection, governance | IAM, IAM Identity Center, KMS, Secrets Manager, GuardDuty, Security Hub, WAF, Shield, Organizations | Part 2                 |
+| Management & Governance         | Operating/monitoring the platform      | CloudWatch, CloudTrail, Config, Systems Manager, Trusted Advisor, Health Dashboard                  | Part 8                 |
+| Developer Tools                 | Building, testing, deploying           | CodePipeline, CodeBuild, CodeDeploy                                                                 | Part 9                 |
+| Application Integration         | Connecting distributed components      | SQS, SNS, EventBridge, Step Functions                                                               | Part 7                 |
+| Analytics & Streaming           | Processing/analyzing data at scale     | Kinesis, MSK, Redshift                                                                              | Part 7                 |
+| Machine Learning                | AI/ML                                  | SageMaker + purpose-built AI services                                                               | Part 10 (related tech) |
+| Migration & Transfer            | Moving data/workloads into AWS         | DMS, Application Migration Service, Snow family                                                     | Part 10                |
 
 > 🔑 This table is this course's syllabus. When meeting an unfamiliar service: "which category does it belong to, and what's it probably for?" gives a strong starting guess.
 
@@ -121,13 +121,13 @@
 
 **🟢 What are the Support plan tiers, in order?** Basic (free, docs/forums, no support cases) → Developer (low-cost, business-hours email) → Business (24/7 phone/chat/email, full Trusted Advisor) → Enterprise On-Ramp → Enterprise (dedicated TAM, fastest response).
 
-**🟡 Severity vs plan tier — how do they interact?** Plan tier sets the *ceiling* of accessible service (e.g., only Business+ can file "business-critical down"). Severity is the case-specific honest impact assessment. Actual SLA = function of both: plan sets the ceiling, severity sets the commitment within it.
+**🟡 Severity vs plan tier — how do they interact?** Plan tier sets the _ceiling_ of accessible service (e.g., only Business+ can file "business-critical down"). Severity is the case-specific honest impact assessment. Actual SLA = function of both: plan sets the ceiling, severity sets the commitment within it.
 
 **🟡 Why upgrade Developer → Business?** Once real users depend on the system, business-hours-only support is a real risk (e.g., 2am weekend outage gets no faster response). Business adds 24/7 phone/chat, faster production-down response, and full 5-category Trusted Advisor for proactive prevention, not just reactive help.
 
 **🔴 Business vs Enterprise for a 200-person org?** Look at scale/criticality, not headcount. Large complex multi-account estate with revenue-critical minute-matters workloads → Enterprise's TAM and fastest response usually worth it (proactive prevention). Simpler/less minute-critical estate → Enterprise On-Ramp is often the better middle ground. Factor in existing internal SRE/ops maturity, which reduces marginal AWS-side response value.
 
-**🔴 How does the service category map influence a design review?** Use category as a fast heuristic before deep-diving docs: Application Integration → expect decoupling/messaging problem, compare against SQS/SNS/EventBridge already in use; Analytics & Streaming → expect volume/real-time data processing, compare against Kinesis/MSK. Category tells you the *class* of problem, quickly filtering whether a new service/category is even needed.
+**🔴 How does the service category map influence a design review?** Use category as a fast heuristic before deep-diving docs: Application Integration → expect decoupling/messaging problem, compare against SQS/SNS/EventBridge already in use; Analytics & Streaming → expect volume/real-time data processing, compare against Kinesis/MSK. Category tells you the _class_ of problem, quickly filtering whether a new service/category is even needed.
 
 ---
 

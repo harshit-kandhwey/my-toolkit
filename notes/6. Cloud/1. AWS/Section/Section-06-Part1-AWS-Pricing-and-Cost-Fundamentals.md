@@ -49,12 +49,12 @@
 
 ## 5. Major AWS Pricing Models
 
-| Model | Commitment | Price | Best for |
-|-------|-----------|-------|----------|
-| On-Demand | None | Highest baseline | Unpredictable/short-term/first-time workloads |
-| Reserved / Savings Plans | 1–3 years, optional upfront | Discounted 30–70%+ | Steady-state, predictable, long-running |
-| Spot | None (AWS can reclaim with short notice) | Deepest discount 70–90%+ | Fault-tolerant, interruptible, flexible-timing |
-| Free Tier | None | Free within allowances | Learning, prototyping, light usage |
+| Model                    | Commitment                               | Price                    | Best for                                       |
+| ------------------------ | ---------------------------------------- | ------------------------ | ---------------------------------------------- |
+| On-Demand                | None                                     | Highest baseline         | Unpredictable/short-term/first-time workloads  |
+| Reserved / Savings Plans | 1–3 years, optional upfront              | Discounted 30–70%+       | Steady-state, predictable, long-running        |
+| Spot                     | None (AWS can reclaim with short notice) | Deepest discount 70–90%+ | Fault-tolerant, interruptible, flexible-timing |
+| Free Tier                | None                                     | Free within allowances   | Learning, prototyping, light usage             |
 
 > 🔑 **Trade-off pattern:** commitment and interruptibility are what you trade for discount. On-Demand = no trade, highest price; Reserved = time commitment for discount; Spot = availability guarantee for deepest discount. Generalizes far beyond EC2.
 
@@ -71,34 +71,39 @@
 ## 7. Cost Management & Governance Tools
 
 ### 7.1 AWS Cost Explorer
+
 - Visual analytics of **historical** cost/usage, filterable by service, account, tag, Region, time; basic forecasting.
 - Turns raw billing into filterable charts — "what drove last month's spike?"
 - Use: monthly reviews, identifying top cost drivers, informing RI/Savings Plans decisions.
 
 ### 7.2 AWS Budgets
+
 - Define a spending/usage **threshold**; get alerted (email/SNS) when actual or **forecasted** spend crosses it.
 - Proactive vs Cost Explorer's reactive nature.
 - Types: cost budgets, usage budgets, Reservation/Savings Plans utilization/coverage budgets.
 - Best practice: set a low-dollar cost budget (e.g., $5–$10) with 80%/100% alerts on every new/learning account.
 
 ### 7.3 AWS Cost and Usage Report (CUR)
+
 - Most detailed, line-item-level export, delivered to S3, for custom analysis/BI/data-warehouse integration and chargeback systems.
 
 ### 7.4 AWS Pricing Calculator
+
 - **Pre-purchase** planning tool — describe a hypothetical architecture, get a monthly cost estimate before building.
 
 ### 7.5 AWS Trusted Advisor (preview, full detail Part 8)
+
 - Cost-optimization checks: flags idle/underutilized resources (stopped instance still billing EBS, idle load balancer).
 
 **Which tool answers which question:**
 
-| Question | Tool |
-|----------|------|
-| What did I spend, on what, historically? | Cost Explorer |
-| Alert me before/when I overspend | Budgets |
+| Question                                   | Tool                  |
+| ------------------------------------------ | --------------------- |
+| What did I spend, on what, historically?   | Cost Explorer         |
+| Alert me before/when I overspend           | Budgets               |
 | Every line-item detail for custom analysis | Cost and Usage Report |
-| What will this new architecture cost? | Pricing Calculator |
-| Is anything idle and wasting money? | Trusted Advisor |
+| What will this new architecture cost?      | Pricing Calculator    |
+| Is anything idle and wasting money?        | Trusted Advisor       |
 
 ---
 
@@ -121,13 +126,13 @@
 
 ## 10. Common Cost Mistakes & Troubleshooting
 
-| Symptom/Mistake | Root cause | Fix |
-|---|---|---|
-| Bill much higher than expected mid-month | No alerting on uncapped billing | Set up Budgets on every account immediately |
-| "Free Tier" account still charged | Exceeded allowance / non-covered service or Region | Check Cost Explorer; verify current Free Tier terms |
-| Forgotten resources after a lab | No cleanup; e.g., EBS volume billing after instance termination | Explicitly delete/terminate everything; check Trusted Advisor |
-| Large unexplained data-transfer charges | Cross-Region or internet-egress pattern not accounted for | Filter Cost Explorer by usage type; review architecture for unnecessary egress |
-| Can't tell which team caused a spike | No tagging strategy | Implement/enforce cost allocation tags |
+| Symptom/Mistake                          | Root cause                                                      | Fix                                                                            |
+| ---------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Bill much higher than expected mid-month | No alerting on uncapped billing                                 | Set up Budgets on every account immediately                                    |
+| "Free Tier" account still charged        | Exceeded allowance / non-covered service or Region              | Check Cost Explorer; verify current Free Tier terms                            |
+| Forgotten resources after a lab          | No cleanup; e.g., EBS volume billing after instance termination | Explicitly delete/terminate everything; check Trusted Advisor                  |
+| Large unexplained data-transfer charges  | Cross-Region or internet-egress pattern not accounted for       | Filter Cost Explorer by usage type; review architecture for unnecessary egress |
+| Can't tell which team caused a spike     | No tagging strategy                                             | Implement/enforce cost allocation tags                                         |
 
 ---
 
