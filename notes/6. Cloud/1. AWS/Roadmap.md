@@ -15,11 +15,26 @@
 
 ## 🧭 Part 1 — Detailed Section Roadmap
 
-- [Section 1: What is AWS & Cloud Computing Fundamentals](./Section/Section-01-What-is-AWS-and-Cloud-Computing-Fundamentals.md) ← teaching now
-- [Section 2: AWS Global Infrastructure](./Section/Section-02-AWS-Global-Infrastructure.md) (Regions, AZs, Local Zones, Wavelength, Outposts, Edge)
-- [Section 3: The Shared Responsibility Model](./Section/Section-03-Shared-Responsibility-Model.md)
-- [Section 4: AWS Accounts, Root User & Identity Basics](./Section/Section-04-AWS-Accounts-Root-User-Identity-Basics.md)
-- [Section 5: Ways to Interact with AWS](./Section/Section-05-Ways-to-Interact-with-AWS.md) (Console, CLI, SDK, CloudShell, API, IaC overview)
-- [Section 6: AWS Pricing & Cost Fundamentals](./Section/Section-06-AWS-Pricing-and-Cost-Fundamentals.md) (pricing models, Free Tier, Budgets, Cost Explorer) — _Coming soon_
-- [Section 7: AWS Support Plans & Service Category Map](./Section/Section-07-AWS-Support-Plans-and-Service-Category-Map.md)
-- [Section 8: Part 1 Wrap-Up + Foundations Interview Drill](./Section/Section-08-Part-1-Wrap-and-Foundations-Interview-Drill.md)
+- **[Section 1: What is AWS & Cloud Computing Fundamentals](./Section/Section-01-What-is-AWS-and-Cloud-Computing-Fundamentals.md)** ← teaching now
+  - On-demand delivery of IT resources over the internet with pay-as-you-go pricing; why cloud exists (CapEx vs OpEx); the six advantages of cloud computing (trade CapEx for OpEx, economies of scale, elasticity, speed, focus on product, global reach)
+
+- **[Section 2: AWS Global Infrastructure](./Section/Section-02-AWS-Global-Infrastructure.md)**
+  - Hierarchy of Regions (geographic areas), Availability Zones (isolated data-center clusters), edge locations, Local Zones, Wavelength Zones, Outposts; latency optimization, availability, fault isolation, data residency
+
+- **[Section 3: The Shared Responsibility Model](./Section/Section-03-Shared-Responsibility-Model.md)**
+  - AWS security *of* the cloud (hardware, hypervisor, data centers, managed services); customer security *in* the cloud (data, IAM, guest OS, apps, encryption); responsibility line shifts by service type (IaaS, managed, abstracted/serverless)
+
+- **[Section 4: AWS Accounts, Root User & Identity Basics](./Section/Section-04-AWS-Accounts-Root-User-Identity-Basics.md)**
+  - AWS accounts as containers, billing boundaries, and security isolation; root user (unrestricted, non-policy-limitable, dangerous — reserved for root-only actions); IAM identities for everyday access; Free Tier structure; account creation and multi-account strategy
+
+- **[Section 5: Ways to Interact with AWS](./Section/Section-05-Ways-to-Interact-with-AWS.md)**
+  - AWS Management Console (visual, one-off exploration, incident response); AWS CLI (repeatable scripts, automation, CI/CD); SDKs (programmatic access in any language); CloudShell (zero-install terminal); underlying API (one API for all interfaces); Infrastructure as Code overview
+
+- **[Section 6: AWS Pricing & Cost Fundamentals](./Section/Section-06-AWS-Pricing-and-Cost-Fundamentals.md)** — _Coming soon_
+  - Pricing models (on-demand, reserved instances, spot instances, savings plans); Free Tier structure (always-free, 12-month-free, trial); Budgets, Cost Explorer, Cost Allocation Tags; billing periods and consolidated billing via Organizations
+
+- **[Section 7: AWS Support Plans & Service Category Map](./Section/Section-07-AWS-Support-Plans-and-Service-Category-Map.md)** — _Coming soon_
+  - AWS Support tiers (Basic, Developer, Business, Enterprise); support case routing, response times, best practices; AWS service categories; console navigation and service discovery
+
+- **[Section 8: Part 1 Wrap-Up + Foundations Interview Drill](./Section/Section-08-Part-1-Wrap-Up-and-Foundations-Interview-Drill.md)** — _Coming soon_
+  - Key takeaways, common misconceptions, glossary; interview prep questions and model answers; readiness checkpoint before Part 2
