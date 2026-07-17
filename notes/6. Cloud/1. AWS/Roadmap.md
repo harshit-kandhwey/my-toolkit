@@ -70,3 +70,35 @@
 
 - **[Section 18: Part 2 Wrap-Up + Security & Governance Interview Drill](./Section/Section-18-Part2-WrapUp-and-Interview-Drill.md)**
   - Key takeaways and consolidated knowledge map, common misconceptions, glossary of terms, interview prep questions and model answers, readiness checkpoint before Part 3 (Compute)
+
+## 🧭 Part 3 — Compute
+
+- **[Section 19: EC2 Fundamentals & Architecture](./Section/Section-19-Part3-EC2-Fundamentals-Architecture.md)**
+  - Amazon EC2 as IaaS compute service, virtual machines (instances), hypervisor and Nitro System, multi-tenancy isolation, instance lifecycle (pending, running, stopped, terminated), stop vs terminate, EBS-backed vs instance store-backed
+
+- **[Section 20: AMIs, Instance Types & Instance Lifecycle](./Section/Section-20-Part3-AMIs-Instance-Types-Lifecycle.md)**
+  - AMIs as Region-specific templates (OS + software + config), AMI sources (AWS-provided, Marketplace, Community, custom), golden image pattern, custom AMI creation, instance types (vCPU, memory, network, local storage), instance family taxonomy
+
+- **[Section 21: EC2 Purchasing Options](./Section/Section-21-Part3-EC2-Purchasing-Options.md)**
+  - On-demand instances (pay-per-second, no commitment, highest price), Reserved Instances (1-3 year commitment, 40-70% discount, regional/zonal), Spot Instances (up to 90% discount, interruptible), Savings Plans (hourly commitment across instance families), Dedicated Hosts/Instances
+
+- **[Section 22: EC2 Storage, Networking & Security Integration](./Section/Section-22-Part3-EC2-Storage-Networking-Security.md)**
+  - EBS volumes (network-attached, persistent storage), instance store (ephemeral local storage), Elastic Network Interfaces (ENI), security groups (instance-level firewall), IAM roles for instance permissions, public/private IP, elastic IP
+
+- **[Section 23: Auto Scaling Groups](./Section/Section-23-Part3-Auto-Scaling-Groups.md)**
+  - Auto Scaling Groups (ASGs) for horizontal scaling, launch templates (AMI, instance type, user data), desired/min/max capacity, scaling policies (target tracking, step, simple), lifecycle hooks, instance warm-up, termination policies
+
+- **[Section 24: Elastic Load Balancing](./Section/Section-24-Part3-Elastic-Load-Balancing.md)**
+  - Elastic Load Balancer (ELB) types: Application Load Balancer (layer 7, HTTP/HTTPS), Network Load Balancer (layer 4, TCP/UDP, ultra-high throughput), Classic Load Balancer (legacy), target groups, health checks, sticky sessions, connection draining
+
+- **[Section 25: AWS Lambda & Serverless Compute](./Section/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)**
+  - AWS Lambda as FaaS (function-as-a-service), functions + handlers + runtimes, invocation types (synchronous, asynchronous, event source mapping), cold starts vs warm starts, concurrency (account limit, reserved, provisioned), execution duration billing
+
+- **[Section 26: Containers — ECS, EKS & Fargate](./Section/Section-26-Part3-Containers-ECS-EKS-Fargate.md)**
+  - Container basics (Docker, images, registries), Amazon ECS (task definitions, services, launch types), Fargate (serverless container compute), Amazon EKS (Kubernetes managed service), ECR (container registry), container logging and monitoring
+
+- **[Section 27: Elastic Beanstalk, Batch & Lightsail](./Section/Section-27-Part3-Elastic-Beanstalk-Batch-Lightsail.md)**
+  - AWS Elastic Beanstalk (PaaS for web applications, auto-scaling/load balancing/monitoring), AWS Batch (batch processing on EC2), AWS Lightsail (simplified VPS/container hosting for beginners), service positioning and use cases
+
+- **[Section 28: Part 3 Wrap-Up + Compute Interview Drill](./Section/Section-28-Part3-WrapUp-and-Interview-Drill.md)**
+  - Compute service comparison matrix (EC2 vs Lambda vs containers vs Beanstalk vs Batch), key takeaways, common misconceptions, interview prep questions and model answers, readiness checkpoint before Part 4 (Networking)
