@@ -28,20 +28,17 @@ AWS/
 ├── README.md (quick-start guide)
 ├── INDEX.md (this file — comprehensive navigation & section index)
 │
-├── Contents/ (modular organization by part)
-│   ├── Part1/ (8 sections: AWS Foundations)
-│   ├── Part2/ (10 sections: Identity & Security)
-│   ├── Part3/ (10 sections: Compute)
-│   ├── Part4/ (10 sections: Networking)
-│   ├── Part5/ (10 sections: Storage)
-│   ├── Part6/ (10 sections: Databases)
-│   ├── Part7/ (10 sections: Application Integration)
-│   ├── Part8/ (10 sections: Observability)
-│   ├── Part9/ (10 sections: CI/CD & IaC)
-│   └── Part10/ (10 sections: Interview Prep & Synthesis)
-│
-└── Section/ (legacy: original flat section storage for backward compatibility)
-    └── Section-01-*.md through Section-98-*.md (all 98 sections)
+└── Contents/ (modular organization by part)
+    ├── Part1/ (8 sections: AWS Foundations)
+    ├── Part2/ (10 sections: Identity & Security)
+    ├── Part3/ (10 sections: Compute)
+    ├── Part4/ (10 sections: Networking)
+    ├── Part5/ (10 sections: Storage)
+    ├── Part6/ (10 sections: Databases)
+    ├── Part7/ (10 sections: Application Integration)
+    ├── Part8/ (10 sections: Observability)
+    ├── Part9/ (10 sections: CI/CD & IaC)
+    └── Part10/ (10 sections: Interview Prep & Synthesis)
 ```
 
 ---
@@ -71,7 +68,7 @@ AWS/
 
 - Use the **Quick Navigation** table above to jump to a specific part folder.
 - Browse `Contents/PartN/` to see all sections for that part.
-- All 98 sections are also available in the legacy `Section/` folder for direct access by section number.
+- Refer to detailed section tables in each part summary for direct file references.
 
 ---
 
@@ -257,7 +254,6 @@ AWS Well-Architected Framework and its six pillars, cost optimization and FinOps
   - ... and so on
 - **Each part is self-contained** but includes cross-references to related sections in other parts
 - **All 98 sections are organized in `Contents/PartN/` folders** for modular, scalable structure
-- **Backward compatibility:** All sections remain in the legacy `Section/` folder for direct access by section number
 - **Single navigation source:** This INDEX.md is the master reference for all parts and sections
 
 ---

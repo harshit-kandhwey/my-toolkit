@@ -54,7 +54,6 @@ Parts 7–10  (50 sections) — Integration, Observability, DevOps, Interview Pr
 AWS/
 ├── README.md (this file — quick orientation)
 ├── INDEX.md (master navigation & comprehensive section index)
-├── Section/ (legacy: all 98 sections in flat structure)
 └── Contents/ (organized by part)
     ├── Part1/ — 8 sections
     ├── Part2/ — 10 sections
@@ -67,8 +66,7 @@ AWS/
 ✅ **98 Complete Sections** — No gaps, all 10 parts fully built out  
 ✅ **Modular Organization** — Sections grouped by topic in `Contents/PartN/` folders  
 ✅ **Cross-Referenced** — Sections link to related topics across parts  
-✅ **Interview-Focused** — Interview drills, system design, and best practices throughout  
-✅ **Backward Compatible** — All sections also available in legacy `Section/` folder
+✅ **Interview-Focused** — Interview drills, system design, and best practices throughout
 
 ## What's Inside Each Part
 
