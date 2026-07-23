@@ -86,6 +86,30 @@ Key idea: each policy answers a different question - simple ("just this one"), w
 
 ---
 
+## 6a. AWS Global Accelerator - Network-Layer Global Routing
+
+### 6a.1 Definition and the Problem It Solves
+
+- AWS Global Accelerator routes user traffic to the optimal, healthy AWS endpoint (an ALB/NLB, or an EC2 instance/Elastic IP) using two static Anycast IP addresses, rather than DNS-based routing decisions.
+- Core distinction from every Route 53 routing policy in Section 5: Route 53's policies operate at the DNS layer - a client resolves a name to an IP, and that resolution decision is subject to the client's own DNS caching and TTL behavior (Section 3). Global Accelerator operates at the network layer - traffic enters AWS's global network at the nearest edge location via the same static Anycast IPs regardless of client, and is then routed over AWS's private backbone to the optimal healthy endpoint, without depending on DNS resolution or caching behavior at all.
+
+### 6a.2 Anycast IPs and Why They Matter
+
+- Anycast means the same two IP addresses are announced from every AWS edge location globally - a user's traffic naturally routes to the nearest edge location at the network level (via standard internet routing, BGP), then travels the rest of the way to the actual endpoint over AWS's own backbone rather than the public internet.
+- Because the IP addresses themselves never change (unlike Route 53 failover, which changes which IP a DNS query returns), Global Accelerator failover is not subject to DNS TTL/caching delays at all - a client that already has the Anycast IP continues sending traffic to it, and Global Accelerator itself redirects that traffic to a healthy endpoint internally, achieving faster failover than DNS-based failover routing can, precisely because there is no DNS record to wait to expire and re-resolve.
+
+### 6a.3 Global Accelerator vs Route 53 Failover/Latency-Based Routing - The Decision
+
+- Route 53 latency-based and failover routing (Section 5.3, 5.6) remain entirely valid, widely-used patterns, and are the right choice when DNS-layer routing is sufficient and the TTL-dependent propagation delay is acceptable for the application's actual requirements.
+- Global Accelerator is the better fit specifically when: failover speed genuinely cannot tolerate DNS TTL/caching delay (some clients and resolvers do not respect TTL as strictly as expected, a real-world DNS caching inconsistency Global Accelerator sidesteps entirely), or when the application is not purely HTTP/HTTPS (Global Accelerator supports TCP and UDP generally, including non-web protocols, whereas CloudFront - Section 7 - is HTTP/HTTPS-specific).
+- Interview tip: the cleanest way to frame this distinction is "Route 53 changes which IP a DNS answer returns; Global Accelerator keeps the IP constant and changes where traffic goes once it arrives" - a fundamentally different failover mechanism, not simply a faster version of the same one.
+
+### 6a.4 Key Takeaways
+
+1. Global Accelerator routes at the network layer using static Anycast IPs, distinct from Route 53's DNS-layer routing policies covered in Section 5.
+2. Because the client-facing IP addresses never change, Global Accelerator failover avoids DNS TTL/caching propagation delay entirely - a genuinely faster failover mechanism than Route 53 failover routing for workloads that need it.
+3. Global Accelerator supports general TCP/UDP traffic, not just HTTP/HTTPS - a relevant distinction versus CloudFront (Section 7), which is HTTP/HTTPS-specific.
+
 ## 7. Route 53 Resolver - DNS Within and Across VPCs
 
 - The fuller capability behind every VPC's Amazon-provided DNS resolver (Section 1).
@@ -177,5 +201,6 @@ Senior - Design Route 53 strategy for a global app: US/EU/Asia users, performanc
 ## Related Concepts (forward links)
 
 - CloudFront CDN, which frequently uses Route 53 and works alongside its routing policies -> Part 4, Section 7
+- AWS Global Accelerator, a complementary network-layer alternative to DNS-based routing/failover (see Section 6a above) -> Part 4, Section 6a
 - Multi-Region DR patterns using Failover routing as one component -> Part 10
 - VPC Endpoints, Flow Logs, and network troubleshooting tools -> Part 4, Section 9

@@ -121,6 +121,52 @@ Since this section is about pipeline _process_ rather than new tool-specific com
 - **Production usage:** CodePipeline has a built-in CloudFormation deployment action type that natively understands change sets (creating one, then requiring an explicit separate approval action before executing it) — directly implementing the plan-then-approve-then-apply pattern as native pipeline stages without custom scripting.
 - **Common errors/considerations:** verify current CodePipeline/CodeBuild capabilities and integration patterns against AWS documentation, as this is a service that continues to evolve; the general pipeline _pattern_ described in this section (validate → plan → review → approve → apply) applies regardless of which specific CI/CD tool implements it.
 
+## 8a. Artifact Management & Supply Chain Security — CodeArtifact
+
+### 8a.1 Definition and the Problem It Solves
+
+This section's pipeline (validate → plan → review → approve → apply) governs how _infrastructure definitions_ move safely to production. A closely related, often-overlooked question is how the **software packages and dependencies** those definitions and the applications they deploy actually pull in — npm packages, Python packages, Maven artifacts — are sourced, stored, and verified. Pulling directly from public package registries (npmjs.com, PyPI, Maven Central) on every build introduces two real risks: **availability risk** (a public registry outage blocks every build depending on it) and **supply-chain risk** (a compromised or maliciously-published public package, or a dependency silently changed after initial review, can be pulled into a build without anyone noticing).
+
+**AWS CodeArtifact** is a managed artifact repository service that sits between build pipelines and public package registries, addressing both risks.
+
+### 8a.2 How CodeArtifact Works
+
+- CodeArtifact hosts private package repositories (npm, PyPI, Maven, NuGet, and others) that pipelines pull from, instead of pulling directly from the public internet on every build.
+- **Upstream repositories**: a CodeArtifact repository can be configured to transparently proxy a public registry (e.g., npmjs.com) — the first time a specific package version is requested, CodeArtifact fetches and caches it; subsequent requests for that same version are served from CodeArtifact's own cache, without depending on the public registry's availability.
+- This gives an organization one controlled point where package versions are pinned and can be audited or scanned, rather than every individual build pulling directly and independently from the public internet.
+
+```bash
+# Point npm at a CodeArtifact repository as its registry
+aws codeartifact login --tool npm --repository my-repo --domain my-domain --domain-owner 111122223333
+
+# Publish an internally-built package to a private CodeArtifact repository
+aws codeartifact publish-package-version \
+  --domain my-domain --repository my-repo \
+  --format npm --package my-internal-package --package-version 1.2.0 \
+  --asset-content ./my-internal-package-1.2.0.tgz --asset-name package.tgz
+```
+
+- **Common error:** treating CodeArtifact purely as a caching layer without also integrating dependency scanning — caching a compromised package just as readily as a legitimate one; caching alone provides availability benefits but not, on its own, the security benefit.
+
+### 8a.3 Supply Chain Security Practices
+
+- **Dependency scanning integrated into the validate stage** (§7): scanning package dependencies for known vulnerabilities (CVEs) or license-compliance issues before a build proceeds, the same "shift security left" principle §11 applies to IaC template scanning, applied here to third-party dependencies specifically.
+- **Artifact signing**: cryptographically signing build artifacts (container images, packages) at build time, and verifying that signature before deployment, so a downstream deployment step can confirm an artifact genuinely came from the organization's own trusted build pipeline and hasn't been tampered with or substituted after the fact — conceptually similar to how this section's "apply the exact reviewed plan artifact" principle (§7 warning) protects the IaC review/apply gap, applied here to software artifacts and their build/deploy gap.
+- **Version pinning through CodeArtifact's cache**: since CodeArtifact caches the specific package versions actually requested, an organization gets a natural, auditable record of exactly which upstream package versions were ever pulled into any build — useful both for vulnerability-response ("which of our builds actually used the affected version") and for general build reproducibility.
+
+### 8a.4 Production and Enterprise Usage
+
+- Regulated organizations (financial services, healthcare) commonly mandate that no build pipeline pulls packages directly from the public internet — every dependency must route through an internally-controlled artifact repository like CodeArtifact, both for availability and for the auditability of exactly what entered a build.
+- Artifact signing and verification is an increasingly common requirement in supply-chain-security-conscious organizations, often driven by the same compliance frameworks (SOC 2, and similar) that drive this section's separation-of-duties and approval-gate requirements (§10, §16) — supply chain integrity is treated as part of the same overall change-management control set as infrastructure deployment safety.
+
+### 8a.5 Key Takeaways
+
+1. CodeArtifact centralizes and caches package dependencies behind one controlled, organization-owned repository, reducing both public-registry availability risk and uncontrolled supply-chain exposure.
+2. Caching alone isn't a security control — dependency vulnerability scanning must be explicitly integrated (typically into the pipeline's validate stage) to get the actual security benefit, not just availability.
+3. Artifact signing at build time, verified before deployment, closes a supply-chain-specific version of the same "what's deployed should exactly match what was reviewed" principle this section already applies to infrastructure plans.
+
+---
+
 ## 9. Hands-On Example — GitOps-Style Environment Promotion
 
 ```
@@ -222,6 +268,7 @@ This structure directly embodies GitOps: the repository's `main` branch is the s
 ## 20. Related Concepts
 
 - **CloudFormation, CDK, Terraform** (the tools whose commands are sequenced within these pipelines) → Part 9 §1-4.
+- **AWS CodeArtifact & supply chain security** (§8a) — the closely related question of how build pipelines source and verify software package dependencies, alongside how they deploy infrastructure.
 - **CloudTrail** (the independent audit trail of what the pipeline's service identity actually did) → Part 8 §5.
 - **AWS Config** (post-deployment compliance detection, complementary to pre-deployment pipeline security scanning) → Part 8 §6.
 - **Choosing the Right IaC Tool** (the final synthesis comparison, informed by everything in Part 9 §1-8) → next section, Part 9 §9.

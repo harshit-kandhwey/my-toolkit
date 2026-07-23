@@ -94,6 +94,32 @@ Clean summary: VPC Peering is simple and free of hourly charges but doesn't scal
 
 ---
 
+## 6a. VPC Lattice
+
+### 6a.1 Definition and the Problem It Solves
+
+- VPC Lattice is an application-layer (not network-layer) connectivity service - it connects services to each other, across VPCs and accounts, without requiring VPC Peering, Transit Gateway attachments, or PrivateLink endpoints to be individually configured for every consumer.
+- The problem it targets: in a growing microservices environment, connecting many services across many VPCs/accounts using PrivateLink means standing up a VPC Endpoint Service and Interface Endpoint pair for every service-to-consumer relationship - workable at small scale, genuinely tedious to manage as the number of services and consumers grows into the dozens or hundreds.
+- Core distinction from everything else in this section: Peering, Transit Gateway, and PrivateLink all operate at Layer 3/4 (IP/TCP) - VPC Lattice operates at Layer 7 (HTTP/HTTPS/gRPC), meaning it understands and can route on application-level concepts like paths and headers, not just network reachability.
+
+### 6a.2 Service Network - The Core Construct
+
+- A Service Network is the central Lattice construct - a logical boundary that services and consumers are associated with, similar in spirit to how Transit Gateway is a central hub VPCs attach to, but operating on services rather than entire VPC networks.
+- Once a service is associated with a Service Network, every consumer also associated with that Service Network can reach it - without a separate point-to-point connection per pair, avoiding PrivateLink's "one Endpoint Service and one Interface Endpoint per relationship" overhead at scale.
+- Access to a service within a Service Network is governed by an auth policy (an IAM-based resource policy, following the same access-control mechanics as other AWS resource policies) - meaning connectivity and authorization are handled together, not as two separate configuration steps.
+
+### 6a.3 VPC Lattice vs PrivateLink - The Decision
+
+- PrivateLink remains the right choice for exposing a single, specific service to a bounded, relatively small/stable set of consumers, or for the common third-party SaaS integration pattern (Section 6.3) where a vendor exposes one product endpoint broadly.
+- VPC Lattice is the better fit when an organization has many internal services that many other services/teams need to consume, in an environment where standing up individual PrivateLink Endpoint Services per relationship has become a genuine management burden - it is specifically a scaling solution for the many-services-to-many-consumers problem, the same kind of scaling gap Transit Gateway closes for VPC Peering, but one layer up the stack (services, not networks).
+- Interview tip: framing VPC Lattice as "PrivateLink at scale" is a reasonable first-pass mental model, but the more precise distinction is the OSI layer - PrivateLink is a network/transport-layer private connection to a specific endpoint, VPC Lattice is an application-layer service mesh-like construct aware of HTTP semantics.
+
+### 6a.4 Key Takeaways
+
+1. VPC Lattice solves service-to-service connectivity at the application layer, avoiding the per-relationship overhead of standing up individual PrivateLink endpoints as the number of internal services and consumers grows.
+2. A Service Network is the central construct services and consumers associate with - connectivity and IAM-based authorization are handled together, not as separate steps.
+3. PrivateLink remains the right choice for single-service exposure or third-party SaaS patterns; VPC Lattice is the right choice for many-to-many internal service connectivity at genuine scale.
+
 ## 7. Full Decision Framework
 
 Question: do you need full network-level connectivity (many resources, ports/protocols) between VPCs, or just one specific service?
@@ -186,3 +212,5 @@ Senior - Design connectivity for 40 VPCs across accounts: production reaches sha
 - VPN and Direct Connect for on-premises connectivity, including Transit Gateway attachment -> Part 4, Section 5
 - Gateway Endpoints (S3/DynamoDB) vs Interface Endpoints (PrivateLink) in full depth -> Part 4, Section 9
 - Route 53 Resolver for DNS across peered/Transit-Gateway-connected VPCs -> Part 4, Section 6
+- AWS Global Accelerator, a complementary network-layer global traffic-routing service -> Part 4, Section 6a (within Section 6, Route 53)
+- VPC Lattice (see Section 6a above) as the application-layer alternative for many-to-many internal service connectivity

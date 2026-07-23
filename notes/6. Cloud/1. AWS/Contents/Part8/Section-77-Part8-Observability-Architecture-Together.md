@@ -67,6 +67,41 @@ The practical mechanism for moving between pillars during an investigation is a 
 
 🔑 **Key takeaway:** deliberately logging trace IDs and request IDs consistently across every service is what makes cross-pillar correlation _practical_ during a real incident, rather than theoretically possible but tediously manual — this is a genuine, worthwhile upfront instrumentation investment.
 
+## 6a. Modern Observability — OpenTelemetry, Amazon Managed Prometheus & Amazon Managed Grafana
+
+The six pillars in §4 are all AWS-native services. A large and growing share of real-world observability practice — especially in organizations running mixed AWS/multi-cloud/on-premises environments, or that have standardized on open-source tooling — layers a seventh dimension on top: **vendor-neutral instrumentation and open-source-compatible visualization**, which this subsection covers.
+
+### 6a.1 OpenTelemetry — Vendor-Neutral Instrumentation
+
+- **What it is:** An open-source, CNCF-governed standard (and set of SDKs/agents) for generating traces, metrics, and logs in a vendor-neutral format, instead of instrumenting an application directly against a specific vendor's proprietary SDK (such as the X-Ray SDK, Part 8 §4).
+- **Why it exists / problem it solves:** Code instrumented directly against X-Ray's SDK is tightly coupled to X-Ray specifically — moving to a different tracing backend, or supporting a multi-cloud/hybrid environment where not everything runs on AWS, means re-instrumenting. OpenTelemetry decouples _instrumentation_ from _backend_: an application emits data in the OpenTelemetry format once, and that data can be exported to X-Ray, to a third-party observability platform, or to multiple destinations simultaneously, without changing the application's instrumentation code.
+- **How it fits with X-Ray specifically:** AWS Distro for OpenTelemetry (ADOT) is AWS's own supported distribution of the OpenTelemetry SDK/Collector, which can export trace data to X-Ray (preserving everything Part 8 §4 covered about X-Ray's trace analysis) while keeping the application's own instrumentation code vendor-neutral — a common, AWS-endorsed middle ground rather than a full replacement of X-Ray.
+- 🔑 **Key takeaway:** OpenTelemetry is an instrumentation _standard_, not a backend/storage system itself — it answers "how do I generate the telemetry data in a portable way," while X-Ray, CloudWatch, or a third-party tool remains the system that actually stores and analyzes it.
+
+### 6a.2 Amazon Managed Service for Prometheus (AMP)
+
+- **What it is:** A managed, Prometheus-compatible metrics backend — Prometheus being a widely-adopted open-source metrics system, especially prevalent in Kubernetes/container environments. AMP is API-compatible with open-source Prometheus (PromQL queries, existing Prometheus exporters and client libraries work against it), while AWS manages the underlying storage and scaling.
+- **Why it exists / problem it solves:** Many organizations running EKS/containerized workloads have already standardized their metrics instrumentation and dashboards around Prometheus and PromQL — rewriting all of that against CloudWatch's native metrics model would be a significant, often unjustified migration cost. AMP lets teams keep their existing Prometheus-based tooling and query language while removing the operational burden of self-hosting and scaling a Prometheus server (a genuinely nontrivial operational responsibility at scale — storage growth, high-availability configuration, and query performance all require ongoing attention in self-managed Prometheus).
+- **Decision criterion:** Favor AMP over native CloudWatch Metrics specifically when a team already has significant existing investment in Prometheus-based instrumentation, dashboards, and alerting rules (commonly true for Kubernetes-heavy organizations) — for a team with no existing Prometheus investment, CloudWatch Metrics (Part 8 §1) remains the simpler, more deeply AWS-integrated default.
+
+### 6a.3 Amazon Managed Grafana (AMG)
+
+- **What it is:** A managed instance of Grafana — a widely-used open-source visualization/dashboarding tool capable of querying many different data sources (CloudWatch, AMP/Prometheus, X-Ray, and numerous third-party systems) through one consistent dashboarding interface — removing the operational burden of self-hosting Grafana.
+- **Why it exists / problem it solves:** An organization with data spread across CloudWatch, AMP, and possibly non-AWS systems otherwise needs separate dashboarding tools/views per data source. AMG provides one dashboarding layer that can visualize all of them together, which is particularly valuable for teams that already have a library of existing Grafana dashboards (from a self-hosted Grafana instance or a previous non-AWS environment) that they want to keep using with minimal rework.
+- **Relationship to CloudWatch Dashboards (Part 8 §3):** CloudWatch Dashboards remain the simpler, zero-additional-setup choice for teams working entirely within CloudWatch's own metrics. AMG becomes the better fit specifically when dashboards need to span multiple data sources (CloudWatch plus AMP plus something else) or when an organization is standardizing on Grafana as its dashboarding tool of choice across both AWS and non-AWS environments.
+
+### 6a.4 How This Fits the Six-Pillar Investigation Flow
+
+These three additions don't replace any of the six pillars in §4 — they're an alternative (or complementary) instrumentation/backend/visualization layer that can sit underneath the same "metrics / logs / alarms / traces / audit / config" question structure:
+
+| Original Pillar Concept | AWS-Native Option     | Open-Source-Compatible Option                                            |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------ |
+| Trace instrumentation   | X-Ray SDK             | OpenTelemetry (ADOT), exportable to X-Ray or elsewhere                   |
+| Metrics storage/query   | CloudWatch Metrics    | Amazon Managed Prometheus (AMP)                                          |
+| Dashboarding            | CloudWatch Dashboards | Amazon Managed Grafana (AMG), can query both CloudWatch and AMP together |
+
+❌ **Common mistake:** treating "we adopted OpenTelemetry" as itself a complete observability solution — OpenTelemetry standardizes _instrumentation_, but a team still needs to choose and configure actual backends (X-Ray, AMP, a third party) to store and query that data, and a visualization layer (CloudWatch Dashboards, AMG) to make it usable during an investigation.
+
 ## 7. Worked Example — A Realistic Multi-Pillar Investigation
 
 **Scenario:** A composite alarm fires (Part 8 §3) indicating both elevated order-processing latency and elevated error rate simultaneously.
@@ -118,5 +153,6 @@ This worked example demonstrates the complete chain: alarm → metrics → logs 
 ## 12. Related Concepts
 
 - Every pillar covered in this Part: **CloudWatch Metrics** (Part 8 §1), **CloudWatch Logs** (Part 8 §2), **CloudWatch Alarms & Dashboards** (Part 8 §3), **X-Ray** (Part 8 §4), **CloudTrail** (Part 8 §5), **AWS Config** (Part 8 §6).
+- **OpenTelemetry, Amazon Managed Prometheus, and Amazon Managed Grafana** (§6a) — vendor-neutral instrumentation and open-source-compatible metrics/dashboarding, complementary to the AWS-native pillars above.
 - **AWS Systems Manager** and **Trusted Advisor / AWS Health Dashboard** (operational tooling complementary to this observability stack) → Part 8 §7-8.
 - **Part 8 §10** (next, final section of this Part) closes out Observability & Monitoring with a wrap-up and observability interview drill synthesizing all nine preceding sections.

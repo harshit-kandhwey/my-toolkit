@@ -1,23 +1,28 @@
-# 🗺️ AWS Zero-to-Enterprise Knowledge Base — Master Index
+# AWS Zero-to-Enterprise Knowledge Base — Index
 
-A comprehensive, 98-section learning resource organized into 10 parts covering AWS from foundations to enterprise architecture. Navigate by part, read sections sequentially or jump to topics of interest.
+A comprehensive, 131-section learning resource organized into 15 parts covering AWS from foundations to enterprise architecture. Navigate by part, read sections sequentially, or jump to topics of interest.
 
 ---
 
 ## Quick Navigation
 
-| Part                             | Topic                                           | Sections |
-| -------------------------------- | ----------------------------------------------- | -------- |
-| **[Part 1](./Contents/Part1)**   | AWS Foundations & Global Infrastructure         | 1–8      |
-| **[Part 2](./Contents/Part2)**   | Identity, Security & Governance                 | 9–18     |
-| **[Part 3](./Contents/Part3)**   | Compute                                         | 19–28    |
-| **[Part 4](./Contents/Part4)**   | Networking & Content Delivery                   | 29–38    |
-| **[Part 5](./Contents/Part5)**   | Storage                                         | 39–48    |
-| **[Part 6](./Contents/Part6)**   | Databases                                       | 49–58    |
-| **[Part 7](./Contents/Part7)**   | Application Integration & Streaming             | 59–68    |
-| **[Part 8](./Contents/Part8)**   | Observability, Monitoring & Management          | 69–78    |
-| **[Part 9](./Contents/Part9)**   | Developer Tools, CI/CD & Infrastructure as Code | 79–88    |
-| **[Part 10](./Contents/Part10)** | Final Interview Prep & Roadmap Synthesis        | 89–98    |
+| Part                             | Topic                                               | Sections |
+| -------------------------------- | --------------------------------------------------- | -------- |
+| **[Part 1](./Contents/Part1)**   | AWS Foundations & Global Infrastructure             | 1–8      |
+| **[Part 2](./Contents/Part2)**   | Identity, Security & Governance                     | 9–18     |
+| **[Part 3](./Contents/Part3)**   | Compute                                             | 19–28    |
+| **[Part 4](./Contents/Part4)**   | Networking & Content Delivery                       | 29–38    |
+| **[Part 5](./Contents/Part5)**   | Storage                                             | 39–48    |
+| **[Part 6](./Contents/Part6)**   | Databases                                           | 49–58    |
+| **[Part 7](./Contents/Part7)**   | Application Integration & Streaming                 | 59–68    |
+| **[Part 8](./Contents/Part8)**   | Observability, Monitoring & Management              | 69–78    |
+| **[Part 9](./Contents/Part9)**   | Developer Tools, CI/CD & Infrastructure as Code     | 79–88    |
+| **[Part 10](./Contents/Part10)** | Final Interview Prep & Roadmap Synthesis            | 89–98    |
+| **[Part 11](./Contents/Part11)** | Data Engineering & Analytics on AWS                 | 99–107   |
+| **[Part 12](./Contents/Part12)** | AI/ML & Generative AI on AWS                        | 108–114  |
+| **[Part 13](./Contents/Part13)** | Enterprise Landing Zones & Multi-Account Operations | 115–120  |
+| **[Part 14](./Contents/Part14)** | Security Operations & Incident Response             | 121–126  |
+| **[Part 15](./Contents/Part15)** | Resilience Testing & Continuous DR Validation       | 127–131  |
 
 ---
 
@@ -29,52 +34,28 @@ AWS/
 ├── INDEX.md (this file — comprehensive navigation & section index)
 │
 └── Contents/ (modular organization by part)
-    ├── Part1/ (8 sections: AWS Foundations)
-    ├── Part2/ (10 sections: Identity & Security)
-    ├── Part3/ (10 sections: Compute)
-    ├── Part4/ (10 sections: Networking)
-    ├── Part5/ (10 sections: Storage)
-    ├── Part6/ (10 sections: Databases)
-    ├── Part7/ (10 sections: Application Integration)
-    ├── Part8/ (10 sections: Observability)
-    ├── Part9/ (10 sections: CI/CD & IaC)
-    └── Part10/ (10 sections: Interview Prep & Synthesis)
+    ├── Part1/  (8 sections: AWS Foundations)
+    ├── Part2/  (10 sections: Identity & Security)
+    ├── Part3/  (10 sections: Compute)
+    ├── Part4/  (10 sections: Networking)
+    ├── Part5/  (10 sections: Storage)
+    ├── Part6/  (10 sections: Databases)
+    ├── Part7/  (10 sections: Application Integration)
+    ├── Part8/  (10 sections: Observability)
+    ├── Part9/  (10 sections: CI/CD & IaC)
+    ├── Part10/ (10 sections: Interview Prep & Synthesis)
+    ├── Part11/ (9 sections: Data Engineering & Analytics)
+    ├── Part12/ (7 sections: AI/ML & Generative AI)
+    ├── Part13/ (6 sections: Landing Zones & Multi-Account)
+    ├── Part14/ (6 sections: Security Operations)
+    └── Part15/ (5 sections: Resilience Testing)
 ```
-
----
-
-## How to Use
-
-### Starting Out
-
-1. **New to AWS?** Start with **[Part 1: Foundations](./Contents/Part1/)** to understand what AWS is and core concepts.
-2. Each part folder contains 8-10 self-contained sections covering that part's topics.
-3. Each section is a deep-dive with definitions, examples, best practices, and interview questions.
-
-### Progressive Learning
-
-- Read parts in order (1→2→3→...→10) for a complete AWS knowledge progression.
-- Within each part, sections build on one another—read them sequentially.
-- Skip parts you already know well, but note cross-references to other parts.
-- Use interview questions at the end of each part to self-assess understanding.
-
-### For Interview Prep
-
-- **Part 10** is dedicated to final interview preparation and system design walkthroughs.
-- Each part ends with an **Interview Drill** section containing common questions and model answers.
-- Use **Part 10 §10: Full Roadmap Synthesis** to review high-level patterns across all parts.
-
-### Reference Lookup
-
-- Use the **Quick Navigation** table above to jump to a specific part folder.
-- Browse `Contents/PartN/` to see all sections for that part.
-- Refer to detailed section tables in each part summary for direct file references.
 
 ---
 
 ## Part Summaries
 
-### ✅ Part 1 — AWS Foundations & Global Infrastructure (8/8)
+### Part 1 — AWS Foundations & Global Infrastructure
 
 What AWS is, cloud models, Regions/AZs/edge locations, the Shared Responsibility Model, AWS accounts, access methods (Console/CLI/SDK), pricing fundamentals, and support plans.
 
@@ -89,7 +70,7 @@ What AWS is, cloud models, Regions/AZs/edge locations, the Shared Responsibility
 | 7   | AWS Support Plans & Service Category Map     | Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md   |
 | 8   | Part 1 Wrap-Up + Foundations Interview Drill | Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md      |
 
-### ✅ Part 2 — Identity, Security & Governance (10/10)
+### Part 2 — Identity, Security & Governance
 
 IAM core (users, groups, roles, policies), IAM policy evaluation and types, temporary credentials via STS, IAM Identity Center for federated access, AWS Organizations and SCPs, KMS encryption, secrets management, threat detection (GuardDuty, Security Hub, Config, Inspector), and edge security (WAF, Shield).
 
@@ -106,7 +87,7 @@ IAM core (users, groups, roles, policies), IAM policy evaluation and types, temp
 | 9   | Network & Edge Security — WAF, Shield, Network Firewall                    | Section-17-Part2-WAF-Shield-Network-Firewall.md            |
 | 10  | Part 2 Wrap-Up + Security & Governance Interview Drill                     | Section-18-Part2-WrapUp-and-Interview-Drill.md             |
 
-### ✅ Part 3 — Compute (10/10)
+### Part 3 — Compute
 
 EC2 fundamentals and lifecycle, AMIs and instance types, EC2 purchasing options (on-demand, reserved, spot, savings plans), EC2 storage/networking/security integration, Auto Scaling Groups, Elastic Load Balancing, AWS Lambda and serverless, containers (ECS/EKS/Fargate), Elastic Beanstalk, Batch, and Lightsail.
 
@@ -123,7 +104,7 @@ EC2 fundamentals and lifecycle, AMIs and instance types, EC2 purchasing options 
 | 9   | Elastic Beanstalk, Batch & Lightsail           | Section-27-Part3-Elastic-Beanstalk-Batch-Lightsail.md |
 | 10  | Part 3 Wrap-Up + Compute Interview Drill       | Section-28-Part3-WrapUp-and-Interview-Drill.md        |
 
-### ✅ Part 4 — Networking & Content Delivery (10/10)
+### Part 4 — Networking & Content Delivery
 
 VPC fundamentals and CIDR blocks, subnets and route tables, internet connectivity (IGW/NAT), security groups vs NACLs, VPC peering and Transit Gateway, PrivateLink, hybrid connectivity (VPN and Direct Connect), Route 53 DNS, CloudFront CDN, ACM and API Gateway, VPC endpoints and troubleshooting.
 
@@ -140,7 +121,7 @@ VPC fundamentals and CIDR blocks, subnets and route tables, internet connectivit
 | 9   | VPC Endpoints, Flow Logs & Network Troubleshooting      | Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md |
 | 10  | Part 4 Wrap-Up + Networking Interview Drill             | Section-38-Part4-WrapUp-and-Interview-Drill.md            |
 
-### ✅ Part 5 — Storage (10/10)
+### Part 5 — Storage
 
 S3 fundamentals (buckets, objects, keys), S3 storage classes and lifecycle, S3 security/encryption/access control, S3 advanced features (versioning, replication, performance), EBS volumes and snapshots, EFS, FSx family, Storage Gateway for hybrid storage, and backup/disaster recovery strategies.
 
@@ -157,7 +138,7 @@ S3 fundamentals (buckets, objects, keys), S3 storage classes and lifecycle, S3 s
 | 9   | Backup Strategies & DR Patterns                    | Section-47-Part5-Backup-Strategies-DR-Patterns.md                  |
 | 10  | Part 5 Wrap-Up & Storage Interview Drill           | Section-48-Part5-WrapUp-and-Interview-Drill.md                     |
 
-### ✅ Part 6 — Databases (10/10)
+### Part 6 — Databases
 
 RDS fundamentals, RDS high availability and read replicas, Aurora deep-dive, DynamoDB fundamentals and advanced features, ElastiCache (Redis/Memcached), Redshift for data warehousing, DocumentDB and Neptune, DMS, and choosing the right database for your workload.
 
@@ -174,7 +155,7 @@ RDS fundamentals, RDS high availability and read replicas, Aurora deep-dive, Dyn
 | 9   | DMS & Choosing the Right Database          | Section-57-Part6-DMS-Choosing-Right-Database.md        |
 | 10  | Part 6 Wrap-Up & Databases Interview Drill | Section-58-Part6-WrapUp-and-Interview-Drill.md         |
 
-### 🟡 Part 7 — Application Integration & Streaming (10/10)
+### Part 7 — Application Integration & Streaming
 
 SQS fundamentals and advanced (DLQs, FIFO, visibility timeout), SNS pub/sub messaging, EventBridge for event-driven architecture, Step Functions for orchestration, Kinesis Data Streams and Firehose, Amazon MSK (Kafka), choosing integration patterns, and integration interview drill.
 
@@ -191,7 +172,7 @@ SQS fundamentals and advanced (DLQs, FIFO, visibility timeout), SNS pub/sub mess
 | 9   | Choosing the Right Integration Pattern         | Section-67-Part7-Choosing-Integration-Pattern.md            |
 | 10  | Part 7 Wrap-Up + Integration Interview Drill   | Section-68-Part7-WrapUp-Interview-Drill.md                  |
 
-### 🟡 Part 8 — Observability, Monitoring & Management (10/10)
+### Part 8 — Observability, Monitoring & Management
 
 CloudWatch fundamentals, metrics, logs, and dashboards; CloudWatch alarms; AWS X-Ray for distributed tracing; CloudTrail for audit logging; AWS Config for compliance; Systems Manager; Trusted Advisor and AWS Health Dashboard; observability architecture patterns.
 
@@ -208,7 +189,7 @@ CloudWatch fundamentals, metrics, logs, and dashboards; CloudWatch alarms; AWS X
 | 9   | Observability Architecture — Putting It All Together      | Section-77-Part8-Observability-Architecture-Together.md  |
 | 10  | Part 8 Wrap-Up + Observability Interview Drill            | Section-78-Part8-WrapUp-Observability-Interview-Drill.md |
 
-### 🟡 Part 9 — Developer Tools, CI/CD & Infrastructure as Code (10/10)
+### Part 9 — Developer Tools, CI/CD & Infrastructure as Code
 
 IaC fundamentals and CloudFormation basics, CloudFormation advanced (intrinsic functions, nested stacks, StackSets, drift detection), AWS CDK, Terraform on AWS, CodePipeline and CodeBuild, CodeDeploy, deployment strategies (blue/green, canary, rolling), CI/CD for infrastructure, and choosing the right IaC tool.
 
@@ -225,7 +206,7 @@ IaC fundamentals and CloudFormation basics, CloudFormation advanced (intrinsic f
 | 9   | Choosing the Right IaC Tool                                                    | Section-87-Part9-Choosing-IaC-Tool.md                      |
 | 10  | Part 9 Wrap-Up + IaC Interview Drill                                           | Section-88-Part9-WrapUp-IaC-Interview-Drill.md             |
 
-### 🟡 Part 10 — Final Interview Preparation & Roadmap Synthesis (10/10)
+### Part 10 — Final Interview Preparation & Roadmap Synthesis
 
 AWS Well-Architected Framework and its six pillars, cost optimization and FinOps, FinOps and disaster recovery capstones, migration strategies (the 7 Rs), Amazon Cognito for application identity, graph databases and ML tie-ins, end-to-end system design walkthroughs, final interview preparation drills, and full roadmap synthesis for continued learning.
 
@@ -242,40 +223,73 @@ AWS Well-Architected Framework and its six pillars, cost optimization and FinOps
 | 9   | Final Interview Preparation — Behavioral, System Design, Rapid-Fire Drill | Section-97-Part10-Final-Interview-Preparation.md |
 | 10  | Full Roadmap Synthesis & Continued Learning Path                          | Section-98-Part10-Full-Roadmap-Synthesis.md      |
 
----
+### Part 11 — Data Engineering & Analytics on AWS
 
-## Organization & Structure Notes
+Data lakes and AWS Glue/Data Catalog, Lake Formation governance, Athena, EMR, Redshift Spectrum, QuickSight, OpenSearch Service, lakehouse/ETL-ELT architecture patterns, and a data & analytics interview drill.
 
-- **98 sections total**, organized into 10 parts with 8-10 sections each
-- **Section numbering:** Continuous across all parts (1–98), not reset per part
-  - Part 1: Sections 1–8
-  - Part 2: Sections 9–18
-  - Part 3: Sections 19–28
-  - ... and so on
-- **Each part is self-contained** but includes cross-references to related sections in other parts
-- **All 98 sections are organized in `Contents/PartN/` folders** for modular, scalable structure
-- **Single navigation source:** This INDEX.md is the master reference for all parts and sections
+| §   | Section                                                     | File                                                         |
+| --- | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| 1   | Data Lake Fundamentals & AWS Glue / Data Catalog            | Section-99-Part11-Data-Lake-Fundamentals-Glue-DataCatalog.md |
+| 2   | AWS Lake Formation — Governance & Fine-Grained Access       | Section-100-Part11-Lake-Formation.md                         |
+| 3   | Amazon Athena — Serverless SQL Query                        | Section-101-Part11-Athena.md                                 |
+| 4   | Amazon EMR — Big Data Processing                            | Section-102-Part11-EMR.md                                    |
+| 5   | Redshift Spectrum — Bridging Warehouse & Lake               | Section-103-Part11-Redshift-Spectrum.md                      |
+| 6   | Amazon QuickSight — BI & Visualization                      | Section-104-Part11-QuickSight.md                             |
+| 7   | Amazon OpenSearch Service — Search & Log Analytics          | Section-105-Part11-OpenSearch.md                             |
+| 8   | Data Engineering Architecture Patterns — Lakehouse, ETL/ELT | Section-106-Part11-Data-Architecture-Patterns.md             |
+| 9   | Part 11 Wrap-Up + Data & Analytics Interview Drill          | Section-107-Part11-WrapUp-Interview-Drill.md                 |
 
----
+### Part 12 — AI/ML & Generative AI on AWS
 
-## Progress Summary
+SageMaker fundamentals and deep dive, MLOps and model monitoring, Bedrock fundamentals and deep dive (agents, knowledge bases, guardrails), AI/ML security and governance, and an AI/ML interview drill.
 
-- ✅ **Parts 1–6:** Complete (48 sections)
-- 🟡 **Parts 7–10:** Complete (50 sections)
-- **Total:** 98 / 98 sections ✅
+| §   | Section                                                       | File                                           |
+| --- | ------------------------------------------------------------- | ---------------------------------------------- |
+| 1   | ML on AWS Fundamentals & Amazon SageMaker                     | Section-108-Part12-SageMaker-Fundamentals.md   |
+| 2   | SageMaker Deep Dive — Training, Tuning, Deployment, Pipelines | Section-109-Part12-SageMaker-DeepDive.md       |
+| 3   | Model Monitoring & MLOps on AWS                               | Section-110-Part12-MLOps-Model-Monitoring.md   |
+| 4   | Amazon Bedrock — Generative AI Fundamentals                   | Section-111-Part12-Bedrock-Fundamentals.md     |
+| 5   | Bedrock Deep Dive — Agents, Knowledge Bases, Guardrails       | Section-112-Part12-Bedrock-DeepDive.md         |
+| 6   | AI/ML Security & Governance                                   | Section-113-Part12-AIML-Security-Governance.md |
+| 7   | Part 12 Wrap-Up + AI/ML Interview Drill                       | Section-114-Part12-WrapUp-Interview-Drill.md   |
 
-**Key note:** Parts 7–10 include newly-added sections (Systems Manager, Trusted Advisor, AWS Health, CodePipeline/CodeBuild/CodeDeploy, Deployment Strategies, DR & FinOps Capstones, Cognito, Neptune Graph ML) to align with modern AWS practices.
+### Part 13 — Enterprise Landing Zones & Multi-Account Operations
 
----
+Multi-account strategy and Control Tower, Account Factory, centralized logging/audit accounts, delegated administration, guardrail operations, and a landing-zone interview drill.
 
-## Getting Started
+| §   | Section                                                | File                                            |
+| --- | ------------------------------------------------------ | ----------------------------------------------- |
+| 1   | Multi-Account Strategy & AWS Control Tower             | Section-115-Part13-ControlTower.md              |
+| 2   | Account Factory & Automated Account Vending            | Section-116-Part13-Account-Factory.md           |
+| 3   | Centralized Logging & Audit Account Architecture       | Section-117-Part13-Centralized-Logging-Audit.md |
+| 4   | Delegated Administration Across AWS Services           | Section-118-Part13-Delegated-Administration.md  |
+| 5   | Guardrails — Preventive & Detective Control Operations | Section-119-Part13-Guardrails-Operations.md     |
+| 6   | Part 13 Wrap-Up + Landing Zone Interview Drill         | Section-120-Part13-WrapUp-Interview-Drill.md    |
 
-1. **Pick a part** from the Quick Navigation table above (or scroll to part summaries).
-2. **Open that part's folder** (e.g., `Contents/Part1/`) to browse all sections for that part.
-3. **Read sections in order** within each part for cumulative understanding.
-4. **Complete interview drills** at the end of each part (usually the final section).
-5. **Cross-reference:** Follow section links for related topics across parts.
-6. **For detailed lookup:** Refer to the tables under each part summary to find specific topics and filenames.
+### Part 14 — Security Operations & Incident Response
+
+Amazon Macie, Amazon Detective, AWS Security Lake, automated incident response (EventBridge/Lambda/SSM runbooks), SOC patterns on AWS, and a security-operations interview drill. Also expands on the threat-detection topics introduced in Part 2 §8.
+
+| §   | Section                                                         | File                                              |
+| --- | --------------------------------------------------------------- | ------------------------------------------------- |
+| 1   | Amazon Macie — Sensitive Data Discovery                         | Section-121-Part14-Macie.md                       |
+| 2   | Amazon Detective — Security Investigation                       | Section-122-Part14-Detective.md                   |
+| 3   | AWS Security Lake — Centralized Security Data                   | Section-123-Part14-Security-Lake.md               |
+| 4   | Automated Incident Response — EventBridge, Lambda, SSM Runbooks | Section-124-Part14-Automated-Incident-Response.md |
+| 5   | Security Operations Center (SOC) Patterns on AWS                | Section-125-Part14-SOC-Patterns.md                |
+| 6   | Part 14 Wrap-Up + Security Operations Interview Drill           | Section-126-Part14-WrapUp-Interview-Drill.md      |
+
+### Part 15 — Resilience Testing & Continuous DR Validation
+
+AWS Elastic Disaster Recovery (DRS), Resilience Hub, Fault Injection Service (chaos engineering), continuous DR validation and game days, and a resilience interview drill.
+
+| §   | Section                                               | File                                                    |
+| --- | ----------------------------------------------------- | ------------------------------------------------------- |
+| 1   | AWS Elastic Disaster Recovery (DRS)                   | Section-127-Part15-Elastic-Disaster-Recovery.md         |
+| 2   | AWS Resilience Hub                                    | Section-128-Part15-Resilience-Hub.md                    |
+| 3   | AWS Fault Injection Service (FIS) — Chaos Engineering | Section-129-Part15-FIS-Chaos-Engineering.md             |
+| 4   | Continuous DR Validation & Game Days                  | Section-130-Part15-Continuous-DR-Validation-GameDays.md |
+| 5   | Part 15 Wrap-Up + Resilience Interview Drill          | Section-131-Part15-WrapUp-Interview-Drill.md            |
 
 ---
 

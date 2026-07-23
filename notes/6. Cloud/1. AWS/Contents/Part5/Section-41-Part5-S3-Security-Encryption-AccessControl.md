@@ -27,6 +27,52 @@ Precise: S3 access control combines IAM policies (Part 2), bucket policies (reso
 
 ---
 
+---
+
+## 3a. S3 Access Points & Multi-Region Access Points
+
+### 3a.1 The Problem With a Single Bucket Policy at Scale
+
+- A bucket policy is one document attached to one bucket - as the number of applications/teams sharing a single large bucket grows, that one policy tends to become large, hard to reason about, and risky to change (one team's access-scoping change can accidentally affect another team's access, since it's all one shared document).
+- S3 Access Points solve this by letting you create multiple, named "front doors" into the same bucket, each with its own dedicated access policy and even its own network origin restriction - without touching the underlying bucket policy or splitting data into multiple buckets.
+
+### 3a.2 What an Access Point Is
+
+- An access point is a distinct hostname/ARN, always tied to exactly one bucket, with its own resource policy (evaluated in addition to, not instead of, the bucket policy - both must permit an action, same "all applicable policies must align" pattern seen throughout S3 and KMS).
+- Each access point can also be restricted to a specific VPC, meaning requests reaching that particular access point must originate from within that VPC - a network-level restriction layered on top of the identity-level policy, independent of whether the bucket itself is otherwise reachable from the public internet.
+- Practical example: a shared "data-lake" bucket used by three teams (analytics, ML training, compliance) can expose three access points - `analytics-ap`, `ml-training-ap`, `compliance-ap` - each scoped to that team's specific prefix and permissions, letting each team's access be managed and reasoned about independently, while the underlying bucket policy stays simple (or is even reduced to close to nothing, since access points carry the real scoping).
+
+```bash
+# Create an access point restricted to a specific prefix, for a specific team
+aws s3control create-access-point \
+  --account-id 111122223333 \
+  --name analytics-ap \
+  --bucket data-lake-bucket \
+  --vpc-configuration VpcId=vpc-0123456789abcdef0
+```
+
+- Common error: forgetting that an access point's policy is evaluated _in addition to_ the bucket policy, not as a replacement for it - an access point granting broad access is still constrained by whatever the underlying bucket policy allows, and vice versa.
+
+### 3a.3 Multi-Region Access Points (MRAP)
+
+- A Multi-Region Access Point is a single global endpoint that routes requests to the lowest-latency replica of a dataset across multiple buckets in multiple AWS Regions, typically paired with S3 Cross-Region Replication (Part 5 §4) keeping those regional buckets in sync.
+- Why it exists: without an MRAP, a globally-distributed application has to implement its own region-selection/failover logic across several regional bucket endpoints; an MRAP gives applications one stable endpoint and lets AWS handle routing to the nearest/healthy replica, including automatic failover if a Region becomes unavailable.
+- Practical fit: a global media platform storing user-uploaded content replicated across three Regions for latency and resilience can front all three with one MRAP, so client applications never need Region-specific logic or manual failover handling.
+
+### 3a.4 Security and Production Usage
+
+- Access Points are the modern recommended pattern for any bucket shared across multiple applications or teams, specifically to avoid one large, high-blast-radius bucket policy.
+- VPC-restricted access points are a meaningful defense-in-depth control for sensitive data - even a correctly-scoped IAM policy can't reach the bucket through that access point from outside the designated VPC.
+- MRAPs inherit the security posture of their underlying buckets (encryption, access control) - they add routing/failover, not a separate security model.
+
+### 3a.5 Key Takeaways
+
+1. Access Points let a single bucket expose multiple, independently-scoped "front doors," avoiding one unwieldy shared bucket policy as the number of consuming teams/applications grows.
+2. An access point's policy and the underlying bucket policy are both evaluated - one does not replace the other.
+3. Multi-Region Access Points give a globally-distributed application one stable endpoint with automatic routing/failover across regional bucket replicas, commonly paired with Cross-Region Replication.
+
+---
+
 ## 4. Access Control Lists (ACLs) - Legacy
 
 - S3's original, pre-IAM access control mechanism, granting permissions to specific accounts or predefined groups (like "All Users" - the mechanism behind many historical public-bucket incidents).
@@ -159,6 +205,6 @@ Senior - Design S3 security for a multi-tenant SaaS storing sensitive documents,
 
 ## Related Concepts (forward links)
 
-- Versioning, replication, and performance optimization -> Part 5, Section 4
+- Versioning, replication, and performance optimization, including Cross-Region Replication as the usual pairing for Multi-Region Access Points (see §3a) -> Part 5, Section 4
 - EBS encryption, following the same KMS patterns -> Part 5, Section 5
 - AWS Config rules detecting S3 misconfigurations at scale -> Part 2, Section 8

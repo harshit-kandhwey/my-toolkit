@@ -91,6 +91,55 @@ Key idea: missing any one condition means the instance isn't actually internet-r
 
 ---
 
+---
+
+## 5a. IPv6 Routing & Egress-Only Internet Gateway (EIGW)
+
+### 5a.1 Why IPv6 Routing Is a Different Problem Than IPv4
+
+- Every IPv6 address assigned in a VPC is globally unique and publicly routable by design - there is no private/public address distinction like IPv4's RFC 1918 ranges. Whether an IPv6-enabled resource is actually internet-reachable is therefore determined entirely by routing and security-group/NACL configuration, never by the address itself.
+- A VPC's IPv6 CIDR is a /56 block (Amazon-provided or, via BYOIP, customer-owned); each subnet gets a fixed /64 - unlike IPv4, subnet IPv6 prefix length isn't a design choice, it's a hard constraint.
+
+### 5a.2 Egress-Only Internet Gateway (EIGW) - the IPv6 Analog to NAT Gateway
+
+- An EIGW is the IPv6-specific component that lets subnet resources initiate outbound IPv6 connections while blocking unsolicited inbound connections from the internet - functionally similar to what a NAT Gateway does for IPv4, but architecturally different: an EIGW does NOT perform address translation (IPv6 addresses are already globally unique), it purely enforces connection directionality.
+- Route table pattern: `::/0 -> eigw-id` (instead of `::/0 -> igw-id`, which would make the subnet bidirectionally reachable, same as attaching an IGW route would for IPv4).
+
+```bash
+# Create an egress-only internet gateway
+aws ec2 create-egress-only-internet-gateway --vpc-id vpc-0123456789abcdef0
+
+# Route IPv6 default traffic through it for a "private" route table
+aws ec2 create-route \
+  --route-table-id rtb-0123456789abcdef0 \
+  --destination-ipv6-cidr-block ::/0 \
+  --egress-only-internet-gateway-id eigw-0123456789abcdef0
+```
+
+Interview tip: for IPv4, "public vs private subnet" is an addressing-plus-NAT question. For IPv6 it's purely a routing-target question - IGW target means bidirectional reachability, EIGW target means outbound-only. This is the single most commonly missed distinction when a team that has correctly separated public/private IPv4 route tables adds IPv6 without realizing the IPv6 default route needs a different target to preserve the same "private" intent.
+
+### 5a.3 Dual-Stack Operational Considerations
+
+- Security groups and NACLs evaluate IPv4 and IPv6 rules independently - an IPv4-only inbound rule does not cover IPv6 traffic on the same port. Every IPv4 rule reviewed for correctness needs its own explicit IPv6 review; it's never inherited automatically.
+- Dual-stack subnets typically need both an IPv4 default route (to an IGW or NAT Gateway) and an IPv6 default route (to an IGW or EIGW) in the same route table - a common production incident pattern is a correctly locked-down IPv4 posture next to an unreviewed (and therefore too permissive, or simply missing) IPv6 posture.
+- VPC Flow Logs capture IPv6 traffic in the same log format as IPv4 (source/destination fields simply contain IPv6 addresses instead of dotted-quad IPv4), so existing flow-log-based troubleshooting extends to IPv6 without new tooling - but custom parsing logic written assuming IPv4 address format needs updating.
+
+### 5a.4 Troubleshooting
+
+| Symptom                                                                   | Cause                                                                   | Fix                                                                                                                    |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| IPv6 resources in a "private" subnet are unexpectedly internet-reachable  | Route table's `::/0` route points at a real IGW instead of an EIGW      | Replace the IGW-targeted IPv6 default route with an EIGW-targeted one                                                  |
+| IPv6 works over some paths but not others in a dual-stack subnet          | IPv4 and IPv6 security group/NACL rules are out of sync                 | Explicitly review and add matching IPv6 rules; never assume IPv4 rules cover IPv6                                      |
+| Resources have valid IPv6 addresses but IPv6 traffic never actually flows | Application/load balancer/health checks not configured dual-stack aware | Verify DNS (AAAA records), load balancer listener config, and health checks are dual-stack, not just the network layer |
+
+### 5a.5 Key Takeaways
+
+1. IPv6 addresses are globally routable by default - "private" is entirely a routing/security-control statement, never an addressing property, unlike IPv4.
+2. EIGW is the IPv6-specific outbound-only mechanism, replacing the NAT Gateway pattern for IPv6 traffic - route `::/0` to an EIGW, not an IGW, to preserve "private subnet" intent.
+3. Security groups/NACLs evaluate IPv4 and IPv6 independently - dual-stack environments require an explicit, separate IPv6 review of every rule, not an assumption of parity.
+
+---
+
 ## 6. Complete Public/Private Subnet Architecture
 
 A VPC spans two AZs, each with:
@@ -187,7 +236,7 @@ Senior - Design subnet/routing for a three-tier app (public web, private app, pr
 
 ## Related Concepts (forward links)
 
-- Security Groups vs NACLs, the firewall layers on top of this routing foundation -> Part 4, Section 3
+- Security Groups vs NACLs, the firewall layers on top of this routing foundation, including their independent IPv4/IPv6 evaluation (see §5a) -> Part 4, Section 3
 - VPC Peering, Transit Gateway, PrivateLink for cross-VPC routing -> Part 4, Section 4
 - VPC Endpoints as a NAT Gateway cost-avoidance mechanism -> Part 4, Section 9
 - Bastion hosts vs Systems Manager Session Manager -> Part 8
