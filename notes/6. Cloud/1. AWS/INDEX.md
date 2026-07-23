@@ -25,9 +25,8 @@ A comprehensive, 98-section learning resource organized into 10 parts covering A
 
 ```
 AWS/
-├── INDEX.md (this file — master overview & navigation)
-├── Roadmap.md (legacy, kept for reference)
-├── Section-Index.md (administrative tracking)
+├── README.md (quick-start guide)
+├── INDEX.md (this file — comprehensive navigation & section index)
 │
 ├── Contents/ (modular organization by part)
 │   ├── Part1/ (8 sections: AWS Foundations)
