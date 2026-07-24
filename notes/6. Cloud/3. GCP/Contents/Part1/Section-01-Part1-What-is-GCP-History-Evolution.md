@@ -1,4 +1,4 @@
-# Section 1: What is GCP, History & Evolution, Problem It Solves
+# Section 1 (Part 1): What is GCP, History & Evolution, Problem It Solves
 
 ## 1.1 Definition
 
@@ -81,9 +81,9 @@ GCP is one of the three dominant global public cloud providers, alongside AWS (m
 
 - 🔑 GCP converts infrastructure from a CapEx (buy hardware upfront) model to an OpEx (pay for usage) model.
 - 🔑 GCP evolved from Google's internal infrastructure experience — most notably, Kubernetes/GKE traces directly back to Google's internal Borg system.
-- 🔑 GCP offers IaaS (Compute Engine), PaaS (App Engine), and serverless (Cloud Run, Cloud Functions) compute models, each trading off control for convenience differently — this trade-off is explored in depth in Section 9.
+- 🔑 GCP offers IaaS (Compute Engine), PaaS (App Engine), and serverless (Cloud Run, Cloud Functions) compute models, each trading off control for convenience differently — this trade-off is explored in depth in Section 10.
 - 🔑 GCP's key differentiators in the market are BigQuery (analytics), GKE (Kubernetes), and AI/ML (Vertex AI, TPUs).
 
 ## 1.10 Related Concepts
 
-Region/zone infrastructure (Section 2), resource hierarchy (Section 3), the compute service decision matrix (Section 9), and the AWS/Azure comparison (Section 50) all build directly on the concepts introduced here.
+Region/zone infrastructure (Section 2), resource hierarchy (Section 3), the compute service decision matrix (Section 10), and the GCP vs. AWS vs. Azure comparison (Section 82) all build directly on the concepts introduced here.
