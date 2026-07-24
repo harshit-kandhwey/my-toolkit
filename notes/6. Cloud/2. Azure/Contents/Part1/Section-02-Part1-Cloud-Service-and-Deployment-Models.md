@@ -46,7 +46,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 **Definition:** PaaS provides a managed runtime environment — Microsoft manages the OS, patching, and underlying scaling infrastructure, and you deploy only your application code and configuration.
 
-**Azure examples:** Azure App Service (Section 13), Azure SQL Database (Section 28, as opposed to SQL Server on a VM which would be IaaS), Azure Kubernetes Service in its managed-control-plane sense (Section 35 — note AKS is a hybrid case, explained below).
+**Azure examples:** Azure App Service (Section 13), Azure SQL Database (Section 29, as opposed to SQL Server on a VM which would be IaaS), Azure Kubernetes Service in its managed-control-plane sense (Section 36 — note AKS is a hybrid case, explained below).
 
 **When to use it:**
 
@@ -70,7 +70,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 Two additional models are commonly discussed alongside the classic three:
 
-- **FaaS (Function-as-a-Service)** — an even more abstracted form of PaaS where you deploy individual functions (small units of code) rather than a whole application, and the platform handles all infrastructure including scaling to zero when idle. Azure Functions (Section 14, Section 38) is Azure's FaaS offering.
+- **FaaS (Function-as-a-Service)** — an even more abstracted form of PaaS where you deploy individual functions (small units of code) rather than a whole application, and the platform handles all infrastructure including scaling to zero when idle. Azure Functions (Section 14, Section 40) is Azure's FaaS offering.
 - **CaaS (Containers-as-a-Service)** — a model where the unit of deployment is a container image rather than either a VM or raw code. Azure Container Instances (Section 15) is a pure CaaS offering; AKS sits between CaaS and full IaaS/PaaS hybrid as discussed above.
 
 These aren't separate rows on the responsibility table so much as they are refinements within the IaaS→PaaS spectrum, trading further customer responsibility for further convenience.

@@ -16,7 +16,7 @@ Automated processes — a CI/CD pipeline, a web application that needs to read f
 
 **Authentication methods for Service Principals:**
 
-- **Client secret** — a password-like string generated for the application, which must be stored securely (ideally in Azure Key Vault, Section 53) and rotated periodically. The simplest method, but carries the most credential-management burden and risk.
+- **Client secret** — a password-like string generated for the application, which must be stored securely (ideally in Azure Key Vault, Section 56) and rotated periodically. The simplest method, but carries the most credential-management burden and risk.
 - **Certificate** — a X.509 certificate used for authentication instead of a shared secret, generally considered more secure since the private key never needs to be transmitted, but still requires certificate lifecycle management (renewal, secure storage).
 - **Federated credential (Workload Identity Federation)** — allows an external system (such as a GitHub Actions pipeline or another cloud provider's workload identity) to exchange its own trusted token for an Azure access token, without storing any Azure-specific secret at all. This is the modern recommended approach for CI/CD pipelines specifically because it removes the stored-secret problem entirely for that use case.
 
@@ -84,12 +84,12 @@ az role assignment create \
 
 ## 9.6 Production & Enterprise Usage
 
-Enterprise Azure environments strongly standardize on Managed Identities for any workload actually hosted in Azure, reserving Service Principals with stored credentials for the genuinely necessary cases: CI/CD systems hosted outside Azure (though even here, Workload Identity Federation is increasingly preferred to avoid stored secrets entirely), hybrid/multi-cloud automation, and legacy systems that predate Managed Identity availability for their specific resource type. A common enterprise governance control is an Azure Policy (Section 54) that flags or blocks the creation of Service Principal credentials with long-lived secrets (e.g., secrets with multi-year expiration) or without an expiration date at all, forcing shorter rotation cycles as a security baseline.
+Enterprise Azure environments strongly standardize on Managed Identities for any workload actually hosted in Azure, reserving Service Principals with stored credentials for the genuinely necessary cases: CI/CD systems hosted outside Azure (though even here, Workload Identity Federation is increasingly preferred to avoid stored secrets entirely), hybrid/multi-cloud automation, and legacy systems that predate Managed Identity availability for their specific resource type. A common enterprise governance control is an Azure Policy (Section 57) that flags or blocks the creation of Service Principal credentials with long-lived secrets (e.g., secrets with multi-year expiration) or without an expiration date at all, forcing shorter rotation cycles as a security baseline.
 
 ## 9.7 Security Considerations
 
 - Managed Identities structurally eliminate an entire class of credential-leak risk (there is no secret to leak, since the application never handles one directly) — this is their single biggest security advantage over Service Principals with stored secrets.
-- Service Principal secrets, when required, should always be stored in Azure Key Vault (Section 53) rather than in application configuration files, environment variables committed to source control, or CI/CD pipeline variables stored in plaintext.
+- Service Principal secrets, when required, should always be stored in Azure Key Vault (Section 56) rather than in application configuration files, environment variables committed to source control, or CI/CD pipeline variables stored in plaintext.
 - Both Service Principals and Managed Identities should follow the same least-privilege RBAC principles as human identities (Section 8.7) — an over-privileged application identity is just as dangerous as an over-privileged human one, and arguably more so since applications often run unattended and continuously.
 
 ## 9.8 Troubleshooting

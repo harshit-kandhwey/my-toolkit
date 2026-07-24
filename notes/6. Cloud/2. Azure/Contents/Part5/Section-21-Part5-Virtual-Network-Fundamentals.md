@@ -34,7 +34,7 @@ Resources deployed within a VNet (like a VM's network interface) receive a **pri
 
 ### 21.3.4 DNS Within a VNet
 
-By default, Azure provides basic internal name resolution among resources within the same VNet; for more advanced scenarios (custom DNS servers, resolution across peered VNets or hybrid on-premises connections), **Azure DNS** (Section 27) or **Azure Private DNS Zones** provide additional, more sophisticated name-resolution capabilities, covered in depth later in this Part.
+By default, Azure provides basic internal name resolution among resources within the same VNet; for more advanced scenarios (custom DNS servers, resolution across peered VNets or hybrid on-premises connections), **Azure DNS** (Section 28) or **Azure Private DNS Zones** provide additional, more sophisticated name-resolution capabilities, covered in depth later in this Part.
 
 ## 21.4 Architecture Diagram
 

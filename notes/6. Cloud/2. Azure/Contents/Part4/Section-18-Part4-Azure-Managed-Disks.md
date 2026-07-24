@@ -39,7 +39,7 @@ Managed Disks support configurable **host caching** (ReadOnly, ReadWrite, or Non
 
 ### 18.3.4 Disk Encryption
 
-Managed Disks are encrypted at rest by default using **Server-Side Encryption (SSE)** with Microsoft-managed keys, with the option to instead use **customer-managed keys** (stored in Azure Key Vault, Section 53) for organizations requiring direct control over the encryption key lifecycle — this encryption-at-rest topic connects to the broader security/compliance discussion in Part 11.
+Managed Disks are encrypted at rest by default using **Server-Side Encryption (SSE)** with Microsoft-managed keys, with the option to instead use **customer-managed keys** (stored in Azure Key Vault, Section 56) for organizations requiring direct control over the encryption key lifecycle — this encryption-at-rest topic connects to the broader security/compliance discussion in Part 11.
 
 ## 18.4 Architecture Diagram
 
@@ -93,7 +93,7 @@ az vm start --resource-group rg-myapp-prod --name vm-web-01
 
 ## 18.6 Production & Enterprise Usage
 
-Enterprises separate OS disks from data disks deliberately (rather than storing application data on the OS disk) to allow independent lifecycle management — an OS disk might be replaced entirely as part of an image update, while data disks persist independently across that kind of change — and to allow choosing different performance tiers appropriate to each disk's actual access pattern (e.g., a lower-cost tier for the OS disk, a high-performance tier specifically for a database's data disk). Production database workloads on IaaS VMs (rather than PaaS database services like Azure SQL Database, Section 28) typically require Premium SSD or Ultra Disk tiers with carefully-tuned caching configuration specific to the database engine's own documented best practices, since database performance is frequently disk-I/O-bound in practice.
+Enterprises separate OS disks from data disks deliberately (rather than storing application data on the OS disk) to allow independent lifecycle management — an OS disk might be replaced entirely as part of an image update, while data disks persist independently across that kind of change — and to allow choosing different performance tiers appropriate to each disk's actual access pattern (e.g., a lower-cost tier for the OS disk, a high-performance tier specifically for a database's data disk). Production database workloads on IaaS VMs (rather than PaaS database services like Azure SQL Database, Section 29) typically require Premium SSD or Ultra Disk tiers with carefully-tuned caching configuration specific to the database engine's own documented best practices, since database performance is frequently disk-I/O-bound in practice.
 
 ## 18.7 Security Considerations
 
@@ -161,7 +161,7 @@ Section 11.15.2 covered **Azure Backup** — scheduled, policy-driven, applicati
 
 - **Pre-change safety copy** — taking a snapshot immediately before a risky operation (an OS upgrade, a major application deployment, a schema migration on a VM-hosted database) provides a fast, disk-level rollback point distinct from a full VM backup/restore cycle.
 - **Disk cloning / environment replication** — creating a new disk from a snapshot is a fast way to stand up an identical copy of a disk's content — for example, cloning a production disk's data into a new disk attached to a troubleshooting or staging VM, without disturbing the original.
-- **Cross-region disk copy** — snapshots can be copied to a different region, providing a disk-level mechanism to seed disaster-recovery infrastructure or migrate a disk's content, complementary to (and more granular/manual than) the VM-level Azure Site Recovery replication introduced in Section 11.15.3 and covered fully in Section 58.
+- **Cross-region disk copy** — snapshots can be copied to a different region, providing a disk-level mechanism to seed disaster-recovery infrastructure or migrate a disk's content, complementary to (and more granular/manual than) the VM-level Azure Site Recovery replication introduced in Section 11.15.3 and covered fully in Section 62.
 
 ### 18.14.3 Incremental Snapshots
 
@@ -177,7 +177,7 @@ Section 11.15.2 covered **Azure Backup** — scheduled, policy-driven, applicati
 | ----------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Disk Snapshot / Incremental Snapshot**              | Single disk                                                      | Manual/ad hoc, or scripted on a custom schedule                         | Pre-change safety copies, disk cloning, lightweight custom recovery-point strategies outside the formal Azure Backup policy framework      |
 | **Azure Backup (Section 11.15.2)**                    | Whole VM (OS disk + data disks together, application-consistent) | Policy-driven, scheduled, centrally managed via Recovery Services Vault | Standard production VM data-protection baseline — the default recommended mechanism for routine, policy-governed recovery point management |
-| **Azure Site Recovery (Section 11.15.3, Section 58)** | Whole VM, replicated continuously to a different region          | Continuous replication                                                  | Regional disaster recovery — recovering the entire workload in a different region, not disk-level point-in-time recovery within a region   |
+| **Azure Site Recovery (Section 11.15.3, Section 62)** | Whole VM, replicated continuously to a different region          | Continuous replication                                                  | Regional disaster recovery — recovering the entire workload in a different region, not disk-level point-in-time recovery within a region   |
 
 💡 **Tip:** Snapshots are a _complementary_, more granular/manual tool alongside Azure Backup, not a replacement for it — production VMs should still have an Azure Backup policy as their baseline data-protection mechanism (Section 11.15.2), with ad hoc snapshots used for the specific, narrower scenarios (pre-change safety, cloning) snapshots are particularly well suited to.
 

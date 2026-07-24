@@ -180,4 +180,4 @@ _What the interviewer is probing:_ whether the candidate can design a resilient,
 
 ## 26.16 Related Concepts (Next Up)
 
-Section 27 completes Part 5 — Networking with **Azure DNS**, covering both public DNS zone hosting and the Private DNS Zones referenced earlier (Section 23.5) as essential to correctly resolving Private Link endpoints — the name-resolution layer underlying every networking concept covered throughout this Part.
+Section 27 extends this hybrid-connectivity picture next with **Azure Virtual WAN**, Microsoft's managed hub for connecting many VPN/ExpressRoute circuits and VNets at global scale without hand-building a hub-and-spoke topology per region. Section 28 then completes Part 5 — Networking with **Azure DNS**, covering both public DNS zone hosting and the Private DNS Zones referenced earlier (Section 23.5) as essential to correctly resolving Private Link endpoints — the name-resolution layer underlying every networking concept covered throughout this Part.

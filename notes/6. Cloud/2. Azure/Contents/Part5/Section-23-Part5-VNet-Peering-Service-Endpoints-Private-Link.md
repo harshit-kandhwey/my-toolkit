@@ -123,7 +123,7 @@ az network private-endpoint create \
 
 ## 23.8 Production & Enterprise Usage
 
-Enterprises standardize on Private Link for PaaS services holding sensitive data (databases, storage accounts with confidential content) as part of a defense-in-depth network isolation strategy, often enforced via Azure Policy (Section 54) requiring Private Endpoints and disabling public network access by default for specific resource types. Service Endpoints remain useful for less sensitive scenarios where the simpler configuration and lack of DNS-management overhead outweigh the benefit of full private-IP isolation. Hub-and-spoke VNet Peering, combined with centralized firewall inspection for any necessary spoke-to-spoke or spoke-to-internet traffic (Section 22.4.2), is the standard enterprise network topology pattern, formalized as part of landing zone architecture (Part 13).
+Enterprises standardize on Private Link for PaaS services holding sensitive data (databases, storage accounts with confidential content) as part of a defense-in-depth network isolation strategy, often enforced via Azure Policy (Section 57) requiring Private Endpoints and disabling public network access by default for specific resource types. Service Endpoints remain useful for less sensitive scenarios where the simpler configuration and lack of DNS-management overhead outweigh the benefit of full private-IP isolation. Hub-and-spoke VNet Peering, combined with centralized firewall inspection for any necessary spoke-to-spoke or spoke-to-internet traffic (Section 22.4.2), is the standard enterprise network topology pattern, formalized as part of landing zone architecture (Part 13).
 
 ## 23.9 Security Considerations
 

@@ -181,7 +181,7 @@ Azure provides three distinct, sometimes-confused mechanisms for VM-level resili
 
 ⚠️ **A critical, frequently tested distinction:** Availability Sets and Availability Zones are **not combinable** for the same VM — a VM is deployed into either an Availability Set (data-center-local fault/update domains) or a specific Availability Zone, not both simultaneously, since they represent different, mutually exclusive resiliency scopes. VM Scale Sets, by contrast, can be configured to span multiple zones directly (Section 12.3.3), making them the more capable and generally preferred mechanism when the workload is suited to horizontal, elastic scaling. Availability Sets remain relevant primarily for singleton or small, non-elastic VM groups in regions without zone support, or where legacy architecture constraints require them.
 
-💡 **Tip:** For genuinely stateful, non-horizontally-scalable singleton workloads (e.g., a single legacy database VM that can't run as multiple identical replicas), neither Availability Sets nor Availability Zones alone provide _failover_ — they only reduce the _likelihood_ of simultaneous failure. True failover for a stateful singleton workload requires a database/application-level HA mechanism (such as SQL Server Always On Availability Groups on IaaS, or a managed PaaS alternative like Azure SQL Database's built-in HA, Section 28.3.4) layered on top of the chosen placement strategy.
+💡 **Tip:** For genuinely stateful, non-horizontally-scalable singleton workloads (e.g., a single legacy database VM that can't run as multiple identical replicas), neither Availability Sets nor Availability Zones alone provide _failover_ — they only reduce the _likelihood_ of simultaneous failure. True failover for a stateful singleton workload requires a database/application-level HA mechanism (such as SQL Server Always On Availability Groups on IaaS, or a managed PaaS alternative like Azure SQL Database's built-in HA, Section 29.3.4) layered on top of the chosen placement strategy.
 
 ### 11.15.2 VM Backup
 
@@ -197,7 +197,7 @@ Azure provides three distinct, sometimes-confused mechanisms for VM-level resili
 
 ### 11.15.3 Disaster Recovery Options for VMs
 
-**Azure Site Recovery (ASR)** (introduced by name here, covered in full in Section 58, Part 12) provides VM-level disaster recovery by continuously replicating a VM's disk changes to a secondary region, allowing the VM to be failed over and brought online in that secondary region if the primary region becomes unavailable — a fundamentally different capability from backup (which restores data to a point in time, generally with some recovery _time_, i.e. it isn't designed for rapid regional failover) and from Availability Zones (which protect within a region, not across regions).
+**Azure Site Recovery (ASR)** (introduced by name here, covered in full in Section 62, Part 12) provides VM-level disaster recovery by continuously replicating a VM's disk changes to a secondary region, allowing the VM to be failed over and brought online in that secondary region if the primary region becomes unavailable — a fundamentally different capability from backup (which restores data to a point in time, generally with some recovery _time_, i.e. it isn't designed for rapid regional failover) and from Availability Zones (which protect within a region, not across regions).
 
 **Summary of the three-layer VM resilience model:**
 

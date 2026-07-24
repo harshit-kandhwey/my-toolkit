@@ -4,7 +4,7 @@
 
 **Plain language:** Azure Resource Manager (ARM) is the front door for literally everything you do in Azure. Whether you click a button in the Portal, run a CLI command, or submit a template, that request goes through ARM, which checks you're allowed to do it, then creates, updates, or deletes the actual resource.
 
-**Precise definition:** ARM is Azure's unified deployment and management layer — a RESTful API service that receives all resource lifecycle requests (create/read/update/delete), enforces authentication and authorization (via RBAC, Section 8) and governance (via Azure Policy, Section 54) before executing them, and provides consistent, idempotent, declarative deployment through ARM templates or Bicep (Section 43-44).
+**Precise definition:** ARM is Azure's unified deployment and management layer — a RESTful API service that receives all resource lifecycle requests (create/read/update/delete), enforces authentication and authorization (via RBAC, Section 8) and governance (via Azure Policy, Section 57) before executing them, and provides consistent, idempotent, declarative deployment through ARM templates or Bicep (Section 46-47).
 
 ## 4.2 Why It Exists / Problem It Solves
 
@@ -51,7 +51,7 @@ Every resource is created by a **Resource Provider** — a namespace of related 
 
 ## 4.4 Inheritance Model
 
-RBAC role assignments (Section 8) and Azure Policy assignments (Section 54) both **inherit downward** through this hierarchy: a role granted at the Management Group level applies to every Subscription, Resource Group, and Resource beneath it; a role granted at the Resource Group level applies to every Resource inside it, but not to sibling resource groups. This inheritance is additive only — you cannot "revoke" an inherited permission at a lower level, only grant additional permissions (the implications of this for least-privilege design are covered fully in Section 8).
+RBAC role assignments (Section 8) and Azure Policy assignments (Section 57) both **inherit downward** through this hierarchy: a role granted at the Management Group level applies to every Subscription, Resource Group, and Resource beneath it; a role granted at the Resource Group level applies to every Resource inside it, but not to sibling resource groups. This inheritance is additive only — you cannot "revoke" an inherited permission at a lower level, only grant additional permissions (the implications of this for least-privilege design are covered fully in Section 8).
 
 ```
 Management Group "Contoso-Root"

@@ -17,6 +17,7 @@ Running a web application on IaaS VMs (Section 11) or a VM Scale Set (Section 12
 **Definition:** An **App Service Plan** defines the underlying compute resources (VM size, region, OS) that one or more App Service apps run on, and determines available features (custom domains, scaling limits, deployment slots) based on its **pricing tier**.
 
 **Pricing tier categories (conceptual, verify current exact tier names/limits):**
+
 - **Free/Shared tiers** — for development/testing only, with significant limitations (no custom domain TLS, limited compute, shared infrastructure with other customers' apps at the compute level) — not appropriate for production.
 - **Basic tier** — dedicated compute, suitable for low-traffic production or dev/test workloads needing dedicated resources, but with limited scaling and no deployment slots.
 - **Standard/Premium tiers** — dedicated compute with full autoscaling, deployment slots, and higher performance limits, the standard choice for production workloads.
@@ -31,9 +32,10 @@ Running a web application on IaaS VMs (Section 11) or a VM Scale Set (Section 12
 App Service natively supports common language runtimes (as of general Azure practice: .NET, Java, Node.js, Python, PHP, Ruby — verify current supported runtime versions against documentation, since supported version lists are updated as language versions reach end-of-life) without requiring a container, as well as **custom containers** (Docker images) for workloads needing a runtime or dependency configuration outside the natively supported options.
 
 **Common deployment methods:**
+
 - **Continuous deployment from source control** — App Service can be configured to automatically deploy on every push to a connected GitHub/Azure DevOps repository branch, the standard modern pattern integrated with CI/CD (Part 9).
 - **ZIP deploy** — pushing a pre-built application package directly, common in CI/CD pipeline steps.
-- **Container deploy** — pointing App Service at a container image in Azure Container Registry (Section 34) or another registry.
+- **Container deploy** — pointing App Service at a container image in Azure Container Registry (Section 35) or another registry.
 
 ### 13.3.3 Deployment Slots
 
@@ -46,6 +48,7 @@ App Service natively supports common language runtimes (as of general Azure prac
 ### 13.3.4 Scaling
 
 App Service supports two scaling dimensions:
+
 - **Scale up** (vertical) — moving to a higher App Service Plan tier/size for more CPU/memory per instance.
 - **Scale out** (horizontal) — increasing the number of running instances behind the built-in load balancing, either manually or via autoscale rules (conceptually identical to the VM Scale Set autoscaling covered in Section 12.3.2, but managed entirely by the App Service platform rather than requiring the customer to configure a separate scale set and load balancer).
 
@@ -72,6 +75,7 @@ VNet Integration: outbound calls reach private backend DB inside a VNet
 ## 13.5 Configuration & Hands-On Example
 
 **Creating an App Service Plan and Web App:**
+
 ```bash
 az appservice plan create \
   --resource-group rg-myapp-prod \
@@ -85,6 +89,7 @@ az webapp create \
   --name app-webapp-prod \
   --runtime "NODE:20-lts"
 ```
+
 - **Purpose:** Creates a Standard-tier (`S1`) Linux-based App Service Plan, then a Web App running on Node.js within it.
 - **Important arguments explained individually:**
   - `--sku` — the pricing tier/size; `S1` is a Standard-tier size supporting autoscaling and deployment slots, chosen deliberately over a Free/Basic tier for production readiness.
@@ -93,6 +98,7 @@ az webapp create \
 - **Common error:** Attempting to change `--is-linux` on an existing plan, or deploying a runtime unsupported on the chosen OS flavor, both require recreating the plan/app rather than an in-place change.
 
 **Creating a deployment slot and performing a slot swap:**
+
 ```bash
 az webapp deployment slot create \
   --resource-group rg-myapp-prod \
@@ -107,6 +113,7 @@ az webapp deployment slot swap \
   --slot staging \
   --target-slot production
 ```
+
 - **Purpose:** Demonstrates the full safe-deployment pattern: create a staging slot, deploy and validate the new version there, then swap it into production with near-zero downtime.
 - **Production impact:** If an issue is discovered shortly after the swap, running the same swap command again (staging ↔ production) effectively rolls back to the previous version, since the previous production content is now sitting in the staging slot.
 
@@ -126,31 +133,33 @@ Cold start latency (the delay before an app instance is ready to serve its first
 
 ## 13.9 Monitoring
 
-App Service integrates natively with Application Insights (Section 49, covered fully in Part 10) for request tracing, dependency tracking, and performance monitoring, in addition to standard Azure Monitor platform metrics (CPU, memory, response time, HTTP error rates) available by default.
+App Service integrates natively with Application Insights (Section 52, covered fully in Part 10) for request tracing, dependency tracking, and performance monitoring, in addition to standard Azure Monitor platform metrics (CPU, memory, response time, HTTP error rates) available by default.
 
 ## 13.10 Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---|---|---|
-| Deployment succeeds but app shows a generic error page | Application startup failure, often a missing dependency or misconfigured runtime version | Check App Service log stream / Application Insights for the actual startup exception |
-| App works fine at low traffic but degrades under load | Under-provisioned tier/instance count, or autoscale rules too conservative | Review scale-out rules and consider a higher tier or more aggressive scale-out thresholds |
-| Slot swap causes a brief spike in errors immediately after swapping | New version wasn't properly warmed up before the swap completed | Configure swap with warm-up (application initialization) enabled before the swap fully redirects traffic |
+| Symptom                                                             | Likely Cause                                                                             | Fix                                                                                                      |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Deployment succeeds but app shows a generic error page              | Application startup failure, often a missing dependency or misconfigured runtime version | Check App Service log stream / Application Insights for the actual startup exception                     |
+| App works fine at low traffic but degrades under load               | Under-provisioned tier/instance count, or autoscale rules too conservative               | Review scale-out rules and consider a higher tier or more aggressive scale-out thresholds                |
+| Slot swap causes a brief spike in errors immediately after swapping | New version wasn't properly warmed up before the swap completed                          | Configure swap with warm-up (application initialization) enabled before the swap fully redirects traffic |
 
 ## 13.11 Interview Questions — Section 13
 
 ### 🎯 Beginner
+
 **Q: What's the main advantage of App Service over hosting a web application on a VM?**
 
-*Model answer:* App Service is PaaS — Microsoft manages the OS, runtime patching, and underlying infrastructure entirely, so the team only manages application code and configuration. This removes the operational burden of OS patching, manual scaling configuration, and infrastructure management that a VM-hosted application would require, at the cost of less low-level control, which is usually an acceptable trade-off for standard web applications and APIs.
+_Model answer:_ App Service is PaaS — Microsoft manages the OS, runtime patching, and underlying infrastructure entirely, so the team only manages application code and configuration. This removes the operational burden of OS patching, manual scaling configuration, and infrastructure management that a VM-hosted application would require, at the cost of less low-level control, which is usually an acceptable trade-off for standard web applications and APIs.
 
-*What the interviewer is probing:* whether the candidate can connect App Service concretely back to the general PaaS-vs-IaaS trade-off established in Section 2.
+_What the interviewer is probing:_ whether the candidate can connect App Service concretely back to the general PaaS-vs-IaaS trade-off established in Section 2.
 
 ### 🎯 Senior
+
 **Q: How would you design a zero-downtime deployment process for a business-critical App Service application?**
 
-*Model answer:* I'd use a Standard-or-above tier to enable deployment slots, deploying every new release first to a staging slot rather than directly to production, running automated smoke tests and/or manual validation against the staging slot (which runs on production-identical infrastructure), then performing a slot swap with warm-up enabled so the new version is fully initialized before it starts receiving live traffic — minimizing both downtime and cold-start-related errors during the transition. I'd keep the previous version readily available in the (now-staging) slot immediately after swap specifically so a fast rollback is just another swap away if a problem surfaces post-deployment, rather than requiring a fresh redeploy of the old version under pressure. For the broadest resilience, I'd also consider a multi-region App Service deployment with Front Door for global routing and automatic regional failover, layering that regional-level resilience on top of the slot-based deployment safety within each region.
+_Model answer:_ I'd use a Standard-or-above tier to enable deployment slots, deploying every new release first to a staging slot rather than directly to production, running automated smoke tests and/or manual validation against the staging slot (which runs on production-identical infrastructure), then performing a slot swap with warm-up enabled so the new version is fully initialized before it starts receiving live traffic — minimizing both downtime and cold-start-related errors during the transition. I'd keep the previous version readily available in the (now-staging) slot immediately after swap specifically so a fast rollback is just another swap away if a problem surfaces post-deployment, rather than requiring a fresh redeploy of the old version under pressure. For the broadest resilience, I'd also consider a multi-region App Service deployment with Front Door for global routing and automatic regional failover, layering that regional-level resilience on top of the slot-based deployment safety within each region.
 
-*What the interviewer is probing:* whether the candidate has genuine familiarity with the deployment-slot pattern as a practical, specific mechanism, not just an awareness that "zero downtime deployment" is a good goal in the abstract.
+_What the interviewer is probing:_ whether the candidate has genuine familiarity with the deployment-slot pattern as a practical, specific mechanism, not just an awareness that "zero downtime deployment" is a good goal in the abstract.
 
 ## 13.12 Common Misconceptions
 

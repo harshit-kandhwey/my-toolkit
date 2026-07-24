@@ -14,7 +14,7 @@ Running a container traditionally required either a VM with a container runtime 
 
 ### 15.3.1 Container Groups
 
-**Definition:** ACI's fundamental deployment unit is a **Container Group** — one or more containers that are scheduled together onto the same underlying host, sharing a lifecycle, local network namespace (allowing containers within the group to communicate via `localhost`), and optionally, storage volumes. This is conceptually similar to a Kubernetes Pod (a concept revisited directly in Section 35), though ACI's container groups are a simpler, standalone construct without the broader orchestration machinery Kubernetes provides.
+**Definition:** ACI's fundamental deployment unit is a **Container Group** — one or more containers that are scheduled together onto the same underlying host, sharing a lifecycle, local network namespace (allowing containers within the group to communicate via `localhost`), and optionally, storage volumes. This is conceptually similar to a Kubernetes Pod (a concept revisited directly in Section 36), though ACI's container groups are a simpler, standalone construct without the broader orchestration machinery Kubernetes provides.
 
 **When multi-container groups are used:** A common pattern is a primary application container paired with a "sidecar" container providing a supporting function — such as a logging agent, a monitoring agent, or a network proxy — that needs to run alongside the main container and share its local network and lifecycle.
 
@@ -69,7 +69,7 @@ az container create \
   --registry-password <acr-password>
 ```
 
-- **Purpose:** Runs a single container from a private Azure Container Registry (Section 34) image, allocating 1 vCPU and 1.5 GB memory, restarting only on failure — appropriate for a one-shot batch-style job.
+- **Purpose:** Runs a single container from a private Azure Container Registry (Section 35) image, allocating 1 vCPU and 1.5 GB memory, restarting only on failure — appropriate for a one-shot batch-style job.
 - **Important arguments explained individually:**
   - `--cpu` / `--memory` — explicit resource allocation; ACI bills based on these requested values, so right-sizing this allocation (similar to VM right-sizing, Section 11.4) directly affects cost.
   - `--restart-policy` — set to `OnFailure`, meaning a clean successful exit leaves the container stopped (appropriate for a batch job that shouldn't loop indefinitely), but a failure triggers an automatic retry.
