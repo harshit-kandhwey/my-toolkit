@@ -24,10 +24,12 @@ Management Group (optional, top-level grouping of subscriptions)
 ### 4.3.1 Resource
 
 **Definition:** A Resource is any manageable entity in Azure — a Virtual Machine, a Storage Account, a Virtual Network, a Web App. Every resource has a unique **Resource ID**, a string path that uniquely identifies it within Azure, structured as:
+
 ```
 /subscriptions/<subscription-id>/resourceGroups/<rg-name>/providers/<resource-provider>/<resource-type>/<resource-name>
 ```
-Every resource is created by a **Resource Provider** — a namespace of related resource types managed by a specific Azure service team, such as `Microsoft.Compute` (VMs), `Microsoft.Storage` (Storage Accounts), or `Microsoft.Network` (VNets, NSGs). Resource Providers must be *registered* on a subscription before their resource types can be used — a common early gotcha for new subscriptions.
+
+Every resource is created by a **Resource Provider** — a namespace of related resource types managed by a specific Azure service team, such as `Microsoft.Compute` (VMs), `Microsoft.Storage` (Storage Accounts), or `Microsoft.Network` (VNets, NSGs). Resource Providers must be _registered_ on a subscription before their resource types can be used — a common early gotcha for new subscriptions.
 
 ### 4.3.2 Resource Group
 
@@ -35,7 +37,7 @@ Every resource is created by a **Resource Provider** — a namespace of related 
 
 **Why it matters:** Resource groups are the primary unit for lifecycle management (deleting a resource group deletes everything inside it — extremely useful for tearing down a test environment, and extremely dangerous if done by accident in production), for RBAC scoping (you can grant someone access to just one resource group), and for organizing cost reporting.
 
-> ⚠️ A resource group has a "location," but this only determines where the resource group's *metadata* is stored — resources inside it can be deployed to any region regardless of the resource group's own location. This is a frequently misunderstood detail.
+> ⚠️ A resource group has a "location," but this only determines where the resource group's _metadata_ is stored — resources inside it can be deployed to any region regardless of the resource group's own location. This is a frequently misunderstood detail.
 
 ### 4.3.3 Subscription
 
@@ -43,7 +45,7 @@ Every resource is created by a **Resource Provider** — a namespace of related 
 
 ### 4.3.4 Management Group
 
-**Definition:** A Management Group is an optional organizational layer *above* subscriptions, letting enterprises apply governance (RBAC roles, Azure Policy) to many subscriptions at once instead of configuring each one individually. Management Groups can be nested up to six levels deep, and all subscriptions in a tenant ultimately roll up to a single **Root Management Group**.
+**Definition:** A Management Group is an optional organizational layer _above_ subscriptions, letting enterprises apply governance (RBAC roles, Azure Policy) to many subscriptions at once instead of configuring each one individually. Management Groups can be nested up to six levels deep, and all subscriptions in a tenant ultimately roll up to a single **Root Management Group**.
 
 **Why it matters at enterprise scale:** Without management groups, an organization with 50 subscriptions would need to apply the same security policy 50 separate times, with high risk of drift and inconsistency. With management groups, that same policy is applied once at a management group level and inherited by every subscription beneath it — this is foundational to the Landing Zone architecture pattern covered in Part 13.
 
@@ -63,18 +65,23 @@ Management Group "Contoso-Root"
 ## 4.5 Configuration & Commands
 
 **Registering a resource provider (Azure CLI):**
+
 ```bash
 az provider register --namespace Microsoft.ContainerService
 ```
+
 - **Purpose:** Enables the subscription to create resources of a given provider's types (here, enabling AKS, which lives under `Microsoft.ContainerService`) — many providers are pre-registered by default, but some require explicit registration.
 - **Common error:** Attempting to create a resource whose provider isn't registered returns an error like `MissingSubscriptionRegistration` — the fix is exactly this registration command.
 
 **Creating a resource group (Section 3.5), then listing resources within it:**
+
 ```bash
 az resource list --resource-group rg-myapp-prod --output table
 ```
+
 - **Purpose:** Lists all resources currently inside a resource group, useful for auditing what exists before a teardown or cost review.
 - **Expected output (table format):**
+
 ```
 Name          ResourceGroup      Location    Type
 ------------  -----------------  ----------  ------------------------
@@ -83,9 +90,11 @@ st-myapp-01   rg-myapp-prod      eastus      Microsoft.Storage/storageAccounts
 ```
 
 **Deleting a resource group (⚠️ destructive):**
+
 ```bash
 az group delete --name rg-myapp-test --yes --no-wait
 ```
+
 - **Purpose:** Deletes the resource group and, critically, **every resource inside it**, irreversibly.
 - **Security/production impact:** This single command is one of the most dangerous in the entire Azure CLI — it is strongly recommended to protect production resource groups with a **Resource Lock** (a `CanNotDelete` or `ReadOnly` lock that ARM enforces regardless of the caller's RBAC permissions) before this kind of command can do damage. Resource locks are covered further in Part 11.
 - **Common mistake:** Running this against the wrong resource group name due to a typo or copy-paste error — always double-check the target name, especially in scripts/pipelines, and consider requiring manual confirmation (omit `--yes`) for anything touching production.
@@ -101,28 +110,30 @@ Enterprises design their **management group and subscription hierarchy deliberat
 
 ## 4.8 Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---|---|---|
-| `MissingSubscriptionRegistration` error on resource creation | Resource provider not registered on the subscription | `az provider register --namespace <provider>` |
-| `InvalidLocation` error | Mistyped or unsupported region name | Verify against `az account list-locations` |
-| Cannot delete a resource group despite having Owner role | A Resource Lock is present | Locate and remove the lock (requires separate permission) before deletion |
-| A deployed resource doesn't show expected RBAC access | Permission was assigned at a sibling resource group, not an ancestor | Re-check the exact scope of the RBAC assignment — inheritance only flows downward, never sideways |
+| Symptom                                                      | Likely Cause                                                         | Fix                                                                                               |
+| ------------------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `MissingSubscriptionRegistration` error on resource creation | Resource provider not registered on the subscription                 | `az provider register --namespace <provider>`                                                     |
+| `InvalidLocation` error                                      | Mistyped or unsupported region name                                  | Verify against `az account list-locations`                                                        |
+| Cannot delete a resource group despite having Owner role     | A Resource Lock is present                                           | Locate and remove the lock (requires separate permission) before deletion                         |
+| A deployed resource doesn't show expected RBAC access        | Permission was assigned at a sibling resource group, not an ancestor | Re-check the exact scope of the RBAC assignment — inheritance only flows downward, never sideways |
 
 ## 4.9 Interview Questions — Section 4
 
 ### 🎯 Beginner
+
 **Q: What is the difference between a Resource Group and a Subscription?**
 
-*Model answer:* A Resource Group is a logical container for related resources within a subscription, typically representing one application or workload, and deleting it deletes everything inside it. A Subscription is a higher-level billing and access boundary that can contain many resource groups, and is the actual unit Microsoft invoices.
+_Model answer:_ A Resource Group is a logical container for related resources within a subscription, typically representing one application or workload, and deleting it deletes everything inside it. A Subscription is a higher-level billing and access boundary that can contain many resource groups, and is the actual unit Microsoft invoices.
 
-*What the interviewer is probing:* basic grasp of the ARM hierarchy, essential before any deeper Azure discussion is possible.
+_What the interviewer is probing:_ basic grasp of the ARM hierarchy, essential before any deeper Azure discussion is possible.
 
 ### 🎯 Senior/Architect
+
 **Q: How would you design the management group and subscription structure for a 200-person enterprise with three business units and separate Production/Non-Production requirements?**
 
-*Model answer:* I'd start from Microsoft's Cloud Adoption Framework landing zone pattern: a root management group containing top-level groups like "Platform" (for shared services like connectivity and identity) and "Landing Zones," with "Landing Zones" split into "Production" and "Non-Production" management groups. Under each, I'd create a management group per business unit (or subscriptions directly, depending on scale), and within each business unit, separate subscriptions per environment if isolation requirements demand it — since subscriptions are a hard billing and quota boundary, not just an organizational label. Azure Policy would be assigned at the Production management group level to enforce baseline security and tagging requirements consistently, while RBAC would be scoped as low as possible per team to maintain least privilege. This structure balances central governance (policy inherited from the top) with team autonomy (teams manage their own subscriptions within the guardrails).
+_Model answer:_ I'd start from Microsoft's Cloud Adoption Framework landing zone pattern: a root management group containing top-level groups like "Platform" (for shared services like connectivity and identity) and "Landing Zones," with "Landing Zones" split into "Production" and "Non-Production" management groups. Under each, I'd create a management group per business unit (or subscriptions directly, depending on scale), and within each business unit, separate subscriptions per environment if isolation requirements demand it — since subscriptions are a hard billing and quota boundary, not just an organizational label. Azure Policy would be assigned at the Production management group level to enforce baseline security and tagging requirements consistently, while RBAC would be scoped as low as possible per team to maintain least privilege. This structure balances central governance (policy inherited from the top) with team autonomy (teams manage their own subscriptions within the guardrails).
 
-*What the interviewer is probing:* whether the candidate can apply the ARM hierarchy to a realistic organizational design problem, referencing established patterns (CAF/landing zones) rather than inventing an ad hoc structure — a strong signal of real enterprise experience.
+_What the interviewer is probing:_ whether the candidate can apply the ARM hierarchy to a realistic organizational design problem, referencing established patterns (CAF/landing zones) rather than inventing an ad hoc structure — a strong signal of real enterprise experience.
 
 ## 4.10 Common Misconceptions
 
@@ -138,4 +149,4 @@ Enterprises design their **management group and subscription hierarchy deliberat
 
 ## 4.12 Related Concepts (Next Up)
 
-Section 5 wraps up Part 1 by covering the actual **tooling** used to interact with ARM — the Azure Portal, Azure CLI, Azure PowerShell, and SDKs — before Part 2 moves into Identity & Access Management, starting with Microsoft Entra ID, which governs *who* is allowed to perform the ARM operations just described.
+Section 5 wraps up Part 1 by covering the actual **tooling** used to interact with ARM — the Azure Portal, Azure CLI, Azure PowerShell, and SDKs — before Part 2 moves into Identity & Access Management, starting with Microsoft Entra ID, which governs _who_ is allowed to perform the ARM operations just described.

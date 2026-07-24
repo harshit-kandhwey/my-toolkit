@@ -20,9 +20,9 @@ A **Region** is a set of data centers deployed within a defined perimeter, inter
 
 ### 3.3.2 Availability Zone (AZ)
 
-An **Availability Zone** is a physically separate location *within* a region, each consisting of one or more data centers equipped with independent power, cooling, and networking. A region that supports Availability Zones typically has a minimum of three zones. Because zones are physically separate (typically kilometers apart, connected by high-bandwidth, low-latency fiber), a failure in one zone (power outage, fire, localized flooding) does not affect the others.
+An **Availability Zone** is a physically separate location _within_ a region, each consisting of one or more data centers equipped with independent power, cooling, and networking. A region that supports Availability Zones typically has a minimum of three zones. Because zones are physically separate (typically kilometers apart, connected by high-bandwidth, low-latency fiber), a failure in one zone (power outage, fire, localized flooding) does not affect the others.
 
-**Why this matters practically:** If you deploy a VM Scale Set (Section 12) or an App Service across multiple Availability Zones, your application can survive the complete loss of one zone's data centers with no downtime, because the workload continues running in the surviving zones. This is Azure's primary mechanism for **intra-region high availability**, distinct from disaster recovery, which operates *across* regions (covered in Part 12).
+**Why this matters practically:** If you deploy a VM Scale Set (Section 12) or an App Service across multiple Availability Zones, your application can survive the complete loss of one zone's data centers with no downtime, because the workload continues running in the surviving zones. This is Azure's primary mechanism for **intra-region high availability**, distinct from disaster recovery, which operates _across_ regions (covered in Part 12).
 
 > ⚠️ **Not every region supports Availability Zones.** Zone support depends on the region having sufficient physically-separate data center infrastructure built out; smaller or newer regions may not offer zones, in which case the older "Availability Set" mechanism (Section 57) is used instead for intra-datacenter resilience. Always verify zone support for your target region against current documentation.
 
@@ -65,11 +65,14 @@ Edge Network (separate from Regions):
 When you create almost any Azure resource, you specify a `location` (the region, e.g., `eastus`) and, for zone-aware services, optionally a `zone` (e.g., `1`, `2`, or `3`) or a "zone redundant" flag that lets Azure automatically spread the resource across all available zones for you.
 
 **Example (Azure CLI) — creating a resource group in a specific region:**
+
 ```bash
 az group create --name rg-myapp-prod --location eastus
 ```
-- **Purpose:** Creates a resource group (an organizational container, covered in Section 4) anchored to the East US region — note that a resource group's location primarily affects where its *metadata* is stored; resources placed inside it can still individually target other regions.
+
+- **Purpose:** Creates a resource group (an organizational container, covered in Section 4) anchored to the East US region — note that a resource group's location primarily affects where its _metadata_ is stored; resources placed inside it can still individually target other regions.
 - **Expected output:**
+
 ```
 {
   "id": "/subscriptions/<sub-id>/resourceGroups/rg-myapp-prod",
@@ -80,6 +83,7 @@ az group create --name rg-myapp-prod --location eastus
   }
 }
 ```
+
 - **Common error:** Specifying an invalid or mistyped location string (e.g., `east-us` instead of `eastus`) returns an `InvalidLocation` error — Azure location names are specific fixed strings with no spaces or hyphens, retrievable via `az account list-locations`.
 
 ## 3.6 Production & Enterprise Usage
@@ -89,18 +93,20 @@ Enterprises typically select regions based on three factors, in rough priority o
 ## 3.7 Interview Questions — Section 3
 
 ### 🎯 Intermediate
+
 **Q: What's the difference between an Availability Zone and a Region Pair, and when would you use each?**
 
-*Model answer:* Availability Zones protect against failures *within* a region — physically separate data centers with independent power/cooling, used for high availability with typically low-to-no added latency since they're close together. Region Pairs protect against failure of an *entire region* — used for disaster recovery, geo-redundant storage, and backup replication, but at the cost of higher latency and, often, eventual (not synchronous) data consistency between regions. You'd use zones for "keep the app running if one data center goes down," and region pairs for "recover the app if an entire region becomes unavailable."
+_Model answer:_ Availability Zones protect against failures _within_ a region — physically separate data centers with independent power/cooling, used for high availability with typically low-to-no added latency since they're close together. Region Pairs protect against failure of an _entire region_ — used for disaster recovery, geo-redundant storage, and backup replication, but at the cost of higher latency and, often, eventual (not synchronous) data consistency between regions. You'd use zones for "keep the app running if one data center goes down," and region pairs for "recover the app if an entire region becomes unavailable."
 
-*What the interviewer is probing:* whether the candidate distinguishes high availability (HA) from disaster recovery (DR) — a very common point of confusion that separates junior from mid-level understanding.
+_What the interviewer is probing:_ whether the candidate distinguishes high availability (HA) from disaster recovery (DR) — a very common point of confusion that separates junior from mid-level understanding.
 
 ### 🎯 Architect
+
 **Q: You're designing a financial trading application with strict low-latency requirements and a legal requirement that customer data never leaves the country. How does Azure's global infrastructure model constrain your design?**
 
-*Model answer:* Data residency forces me to select a region (or set of regions) physically located within the required country — if that country only has a single Azure region, cross-region DR within that legal boundary may be impossible unless Azure offers a same-country pair or the country has multiple regions; I'd need to verify this against current region availability. For the low-latency requirement, I'd deploy compute as close to end users as possible within that constraint, use Availability Zones (not cross-region replication) for high availability since zones add minimal latency, and potentially use Azure Front Door or ExpressRoute (Part 5) to optimize network paths. If in-country DR isn't available, I'd need to escalate the trade-off between the compliance requirement and DR posture to the business, since technology alone can't resolve a conflict between "data must never leave the country" and "must survive loss of the entire country's only region."
+_Model answer:_ Data residency forces me to select a region (or set of regions) physically located within the required country — if that country only has a single Azure region, cross-region DR within that legal boundary may be impossible unless Azure offers a same-country pair or the country has multiple regions; I'd need to verify this against current region availability. For the low-latency requirement, I'd deploy compute as close to end users as possible within that constraint, use Availability Zones (not cross-region replication) for high availability since zones add minimal latency, and potentially use Azure Front Door or ExpressRoute (Part 5) to optimize network paths. If in-country DR isn't available, I'd need to escalate the trade-off between the compliance requirement and DR posture to the business, since technology alone can't resolve a conflict between "data must never leave the country" and "must survive loss of the entire country's only region."
 
-*What the interviewer is probing:* whether the candidate recognizes when a business/legal constraint creates a genuine architectural conflict rather than assuming there's always a purely technical solution — a hallmark of senior/architect-level reasoning.
+_What the interviewer is probing:_ whether the candidate recognizes when a business/legal constraint creates a genuine architectural conflict rather than assuming there's always a purely technical solution — a hallmark of senior/architect-level reasoning.
 
 ## 3.8 Common Misconceptions
 

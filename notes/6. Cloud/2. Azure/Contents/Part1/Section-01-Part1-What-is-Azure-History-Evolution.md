@@ -11,7 +11,7 @@
 Before cloud computing became mainstream (roughly pre-2010), organizations that wanted to run software had to:
 
 - **Buy physical servers** — a large upfront capital expenditure (CapEx), with multi-week or multi-month procurement lead times.
-- **Provision for peak capacity** — you had to buy enough hardware to handle your *busiest* expected day (e.g., Black Friday for retail), which meant most of that hardware sat idle the rest of the year.
+- **Provision for peak capacity** — you had to buy enough hardware to handle your _busiest_ expected day (e.g., Black Friday for retail), which meant most of that hardware sat idle the rest of the year.
 - **Operate physical data centers** — power, cooling, physical security, rack space, networking hardware, and the staff to maintain all of it, none of which is differentiated value for the business.
 - **Manage hardware failure and refresh cycles** — disks fail, servers age out, and someone has to plan and execute replacement, all while systems stay online.
 - **Scale slowly** — adding capacity meant ordering, receiving, racking, and configuring new physical machines, a process that could take weeks.
@@ -42,16 +42,16 @@ Azure (and public cloud generally) solves this by converting **CapEx into OpEx**
 
 ## 1.5 Terminology Introduced in This Section
 
-| Term | Definition |
-|---|---|
-| **Public cloud** | Computing resources (servers, storage, networking, etc.) owned and operated by a third-party provider (Microsoft, in Azure's case) and made available to multiple customers over the internet, as opposed to a private cloud built for a single organization's exclusive use. |
-| **IaaS (Infrastructure-as-a-Service)** | A cloud service model where the provider supplies raw computing infrastructure (VMs, storage, networks), and the customer manages the operating system, runtime, and application layers. |
-| **PaaS (Platform-as-a-Service)** | A cloud service model where the provider manages the underlying infrastructure *and* the operating system/runtime, and the customer only manages application code and configuration. |
-| **SaaS (Software-as-a-Service)** | A cloud service model where the provider manages the entire application stack, and the customer simply uses the finished software (e.g., Microsoft 365). |
-| **CapEx (Capital Expenditure)** | Upfront spending on physical assets (like servers) that are owned and depreciated over time. |
-| **OpEx (Operational Expenditure)** | Ongoing, recurring spending for services consumed (like a cloud subscription bill), rather than owned assets. |
-| **Hyperscale cloud provider** | A cloud provider operating at massive global scale across many regions and data centers, typically referring to AWS, Azure, and GCP. |
-| **ARM (Azure Resource Manager)** | Azure's deployment and management layer that processes requests to create, update, and delete resources; covered fully in Section 4. |
+| Term                                   | Definition                                                                                                                                                                                                                                                                    |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Public cloud**                       | Computing resources (servers, storage, networking, etc.) owned and operated by a third-party provider (Microsoft, in Azure's case) and made available to multiple customers over the internet, as opposed to a private cloud built for a single organization's exclusive use. |
+| **IaaS (Infrastructure-as-a-Service)** | A cloud service model where the provider supplies raw computing infrastructure (VMs, storage, networks), and the customer manages the operating system, runtime, and application layers.                                                                                      |
+| **PaaS (Platform-as-a-Service)**       | A cloud service model where the provider manages the underlying infrastructure _and_ the operating system/runtime, and the customer only manages application code and configuration.                                                                                          |
+| **SaaS (Software-as-a-Service)**       | A cloud service model where the provider manages the entire application stack, and the customer simply uses the finished software (e.g., Microsoft 365).                                                                                                                      |
+| **CapEx (Capital Expenditure)**        | Upfront spending on physical assets (like servers) that are owned and depreciated over time.                                                                                                                                                                                  |
+| **OpEx (Operational Expenditure)**     | Ongoing, recurring spending for services consumed (like a cloud subscription bill), rather than owned assets.                                                                                                                                                                 |
+| **Hyperscale cloud provider**          | A cloud provider operating at massive global scale across many regions and data centers, typically referring to AWS, Azure, and GCP.                                                                                                                                          |
+| **ARM (Azure Resource Manager)**       | Azure's deployment and management layer that processes requests to create, update, and delete resources; covered fully in Section 4.                                                                                                                                          |
 
 ## 1.6 Modern Use Cases
 
@@ -76,25 +76,28 @@ Azure is widely adopted particularly among **enterprises already invested in the
 ## 1.9 Interview Questions — Section 1
 
 ### 🎯 Junior level
+
 **Q: What is Azure?**
 
-*Model answer:* Azure is Microsoft's public cloud platform that provides on-demand computing resources — like virtual machines, storage, databases, and networking — over the internet on a pay-as-you-go basis, eliminating the need to buy and maintain physical hardware.
+_Model answer:_ Azure is Microsoft's public cloud platform that provides on-demand computing resources — like virtual machines, storage, databases, and networking — over the internet on a pay-as-you-go basis, eliminating the need to buy and maintain physical hardware.
 
-*What the interviewer is probing:* whether the candidate understands the basic value proposition of cloud computing, not just that "Azure is Microsoft's cloud."
+_What the interviewer is probing:_ whether the candidate understands the basic value proposition of cloud computing, not just that "Azure is Microsoft's cloud."
 
 ### 🎯 Intermediate level
+
 **Q: What's the difference between IaaS, PaaS, and SaaS, and where does Azure fit?**
 
-*Model answer:* IaaS gives you raw infrastructure (e.g., Azure VMs) where you manage the OS and everything above it; PaaS (e.g., Azure App Service) manages the OS and runtime for you so you only deploy code; SaaS (e.g., Microsoft 365) is a fully finished application you just use. Azure offers all three models simultaneously, and most real architectures mix them — for example, an app might run on App Service (PaaS) while connecting to a VM-hosted legacy database (IaaS).
+_Model answer:_ IaaS gives you raw infrastructure (e.g., Azure VMs) where you manage the OS and everything above it; PaaS (e.g., Azure App Service) manages the OS and runtime for you so you only deploy code; SaaS (e.g., Microsoft 365) is a fully finished application you just use. Azure offers all three models simultaneously, and most real architectures mix them — for example, an app might run on App Service (PaaS) while connecting to a VM-hosted legacy database (IaaS).
 
-*What the interviewer is probing:* whether the candidate can map abstract service models to concrete, correctly-categorized Azure services, and whether they understand that real architectures are hybrid across models.
+_What the interviewer is probing:_ whether the candidate can map abstract service models to concrete, correctly-categorized Azure services, and whether they understand that real architectures are hybrid across models.
 
 ### 🎯 Senior/Architect level
+
 **Q: Why might an enterprise choose Azure over AWS or a private data center, and what are the trade-offs?**
 
-*Model answer:* Key drivers include existing Microsoft licensing investment (Azure Hybrid Benefit can significantly reduce Windows Server/SQL Server licensing costs on Azure VMs), deep Active Directory/Entra ID integration for hybrid identity, strong compliance certifications for regulated industries, and Azure Government for public-sector workloads. Trade-offs include potential vendor lock-in, service-parity gaps versus AWS in certain niche services, and the operational cost of retraining teams already expert in another platform. A private data center trades elasticity and OpEx-based cost for full physical control, which some regulated or latency-sensitive workloads still require.
+_Model answer:_ Key drivers include existing Microsoft licensing investment (Azure Hybrid Benefit can significantly reduce Windows Server/SQL Server licensing costs on Azure VMs), deep Active Directory/Entra ID integration for hybrid identity, strong compliance certifications for regulated industries, and Azure Government for public-sector workloads. Trade-offs include potential vendor lock-in, service-parity gaps versus AWS in certain niche services, and the operational cost of retraining teams already expert in another platform. A private data center trades elasticity and OpEx-based cost for full physical control, which some regulated or latency-sensitive workloads still require.
 
-*What the interviewer is probing:* whether the candidate can reason about business and technical trade-offs holistically, not just recite feature lists — this is where junior candidates fail and senior candidates differentiate themselves.
+_What the interviewer is probing:_ whether the candidate can reason about business and technical trade-offs holistically, not just recite feature lists — this is where junior candidates fail and senior candidates differentiate themselves.
 
 ## 1.10 Common Misconceptions
 
