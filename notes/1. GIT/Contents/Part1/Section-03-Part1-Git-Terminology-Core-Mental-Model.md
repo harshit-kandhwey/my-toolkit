@@ -8,14 +8,14 @@ Before individual terms, internalize this single picture. Git manages **three pa
 
 ```
 ┌─────────────────┐   git add   ┌─────────────────┐  git commit  ┌─────────────────┐
-│  WORKING         │ ──────────► │  STAGING AREA    │ ───────────► │  REPOSITORY      │
-│  DIRECTORY       │             │  (INDEX)         │              │  (.git history)   │
-│                  │             │                  │              │                  │
-│  Your actual     │ ◄────────── │  "What will go   │ ◄─────────── │  Permanent,      │
-│  files on disk,  │  git restore│   into the next  │  git reset   │  immutable        │
-│  editable        │  --staged   │   commit"        │              │  snapshots        │
+│  WORKING        │ ──────────► │  STAGING AREA   │ ───────────► │  REPOSITORY     │
+│  DIRECTORY      │             │  (INDEX)        │              │  (.git history) │
+│                 │             │                 │              │                 │
+│  Your actual    │ ◄────────── │  "What will go  │ ◄─────────── │  Permanent,     │
+│  files on disk, │  git restore│   into the next │  git reset   │  immutable      │
+│  editable       │  --staged   │   commit"       │              │  snapshots      │
 └─────────────────┘             └─────────────────┘              └─────────────────┘
-        ▲                                                                   │
+        ▲                                                                  │
         └───────────────────────── git checkout / git restore ─────────────┘
                                   (materialize a past snapshot)
 ```
@@ -24,25 +24,25 @@ Every Git operation you'll ever run is fundamentally about moving content betwee
 
 ## 3.2 Foundational Terms
 
-**Repository (repo).** The `.git` directory and everything inside it: the complete object database (every snapshot ever committed), all branches, all tags, all configuration. "The repo" colloquially also refers to the whole project folder, but precisely, the repository *is* the `.git` subdirectory — the working directory is not part of it, it's just what the repository currently has materialized on disk.
+**Repository (repo).** The `.git` directory and everything inside it: the complete object database (every snapshot ever committed), all branches, all tags, all configuration. "The repo" colloquially also refers to the whole project folder, but precisely, the repository _is_ the `.git` subdirectory — the working directory is not part of it, it's just what the repository currently has materialized on disk.
 
-**Working directory (working tree).** The actual files and folders you see and edit in your file explorer or editor. At any moment it reflects one particular commit (or a mix of a commit plus your uncommitted edits). This is the *only* one of the three trees you directly touch with a text editor.
+**Working directory (working tree).** The actual files and folders you see and edit in your file explorer or editor. At any moment it reflects one particular commit (or a mix of a commit plus your uncommitted edits). This is the _only_ one of the three trees you directly touch with a text editor.
 
-**Staging area (the index).** A single file inside `.git` (literally named `index`) that lists exactly which file versions will be included in the *next* commit. It is not a directory of copies — it's a structured file recording, for each tracked path, which exact blob (§5) it currently points to. `git add` copies a file's current working-directory content into the index. This staging step is what lets you build a commit up piece by piece — stage half your changes, review them, add more, then commit — rather than being forced to commit every modified file at once.
+**Staging area (the index).** A single file inside `.git` (literally named `index`) that lists exactly which file versions will be included in the _next_ commit. It is not a directory of copies — it's a structured file recording, for each tracked path, which exact blob (§5) it currently points to. `git add` copies a file's current working-directory content into the index. This staging step is what lets you build a commit up piece by piece — stage half your changes, review them, add more, then commit — rather than being forced to commit every modified file at once.
 
 **Commit.** Both a verb (record the staged content as a new permanent snapshot) and a noun (the resulting immutable object). A commit object bundles: a pointer to a complete snapshot of the project tree, a pointer to its parent commit(s), the author, the committer (these can differ — explained in §5), a timestamp, and a message. Once created, a commit's content and hash never change — "editing" a commit (§14) always actually creates a brand-new commit object and, usually, moves a branch pointer to it.
 
-**Branch.** In Git specifically, a branch is nothing more than a movable, named pointer to a single commit — physically, a 41-byte text file containing a hash, sitting under `.git/refs/heads/`. This minimalism is *why* Git branching is instant regardless of repository size: creating a branch never copies any file content, it just writes a new tiny pointer file. Full mechanics in §6.
+**Branch.** In Git specifically, a branch is nothing more than a movable, named pointer to a single commit — physically, a 41-byte text file containing a hash, sitting under `.git/refs/heads/`. This minimalism is _why_ Git branching is instant regardless of repository size: creating a branch never copies any file content, it just writes a new tiny pointer file. Full mechanics in §6.
 
-**HEAD.** A pointer to *"the commit you currently have checked out"* — practically always implemented as a pointer to your *current branch*, which in turn points to a commit. So HEAD → branch pointer → commit, two levels of indirection in the normal case. When HEAD points directly at a commit instead of at a branch, you're in **detached HEAD** state — an important, commonly misunderstood condition covered fully in §12.
+**HEAD.** A pointer to _"the commit you currently have checked out"_ — practically always implemented as a pointer to your _current branch_, which in turn points to a commit. So HEAD → branch pointer → commit, two levels of indirection in the normal case. When HEAD points directly at a commit instead of at a branch, you're in **detached HEAD** state — an important, commonly misunderstood condition covered fully in §12.
 
 **Tag.** A permanent, (usually) unmoving name attached to one specific commit, conventionally used to mark releases (`v2.4.0`). Unlike a branch pointer, a tag is not expected to move forward as new commits are added. Two kinds exist — lightweight tags (just a pointer, like a branch but conventionally static) and annotated tags (a full object with its own message, tagger identity, and optional cryptographic signature) — the distinction and when to use each is covered in §5 and §18.
 
-**Remote.** A named reference to another copy of the repository, usually hosted elsewhere (GitHub, GitLab, a colleague's machine, a bare server repo). "origin" is simply the conventional *default name* Git gives the remote you cloned from — it carries no special technical meaning beyond being a name, and you can rename or add additional remotes freely. Full treatment in §20.
+**Remote.** A named reference to another copy of the repository, usually hosted elsewhere (GitHub, GitLab, a colleague's machine, a bare server repo). "origin" is simply the conventional _default name_ Git gives the remote you cloned from — it carries no special technical meaning beyond being a name, and you can rename or add additional remotes freely. Full treatment in §20.
 
-**Clone.** The act of copying an entire remote repository — full history, all branches, all tags — down to your machine, creating a new local repository connected back to that remote by default. Distinct from **checkout**, which materializes one particular commit's content into the working directory *within* a repository you already have.
+**Clone.** The act of copying an entire remote repository — full history, all branches, all tags — down to your machine, creating a new local repository connected back to that remote by default. Distinct from **checkout**, which materializes one particular commit's content into the working directory _within_ a repository you already have.
 
-**Fork.** Not a Git concept at all — it's a *hosting platform* concept (GitHub, GitLab, Bitbucket). A fork is a server-side copy of someone else's repository into your own account, used as the basis for proposing changes back via a pull/merge request. Core Git has no `git fork` command; this belongs entirely to §21 and §23.
+**Fork.** Not a Git concept at all — it's a _hosting platform_ concept (GitHub, GitLab, Bitbucket). A fork is a server-side copy of someone else's repository into your own account, used as the basis for proposing changes back via a pull/merge request. Core Git has no `git fork` command; this belongs entirely to §21 and §23.
 
 **Merge.** Combining the history and content of two branches into one, producing a new commit (a **merge commit**) that has two (or more) parents, or, when possible, simply moving a pointer forward (**fast-forward**, §13).
 
@@ -58,7 +58,7 @@ Every Git operation you'll ever run is fundamentally about moving content betwee
 
 **Reflog.** A local, private, time-ordered log of everywhere HEAD (and each branch) has pointed, kept automatically by Git on your machine. It is your safety net for recovering from mistakes — including "lost" commits after a reset, rebase, or accidental branch deletion. Not part of the shared history, not pushed to remotes, and expires after a default retention window. Deep dive in §6 and §30.
 
-**Working tree vs. worktree (linked worktrees).** "Working tree" (two words, generic) is the general term used above. "**Worktree**" (one word) additionally refers to a specific advanced Git feature (`git worktree`) letting you check out *multiple branches simultaneously* into separate directories from one repository — a distinct, advanced feature covered in §31. Don't conflate the two at this stage; just note the naming overlap so it doesn't confuse you later.
+**Working tree vs. worktree (linked worktrees).** "Working tree" (two words, generic) is the general term used above. "**Worktree**" (one word) additionally refers to a specific advanced Git feature (`git worktree`) letting you check out _multiple branches simultaneously_ into separate directories from one repository — a distinct, advanced feature covered in §31. Don't conflate the two at this stage; just note the naming overlap so it doesn't confuse you later.
 
 **Bare repository.** A repository that holds only the `.git` database — no working directory at all. This is the standard shape for a repository sitting on a shared server: nobody edits files directly on the server, so there's no need to materialize a working copy there. Covered in §20.
 
@@ -66,13 +66,13 @@ Every Git operation you'll ever run is fundamentally about moving content betwee
 
 Every file Git knows about sits in exactly one of these states at any given moment — this vocabulary is what `git status` output is built from, and you'll see it constantly starting in §10:
 
-| State | Meaning |
-|---|---|
-| **Untracked** | Git has never been told to track this file; it exists in the working directory but is invisible to Git's snapshots until you `git add` it. |
-| **Tracked** | Git knows about this file — it appeared in at least one prior commit or has been staged. |
-| **Unmodified** | Tracked, and identical to the version in the last commit. |
-| **Modified** | Tracked, and different from the last commit, but the difference hasn't been staged yet. |
-| **Staged** | The current working-directory version of this file has been added to the index — it's queued for the next commit. |
+| State          | Meaning                                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Untracked**  | Git has never been told to track this file; it exists in the working directory but is invisible to Git's snapshots until you `git add` it. |
+| **Tracked**    | Git knows about this file — it appeared in at least one prior commit or has been staged.                                                   |
+| **Unmodified** | Tracked, and identical to the version in the last commit.                                                                                  |
+| **Modified**   | Tracked, and different from the last commit, but the difference hasn't been staged yet.                                                    |
+| **Staged**     | The current working-directory version of this file has been added to the index — it's queued for the next commit.                          |
 
 The classic tracked-file lifecycle:
 
@@ -96,10 +96,10 @@ You'll meet these names constantly starting in the very next section, so a light
 ## 3.5 Workflow-Level Vocabulary
 
 - **Push** — upload your local commits (and optionally branch/tag pointers) to a remote.
-- **Fetch** — download commits and refs from a remote *without* touching your working directory or current branch — purely updates your knowledge of what the remote has.
+- **Fetch** — download commits and refs from a remote _without_ touching your working directory or current branch — purely updates your knowledge of what the remote has.
 - **Pull** — fetch, immediately followed by an integration step (by default a merge, optionally a rebase) into your current branch. A very common beginner trap is treating pull as a single atomic safe operation when it is really two operations glued together — expanded fully in §20.
 - **Origin** — see Remote, above; the conventional default remote name.
-- **Upstream** (second, distinct meaning) — in a fork workflow, "upstream" commonly refers to the *original* repository a fork was copied from, as opposed to "origin," which refers to *your own* fork. This is a different, second sense of the word "upstream" from the tracking-branch sense above — both are standard usage, and you must infer which is meant from context. Clarified again with examples in §21.
+- **Upstream** (second, distinct meaning) — in a fork workflow, "upstream" commonly refers to the _original_ repository a fork was copied from, as opposed to "origin," which refers to _your own_ fork. This is a different, second sense of the word "upstream" from the tracking-branch sense above — both are standard usage, and you must infer which is meant from context. Clarified again with examples in §21.
 
 > ⚠️ **Common confusion to flag now:** the word "upstream" has two legitimate, unrelated Git-adjacent meanings — (1) the remote-tracking branch a local branch follows, and (2) in fork-based workflows, the original repo a fork came from. Both are correct; context disambiguates. This trips up learners reading multiple tutorials that each use only one sense.
 
@@ -107,14 +107,14 @@ You'll meet these names constantly starting in the very next section, so a light
 
 For anyone coming from a centralized-VCS background, this mapping prevents mental model contamination:
 
-| Concept | SVN term/idea | Git term/idea |
-|---|---|---|
-| Full history location | Server only | Every clone |
-| Unit of history | Global revision number (r1234) | Content-addressed commit hash |
-| "Get latest code" | `svn update` | `git pull` (fetch + merge/rebase) |
-| Parallel line of work | Directory path convention (`/branches/x`) | First-class lightweight pointer |
-| Staging changes before commit | No equivalent — you commit working-copy state directly | The index / staging area |
-| Undo a commit already shared | Not straightforward | `git revert` (safe, adds new commit) vs `git reset` (rewrites, unsafe if shared) — §15 |
+| Concept                       | SVN term/idea                                          | Git term/idea                                                                          |
+| ----------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Full history location         | Server only                                            | Every clone                                                                            |
+| Unit of history               | Global revision number (r1234)                         | Content-addressed commit hash                                                          |
+| "Get latest code"             | `svn update`                                           | `git pull` (fetch + merge/rebase)                                                      |
+| Parallel line of work         | Directory path convention (`/branches/x`)              | First-class lightweight pointer                                                        |
+| Staging changes before commit | No equivalent — you commit working-copy state directly | The index / staging area                                                               |
+| Undo a commit already shared  | Not straightforward                                    | `git revert` (safe, adds new commit) vs `git reset` (rewrites, unsafe if shared) — §15 |
 
 ## 3.7 Interview Questions — This Section's Material
 

@@ -9,8 +9,8 @@
 ## 6.2 Why It Exists / Problem It Solves
 
 1. **Human usability over raw hashes.** Nobody wants to type `git checkout a3f8e21bc9d4f5e6...` daily. `main`, `develop`, `v2.3.1` are memorable, meaningful names layered over the anonymous hash-addressed object graph from §5.
-2. **Movable pointers enable "current state" tracking.** A branch ref is *designed* to move forward automatically as you commit — this is precisely what lets "main" always mean "the latest commit on the main line" without you manually updating anything.
-3. **Fixed pointers enable permanent markers.** Tags are designed to *not* move, giving you a stable, permanent name for one exact point in history — essential for releases (§18).
+2. **Movable pointers enable "current state" tracking.** A branch ref is _designed_ to move forward automatically as you commit — this is precisely what lets "main" always mean "the latest commit on the main line" without you manually updating anything.
+3. **Fixed pointers enable permanent markers.** Tags are designed to _not_ move, giving you a stable, permanent name for one exact point in history — essential for releases (§18).
 4. **A safety net independent of the shared graph.** The reflog (6.6) records ref movements locally, so mistakes that seem to "lose" commits are almost always recoverable — a deliberate design response to the fact that history rewriting (§14, §15) is a first-class, encouraged operation in Git, and needs a safety net to be usable without fear.
 
 ## 6.3 Branch Refs — Full Mechanics
@@ -24,11 +24,11 @@ $ cat .git/refs/heads/main
 7e4f9a2c8b1d3e5f6a7b8c9d0e1f2a3b4c5d6e7f
 ```
 
-That's the *entire* implementation of a branch. Nothing else exists — no metadata file, no copy of file content, nothing.
+That's the _entire_ implementation of a branch. Nothing else exists — no metadata file, no copy of file content, nothing.
 
 ### 6.3.2 What happens when you commit
 
-1. Git creates a new commit object whose `parent` field is the *current* commit that the active branch points to.
+1. Git creates a new commit object whose `parent` field is the _current_ commit that the active branch points to.
 2. Git overwrites the branch's ref file with the new commit's hash.
 3. HEAD (pointing at the branch, not directly at the commit — see 6.4) automatically reflects the new commit, because it resolves through the branch.
 
@@ -40,7 +40,7 @@ This is why committing "moves the branch forward" — literally, one text file's
 $ git branch feature-x
 ```
 
-Git simply writes a new file, `.git/refs/heads/feature-x`, containing the *same* hash as whatever HEAD currently resolves to. No files are copied, no history is duplicated — this is the entire mechanism behind §2's claim that Git branching is "trivial and instant regardless of repository size."
+Git simply writes a new file, `.git/refs/heads/feature-x`, containing the _same_ hash as whatever HEAD currently resolves to. No files are copied, no history is duplicated — this is the entire mechanism behind §2's claim that Git branching is "trivial and instant regardless of repository size."
 
 ```
 Before:                          After `git branch feature-x`:
@@ -49,7 +49,7 @@ refs/heads/main → C3              refs/heads/main    → C3
                                    refs/heads/feature-x → C3   (new file, same hash)
 ```
 
-Both branches point at the *same* commit until one of them receives new commits and diverges.
+Both branches point at the _same_ commit until one of them receives new commits and diverges.
 
 ## 6.4 HEAD — Full Mechanics
 
@@ -63,7 +63,7 @@ This is a **symbolic ref** — a pointer to another ref, not directly to a commi
 
 ### 6.4.1 Why the indirection matters
 
-Because HEAD points at the *branch name*, not directly at a commit, committing automatically "carries HEAD forward" — you never have to manually update HEAD yourself. Git updates the branch ref (6.3.2), and HEAD, still pointing at that branch name, transparently resolves to the new commit.
+Because HEAD points at the _branch name_, not directly at a commit, committing automatically "carries HEAD forward" — you never have to manually update HEAD yourself. Git updates the branch ref (6.3.2), and HEAD, still pointing at that branch name, transparently resolves to the new commit.
 
 ### 6.4.2 Detached HEAD — the direct-pointer case
 
@@ -85,7 +85,7 @@ Now `.git/HEAD` contains the raw commit hash directly, **not** `ref: refs/heads/
 a3f8e21bc9d4f5e6789012345678901234567890
 ```
 
-**Consequence:** if you commit in this state, the new commit's parent is `a3f8e21`, but *no branch ref moves* to point at your new commit — nothing is tracking it except HEAD itself. If you then check out a different branch, HEAD moves to point at *that* branch, and your detached-HEAD commits become unreferenced by anything except (temporarily) the reflog.
+**Consequence:** if you commit in this state, the new commit's parent is `a3f8e21`, but _no branch ref moves_ to point at your new commit — nothing is tracking it except HEAD itself. If you then check out a different branch, HEAD moves to point at _that_ branch, and your detached-HEAD commits become unreferenced by anything except (temporarily) the reflog.
 
 ```
 Detached HEAD committing:
@@ -106,7 +106,7 @@ Legitimate uses: inspecting an old release's exact state without disturbing any 
 
 Covered structurally in §5.5.4; here we cover them purely as **refs**.
 
-- **Physical form:** `.git/refs/tags/<tag-name>`, containing either a commit hash directly (lightweight tag) or the hash of a tag *object* (annotated tag), which in turn points to a commit.
+- **Physical form:** `.git/refs/tags/<tag-name>`, containing either a commit hash directly (lightweight tag) or the hash of a tag _object_ (annotated tag), which in turn points to a commit.
 - **Key behavioral difference from branches:** nothing in Git prevents you from moving a tag (`git tag -f`), but doing so on a tag anyone else may have already fetched is a serious foot-gun — anyone who built or deployed something referencing that tag now silently gets different content if they re-fetch, breaking the entire "tags are permanent" assumption the ecosystem relies on. Full discipline in §18.
 
 ## 6.6 The Reflog
@@ -134,7 +134,7 @@ Each `HEAD@{n}` is a **time-based reference** you can check out or reset to dire
 
 The reflog is precisely why Git's aggressive, encouraged history-rewriting operations (amend, rebase, reset --hard, force-push locally observed, branch deletion) are usable without excessive fear: almost every "I think I just destroyed my work" scenario is recoverable, because the commit objects are still physically present in `.git/objects` (nothing is deleted immediately) and the reflog remembers exactly which hash to point back to.
 
-> ⚠️ **Critical scope limitation:** the reflog is **entirely local** — it is never pushed, never fetched, never part of the shared repository, and not visible to anyone else. It only records refs *you personally* moved on *this specific clone*, and it has a default expiry (unreachable entries are pruned after a default of 30 days, reachable ones after 90 — exact defaults are configurable via `gc.reflogExpire` and `gc.reflogExpireUnreachable`, and you should verify current defaults against your Git version's documentation). This means the reflog is a personal undo history, not a substitute for backups or for careful force-push discipline on shared branches.
+> ⚠️ **Critical scope limitation:** the reflog is **entirely local** — it is never pushed, never fetched, never part of the shared repository, and not visible to anyone else. It only records refs _you personally_ moved on _this specific clone_, and it has a default expiry (unreachable entries are pruned after a default of 30 days, reachable ones after 90 — exact defaults are configurable via `gc.reflogExpire` and `gc.reflogExpireUnreachable`, and you should verify current defaults against your Git version's documentation). This means the reflog is a personal undo history, not a substitute for backups or for careful force-push discipline on shared branches.
 
 ## 6.7 Full Refs Architecture Diagram
 
@@ -169,12 +169,12 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
 - **Purpose:** create, list, rename, or delete branch refs — the primary tool for managing local lines of development.
 - **Syntax:** `git branch [<branch-name>] [options]`
 - **Key options:**
-  - *(no args)* — list all local branches, with `*` marking the currently checked-out one.
+  - _(no args)_ — list all local branches, with `*` marking the currently checked-out one.
   - `<name>` — create a new branch ref pointing at the current HEAD's commit (does **not** switch to it).
   - `-d <name>` — delete a branch, but only if it's already fully merged into its upstream or current branch (a safety check).
   - `-D <name>` — force-delete a branch regardless of merge status — genuinely destructive if the branch has unique unmerged commits (though recoverable via reflog if caught quickly).
   - `-m <old> <new>` — rename a branch.
-  - `-a` — list local *and* remote-tracking branches.
+  - `-a` — list local _and_ remote-tracking branches.
   - `-v` — list branches with their latest commit hash and message summary.
 - **Practical example:**
   ```bash
@@ -197,7 +197,7 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
 - **Purpose:** change which branch (or commit) HEAD points to, updating the working directory and index to match. `git switch` was introduced specifically to split this responsibility out of the historically overloaded `git checkout` command (which also handles restoring individual files — a separate, unrelated responsibility now covered by `git restore`, §15).
 - **Syntax:** `git switch <branch-name>` / `git switch -c <new-branch-name>` / `git switch --detach <commit>`
 - **Key options:**
-  - `-c <name>` — create a new branch at the current commit *and* switch to it in one step (equivalent to `git branch <name>` + `git switch <name>`).
+  - `-c <name>` — create a new branch at the current commit _and_ switch to it in one step (equivalent to `git branch <name>` + `git switch <name>`).
   - `--detach <commit-or-tag>` — deliberately enter detached HEAD state at a specific commit.
 - **Practical example:**
   ```bash
@@ -225,7 +225,7 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
   This concretely recovers a commit that an accidental `git reset --hard HEAD~1` appeared to discard — full mechanics of `reset` in §15, full disaster-recovery treatment in §30.
 - **Production usage:** the first tool reached for after any local history mistake — accidental force-push undone locally, bad rebase, wrong branch deleted (as long as you know the approximate former commit hash or reflog position).
 - **Common errors:** confusing HEAD's reflog with a specific branch's reflog when the branch in question wasn't checked out at the time of the mistake — check `git reflog show <branch>` specifically if `git reflog` (HEAD's) doesn't show what you expect.
-- **Security impact:** the reflog can retain traces of commits you intended to fully purge (e.g., accidentally committed secrets) even after `reset`/`rebase` seem to remove them from visible history — a real security consideration covered fully in §28's secret-remediation material; simply rewriting visible history is *not* sufficient to guarantee a secret is gone from the local repository until the reflog entries are also expired and gc'd.
+- **Security impact:** the reflog can retain traces of commits you intended to fully purge (e.g., accidentally committed secrets) even after `reset`/`rebase` seem to remove them from visible history — a real security consideration covered fully in §28's secret-remediation material; simply rewriting visible history is _not_ sufficient to guarantee a secret is gone from the local repository until the reflog entries are also expired and gc'd.
 - **Performance impact:** negligible to read; reflog files are small and append-only.
 
 ## 6.9 Hands-On Example — Detached HEAD, Recovery, and Branch Mechanics Together
@@ -276,7 +276,7 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 
 ## 6.10 Production & Enterprise Usage
 
-- **CI/CD systems deliberately use detached HEAD.** Most CI runners check out a specific commit (not a branch) for a build job — this is intentional: the job should build *exactly* the commit that triggered it, immune to the branch moving forward mid-build. Understanding detached HEAD demystifies why CI logs often show "You are in 'detached HEAD' state" without it being an error.
+- **CI/CD systems deliberately use detached HEAD.** Most CI runners check out a specific commit (not a branch) for a build job — this is intentional: the job should build _exactly_ the commit that triggered it, immune to the branch moving forward mid-build. Understanding detached HEAD demystifies why CI logs often show "You are in 'detached HEAD' state" without it being an error.
 - **Branch protection rules** (§23) operate on branch refs specifically — a platform like GitHub enforces "no force-push, no deletion, required reviews" on the `refs/heads/main` ref, which is exactly the physical object described in 6.3.1.
 - **Reflog retention as an operational policy consideration:** some enterprises shorten or extend `gc.reflogExpire` settings depending on their balance between disk usage and desired local-recovery window — a minor but real operational tuning knob covered further in §29.
 
@@ -293,12 +293,12 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 
 ## 6.13 Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `fatal: You are in 'detached HEAD' state` (as a surprise, not intentional) | Checked out a tag or specific commit rather than a branch | If you want to keep any commits made here, run `git switch -c <name>` immediately before switching away |
-| A commit seems to have vanished after `reset --hard` or switching branches | The commit is likely just unreferenced by any branch, not deleted | `git reflog`, find the hash, `git switch -c <name> <hash>` to recover it |
-| `error: pathspec 'X' did not match any file(s) known to git` when trying to `checkout` a branch name | Branch doesn't exist locally (may exist only as a remote-tracking branch) | `git switch X` in modern Git auto-creates a local tracking branch from a matching remote one; otherwise `git checkout -b X origin/X` |
-| Reflog entry expected but missing | Reflog entries expired per `gc.reflogExpire`/`gc.reflogExpireUnreachable`, or `gc` already ran and pruned genuinely unreferenced objects | Check backup remotes/clones; unfortunately, once both the reflog entry and the object itself are gc'd, local recovery is no longer possible — see §30 for broader disaster recovery options |
+| Symptom                                                                                              | Likely cause                                                                                                                             | Fix                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fatal: You are in 'detached HEAD' state` (as a surprise, not intentional)                           | Checked out a tag or specific commit rather than a branch                                                                                | If you want to keep any commits made here, run `git switch -c <name>` immediately before switching away                                                                                     |
+| A commit seems to have vanished after `reset --hard` or switching branches                           | The commit is likely just unreferenced by any branch, not deleted                                                                        | `git reflog`, find the hash, `git switch -c <name> <hash>` to recover it                                                                                                                    |
+| `error: pathspec 'X' did not match any file(s) known to git` when trying to `checkout` a branch name | Branch doesn't exist locally (may exist only as a remote-tracking branch)                                                                | `git switch X` in modern Git auto-creates a local tracking branch from a matching remote one; otherwise `git checkout -b X origin/X`                                                        |
+| Reflog entry expected but missing                                                                    | Reflog entries expired per `gc.reflogExpire`/`gc.reflogExpireUnreachable`, or `gc` already ran and pruned genuinely unreferenced objects | Check backup remotes/clones; unfortunately, once both the reflog entry and the object itself are gc'd, local recovery is no longer possible — see §30 for broader disaster recovery options |
 
 ## 6.14 Best Practices
 
