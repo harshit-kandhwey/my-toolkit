@@ -1,4 +1,4 @@
-# Section 3 — Git Terminology & the Core Mental Model
+# Section 3 (Part 1): Git Terminology & the Core Mental Model
 
 This section defines every term Git uses precisely, the way Git itself uses it — not the generic VCS definitions from §1.9. Once these are solid, §4 onward (architecture and internals) requires zero pausing to define new vocabulary.
 
@@ -150,4 +150,4 @@ For anyone coming from a centralized-VCS background, this mapping prevents menta
 
 ## 3.10 Related Concepts & What's Next
 
-Every term above will now be given full architectural depth. Section 4 opens Part B by mapping exactly where the working directory, index, and `.git` repository physically live on disk, how they relate as Git's core architecture, and what triggers movement between them — the direct expansion of the three-tree diagram in 3.1.
+Every term above will now be given full architectural depth. Section 4 opens Part 2 by mapping exactly where the working directory, index, and `.git` repository physically live on disk, how they relate as Git's core architecture, and what triggers movement between them — the direct expansion of the three-tree diagram in 3.1.

@@ -1,4 +1,4 @@
-# Section 6 — References: Branches, HEAD, Tags, Refs & the Reflog
+# Section 6 (Part 2): References: Branches, HEAD, Tags, Refs & the Reflog
 
 ## 6.1 Definition
 
@@ -345,4 +345,4 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 
 ## 6.19 Related Concepts & What's Next
 
-Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** (§4.3's `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part C's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.
+Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** (§4.3's `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part 3's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.

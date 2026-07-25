@@ -1,4 +1,4 @@
-# Section 2 — The Birth of Git
+# Section 2 (Part 1): The Birth of Git
 
 ## 2.1 The Precipitating Crisis: Linux Kernel & BitKeeper (2002–2005)
 

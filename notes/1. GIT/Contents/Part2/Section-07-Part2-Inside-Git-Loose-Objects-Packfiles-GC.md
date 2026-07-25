@@ -1,4 +1,4 @@
-# Section 7 — Inside `.git`: Loose Objects, Packfiles, Delta Compression & Garbage Collection
+# Section 7 (Part 2): Inside `.git`: Loose Objects, Packfiles, Delta Compression & Garbage Collection
 
 ## 7.1 Definition
 
@@ -286,4 +286,4 @@ Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas 
 
 ## 7.19 Related Concepts & What's Next
 
-This completes Part B — Architecture & Internals. Every mechanism taught from here forward (staging, committing, branching, merging, rebasing, remotes) now has a solid physical and logical foundation underneath it. Part C begins with Section 8: installing Git and understanding `git config` in full depth — the first genuinely hands-on, command-driven section, and the direct prerequisite for the daily workflow commands (`status`, `add`, `commit`, `diff`, `log`) taught in Sections 9–10.
+This completes Part 2 — Architecture & Internals. Every mechanism taught from here forward (staging, committing, branching, merging, rebasing, remotes) now has a solid physical and logical foundation underneath it. Part 3 begins with Section 8: installing Git and understanding `git config` in full depth — the first genuinely hands-on, command-driven section, and the direct prerequisite for the daily workflow commands (`status`, `add`, `commit`, `diff`, `log`) taught in Sections 9–10.

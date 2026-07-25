@@ -1,4 +1,4 @@
-# Section 1 — Version Control Fundamentals & The World Before Git
+# Section 1 (Part 1): Version Control Fundamentals & The World Before Git
 
 ## 1.1 Definition
 

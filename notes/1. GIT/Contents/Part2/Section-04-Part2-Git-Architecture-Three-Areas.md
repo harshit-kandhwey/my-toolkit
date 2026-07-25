@@ -1,4 +1,4 @@
-# Section 4 — Git Architecture: The Three Areas & Repo Anatomy
+# Section 4 (Part 2): Git Architecture: The Three Areas & Repo Anatomy
 
 ## 4.1 Definition
 

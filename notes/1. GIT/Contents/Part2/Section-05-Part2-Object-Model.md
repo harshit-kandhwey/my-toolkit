@@ -1,4 +1,4 @@
-# Section 5 — The Object Model: Blobs, Trees, Commits, Annotated Tags & Content-Addressable Storage
+# Section 5 (Part 2): The Object Model: Blobs, Trees, Commits, Annotated Tags & Content-Addressable Storage
 
 ## 5.1 Definition
 
@@ -296,4 +296,4 @@ The third commit's tree entry for `file.txt` points to the **identical blob hash
 
 ## 5.19 Related Concepts & What's Next
 
-This section covered the objects themselves. Section 6 covers **refs** — the named pointers (branches, tags-as-refs, HEAD) that give these otherwise anonymous hash-addressed objects human-friendly, moving names — plus the **reflog**, your local safety net for recovering from mistakes. Understanding refs precisely is also the direct prerequisite for detached HEAD, rebasing, and history rewriting in Part D.
+This section covered the objects themselves. Section 6 covers **refs** — the named pointers (branches, tags-as-refs, HEAD) that give these otherwise anonymous hash-addressed objects human-friendly, moving names — plus the **reflog**, your local safety net for recovering from mistakes. Understanding refs precisely is also the direct prerequisite for detached HEAD, rebasing, and history rewriting in Part 4.
