@@ -46,28 +46,28 @@ Beyond full regions, Google operates many more **edge locations** — smaller fa
 
 ```
                          ┌─────────────────────────────────────────┐
-                         │              GCP GLOBAL NETWORK           │
-                         │         (Google-owned private fiber)      │
+                         │              GCP GLOBAL NETWORK         │
+                         │         (Google-owned private fiber)    │
                          └─────────────────────────────────────────┘
                                     │                    │
-              ┌─────────────────────┘                    └─────────────────────┐
+              ┌─────────────────────┘                    └──────────────────────┐
               ▼                                                                 ▼
-      ┌───────────────────┐                                          ┌───────────────────┐
-      │   REGION: us-central1                                        │  REGION: europe-west1
-      │  (Iowa, USA)        │                                        │  (Belgium)           │
-      │                     │                                        │                       │
-      │  ┌───────────────┐  │                                        │  ┌───────────────┐    │
-      │  │ Zone: -a       │  │                                        │  │ Zone: -b       │    │
-      │  │ (independent   │  │◄──low-latency intra-region network──►│  │ (independent   │    │
-      │  │  power/cooling)│  │                                        │  │  power/cooling)│    │
-      │  └───────────────┘  │                                        │  └───────────────┘    │
-      │  ┌───────────────┐  │                                        └───────────────────────┘
+      ┌──────────────────────┐                                       ┌───────────────────────┐
+      │ REGION: us-central1  |                                       │  REGION: europe-west1 |
+      │  (Iowa, USA)         │                                       │  (Belgium)            │
+      │                      │                                       │                       │
+      │  ┌────────────────┐  │                                       │  ┌────────────────┐   │
+      │  │ Zone: -a       │  │                                       │  │ Zone: -b       │   │
+      │  │ (independent   │  │◄──low-latency intra-region network──► │  │ (independent   │   │
+      │  │  power/cooling)│  │                                       │  │  power/cooling)│   │
+      │  └────────────────┘  │                                       │  └────────────────┘   │
+      │  ┌────────────────┐  │                                       └───────────────────────┘
       │  │ Zone: -b       │  │
-      │  └───────────────┘  │
-      │  ┌───────────────┐  │
+      │  └────────────────┘  │
+      │  ┌────────────────┐  │
       │  │ Zone: -c       │  │
-      │  └───────────────┘  │
-      └───────────────────┘
+      │  └────────────────┘  │
+      └──────────────────────┘
 
       Edge PoPs (many more locations than regions) — cache content via Cloud CDN,
       serve as network entry points onto Google's private backbone.
@@ -83,14 +83,14 @@ Beyond full regions, Google operates many more **edge locations** — smaller fa
 
 ## 2.6 Choosing a Region: Decision Factors
 
-| Factor | Consideration |
-|---|---|
-| **Latency to users** | Choose the region geographically closest to your primary user base to minimize round-trip time. |
-| **Service availability** | Not all services/machine types/GPUs are available in every region — verify before committing. |
-| **Pricing** | Compute and storage pricing varies by region; some regions are more expensive due to local costs (power, real estate, taxes). |
+| Factor                          | Consideration                                                                                                                                 |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Latency to users**            | Choose the region geographically closest to your primary user base to minimize round-trip time.                                               |
+| **Service availability**        | Not all services/machine types/GPUs are available in every region — verify before committing.                                                 |
+| **Pricing**                     | Compute and storage pricing varies by region; some regions are more expensive due to local costs (power, real estate, taxes).                 |
 | **Compliance / data residency** | Legal requirements (e.g., GDPR considerations, industry regulations) may mandate that data stay within a specific country or economic region. |
-| **Disaster recovery strategy** | For multi-region DR, pick a secondary region geographically distant enough to be unaffected by the same disaster as your primary region. |
-| **Carbon footprint** | Google publishes carbon-free energy percentage data per region; sustainability-conscious organizations may factor this into region selection. |
+| **Disaster recovery strategy**  | For multi-region DR, pick a secondary region geographically distant enough to be unaffected by the same disaster as your primary region.      |
+| **Carbon footprint**            | Google publishes carbon-free energy percentage data per region; sustainability-conscious organizations may factor this into region selection. |
 
 ## 2.7 Hands-On Example: Listing Regions and Zones
 
@@ -101,6 +101,7 @@ gcloud compute regions list
 ```
 
 **Expected output (abbreviated):**
+
 ```
 NAME                     CPUS  DISKS_GB  ADDRESSES  RESERVED_ADDRESSES  STATUS  TURNDOWN_DATE
 asia-east1               ...   ...       ...        ...                 UP
@@ -110,11 +111,13 @@ europe-west1               ...   ...       ...        ...                 UP
 ```
 
 **List zones within a specific region:**
+
 ```bash
 gcloud compute zones list --filter="region:us-central1"
 ```
 
 **Expected output:**
+
 ```
 NAME             REGION        STATUS
 us-central1-a    us-central1   UP
@@ -137,13 +140,13 @@ us-central1-c    us-central1   UP
 
 ## 2.10 Interview Questions
 
-**🎯 Beginner:** *What is the difference between a region and a zone in GCP?*
+**🎯 Beginner:** _What is the difference between a region and a zone in GCP?_
 **Model answer:** A region is an independent geographic area (e.g., `us-central1`), and a zone is an isolated deployment area within that region (e.g., `us-central1-a`), roughly corresponding to a data center with independent power and cooling. Regions provide geographic separation for disaster recovery and latency purposes, while zones within a region provide fault isolation with low-latency connectivity between them, letting you build highly available architectures without the higher latency of cross-region communication.
 
-**🎯 Intermediate:** *Why would you choose a regional Managed Instance Group over a zonal one?*
+**🎯 Intermediate:** _Why would you choose a regional Managed Instance Group over a zonal one?_
 **Model answer:** A zonal Managed Instance Group places all instances within a single zone, so a zone-level failure takes down the entire group. A regional Managed Instance Group spreads instances across multiple zones within the region automatically, so the application remains available even if one zone fails. The trade-off is slightly more complexity in some data consistency scenarios (e.g., needing to handle cross-zone latency for stateful workloads), but for stateless workloads, regional MIGs are almost always preferred in production.
 
-**🎯 Senior/Architect:** *A client needs 99.99% availability with data residency restricted to the European Union, and a disaster recovery target region for business continuity. How would you approach region selection?*
+**🎯 Senior/Architect:** _A client needs 99.99% availability with data residency restricted to the European Union, and a disaster recovery target region for business continuity. How would you approach region selection?_
 **Model answer:** I'd select a primary EU region (e.g., `europe-west1` in Belgium) for data residency compliance, deploying the primary workload across at least 3 zones within that region for intra-region high availability against zone-level failures. For disaster recovery, I'd choose a second EU region that is geographically distant enough to avoid correlated disasters (e.g., `europe-west3` in Frankfurt, or `europe-north1` in Finland) while still satisfying the EU data residency requirement — I would not select a US region as DR target, since that would violate the residency constraint even for backup/replica data. I'd then design either an active-passive or active-active replication strategy between the two regions depending on RPO/RTO requirements (detailed in Section 49), and use a Global Load Balancer with health checks to handle regional failover automatically.
 
 ## 2.11 Key Takeaways

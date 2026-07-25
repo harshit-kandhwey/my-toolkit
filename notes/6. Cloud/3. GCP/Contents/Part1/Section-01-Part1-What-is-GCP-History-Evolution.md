@@ -27,17 +27,17 @@ GCP (and public cloud generally) solves this by converting infrastructure from a
 
 ## 1.4 History & Evolution of GCP
 
-| Year | Milestone |
-|---|---|
-| 2008 | Google App Engine launched (Google's first public cloud product) — a PaaS for running Python/Java web apps without managing servers. |
-| 2010 | Google Cloud Storage launched, providing object storage. |
-| 2012 | Google Compute Engine launched in limited preview — Google's IaaS virtual machine offering. |
-| 2013 | Compute Engine reaches General Availability. BigQuery (originally an internal tool, "Dremel") opened to the public. |
-| 2015 | Google Cloud Platform is formally branded and unified as a suite ("GCP"), consolidating previously separate products under one console and billing system. |
-| 2016 | Google Kubernetes Engine (GKE) launched — a managed service for Kubernetes, the container-orchestration system Google open-sourced in 2014 based on its internal "Borg" system. |
-| 2017–2018 | Rapid expansion of managed services: Cloud Functions (serverless), Cloud Spanner GA, Cloud IoT, expansion of AI/ML services (Vertex AI's predecessors). |
-| 2019 | Cloud Run launched — serverless containers, combining the simplicity of Cloud Functions with the flexibility of running any containerized workload. |
-| 2020s | Continued expansion: Anthos (hybrid/multi-cloud Kubernetes), BigQuery ML, expanded AI/ML platform (Vertex AI, consolidating prior ML tools), stronger enterprise security tooling (VPC Service Controls, Security Command Center), and continuous region expansion. |
+| Year      | Milestone                                                                                                                                                                                                                                                           |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2008      | Google App Engine launched (Google's first public cloud product) — a PaaS for running Python/Java web apps without managing servers.                                                                                                                                |
+| 2010      | Google Cloud Storage launched, providing object storage.                                                                                                                                                                                                            |
+| 2012      | Google Compute Engine launched in limited preview — Google's IaaS virtual machine offering.                                                                                                                                                                         |
+| 2013      | Compute Engine reaches General Availability. BigQuery (originally an internal tool, "Dremel") opened to the public.                                                                                                                                                 |
+| 2015      | Google Cloud Platform is formally branded and unified as a suite ("GCP"), consolidating previously separate products under one console and billing system.                                                                                                          |
+| 2016      | Google Kubernetes Engine (GKE) launched — a managed service for Kubernetes, the container-orchestration system Google open-sourced in 2014 based on its internal "Borg" system.                                                                                     |
+| 2017–2018 | Rapid expansion of managed services: Cloud Functions (serverless), Cloud Spanner GA, Cloud IoT, expansion of AI/ML services (Vertex AI's predecessors).                                                                                                             |
+| 2019      | Cloud Run launched — serverless containers, combining the simplicity of Cloud Functions with the flexibility of running any containerized workload.                                                                                                                 |
+| 2020s     | Continued expansion: Anthos (hybrid/multi-cloud Kubernetes), BigQuery ML, expanded AI/ML platform (Vertex AI, consolidating prior ML tools), stronger enterprise security tooling (VPC Service Controls, Security Command Center), and continuous region expansion. |
 
 > 💡 **Tip:** GCP's compute and container strategy is deeply informed by Google's own internal infrastructure history. Google ran containerized workloads internally at massive scale for over a decade (via a system called **Borg**) before Kubernetes — the open-source descendant of Borg's ideas — became an industry standard. This lineage is why GKE is widely regarded as one of the most mature managed Kubernetes offerings among cloud providers; it is not a bolt-on service, it reflects over a decade of Google's own operational experience running containers at scale.
 
