@@ -1,0 +1,138 @@
+# Section 7 (Part 1): Prerequisites Recap and How This Roadmap Is Organized
+
+**Roadmap Reference:** 1.7
+**Phase:** Phase 1 — Foundations
+**Status:** ✅ Part 1 (§1–§7) Completed
+
+---
+
+## 1.7 Prerequisites Recap and How This Roadmap Is Organized
+
+This section closes out Part 1 in two capacities. First, as **§1.7 proper**, it tells you what (if anything) you need before continuing, and how the remaining 118 sections of this project are built and organized — grounded in what §1–§6 actually demonstrated, not an aspirational plan. Second, as the **Part 1 synthesis**, it consolidates the misconceptions, key takeaways, and forward-links accumulated across §1–§6 into one reviewable checklist before you move into Part 2.
+
+### 1.7.1 What You Need Before Continuing
+
+Nothing beyond general computer literacy is required to proceed — this project builds every additional prerequisite in place, as it becomes relevant, rather than assuming it upfront:
+
+- **Basic networking concepts** (IP addresses, DNS, routing) will be briefly recapped at the start of Part 7 (§51) before diving into Linux-specific networking tools (`ip`, `ss`, firewalls, SSH).
+- **Command-line comfort** will be built progressively starting in Part 3 (§17), where the first sustained hands-on command sequences appear, using the same full command-documentation template §1–§4 already demonstrated (`uname`, `hostnamectl`, `modinfo`, the `grep | awk | sort | uniq -c | sort -rn | head` pipeline, and more).
+- **No prior Linux experience is assumed.** §1–§6 deliberately front-loaded the conceptual vocabulary (kernel vs. distro, licensing, philosophy, distro families, deployment landscape) specifically so that Part 2 onward can build hands-on material on a shared mental model instead of re-explaining first principles mid-command.
+
+### 1.7.2 How the Rest of This Project Is Structured
+
+**File convention.** Each roadmap subsection (e.g., `1.1`, `4.3`, `9.5`) is authored as its own file, following the `Contents/PartN/Section-NN-PartN-Slug.md` convention shared with this repo's other knowledge bases (AWS, Azure, GCP, GIT). Section numbers (`§`) are **continuous across the entire 17-part roadmap** — §1 through §125 — not reset per part, so `§41` always unambiguously means "Shells Overview," regardless of which Part folder you're browsing. Part 1 occupies `Contents/Part1/`, mapping roadmap items 1.1–1.7 to §1–§7; Part 2 will occupy `Contents/Part2/`, mapping 2.1–2.9 to §8–§16; and so on through Part 17 (§123–§125). The full mapping table lives in `00-Roadmap.md` §4.
+
+**The depth template §1–§6 actually established.** Rather than a hypothetical outline, here is what the six completed sections of this Part demonstrably contain, and what every later section in the roadmap should be expected to match:
+
+| Element                               | Demonstrated where                                                    | What it looks like                                                                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plain-language + precise definition   | §1 (kernel vs. distro)                                                | A one-paragraph intuitive framing followed by a technically precise definition                                                                                       |
+| Architecture / layering diagram       | §1 (hardware→kernel→userland→apps)                                    | ASCII-art diagrams showing how pieces stack                                                                                                                          |
+| Historical/conceptual context         | §2 (Unix→GNU→Linux), §3 (governance)                                  | Timeline tables, "why it matters operationally" framing                                                                                                              |
+| Full command documentation template   | §1 (`uname`, `hostnamectl`, `/etc/os-release`), §3 (`modinfo`)        | Purpose, syntax, flag tables, example + expected output, production usage, common errors, security impact, performance impact, troubleshooting — applied per command |
+| Worked multi-command hands-on example | §4 (SSH auth-log pipeline)                                            | A real task solved with a composed pipeline, each stage documented in a table                                                                                        |
+| Production usage notes                | §1.6, §3.4, §5.2                                                      | Concrete scenarios: CVE triage, compliance audits, distro selection trade-offs                                                                                       |
+| Security considerations               | §1.7, §3 (tainted kernels, GPL compliance)                            | A dedicated subsection connecting the topic to real security posture                                                                                                 |
+| Troubleshooting scenarios             | §1.8 (symptom/cause/resolution table)                                 | Tables mapping observed symptoms to root causes and fixes                                                                                                            |
+| Best practices                        | §1.9                                                                  | Explicit "do this" guidance distinct from the anti-patterns list                                                                                                     |
+| Anti-patterns / mistakes              | §1.10, §4 (monolithic scripts, opaque binary config, root-everywhere) | Named failure patterns with the operational cost of each spelled out                                                                                                 |
+| Tiered interview Q&A                  | Every section (§1–§6), Beginner→Intermediate→Senior→Architect         | Each tier includes a model answer **and** a note on what the interviewer is actually probing for                                                                     |
+| Common misconceptions                 | Every section                                                         | Numbered, each with the corrective explanation, not just a flat contradiction                                                                                        |
+| Key takeaways                         | Every section                                                         | A `🔑 Key Takeaways` block closing out the section                                                                                                                   |
+| Related concepts / forward references | Every section                                                         | Explicit `§N` links forward and backward, tying sections into one connected graph rather than isolated pages                                                         |
+
+Not every later section will need every element at equal weight — a short meta/recap section like this one, for instance, is deliberately lighter on hands-on command tables — but the template above is the baseline every technical section in Parts 2–17 is expected to meet or exceed.
+
+**Cross-referencing.** Cross-references between sections use the inline `§N` convention (matching this repo's other knowledge bases) rather than spelled-out "Section N" prose — you'll see this throughout §1–§6 already, e.g., §1 forward-referencing §11 (system calls) and §102 (golden images), or §4 forward-referencing §99 (containers as composed kernel primitives). This is deliberate: it lets any section point precisely at exactly the future or past material relevant to a claim, without waiting for that material to exist first.
+
+**Interview preparation.** Interview questions are woven into every section (as seen throughout §1–§6) **and** additionally consolidated into a dedicated final interview-prep part (Part 16, §116–§122), which organizes the accumulated question bank by difficulty tier and by scenario type (system design, production troubleshooting, behavioral-technical crossover) rather than by topic.
+
+### 1.7.3 How to Use This Knowledge Base
+
+This repo's `INDEX.md`/`README.md` will formalize navigation further as more parts land, but three usage patterns are already supported by the structure established in §1–§6:
+
+- **Sequential learning path** — read Part 1 → Part 17 in order. This is the intended default: each Part's dependency graph (see `00-Roadmap.md` §5) assumes prior Parts' vocabulary and commands are already familiar. Someone new to Linux should follow this path start to finish.
+- **Topic-jump path** — go directly to the `§N` you need (e.g., you already know Linux broadly but need a refresher specifically on LVM, §73–§79). This works because each section is self-contained enough to stand alone, with its own definition and command documentation, while still cross-referencing prerequisite sections via inline `§N` links if you do need to backfill context.
+- **Interview-prep path** — read the tiered interview Q&A embedded in each section as you go, then do a final pass through Part 16's consolidated question bank before an interview. Because every section already tags its misconceptions and key takeaways, this path doesn't require re-deriving what matters — it's already flagged inline.
+
+### 1.7.4 Interview Questions (Meta-Section)
+
+**🎯 Beginner:** _"If you were mentoring a junior engineer with zero Linux experience, in what order would you have them learn it, and why?"_
+**Model answer:** I'd start with the conceptual vocabulary before any hands-on commands — what the kernel is versus a distribution, and the "everything is a file / small composable tools" philosophy — because those ideas explain _why_ later commands and config formats look the way they do, rather than leaving the learner to memorize syntax with no mental model. From there I'd move to the filesystem and permissions (since almost every other topic assumes you can navigate and reason about file ownership), then processes and shell scripting, then networking, then package management and systemd, saving performance tuning, security hardening, and automation for once the fundamentals are solid. Interview prep and advanced production scenarios come last, once there's enough real material to actually reason about.
+_What the interviewer is probing for:_ whether the candidate can structure a learning plan around dependency order and conceptual scaffolding, not just list topics — a proxy for how they'd onboard a new hire in real life.
+
+**🎯 Intermediate:** _"This roadmap embeds interview questions inside every technical section instead of only at the end. What's the argument for that, versus a single dedicated interview-prep module?"_
+**Model answer:** Embedding questions next to the material they test keeps the question grounded in freshly-explained context — you immediately see how a concept like GPLv2 derivative-work boundaries (§3) gets turned into a senior-level question, rather than encountering the question cold, weeks later, disconnected from the explanation. It also reinforces the material twice, at different cognitive levels (explain it, then defend/apply it under interview framing). A dedicated final module (Part 16, §116–§122) still has real value on top of that — it lets you drill breadth and difficulty progression across the entire roadmap in one pass right before an actual interview, and organizes by scenario type rather than topic. The two aren't redundant; embedded questions build understanding, the consolidated bank builds recall and speed.
+_What the interviewer is probing for:_ whether the candidate thinks about learning-design trade-offs, not just Linux content — relevant for senior engineers who end up mentoring or building onboarding material themselves.
+
+**🎯 Senior:** _"Part 1 of this roadmap spent seven sections on history, licensing, and philosophy before a single filesystem command. Is that a good use of a new engineer's time, or front-loaded overhead that should be trimmed?"_
+**Model answer:** It's a deliberate investment, not overhead, provided it stays as tight as §1–§6 kept it — each of those sections still included hands-on commands (`uname`, `modinfo`, the auth-log pipeline) and interview-relevant material, not pure trivia. The payoff shows up constantly later: knowing _why_ config is plain text (§4) means `/etc/fstab` and systemd unit files never feel arbitrary; knowing the kernel/distro split (§1) means CVE triage and patch management (§89, §94) make sense on first exposure instead of needing re-explanation; knowing GPLv2's derivative-work boundary (§3) means a licensing question in a real commercial-appliance project doesn't require starting from zero. The risk would be if "foundations" ballooned into unfocused trivia with no operational payoff — that's the failure mode to guard against, not the existence of a foundations part itself. Given how tightly §1–§6 tied history and philosophy back to concrete commands and production scenarios, the time is well spent.
+_What the interviewer is probing for:_ judgment about learning-content design and the ability to defend a structural choice on its actual merits rather than either dismissing "soft" foundational material or defending it reflexively.
+
+---
+
+## Common Misconceptions (Part 1 Summary)
+
+Synthesizing the strongest, most interview-relevant misconceptions established across §1–§6:
+
+1. **"Linux is a fork of Unix."** False — no AT&T or BSD Unix source code exists inside the Linux kernel. Linux is a from-scratch reimplementation of Unix's design principles and largely its POSIX system-call interface, written independently starting in 1991. "Unix-like" is the technically correct term; "Unix" itself is a trademark with formal certification requirements Linux distributions have generally never pursued (§2).
+2. **"GNU/Linux and Linux are different operating systems."** They are not. "Linux," strictly, is the kernel; "GNU/Linux" is a naming convention some communities (notably the FSF and Debian) use to explicitly credit the GNU Project's userland contributions (compiler, shell, core utilities) alongside the kernel. Same underlying system, different naming emphasis (§1, §2).
+3. **"If my proprietary application runs on Linux, I have to open-source it."** False, and the single highest-value misconception to get right. GPLv2's copyleft obligations attach to **derivative works of GPL-licensed code itself** — code that incorporates or is compiled into GPL-licensed source, or a kernel module tightly coupled to kernel internals. An application that merely runs on top of the kernel, talking to it only through the stable, published system-call interface, is not a derivative work and carries no source-disclosure obligation. This is precisely why commercial, closed-source software runs on Linux at massive scale without being open-sourced (§3).
+4. **"All Linux distributions behave identically once you know one."** False in practice — init systems, package managers, default security modules (SELinux vs. AppArmor), release cadence (rolling vs. point release), and filesystem/config layout conventions vary meaningfully across the Debian, RHEL, SUSE, Arch, and Alpine families. Two distros running the identical kernel version can still diverge in behavior due to distro-specific patches and build configuration (§1, §5).
+5. **"Open source means unsupported" / "GPL means free of charge."** Enterprise distributions (RHEL, SLES, Ubuntu Pro) sell paid, contractual support with defined SLAs on top of open-source code — open licensing and commercial support are not mutually exclusive, and the GPL explicitly permits charging money for distribution; it only protects the recipient's downstream freedoms (§3, §5).
+6. **"A newer kernel version string always means more patched/secure."** Not necessarily — distro vendors backport security fixes into their own kernel builds independently of upstream version numbers, so patch exposure must be judged against the vendor's own security advisory (RHSA, USN, etc.), not the raw `uname -r` string alone (§1).
+7. **"Unix philosophy means avoiding all abstraction and refusing to build bigger tools."** False — the philosophy is about composability and single responsibility, not about refusing scale. `systemd`, Kubernetes, and modern package managers are large, sophisticated systems that still honor the philosophy by exposing composable, scriptable, text-based interfaces rather than becoming opaque monoliths (§4).
+8. **"Containers are a separate invention from core Linux."** False — Docker/Kubernetes did not invent a new OS model; they composed pre-existing kernel primitives (`chroot`, namespaces, cgroups, OverlayFS) the same way a shell pipeline composes small tools, and expose plain-text Dockerfiles/YAML manifests as a direct continuation of the "transparency over hidden magic" principle (§4, forward-referenced fully at §99).
+9. **"Distro choice is mainly a technical/taste decision."** In enterprise settings it's driven far more by support lifecycle, compliance certification availability, ecosystem compatibility, and existing organizational expertise than by any inherent technical superiority of one distro over another (§5).
+
+---
+
+## Part 1 🔑 Key Takeaways Checklist
+
+```text
+□ Linux, strictly, is the kernel; a distribution is the kernel + userland + package manager
+  + support model, packaged and branded (§1)
+□ The layering is Hardware → Kernel → Userland/System Software → Applications, and
+  uname -r + /etc/os-release (or hostnamectl) together fully characterize a host (§1)
+□ Linux descends conceptually from Unix (1969) via BSD and the AT&T/System V split;
+  the GNU Project (1983) built nearly a full free OS but lacked a working kernel;
+  Torvalds' kernel (1991), relicensed under the GPL in 1992, completed it (§2)
+□ Linux is a from-scratch reimplementation of Unix/POSIX concepts, not a fork of
+  Unix source code — "Unix-like" is the precise term (§2)
+□ The Linux kernel is GPLv2-licensed (copyleft); obligations trigger on distributing
+  a derivative work, not on private use or on software that merely runs atop the kernel (§3)
+□ Kernel governance is layered: Torvalds holds the trademark and final mainline authority;
+  the Linux Foundation is a neutral funding/infrastructure body with no technical control;
+  a maintainer hierarchy (documented in MAINTAINERS) does the actual patch review via
+  mailing lists and git send-email, not GitHub PRs (§3)
+□ Five inherited design principles explain nearly every later convention: everything is
+  a file, small composable tools, text streams as a universal interface, transparency
+  over hidden magic, and multi-user/multi-tasking by design (§4)
+□ Ignoring the philosophy has predictable costs: monolithic unmaintainable scripts,
+  undiffable opaque binary config, and root-everywhere permission shortcuts that remove
+  blast-radius containment (§4)
+□ Major distro families — Debian-based (apt), RHEL-based (dnf/yum), SUSE-based (zypper),
+  independent/rolling (Arch, pacman), container-minimalist (Alpine, apk/musl) — differ
+  meaningfully in packaging, release cadence, and target use case, not just branding (§5)
+□ Enterprise distro choice is driven by support lifecycle and compliance certification
+  more than by raw technical preference (§5)
+□ Linux dominates public cloud VM/container infrastructure, the majority of public web
+  serving, mobile (via the Android kernel), supercomputing (TOP500), and is the kernel
+  underneath Docker/Kubernetes via namespaces and cgroups (§6)
+□ Specific market-share and version numbers shift over time and by measurement
+  methodology — verify current figures rather than citing a fixed remembered number (§6)
+```
+
+## Related Concepts & What's Next
+
+- **Part 2 — Architecture and the Kernel (§8–§16)** builds directly on the kernel/distro layering established in §1: system architecture overview, kernel space vs. user space, kernel components (scheduler, memory manager, VFS, network stack), system calls (the formal version of the `uname(2)` syscall touched on in §1–§2), the boot process, init systems, kernel modules, interrupts/context switching, and virtual memory fundamentals.
+- **Part 3 (§17–§24)** picks up "everything is a file" (§4) and makes it concrete via the Filesystem Hierarchy Standard and `/proc`/`/sys` as live introspection interfaces.
+- **Part 4 (§25–§32)** formalizes the multi-user/multi-tasking principle (§4) into the full permission model — users/groups, rwx, SUID/SGID/sticky bit, ACLs, sudo.
+- **Part 6 (§41–§50)** builds the small-composable-tools/text-streams principle (§4) to full fluency across grep, sed, awk, and the rest of the text-processing toolkit.
+- **Part 8 (§59–§64)** expands on the `apt` vs. `dnf`/`yum` vs. `zypper` differences introduced in §5, and revisits the per-package license metadata first touched on in §3.
+- **Part 13 (§97–§102)** returns to "Linux as the foundation for containers," giving full technical treatment to the namespaces/cgroups/OverlayFS composition previewed in §4 and §6.
+- **Part 16 (§116–§122)** consolidates the interview question bank that every section, including this one, has been contributing to since §1.
+
+---
+
+**Next:** Part 2 — Architecture and the Kernel (§8–§16)
