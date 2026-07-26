@@ -1,22 +1,22 @@
 # Section 78 — Azure Databricks
 
-## 78.1 Definition
+## 1. Definition
 
 **Plain language:** Azure Databricks is Microsoft's first-party-integrated version of Databricks, the company's own unified data-and-AI platform built around Apache Spark — it gives data engineers and data scientists a managed Spark environment, collaborative notebooks, and (via Delta Lake) reliable table-like structure over data lake files, positioned as a premium, deeply-featured alternative to Synapse's own Spark pools for teams whose workloads are heavily Spark- and ML-centric.
 
 **Precise definition:** Azure Databricks is a jointly-engineered, first-party Azure service (billed through Azure, integrated with Entra ID and Azure networking, but operated on infrastructure and control-plane software built by Databricks the company) providing a **workspace** (the organizing unit for notebooks, jobs, and cluster configuration), **clusters** (managed Spark compute, either all-purpose for interactive work or job clusters spun up and torn down automatically for scheduled workloads), and **Delta Lake** (an open-source storage format and transaction layer adding ACID transactions, schema enforcement, and time travel on top of Parquet files in a data lake).
 
-## 78.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Section 76.5 introduced Synapse Spark pools as Synapse's own embedded Spark capability, and noted that Azure Databricks solves an overlapping problem — running Apache Spark at scale over data lake data. Databricks exists as a distinct, first-party Azure offering because Databricks the company built the original, most mature commercial Spark platform (the founders of the Databricks company were also original creators of Apache Spark itself), with capabilities — cluster performance optimizations, a mature collaborative-notebook experience, MLflow-based machine-learning lifecycle tooling, and Delta Lake itself — that predate and, in a number of respects, still exceed what Synapse's more recently built-in Spark pools offer. Rather than Azure building a fully independent, competing Spark platform from scratch, Microsoft partnered directly with Databricks to offer it as an integrated first-party Azure service, giving Azure customers access to that platform's maturity while still getting Azure-native billing, Entra ID integration, and VNet injection — filling the specific gap of "genuinely best-in-class Spark and ML tooling, natively available within Azure" that Synapse Spark pools alone don't fully close, particularly for machine-learning-heavy or very large-scale Spark workloads.
 
-## 78.3 Workspace and Cluster Model
+## 3. Workspace and Cluster Model
 
-### 78.3.1 The Databricks Workspace
+### 3.1 The Databricks Workspace
 
 **Definition:** an Azure Databricks workspace is the top-level Azure resource (deployed into the customer's own Azure subscription and, by default, its own managed resource group holding the underlying compute/networking resources Databricks provisions on the customer's behalf) providing a collaborative environment for notebooks, jobs, cluster management, and — depending on deployment tier — the **Unity Catalog** governance layer spanning multiple workspaces.
 
-### 78.3.2 Cluster Types
+### 3.2 Cluster Types
 
 - **All-Purpose Clusters** — long-running, interactively-usable Spark clusters for exploratory notebook work, typically shared by a team and manually or automatically terminated after a configured idle period to control cost.
 - **Job Clusters** — ephemeral clusters automatically created for the duration of a specific scheduled job and torn down immediately on completion, avoiding the cost of keeping compute running between scheduled runs — the recommended pattern for production, scheduled Databricks workloads specifically because of this automatic, tightly-scoped lifecycle.
@@ -24,19 +24,19 @@ Section 76.5 introduced Synapse Spark pools as Synapse's own embedded Spark capa
 
 ⚠️ Cluster autoscaling behavior, node-type/SKU options, and Databricks Runtime version support windows change frequently — verify current guidance against official Databricks-on-Azure documentation when sizing production clusters.
 
-## 78.4 Delta Lake
+## 4. Delta Lake
 
-### 78.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** Delta Lake solves a problem plain Parquet files in a data lake have on their own — if multiple processes write to the same data lake location concurrently, or a write fails partway through, readers can see inconsistent, partial, or corrupted results, because plain files and folders have no concept of a transaction. Delta Lake adds exactly that: a transaction log sitting alongside the Parquet data files, so reads and writes behave with the same reliability guarantees relational databases have always provided.
 
 **Precise definition:** Delta Lake is an open-source storage format built on top of Parquet, adding a **transaction log** (a sequential, versioned record of every change to the table) that provides **ACID transactions**, **schema enforcement** (rejecting writes that don't match the table's defined schema, rather than silently corrupting downstream readers), and **time travel** (the ability to query the table as it existed at a specific prior version or timestamp, since the transaction log retains history rather than only the current state).
 
-### 78.4.2 Why This Matters for the Medallion Architecture
+### 4.2 Why This Matters for the Medallion Architecture
 
 Delta Lake's ACID guarantees are specifically what make the bronze/silver/gold medallion pattern (Section 75.5.2, formalized further in Section 82) reliably implementable at scale: a Spark job compacting small files, merging upserts, or backfilling a corrected historical partition can do so as an atomic operation that either fully succeeds or fully fails, without ever leaving downstream readers looking at a half-written, inconsistent intermediate state — a guarantee plain Parquet files without Delta Lake's transaction log don't provide on their own.
 
-### 78.4.3 Key Delta Lake Operations
+### 4.3 Key Delta Lake Operations
 
 ```python
 # MERGE (upsert) into a Delta table — a common silver-layer pattern
@@ -58,7 +58,7 @@ spark.read.format("delta").option("versionAsOf", 12).load("/silver/sales")
 - `OPTIMIZE ... ZORDER BY` compacts small files and co-locates data by the specified column(s), improving predicate-pushdown performance for queries filtering on that column — a Delta-Lake-specific evolution of the general compaction guidance from Section 75.11.
 - Time travel (`versionAsOf` / `timestampAsOf`) supports auditing, debugging a bad pipeline run by comparing to a known-good prior version, and reproducing a report exactly as it appeared at a specific point in time.
 
-## 78.5 Azure Databricks vs. Synapse Spark Pools — Comparison
+## 5. Azure Databricks vs. Synapse Spark Pools — Comparison
 
 | Aspect                    | Azure Databricks                                                                              | Synapse Spark Pools                                                                                  |
 | ------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -71,11 +71,11 @@ spark.read.format("delta").option("versionAsOf", 12).load("/silver/sales")
 
 🎯 **Interview Tip:** a frequently tested framing — the Databricks-vs-Synapse-Spark-pools decision is rarely "one is strictly better," but rather "how Spark-and-ML-centric is the workload, and is the team already standardized on one platform or the other" — interviewers are often testing whether a candidate reaches for a nuanced, workload-driven answer instead of declaring a universal winner.
 
-## 78.6 Notebooks and Collaborative Development
+## 6. Notebooks and Collaborative Development
 
 **Definition:** Databricks notebooks support mixed-language cells (Python, Scala, SQL, R) within a single notebook, real-time multi-user collaborative editing, and built-in visualization — the primary development surface for both data engineering (ETL logic written in PySpark) and data science (exploratory analysis and model training) work in a Databricks workspace, with notebooks schedulable directly as jobs or invoked from an external orchestrator like Data Factory's Databricks Notebook Activity (Section 77.3.2) or a Synapse pipeline.
 
-## 78.7 Architecture Diagram
+## 7. Architecture Diagram
 
 ```
 Azure Data Factory / Synapse Pipeline
@@ -95,7 +95,7 @@ Azure Databricks Workspace
         serves: BI queries directly against Delta tables (Power BI, Section 79)
 ```
 
-## 78.8 Configuration & Hands-On Example
+## 8. Configuration & Hands-On Example
 
 **Creating an Azure Databricks workspace:**
 
@@ -114,25 +114,25 @@ az databricks workspace create \
   - `--managed-resource-group` — a dedicated, Databricks-managed resource group where the underlying VMs, managed disks, and networking for clusters are actually provisioned; this resource group's contents are managed by Databricks' control plane and should not be manually modified.
 - **Common error:** manually modifying or deleting resources inside the Databricks-managed resource group (e.g., "cleaning up" what looks like an orphaned VM) — Databricks' control plane actively reconciles this resource group, and manual changes are often reverted or cause cluster provisioning failures; the managed resource group should be treated as entirely owned by the Databricks service.
 
-## 78.9 Production & Enterprise Usage
+## 9. Production & Enterprise Usage
 
 Enterprise Databricks deployments typically use **VNet injection** (deploying the workspace into a customer-owned VNet rather than Databricks' default managed network) to apply the organization's own NSGs, route tables, and Private Endpoints (Section 23) consistently with the rest of its network security posture, and adopt **Unity Catalog** for centralized data governance (table-level access control, data lineage, and audit logging spanning multiple workspaces) once an organization operates more than a single Databricks workspace. Production ETL is run via scheduled **Job Clusters** invoked either directly from Databricks' own job scheduler or orchestrated externally from Data Factory/Synapse Pipelines, while interactive All-Purpose Clusters are reserved for genuinely exploratory or development work, with idle-termination configured aggressively to control cost.
 
-## 78.10 Security Considerations
+## 10. Security Considerations
 
 - Use **Entra ID credential passthrough** or Unity Catalog's identity-based access control (Premium tier and above) so that data access permissions on the underlying ADLS Gen2 data lake are enforced per authenticated user/group rather than through a shared cluster-level service principal with broad access to everything the cluster can reach.
 - Deploy the workspace with **VNet injection** into a customer-managed VNet with appropriate NSGs and Private Endpoints reaching the data lake and any other linked data sources, rather than relying on the default Databricks-managed network with public connectivity.
 - Store any credentials clusters need (external database connection strings, API keys) in **Key Vault** (Section 56), accessed via a Databricks-backed secret scope rather than being hardcoded into notebooks.
 
-## 78.11 Performance Considerations
+## 11. Performance Considerations
 
 Cluster sizing (node count, VM SKU, autoscaling min/max bounds) should be matched to the actual workload's shape — a job with highly variable daily data volume benefits from autoscaling bounds wide enough to handle peak load without over-provisioning for typical load, while a job with predictable, steady volume may perform more cost-effectively on a fixed-size cluster avoiding autoscaling overhead entirely. Delta Lake's `OPTIMIZE ... ZORDER BY` (Section 78.4.3) is the primary lever for query performance against frequently-filtered columns, directly analogous to choosing a good distribution column in a Synapse dedicated SQL pool (Section 76.3.2) — both are "organize the physical data layout around how it's actually queried" optimizations, just applied to different underlying storage engines.
 
-## 78.12 Monitoring
+## 12. Monitoring
 
 Azure Databricks integrates with Azure Monitor (Part 10) via diagnostic logs (cluster events, job run history, notebook execution audit trail) sent to Log Analytics (Section 51), and Databricks' own native UI provides detailed Spark UI access (stage-level execution timelines, shuffle/spill metrics) for diagnosing a specific slow job's actual bottleneck — the combination gives both the Azure-standard cross-service monitoring view and the Spark-specific execution detail a data engineer needs to tune a genuinely slow transformation.
 
-## 78.13 Troubleshooting
+## 13. Troubleshooting
 
 | Symptom                                                                                                       | Likely Cause                                                                                                                                           | Fix                                                                                                                   |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
@@ -140,7 +140,7 @@ Azure Databricks integrates with Azure Monitor (Part 10) via diagnostic logs (cl
 | Databricks costs are higher than expected despite modest actual usage                                         | All-Purpose Clusters left running without aggressive idle-termination configured; production jobs using All-Purpose rather than ephemeral Job Clusters | Configure idle auto-termination on interactive clusters; migrate scheduled production workloads to Job Clusters       |
 | Manually "cleaned up" a resource in the Databricks-managed resource group, and clusters now fail to provision | Databricks' control plane expected that resource to exist and reconciles/depends on it                                                                 | Do not manually modify the managed resource group; recreate the workspace or contact support if state is inconsistent |
 
-## 78.14 Interview Questions — Section 78
+## 14. Interview Questions — Section 78
 
 ### 🎯 Intermediate
 
@@ -158,13 +158,13 @@ _Model answer:_ I'd start from the workload shape rather than a platform prefere
 
 _What the interviewer is probing:_ the ability to reason about a genuine platform-selection trade-off along a specific technical dimension (ML tooling maturity) rather than a generic "it depends," while also recognizing that a hybrid, workload-segmented approach using a shared Delta Lake format is a legitimate, common real-world outcome rather than an all-or-nothing platform commitment.
 
-## 78.15 Common Misconceptions
+## 15. Common Misconceptions
 
 - **"Azure Databricks and Synapse Spark pools are the same thing with different names."** False — they're genuinely different Spark platforms with different engineering ownership (Databricks the company vs. Microsoft's native Synapse team), different ML tooling maturity, and different workspace integration models.
 - **"Delta Lake is a proprietary Databricks-only format."** False — Delta Lake is open-source and can be read/written from Synapse Spark pools, Synapse serverless SQL pools, and other engines, not exclusively from Databricks, though Databricks' own tooling has historically had the deepest native integration with it.
 - **"Job Clusters and All-Purpose Clusters are just different names for the same thing."** False — Job Clusters are ephemeral, spun up and torn down automatically per scheduled job specifically to avoid idle cost, while All-Purpose Clusters are long-running and intended for interactive, shared use; using All-Purpose Clusters for production scheduled jobs is a common and avoidable cost mistake.
 
-## 78.16 Key Takeaways
+## 16. Key Takeaways
 
 - 🔑 Azure Databricks is a first-party-integrated, jointly-engineered Databricks platform on Azure, distinct from (and overlapping with) Synapse Spark pools, generally favored for Spark- and ML-heavy workloads given its more mature ML tooling.
 - 🔑 Delta Lake adds a transaction log on top of Parquet providing ACID transactions, schema enforcement, and time travel — the reliability layer that makes medallion-architecture operations like merge/upsert and compaction safe under concurrent or failed writes.
@@ -172,6 +172,6 @@ _What the interviewer is probing:_ the ability to reason about a genuine platfor
 - 🔑 `OPTIMIZE ... ZORDER BY` is Delta Lake's file-compaction and data-layout optimization tool, directly analogous in purpose to choosing a good Synapse dedicated SQL pool distribution column — both organize physical storage around actual query patterns.
 - 🔑 Delta Lake is open-source and usable from multiple engines (Synapse, Databricks), not a Databricks-exclusive format, making it a viable shared table format across a multi-platform data estate.
 
-## 78.17 Related Concepts (Next Up)
+## 17. Related Concepts (Next Up)
 
 Section 79 turns to **Power BI**, the business-intelligence and reporting layer that consumes the curated/gold-zone data this and the preceding sections' engines produce — covering DirectQuery vs. Import mode and how Power BI connects directly to Synapse dedicated/serverless SQL pools and Databricks SQL Warehouses to actually put this Part's data engineering work in front of business users.

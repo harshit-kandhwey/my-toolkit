@@ -6,7 +6,7 @@
 
 ---
 
-## 46.1 Introduction and Scope
+## 1. Introduction and Scope
 
 Section 4 introduced Azure Resource Manager (ARM) as the deployment and management layer underlying every Azure resource. This section covers **ARM Templates** — the native, JSON-based Infrastructure as Code (IaC) format that ARM itself understands directly, without any translation layer. Even though Section 47's Bicep is now the generally recommended _authoring_ experience for new work, ARM Templates remain essential to understand deeply: Bicep compiles down to ARM JSON, every third-party/vendor Azure IaC artifact (marketplace solutions, many Azure Quickstart templates) is frequently distributed as ARM JSON, and troubleshooting a deployment failure often means reading the underlying ARM JSON regardless of what authoring tool produced it.
 
@@ -14,21 +14,21 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 
 ---
 
-## 46.2 What Are ARM Templates and Why They Exist
+## 2. What Are ARM Templates and Why They Exist
 
-### 46.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** an ARM Template is a JSON file that declaratively describes the Azure resources you want to exist — their types, properties, and relationships — which Azure Resource Manager reads and uses to create, update, or ensure those exact resources exist, in a repeatable, idempotent way.
 
 **Precise definition:** an ARM Template is a JSON document conforming to a specific schema, submitted to Azure Resource Manager's deployment API, declaratively specifying the desired state of one or more Azure resources, which ARM reconciles against current state via its Resource Providers (Section 4.3's REST-based resource provider model, applied directly here).
 
-### 46.2.2 Why Declarative IaC Exists — The Problem It Solves
+### 2.2 Why Declarative IaC Exists — The Problem It Solves
 
 - **Reproducibility:** manually clicking through the Azure Portal to provision a complex environment (a VNet, several subnets, an AKS cluster, a database, networking rules) is not reliably repeatable — human execution of the same steps twice can easily diverge (a missed setting, a different naming choice), and there is no artifact capturing exactly what was actually built. A template is that artifact: version-controllable, reviewable, and mechanically re-executable to produce the identical result.
 - **Idempotency:** ARM Templates are declarative, not imperative — a template describes the desired _end state_, and ARM's deployment engine determines what changes (if any) are needed to reach that state from wherever the environment currently is, rather than the template author scripting a specific sequence of create/update/delete operations. Deploying the same template twice against an unchanged environment produces no unintended side effects — the second deployment recognizes the desired state already matches and makes no changes, a property that a hand-written imperative script (a sequence of `az` CLI commands) does not automatically guarantee.
 - **Drift detection and correction:** because a template captures a complete desired-state definition, redeploying it against an environment that has since been manually modified (configuration drift, Section 34.2.2's concept applied here to infrastructure rather than application dependencies) will identify and can correct the drift back to the template's declared state — directly supporting the "immutable infrastructure" and "avoid manual, undocumented changes" principles established elsewhere in this roadmap (Section 34.12, Section 36.7.2's node resource group warning).
 
-### 46.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                         | Definition                                                                                                                                                                                                                                                                   |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -46,9 +46,9 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 
 ---
 
-## 46.3 Template Structure
+## 3. Template Structure
 
-### 46.3.1 Top-Level Schema
+### 3.1 Top-Level Schema
 
 ```json
 {
@@ -65,7 +65,7 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 - **`contentVersion`:** an arbitrary version string for the author's own tracking purposes; not enforced or interpreted by ARM itself beyond being present.
 - **`parameters` / `variables` / `resources` / `outputs`:** the four core sections, detailed below.
 
-### 46.3.2 Parameters
+### 3.2 Parameters
 
 ```json
 "parameters": {
@@ -85,7 +85,7 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 - `defaultValue` allows a parameter to be optional at deployment time, falling back to the specified default — useful for parameters with a sensible common value that only occasionally needs overriding.
 - **Parameter files:** a separate JSON file (conventionally `parameters.dev.json`, `parameters.prod.json`) supplies parameter values for a specific deployment target, enabling the _same_ template to be deployed to multiple environments with environment-specific values supplied externally — directly realizing the "build once, deploy the same artifact to every environment" principle (Section 34.12) applied to infrastructure definitions rather than container images.
 
-### 46.3.3 Variables
+### 3.3 Variables
 
 ```json
 "variables": {
@@ -96,7 +96,7 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 - Variables compute derived values once, for reuse across multiple resource declarations within the template, avoiding repeating the same expression multiple times and reducing the risk of inconsistency if that expression needs to change later.
 - `uniqueString()` is a built-in ARM Template function generating a deterministic (same inputs always produce the same output) hash-based string, commonly used to generate globally unique resource names (e.g., for a Storage Account, Section 16, which requires a globally unique name) without requiring the template author to manually invent a unique value.
 
-### 46.3.4 Resources
+### 3.4 Resources
 
 ```json
 "resources": [
@@ -119,7 +119,7 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 - `apiVersion` pins the specific schema version of this resource type's properties being used; different API versions can have different available properties/defaults, making this a meaningful, deliberate choice rather than an arbitrary detail — an outdated `apiVersion` may lack a needed property or newer security default.
 - `[resourceGroup().location]` is an ARM Template function call (bracket syntax) referencing the deployment target resource group's own location, a common pattern for inheriting location rather than hard-coding or requiring it as a separate parameter.
 
-### 46.3.5 Resource Dependencies (`dependsOn`)
+### 3.5 Resource Dependencies (`dependsOn`)
 
 ```json
 {
@@ -134,7 +134,7 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 - **Why explicit dependency declaration matters:** ARM deploys resources in parallel by default wherever no dependency prevents it, for deployment speed — but many resources genuinely require another resource to exist first (a VM needs its network interface to already exist). `dependsOn` explicitly declares this ordering requirement.
 - **Implicit dependencies:** when one resource's properties directly reference another resource via a `resourceId()` or similar expression within the same template, ARM can often infer the dependency automatically without an explicit `dependsOn` — but explicit `dependsOn` remains necessary and is best practice wherever a dependency exists that isn't expressed through a direct property reference, to avoid a subtle race condition where ARM attempts to create resources in parallel that actually have an unstated ordering requirement.
 
-### 46.3.6 Outputs
+### 3.6 Outputs
 
 ```json
 "outputs": {
@@ -149,13 +149,13 @@ Section 4 introduced Azure Resource Manager (ARM) as the deployment and manageme
 
 ---
 
-## 46.4 Template Functions and Expressions
+## 4. Template Functions and Expressions
 
-### 46.4.1 Why Functions Exist
+### 4.1 Why Functions Exist
 
 ARM Templates are declarative JSON, not a general-purpose programming language — but real-world templates need some computation (string concatenation, conditional logic, referencing other resources' properties) beyond static literal values. ARM provides a library of built-in functions, invoked via bracket-string syntax (`"[functionName(args)]"`), to cover this need without turning the template into an imperative script.
 
-### 46.4.2 Common Function Categories
+### 4.2 Common Function Categories
 
 | Category                                                                    | Examples                                                           | Purpose                                                                                                                                                                       |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -165,7 +165,7 @@ ARM Templates are declarative JSON, not a general-purpose programming language �
 | **Array/object functions**                                                  | `union()`, `array()`, `contains()`, `length()`                     | Manipulating array/object-typed parameter or variable values.                                                                                                                 |
 | **Copy/loop functionality** (via the `copy` element, not a simple function) | —                                                                  | Declaring multiple instances of a resource (or a property array) from a single resource block, parameterized by an iteration count — ARM Templates' native looping mechanism. |
 
-### 46.4.3 The `copy` Loop (Resource Iteration)
+### 4.3 The `copy` Loop (Resource Iteration)
 
 ```json
 {
@@ -185,30 +185,30 @@ ARM Templates are declarative JSON, not a general-purpose programming language �
 
 ---
 
-## 46.5 Modularity: Linked and Nested Templates
+## 5. Modularity: Linked and Nested Templates
 
-### 46.5.1 Why Modularity Matters
+### 5.1 Why Modularity Matters
 
 A single, monolithic template describing an entire complex environment (networking, compute, databases, security) becomes difficult to read, review, reuse, and maintain as it grows — the same "break large systems into smaller, composable units" principle that motivates modular application architecture generally applies to infrastructure definitions.
 
-### 46.5.2 Linked Templates
+### 5.2 Linked Templates
 
 - **Definition:** a parent template references a separate template file (stored at an accessible URI — commonly a Storage Account blob with a SAS token, or increasingly a Bicep-compiled/ARM Template Spec, 46.5.4) via a `Microsoft.Resources/deployments` resource, allowing complex environments to be composed from smaller, independently maintained/reusable template files.
 - **Trade-off:** enables genuine modularity and reuse across multiple parent templates, but introduces the operational complexity of managing and versioning multiple separate template artifacts and their accessibility (the linked template file must be reachable by ARM at deployment time, requiring its own storage/access configuration) — a real cost against the modularity benefit, worth weighing for template complexity that genuinely warrants it versus over-engineering a simple deployment into unnecessary indirection.
 
-### 46.5.3 Nested Templates
+### 5.3 Nested Templates
 
 - **Definition:** an inline template embedded directly within the parent template's `Microsoft.Resources/deployments` resource, rather than referencing an external file — providing similar logical modularity/scoping benefits (e.g., deploying resources at a different scope than the parent template's own scope) without the external-file-accessibility complexity of linked templates, at the cost of the nested content still living inside one larger file rather than being genuinely separable/reusable across different parent templates.
 
-### 46.5.4 ARM Template Specs
+### 5.4 ARM Template Specs
 
 - **Definition:** a first-class Azure resource type (`Microsoft.Resources/templateSpecs`) that packages and versions an ARM Template as a manageable Azure resource itself, with RBAC-controlled access — providing a more governed, discoverable alternative to a linked template referencing an ad hoc Storage Account blob URI, particularly for templates an organization wants to publish as a reusable, versioned, centrally governed building block for other teams to consume.
 
 ---
 
-## 46.6 Deployment Scopes
+## 6. Deployment Scopes
 
-### 46.6.1 The Four Scopes
+### 6.1 The Four Scopes
 
 Directly extending Section 4's ARM scope hierarchy, templates can be deployed at four different scopes:
 
@@ -223,20 +223,20 @@ Directly extending Section 4's ARM scope hierarchy, templates can be deployed at
 
 ---
 
-## 46.7 What-If: Preview Before Deploy
+## 7. What-If: Preview Before Deploy
 
-### 46.7.1 Definition and Why It Matters
+### 7.1 Definition and Why It Matters
 
 - **`az deployment group what-if`** (and equivalent commands at other scopes) evaluates a template against the current state of the target scope and reports what changes _would_ occur — resources to be created, modified, or deleted — **without actually making any changes**, directly analogous in purpose to Terraform's well-known `terraform plan` command (a comparison point explicitly relevant heading into Section 48).
 - **Why this matters operationally:** especially combined with Complete deployment mode's genuine deletion risk (46.2.3's warning), previewing exactly what a deployment will do before committing to it is a critical safety practice for any non-trivial production template change — catching an unintended resource deletion or an unexpected property change before it actually happens, rather than discovering it after the fact.
 
-### 46.7.2 Production Usage
+### 7.2 Production Usage
 
 💡 **Tip:** mature CI/CD pipelines (Section 45) commonly run `what-if` as an automated step on every pull request touching infrastructure templates, surfacing the proposed change set directly in the PR for human review (extending Section 45.3.2's build-validation branch-policy pattern to infrastructure changes specifically) — before the actual deployment step runs, typically gated behind an environment approval (Section 45.4.4) for production specifically.
 
 ---
 
-## 46.8 Security and Governance Considerations
+## 8. Security and Governance Considerations
 
 - **Avoid outputting secrets (46.3.6's warning)** — a recurring, specific ARM Template pitfall worth remembering precisely.
 - **Least-privilege deployment identity:** the identity executing a template deployment (whether a human via `az deployment`, or a pipeline's service connection, Section 45.7.2) should have only the RBAC permissions actually needed for the resources being deployed at the target scope — the same least-privilege principle applied throughout this roadmap, now specifically to deployment-time identity.
@@ -245,7 +245,7 @@ Directly extending Section 4's ARM scope hierarchy, templates can be deployed at
 
 ---
 
-## 46.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                                 | Likely Cause                                                                                                                           | Diagnostic Step                                                                                                                                                      |
 | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -257,7 +257,7 @@ Directly extending Section 4's ARM scope hierarchy, templates can be deployed at
 
 ---
 
-## 46.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Templates stored in version control alongside application code or in a dedicated infrastructure repository, never edited ad hoc against production only.
 - [ ] Parameter files used to separate environment-specific values from the reusable template definition.
@@ -271,7 +271,7 @@ Directly extending Section 4's ARM scope hierarchy, templates can be deployed at
 
 ---
 
-## 46.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "ARM Templates are being deprecated in favor of Bicep." _Correction:_ Bicep compiles to ARM JSON and is Microsoft's recommended authoring experience going forward, but ARM Templates (the JSON format) remain the actual execution format ARM consumes and are not deprecated — understanding this relationship precisely (authoring layer vs. execution format) avoids a common but incorrect framing.
 - "A template deployed twice with no changes will always report 'no changes needed.'" _Correction:_ this is generally true for Incremental mode with unchanged inputs, but factors like time-based or non-deterministic resource properties, or drift introduced by manual changes outside the template, can still produce an unexpected diff — `what-if` (46.7) should be trusted and reviewed each time for non-trivial deployments, not assumed to always be a no-op.
@@ -279,7 +279,7 @@ Directly extending Section 4's ARM scope hierarchy, templates can be deployed at
 
 ---
 
-## 46.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is an ARM Template, and why is it useful compared to manually creating resources in the Azure Portal?"
 _Model answer:_ an ARM Template is a JSON document declaratively describing desired Azure resources, submitted to Azure Resource Manager to create/update them in a repeatable, idempotent way. Compared to manual Portal creation, it provides reproducibility (the exact same environment can be recreated reliably), a version-controllable and reviewable artifact documenting what was actually built, and idempotent redeployment that can detect and correct drift from manual changes.
@@ -297,7 +297,7 @@ _What the interviewer is probing:_ the ability to map a real multi-team, multi-s
 
 ---
 
-## 46.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 ARM Templates are the native JSON execution format Azure Resource Manager consumes directly — Bicep (Section 47) compiles to this format rather than replacing it, and understanding ARM JSON remains foundational even when authoring primarily in Bicep.
 
@@ -311,7 +311,7 @@ _What the interviewer is probing:_ the ability to map a real multi-team, multi-s
 
 ---
 
-## 46.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 47 — Bicep (next):** the modern, more concise, more readable authoring language that compiles directly to the ARM JSON format covered in this section — every concept here (parameters, resources, dependencies, outputs, scopes, what-if) has a direct, generally more ergonomic Bicep equivalent.
 - **Section 48 — Terraform on Azure:** an alternative, HashiCorp-originated, multi-cloud-capable IaC tool, offering a useful contrast point against the Azure-native ARM/Bicep approach, including its own state-management model distinct from ARM's built-in deployment history.

@@ -6,19 +6,19 @@
 
 ---
 
-## 96.1 Definition
+## 1. Definition
 
 **Plain language:** this section doesn't introduce new material — it ties together everything covered across Part 17 into one coherent picture of how security operations actually work end to end on Azure, then drills the whole part with rapid-fire interview questions of the kind likely to come up in a real interview covering this topic area.
 
 **Precise definition:** this section provides a synthesis of Part 17's five preceding sections (Purview, Sentinel fundamentals, Sentinel deep dive, automated incident response, SOC patterns) as one continuous data/detection/response/organizational pipeline, followed by a consolidated rapid-fire interview drill spanning the full part, and closes Part 17 with a transition into Part 18's resilience-testing material.
 
-## 96.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Each of Sections 91-95 covered one layer of security operations in isolation — data governance, SIEM fundamentals, detection depth, automated response, and organizational structure. In a real interview, and in real practice, these layers are never asked about or used in isolation — a senior candidate is expected to trace a single scenario (a suspicious download of sensitive customer data, say) through every one of these layers coherently: how was the data known to be sensitive (Purview, Section 91), how was the anomalous access detected (Sentinel analytics rules/UEBA, Sections 92-93), how was it automatically enriched and contained (Section 94), and how did the SOC's tiered structure and metrics ensure it was handled appropriately (Section 95). This section exists specifically to build and rehearse that end-to-end connective tissue, rather than leaving the five sections as disconnected topic silos.
 
 ---
 
-## 96.3 Part 17 Synthesis — One Scenario Across All Five Sections
+## 3. Part 17 Synthesis — One Scenario Across All Five Sections
 
 Consider a single walkthrough scenario: **an employee's account is compromised, and the attacker attempts to exfiltrate a dataset containing customer national-ID numbers.**
 
@@ -32,7 +32,7 @@ Consider a single walkthrough scenario: **an employee's account is compromised, 
 
 ---
 
-## 96.4 How Part 17 Connects Back to Earlier Parts
+## 4. How Part 17 Connects Back to Earlier Parts
 
 - **Section 55 (Defender for Cloud, Part 11):** provides Azure-resource-specific posture and threat detection that becomes one of many Sentinel data connectors (Section 92.5.2), and whose alerts gain the full automation-rule/playbook treatment once connected (Section 94.7) — Defender for Cloud and Sentinel are complementary layers, not competitors (Section 92.6).
 - **Section 51 (Log Analytics & KQL, Part 10):** is the literal data plane and query language Sentinel is built on (Section 92.4) — every KQL skill from Part 10 transfers directly into analytics-rule authoring (Section 93.4) and hunting (Section 93.5.1).
@@ -42,7 +42,7 @@ Consider a single walkthrough scenario: **an employee's account is compromised, 
 
 ---
 
-## 96.5 Rapid-Fire Interview Drill — Part 17
+## 5. Rapid-Fire Interview Drill — Part 17
 
 ### 🎯 Q1 (Purview vs. Defender for Cloud)
 
@@ -101,13 +101,13 @@ _A:_ Each metric alone can paint a misleadingly favorable picture — fast MTTD/
 
 ---
 
-## 96.6 Common Misconceptions (Part-Wide Recap)
+## 6. Common Misconceptions (Part-Wide Recap)
 
 - **"Sentinel replaces Defender for Cloud."** False — Defender for Cloud is an Azure-scoped CSPM/CWPP engine whose alerts are one of many Sentinel data connectors; they operate at different, complementary layers (Sections 55, 92.6).
 - **"More automation is always strictly better."** False — the confidence/business-impact trade-off (Section 94.6.3) means some containment actions genuinely warrant a human-approval gate rather than full automation.
 - **"A high MITRE ATT&CK coverage score or Secure Score alone proves an environment is secure."** False — both are necessary-but-not-sufficient posture signals (Sections 55.11, 95.5.3); genuine security requires pairing coverage metrics with effectiveness data (true-positive rates, actual incident outcomes).
 
-## 96.7 Key Takeaways — Part 17 Summary
+## 7. Key Takeaways — Part 17 Summary
 
 - 🔑 Purview (Section 91) answers "where is our sensitive data," providing the classification context that makes every downstream detection and response decision correctly prioritized.
 - 🔑 Sentinel (Sections 92-93) is a SIEM/SOAR platform built directly on Log Analytics, correlating signal from Azure, Defender for Cloud, other clouds, on-premises, and third-party sources — its value is specifically in correlation no single-source tool provides alone.
@@ -117,7 +117,7 @@ _A:_ Each metric alone can paint a misleadingly favorable picture — fast MTTD/
 
 ---
 
-## 96.8 Transition to Part 18 — Resilience Testing & Chaos Engineering
+## 8. Transition to Part 18 — Resilience Testing & Chaos Engineering
 
 Part 17 has covered how an organization detects and responds to security threats. But security incidents are only one category of thing that can go wrong in production — infrastructure failures, dependency outages, and unexpected load can degrade or break a system just as thoroughly as an attacker, and an organization's actual resilience against these failure modes is often untested until a real outage forces the question. **Part 18 — Resilience Testing & Chaos Engineering** begins at **Section 97**, covering how mature Azure teams deliberately and proactively test their systems' resilience — injecting controlled failures to validate that the HA/DR patterns established back in Part 12 (Sections 61-65) actually work as designed, before a genuine, uncontrolled failure tests them instead.
 

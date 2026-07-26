@@ -1,16 +1,16 @@
 # Section 10 (Part 1): Compute Decision Matrix & Part 1 Wrap-Up
 
-## 10.1 Definition
+## 1. Definition
 
 **Plain language:** This section doesn't introduce a new service — it steps back and puts every compute option covered so far (plus GKE and Cloud Batch) side by side, so choosing between them becomes a structured decision rather than a guess. It closes out Part 1 with a comprehensive interview drill covering everything from Section 1 through Section 9.
 
 **Precise:** This is the Part 1 synthesis section: a consolidated decision matrix across GCP's compute execution models — Compute Engine, App Engine, Cloud Run, Cloud Functions, GKE, and Cloud Batch — evaluated along the axes that actually drive real-world architecture decisions (control vs. convenience, cold-start behavior, scaling model, pricing model, and ideal use case), followed by a Part 1 comprehensive interview drill and the transition into Part 2.
 
-## 10.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Each individual compute section (2, 6, 7, 8, 9, and the forward-referenced 30) explains one service in isolation, but the real skill an architect or interviewer is testing for is: given a workload's actual requirements, which compute service is the right fit, and why not the others? Without a single consolidated comparison, that judgment has to be reconstructed from six separate sections every time the question comes up. This section exists to make that judgment call reusable — one table, one mental model, applicable to nearly any "which compute service should I use for X" question.
 
-## 10.3 The Control-vs-Convenience Spectrum
+## 3. The Control-vs-Convenience Spectrum
 
 Every GCP compute option sits somewhere on a single spectrum: the more control you take over the underlying infrastructure, the more operational responsibility you accept — and the more convenience a service offers, the less control you retain over exactly how your workload runs.
 
@@ -28,7 +28,7 @@ Compute Engine    GKE          App Engine       Cloud Run      Cloud Functions
                               it's a "run this to completion, then disappear" model.
 ```
 
-## 10.4 Full Compute Decision Matrix
+## 4. Full Compute Decision Matrix
 
 | Aspect                  | Compute Engine (§2)                                                                          | App Engine (§6)                                                                                                    | Cloud Run (§7)                                                                            | Cloud Functions (§8)                                        | GKE (§30, preview)                                                              | Cloud Batch (§9)                                                                          |
 | ----------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -40,7 +40,7 @@ Compute Engine    GKE          App Engine       Cloud Run      Cloud Functions
 
 > 💡 **Tip:** When faced with an unfamiliar "which compute service" question, first ask two things: (1) Is this a long-running service responding to requests, or a one-shot/batch task? (2) How much of the underlying runtime does the workload need to control (custom OS, custom kernel modules, arbitrary long-lived processes) versus how much can be abstracted away? Those two questions alone eliminate most of the six options immediately.
 
-## 10.5 Decision Flow
+## 5. Decision Flow
 
 ```
                     New workload — which compute service?
@@ -73,18 +73,18 @@ Compute Engine    GKE          App Engine       Cloud Run      Cloud Functions
                                                                                ► GKE (§30)
 ```
 
-## 10.6 Production & Enterprise Usage
+## 6. Production & Enterprise Usage
 
 - **Layered adoption in real organizations:** Most enterprises running on GCP use several of these services simultaneously — Compute Engine for legacy/lift-and-shift workloads, Cloud Run for new stateless services, Cloud Functions for lightweight event glue, GKE for complex platform-team-owned systems, and Cloud Batch for periodic bulk-processing jobs — rather than standardizing on a single compute model.
 - **Migration trajectories:** A common enterprise pattern is a gradual migration from Compute Engine (initial lift-and-shift) toward Cloud Run or GKE as applications are modernized, since Compute Engine's operational burden (patching, scaling configuration, OS management) is the highest of the six options.
 - **Cost governance:** FinOps teams commonly review compute spend service-by-service, since the pricing models differ enough (always-on instance-hours vs. per-request billing vs. per-task-second billing) that the same workload can have a very different cost profile depending on which service runs it.
 
-## 10.7 Common Misconceptions
+## 7. Common Misconceptions
 
 - **Misconception:** "The most 'serverless' option is always the best choice." Convenience trades away control — a workload needing custom kernel modules, specific licensing, or persistent local state genuinely cannot run on Cloud Functions or Cloud Run regardless of how attractive the operational simplicity looks; matching the workload's actual requirements to the right point on the spectrum matters more than defaulting to the most abstracted option.
 - **Misconception:** "GKE is just a more complicated version of Cloud Run." GKE and Cloud Run solve different problems — Cloud Run is a serverless container-execution model with an opinionated request/job structure, while GKE exposes the full Kubernetes API surface (custom controllers, StatefulSets, DaemonSets, arbitrary networking policies) for workloads whose orchestration needs genuinely exceed what Cloud Run's simpler model supports.
 
-## 10.8 Part 1 Comprehensive Interview Drill
+## 8. Part 1 Comprehensive Interview Drill
 
 **🟢 What's the fundamental trade-off across all of GCP's compute options?**
 Control versus convenience: the more a service manages on your behalf (patching, scaling, cluster operations), the less direct control you retain over exactly how the workload runs. Compute Engine sits at maximum control; Cloud Functions sits at maximum convenience; App Engine, Cloud Run, and GKE occupy points in between, with Cloud Batch off to the side as a purpose-built run-to-completion model rather than a "keep something running" model.
@@ -107,7 +107,7 @@ Start with the highest-convenience option that fits the MVP's actual needs — l
 **🔴 How would you explain, in one paragraph, why GCP offers six different compute execution models instead of just one flexible one?**
 Because "flexible enough for every case" and "convenient enough to require no thought" are in direct tension — a single model would either force every simple workload to carry unnecessary operational overhead (if optimized for maximum control) or make certain legitimate workloads impossible to run (if optimized for maximum convenience). Offering a spectrum — Compute Engine, App Engine, Cloud Run, Cloud Functions, GKE, and the separately-shaped Cloud Batch — lets each workload's actual requirements (state, custom runtime needs, request-driven vs. batch shape, team's orchestration appetite) determine which point on that spectrum fits, rather than forcing every workload through one compromise model.
 
-## 10.9 Key Takeaways
+## 9. Key Takeaways
 
 - 🔑 Every GCP compute option sits on a control-vs-convenience spectrum: Compute Engine (maximum control) → GKE → App Engine → Cloud Run → Cloud Functions (maximum convenience), with Cloud Batch as a separate run-to-completion model.
 - 🔑 The two fastest questions to narrow the field: is this request-serving or run-to-completion, and how much runtime control does it actually need?
@@ -115,7 +115,7 @@ Because "flexible enough for every case" and "convenient enough to require no th
 - 🔑 Cloud Batch is for compute-bound "run this program N times" work; Dataflow/Dataproc (Section 45) are for genuine data-aware pipelines — conflating the two means reimplementing infrastructure that already exists.
 - 🔑 Real organizations run several of these services simultaneously rather than standardizing on one; the skill being tested is matching workload to service, not picking a single "best" option.
 
-## 10.10 Related Concepts
+## 10. Related Concepts
 
 Compute Engine (Section 2), App Engine (Section 6), Cloud Run (Section 7), Cloud Functions (Section 8), Cloud Batch (Section 9) all feed into this synthesis; GKE (Section 30) and Dataflow/Dataproc (Section 45) are forward-referenced as the remaining pieces of the full compute and data-processing picture, completed later in this knowledge base.
 

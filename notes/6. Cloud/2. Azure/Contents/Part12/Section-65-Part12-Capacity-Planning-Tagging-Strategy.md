@@ -6,7 +6,7 @@
 
 ---
 
-## 65.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This final section of Part 12 covers capacity planning — the demand-side discipline of ensuring sufficient resource availability (quota, IP address space, throughput limits) before it's needed, complementing Section 64's supply-side cost-optimization focus — and tagging strategy, the metadata foundation enabling accurate cost allocation (Section 64.4.1's showback/chargeback), governance (Section 57's policy targeting), and operational filtering across this entire roadmap's tooling (Section 51's KQL queries, Section 53's alert scoping). This section consolidates several capacity-planning forward-references already made throughout this roadmap (Section 11's VM quota, Section 37.2.4's AKS subnet IP planning, Section 38.2.3's upgrade surge capacity) into one coherent capacity-planning discipline.
 
@@ -14,28 +14,28 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 
 ---
 
-## 65.2 Capacity Planning
+## 2. Capacity Planning
 
-### 65.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** capacity planning is the proactive practice of forecasting future resource needs (compute quota, IP address space, storage capacity, network throughput) and ensuring sufficient headroom is provisioned/requested _before_ it's actually needed, rather than discovering a constraint only when an urgent scaling event or growth milestone is blocked by it.
 
-### 65.2.2 Quota Management (Direct Extension of Section 11)
+### 2.2 Quota Management (Direct Extension of Section 11)
 
 - **Definition:** Azure enforces per-subscription, per-region quota limits on most resource types (VM cores by family, number of Storage Accounts, and many others) — default limits sized for typical usage, but requiring an explicit quota-increase request (via Azure Support, typically) well before an anticipated growth event that would exceed the current default.
 - **Why this is a genuine, recurring operational risk:** a quota-increase request is **not instantaneous** — it requires submission and Microsoft's review/approval, which can take meaningful time (hours to days, depending on the specific request and region/SKU availability) — meaning a quota limit discovered reactively during an urgent scale-out event (e.g., Section 63.6.2's post-DR-failover rapid scale-out, or an unanticipated flash-sale traffic spike, Section 63's recurring checkout-service example) cannot be resolved quickly enough to avoid real business impact, directly connecting to Section 49's original revenue-critical-checkout-service framing: a quota limit blocking DR failover scale-out would defeat the entire RTO objective established in Section 61/58 regardless of how well-designed the DR architecture itself is.
 - **Proactive practice:** quota should be requested/increased proactively, ahead of anticipated growth (informed by the capacity-forecasting practice in 65.2.4), and — critically — **DR secondary regions require their own, independently-sufficient quota** (a subtle, easily-missed point: a quota increase requested and approved for the primary region does not automatically apply to the secondary DR region, which needs its own sufficient quota headroom to actually support a genuine failover scale-out, directly closing a gap in Section 62's DR material that wasn't explicitly named there).
 
-### 65.2.3 IP Address Space Planning (Direct Recap of Section 37.2.4)
+### 2.3 IP Address Space Planning (Direct Recap of Section 37.2.4)
 
 - Recapping Section 37.2.4's specific, detailed warning: traditional Azure CNI subnet IP capacity planning must account for steady-state node/pod count, **upgrade surge capacity** (Section 38.2.3's specific connection), and anticipated future growth — all determined at initial VNet/subnet design time, since subnet resizing after the fact is disruptive and difficult. This section reinforces that specific, previously-detailed example as the canonical illustration of proactive capacity planning applied to network address space specifically, now generalized as one instance of this section's broader capacity-planning discipline.
 
-### 65.2.4 Capacity Forecasting
+### 2.4 Capacity Forecasting
 
 - **Definition:** using historical usage trends (directly querying via KQL, Section 51, against Azure Monitor metrics, Section 50) combined with known business growth plans (a new product launch, an anticipated marketing campaign, seasonal demand patterns) to forecast future resource needs ahead of time, informing both quota-increase timing (65.2.2) and Reservation/Savings Plan purchase decisions (Section 64.2's commitment-based discounts specifically depend on accurate usage forecasting to avoid over- or under-committing).
 - 🔑 **Key Takeaway, connecting capacity planning and cost optimization explicitly:** capacity forecasting is the **shared input** informing both this section's proactive-headroom-provisioning concern and Section 64's commitment-based discount decisions — an organization with mature capacity forecasting is simultaneously better positioned to avoid reactive quota crises _and_ to make well-informed Reservation purchase decisions, since both depend on the same underlying "how much will we actually need, and when" forecasting capability, worth recognizing as one shared discipline rather than two unrelated concerns.
 
-### 65.2.5 Capacity Planning for Specific Resource Types (Consolidated Roadmap References)
+### 2.5 Capacity Planning for Specific Resource Types (Consolidated Roadmap References)
 
 | Resource Type                          | Capacity Consideration                                                                                                                  | Roadmap Section                                 |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -48,17 +48,17 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 
 ---
 
-## 65.3 Tagging Strategy
+## 3. Tagging Strategy
 
-### 65.3.1 Definition and Why It Exists
+### 3.1 Definition and Why It Exists
 
 **Plain language:** tags are key-value metadata pairs attached to Azure resources, resource groups, and subscriptions, providing a flexible, queryable way to categorize and organize resources for purposes ARM's built-in resource-type/resource-group structure alone doesn't fully address — cost allocation, ownership tracking, environment/lifecycle classification, and governance targeting.
 
-### 65.3.2 Why Resource Groups Alone Are Insufficient for Full Organization
+### 3.2 Why Resource Groups Alone Are Insufficient for Full Organization
 
 - Resource groups (Section 4) provide one organizational dimension — typically grouping resources that share a lifecycle (deployed/deleted together) — but real organizational needs frequently require categorizing resources along **multiple, orthogonal dimensions simultaneously**: which team owns a resource, which cost center should be billed, which environment (dev/staging/prod) it belongs to, which compliance classification applies to it — a single resource-group hierarchy cannot cleanly express all of these dimensions at once (a resource group is typically organized around one primary grouping principle), while tags provide an arbitrary number of independent, queryable key-value dimensions layered on top of whatever resource-group structure already exists.
 
-### 65.3.3 Common, Recommended Tag Categories
+### 3.3 Common, Recommended Tag Categories
 
 | Tag Key (illustrative convention) | Purpose                                                                                               | Direct Roadmap Connection                                                                                                                                                                                                                                                                  |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -69,19 +69,19 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 | `DataClassification`              | Sensitivity/compliance classification (e.g., public/internal/confidential/regulated)                  | Directly enables Section 58's compliance-scope targeting and Section 57's Policy assignment scoping for classification-specific controls                                                                                                                                                   |
 | `ExpirationDate` / `Decommission` | For genuinely temporary resources, a planned removal date                                             | Supports automated cleanup governance, preventing the "temporary" resource that quietly becomes permanent, unmonitored cost                                                                                                                                                                |
 
-### 65.3.4 Tag Enforcement via Azure Policy (Direct Application of Section 57)
+### 3.4 Tag Enforcement via Azure Policy (Direct Application of Section 57)
 
 🔑 **Key Takeaway, directly resolving the "how do we ensure tags are actually applied" question:** exactly like every other "this should be configured consistently across the organization" requirement covered throughout Parts 9–12, tagging consistency is not achievable through documentation/convention alone at organizational scale — **Azure Policy** (Section 57) provides the actual enforcement mechanism, using built-in policy definitions requiring specific tags to be present (denying resource creation without them, `Deny` effect, Section 57.3.1) or automatically inheriting a tag value from the parent resource group/subscription (`Modify`/`Append` effect, Section 57.3.1's exact pattern) — this is the specific, concrete application of Section 57's general governance-enforcement material to the tagging domain specifically, closing the loop on "how does an organization actually ensure every resource is correctly tagged" with a real, technical answer rather than relying on team discipline alone.
 
-### 65.3.5 Tag Naming Consistency
+### 3.5 Tag Naming Consistency
 
 ⚠️ **Warning:** Azure tag _keys_ are case-insensitive for some operations but case-_sensitive_ for others depending on the specific API/tool being used (a genuinely easy-to-get-wrong, commonly-encountered inconsistency) — meaning `Environment` and `environment` might be treated as the same tag by one tool and as two entirely separate tags by another, fragmenting cost/governance reporting if not applied with rigorous, enforced consistency. A documented, Policy-enforced (65.3.4) tag naming convention (exact casing, exact allowed values via `allowedValues`-style policy constraints) is essential to avoid this specific, real-world data-fragmentation problem.
 
 ---
 
-## 65.4 Resource Graph: Querying Tags and Resources at Scale
+## 4. Resource Graph: Querying Tags and Resources at Scale
 
-### 65.4.1 Azure Resource Graph
+### 4.1 Azure Resource Graph
 
 - **Definition:** a service providing fast, efficient, KQL-based (directly reusing Section 51's query skills) querying across resources at genuine subscription/management-group scale — querying resource metadata (including tags) across potentially thousands of resources far faster than iterating through the standard ARM resource-listing APIs individually.
 - **Example query:**
@@ -92,25 +92,25 @@ This final section of Part 12 covers capacity planning — the demand-side disci
   ```
   This directly demonstrates the practical value of consistent tagging (65.3) combined with Resource Graph's KQL query capability (65.4.1) — quickly identifying every production resource missing a required `CostCenter` tag across an entire multi-subscription estate, a genuinely useful governance/cleanup query directly enabled by this section's material.
 
-### 65.4.2 Why This Matters for Capacity Planning Too
+### 4.2 Why This Matters for Capacity Planning Too
 
 - Resource Graph queries can also directly support capacity-planning analysis (65.2.4) — e.g., querying current VM SKU/size distribution across an estate to inform quota-increase request sizing, or querying subnet address-space utilization trends — directly connecting this section's two main topics (capacity planning and tagging) through their shared reliance on the same underlying query capability.
 
 ---
 
-## 65.5 Production and Enterprise Usage
+## 5. Production and Enterprise Usage
 
-### 65.5.1 Capacity Planning and DR Integration (Closing Section 62's Gap Explicitly)
+### 5.1 Capacity Planning and DR Integration (Closing Section 62's Gap Explicitly)
 
 🔑 **Key Takeaway, explicitly closing a gap from Section 62:** Section 62's DR material covered ASR/Backup mechanisms and Recovery Plan orchestration in depth, but did not explicitly address a critical prerequisite this section now supplies: **the secondary/DR region must have independently sufficient quota and capacity headroom** (65.2.2) to actually support the full failover scale-out a Recovery Plan (Section 62.2.4) is designed to orchestrate — a beautifully-designed, well-tested Recovery Plan (Section 62.5.3) still fails to meet its RTO objective if the secondary region's compute quota is insufficient to actually provision the required VM/node capacity during a genuine failover event. DR testing (Section 62.5.3/57.7.2) should explicitly validate this capacity dimension, not merely the orchestration logic itself.
 
-### 65.5.2 Tagging as the Foundation for Multi-Subscription Governance (Forward Reference to Section 67)
+### 5.2 Tagging as the Foundation for Multi-Subscription Governance (Forward Reference to Section 67)
 
 - The tagging strategy established in this section becomes especially critical at genuine multi-subscription enterprise scale (Section 67, upcoming) — consistent, Policy-enforced tagging across dozens or hundreds of subscriptions is what makes organization-wide cost allocation, security incident attribution, and governance reporting actually feasible, directly setting up Section 67's fuller multi-subscription architectural treatment.
 
 ---
 
-## 65.6 Troubleshooting Reference
+## 6. Troubleshooting Reference
 
 | Symptom                                                                                                   | Likely Cause                                                                                       | Diagnostic Step                                                                                                                                                                                      |
 | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -122,7 +122,7 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 
 ---
 
-## 65.7 Best Practices Checklist
+## 7. Best Practices Checklist
 
 - [ ] Quota levels reviewed and proactively increased ahead of anticipated growth events, informed by capacity forecasting, not discovered reactively during a scaling crisis.
 - [ ] DR secondary regions verified to have independently sufficient quota for full failover capacity, not assumed to inherit primary-region quota approval.
@@ -135,7 +135,7 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 
 ---
 
-## 65.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - "Azure automatically provisions whatever quota is needed when a scaling event occurs." _Correction:_ quota is a hard, pre-configured per-subscription/region limit requiring an explicit, non-instantaneous increase request — a scaling event exceeding current quota will fail or stall, not automatically expand (65.2.2).
 - "A successful primary-region quota increase automatically applies to a DR secondary region as well." _Correction:_ quota is region-specific; the secondary region requires its own, independently verified and sufficient quota headroom — a specific, easily-missed gap this section explicitly closes relative to Section 62's DR material (65.5.1).
@@ -143,7 +143,7 @@ This final section of Part 12 covers capacity planning — the demand-side disci
 
 ---
 
-## 65.9 Interview Questions (Consolidated)
+## 9. Interview Questions (Consolidated)
 
 **Beginner:** "Why does Azure enforce quota limits, and what should an organization do to avoid being blocked by them during a growth event?"
 _Model answer:_ Azure enforces per-subscription, per-region quota limits on most resource types as a default safeguard (against runaway consumption, and for Azure's own capacity-planning purposes), sized for typical usage but requiring an explicit increase request for anticipated growth beyond the default. To avoid being blocked, an organization should proactively forecast future resource needs and submit quota-increase requests well ahead of anticipated growth events, since quota increases are not instantaneous — discovering a quota limit reactively during an urgent scaling event (like a traffic spike or DR failover) risks real business impact that proactive planning would have avoided.
@@ -161,7 +161,7 @@ _What the interviewer is probing:_ the ability to design a complete, two-part (t
 
 ---
 
-## 65.10 Key Takeaways Summary
+## 10. Key Takeaways Summary
 
 🔑 Capacity planning (proactive quota/IP-space/throughput headroom) and Section 64's cost optimization are complementary, not competing disciplines, sharing the same underlying capacity-forecasting input.
 
@@ -175,7 +175,7 @@ _What the interviewer is probing:_ the ability to design a complete, two-part (t
 
 ---
 
-## 65.11 Part 12 Complete: Consolidated Dependency Recap
+## 11. Part 12 Complete: Consolidated Dependency Recap
 
 ```
 Section 61 (HA/DR Patterns, Availability Sets vs. Zones) — HA/DR definitions, RTO/RPO
@@ -194,7 +194,7 @@ Part 12 is now complete, providing the full resilience (HA/DR), elasticity (auto
 
 ---
 
-## 65.12 Related Concepts and What Comes Next
+## 12. Related Concepts and What Comes Next
 
 - **Section 61–64 (prerequisite, completed):** the HA/DR, autoscaling, and cost-optimization material this section's capacity-planning and tagging material directly completes and cross-references.
 - **Section 66 — Landing Zones & Cloud Adoption Framework (Part 13, next):** the fuller architectural treatment of the management-group hierarchy, baseline governance, and organizational patterns this section's tagging-enforcement and multi-subscription scenario previewed.

@@ -1,18 +1,18 @@
 # Section 12 (Part 4): Branching in Depth
 
-## 12.1 Definition
+## 1. Definition
 
 **Plain language:** A branch is an independent, named line of development that lets you work on something — a feature, a fix, an experiment — without disturbing anyone else's work or the stable line you branched from.
 
 **Precise:** Mechanically, a Git branch is nothing more than a movable ref: a small file under `.git/refs/heads/` holding a single commit hash, which advances automatically each time you commit while that branch is checked out. Everything in this section is about the _commands_ that create, inspect, switch between, and remove those pointers — the underlying mechanics were already established in §6.3.
 
-## 12.2 Recap — Why Branches Are "Free" (Brief; See §6.3 for the Full Mechanics)
+## 2. Recap — Why Branches Are "Free" (Brief; See §6.3 for the Full Mechanics)
 
 §6.3 already proved the core fact this whole section leans on: creating a branch writes one small file containing a hash — no file copying, no history duplication, no dependency on repository size. That's _why_ Git culture treats branches as disposable, cheap, and constantly created, in sharp contrast to centralized systems (§1.7) where branching was a heavyweight, discouraged event. This section doesn't re-derive that; it builds the full command vocabulary on top of it.
 
 > 💡 **Tip:** If any of "ref", "movable pointer", or "HEAD resolves through the branch" feels shaky, re-read §6.3–§6.4 before continuing — this section assumes that mental model as settled.
 
-## 12.3 `git branch` — Listing, Creating, Deleting
+## 3. `git branch` — Listing, Creating, Deleting
 
 `git branch` is the general-purpose branch-management command. Run with no arguments, it lists local branches; given a name, it creates a new branch ref at the current commit **without switching to it**.
 
@@ -50,7 +50,7 @@ $ git branch -vv
 
 > ⚠️ **Common confusion to preempt:** `git branch <name>` creates a branch but leaves you checked out on whatever you were already on. Beginners routinely run this expecting to now be "on" the new branch, then are confused why their commits land on the old one. Use `git switch -c <name>` (§12.7) when you want create-and-switch in one step.
 
-## 12.4 Deleting Branches: `-d` vs `-D`
+## 4. Deleting Branches: `-d` vs `-D`
 
 ```bash
 # Safe delete — refuses if the branch has commits not reachable from
@@ -70,7 +70,7 @@ Deleted branch feature-payments (was 7c2a9f1).
 
 > 💡 **Tip:** After a feature branch is merged via pull request and the remote branch is deleted by the hosting platform, `git fetch --prune` (§20) cleans up your now-stale local remote-tracking refs, and `git branch -d` then cleanly removes your local branch since it's provably merged.
 
-## 12.5 Renaming Branches: `-m`
+## 5. Renaming Branches: `-m`
 
 ```bash
 # Rename the current branch
@@ -85,7 +85,7 @@ $ git branch -M old-name new-name
 
 Renaming a branch is, unsurprisingly, just renaming its ref file and updating HEAD if it was the checked-out branch — no commits are touched, no hashes change. The most common real-world use is the historical `master` → `main` rename that most repositories performed industry-wide: `git branch -m master main`, followed by pushing the new name and updating the remote's default branch (§20, §23).
 
-## 12.6 `git switch` vs `git checkout` — The Modern Split
+## 6. `git switch` vs `git checkout` — The Modern Split
 
 Before Git 2.23 (2019), `git checkout` did two unrelated jobs: switching branches _and_ restoring individual files from the index or a commit. Overloading one command with two unrelated meanings was a genuine, long-standing usability problem — `git checkout <branch>` and `git checkout -- <file>` look similar but do entirely different things, and a stray or missing `--` could switch a branch when you meant to discard a file's edits, or vice versa.
 
@@ -110,7 +110,7 @@ Switched to branch 'main'
 
 > ⚠️ **Critical clarification:** `git switch` refuses to switch if doing so would silently overwrite uncommitted changes that conflict with the target branch's version of a file — the same protection `checkout` always had. It does not bypass Git's core safety guarantees; it only narrows what one command is responsible for.
 
-## 12.7 Creating and Switching in One Step
+## 7. Creating and Switching in One Step
 
 ```bash
 # Modern
@@ -128,7 +128,7 @@ $ git checkout -b hotfix-1 v2.3.0
 
 Both forms are exactly `git branch <name> [<start-point>]` followed immediately by switching to it — no new mechanic, just a convenience combining two of §12.3's and §12.6's operations into one command.
 
-## 12.8 Tracking a Remote Branch on Creation: `--track`
+## 8. Tracking a Remote Branch on Creation: `--track`
 
 When you create a local branch intended to follow a specific remote branch — pushing to it and pulling from it by default without specifying the remote each time — you set up an **upstream tracking relationship**.
 
@@ -154,7 +154,7 @@ $ git branch --unset-upstream feature-x
 
 Full push/pull/fetch mechanics and the remote side of tracking are §20's subject; this section covers only the branch-creation-time hook into it.
 
-## 12.9 Local vs Remote-Tracking vs Remote Branches — The Three-Way Distinction
+## 9. Local vs Remote-Tracking vs Remote Branches — The Three-Way Distinction
 
 This is one of the most consistently confused areas for people coming from centralized systems, so it's worth stating precisely — it was previewed in §6.7's tip and is fully earned here.
 
@@ -192,7 +192,7 @@ The everyday consequence: `origin/main` in your local clone can silently drift o
 
 > 🔑 **Interview-grade summary:** a local branch is yours and writable; a remote-tracking branch is a local, read-only snapshot of someone else's branch as of your last sync; a remote branch is the real thing living on the server, which you never touch directly — only through push/fetch.
 
-## 12.10 Branch Naming Conventions
+## 10. Branch Naming Conventions
 
 Git itself enforces almost nothing about branch names beyond a small set of forbidden characters and sequences (no spaces, no `..`, no leading `-`, no trailing `.lock`, among others — `git check-ref-format` is the authoritative validator). Naming _conventions_ are entirely a team/tooling choice, but a few patterns are near-universal in industry and worth knowing by name, since branching-strategy discipline (§22) builds directly on them:
 
@@ -207,7 +207,7 @@ Git itself enforces almost nothing about branch names beyond a small set of forb
 
 Slashes in branch names are not merely cosmetic: Git branch names live in the same namespace as directory paths under `refs/heads/`, so `feature/login` is physically the file `refs/heads/feature/login`. This has one real consequence — you cannot simultaneously have a branch named `feature` and a branch named `feature/login`, because one would require `feature` to be both a file and a directory on disk.
 
-## 12.11 Listing Merged / Unmerged Branches: `--merged` / `--no-merged`
+## 11. Listing Merged / Unmerged Branches: `--merged` / `--no-merged`
 
 Before deleting branches in bulk, or auditing what's safe to clean up, `--merged` and `--no-merged` tell you which local branches are (or aren't) fully incorporated into a given commit — almost always used against the current branch or a release branch.
 
@@ -232,7 +232,7 @@ $ git branch --merged main | grep -v '^\*\|main' | xargs -r git branch -d
 
 This is precisely the mechanism `git branch -d`'s safety check (§12.4) relies on internally — `--merged`/`--no-merged` just exposes that same reachability check as a queryable listing.
 
-## 12.12 Orphan Branches: `--orphan`
+## 12. Orphan Branches: `--orphan`
 
 An orphan branch starts with **no parent commit at all** — its first commit will have zero parents, meaning it shares no history with any other branch in the repository, even though it lives in the same repo and object database.
 
@@ -255,7 +255,7 @@ $ git commit -m "Initial commit for gh-pages"
 
 **Legitimate uses:** publishing generated static site content (the classic `gh-pages` branch pattern predating dedicated hosting features) or maintaining a genuinely unrelated document set (e.g., project documentation with its own independent history) inside the same physical repository without polluting the main line's commit graph with unrelated content or forcing a merge base to exist where none logically should.
 
-## 12.13 Hands-On Walkthrough — Full Branch Lifecycle
+## 13. Hands-On Walkthrough — Full Branch Lifecycle
 
 ```bash
 $ git switch -c feature-search
@@ -284,7 +284,7 @@ $ git branch -d feature-search
 Deleted branch feature-search (was 9f2c1a4).
 ```
 
-## 12.14 Interview Questions
+## 14. Interview Questions
 
 **[Beginner] Q1. What actually happens when you run `git branch new-feature`?**
 **Model answer:** Git creates a new file at `.git/refs/heads/new-feature` containing the same commit hash that HEAD currently resolves to. No files are copied, no history is duplicated, and — importantly — you are _not_ switched onto the new branch; you remain on whichever branch you were previously on. To create and switch in one step you'd use `git switch -c new-feature` instead.
@@ -301,7 +301,7 @@ Deleted branch feature-search (was 9f2c1a4).
 **[Senior] Q5. A teammate insists their branch `feature-x` is up to date because `origin/feature-x` shows the commit they expect. Why might they still be wrong?**
 **Model answer:** `origin/feature-x` is a remote-tracking branch, not a live view of the remote — it's a snapshot Git recorded during their last `fetch` or `pull`. If anyone has pushed new commits to the actual `feature-x` on the server since then, their local `origin/feature-x` is simply stale until they fetch again; Git gives no automatic notification of this. The reliable check is to run `git fetch` first, then compare, or examine ahead/behind counts via `git branch -vv` or `git status` immediately after a fresh fetch — never trust a remote-tracking branch's currency without having just synchronized.
 
-## 12.15 Common Misconceptions
+## 15. Common Misconceptions
 
 1. **"`git branch <name>` switches me to the new branch."** It only creates the ref; you remain on your previous branch. Use `switch -c` / `checkout -b` to create and switch together.
 2. **"`git checkout` is deprecated in favor of `switch`/`restore`."** It is not deprecated; it still performs both of its historical jobs and remains extremely common in existing scripts, docs, and habits. `switch`/`restore` are the _recommended_ narrower alternatives, not replacements that remove `checkout`.
@@ -309,7 +309,7 @@ Deleted branch feature-search (was 9f2c1a4).
 4. **"`origin/main` always reflects the real, current state of `main` on the server."** It reflects the state as of your last fetch — it is a cached, read-only bookmark, not a live view.
 5. **"Orphan branches are a rare, obscure feature with no real use."** They're the standard mechanism behind patterns like the classic `gh-pages` publishing branch, kept deliberately historyless from the main line.
 
-## 12.16 🔑 Key Takeaways
+## 16. 🔑 Key Takeaways
 
 - A branch is a movable pointer file; every command in this section (`branch`, `switch`, `checkout -b`) ultimately manipulates that one small fact from §6.3.
 - `git switch` and `git restore` (Git 2.23+) split `checkout`'s two historically overloaded jobs into single-purpose commands; `checkout` still works and remains common in the wild.
@@ -318,6 +318,6 @@ Deleted branch feature-search (was 9f2c1a4).
 - `--merged`/`--no-merged` expose the same reachability check `branch -d` uses internally, making them the right tool for bulk cleanup audits.
 - Orphan branches (`--orphan`) start with zero parent commits, deliberately sharing no history with the rest of the repository.
 
-## 12.17 Related Concepts & What's Next
+## 17. Related Concepts & What's Next
 
 This section assumed the ref mechanics from §6.3–§6.4 and built the full command surface on top of them. Branches you create here become meaningful once you need to combine their work back together — §13 covers exactly that: fast-forward and three-way merges, conflict resolution, and merge strategies. Later, §22 revisits the naming conventions introduced in 12.10 as part of full branching-strategy models (Git Flow, trunk-based development, and others) at the team-workflow level.

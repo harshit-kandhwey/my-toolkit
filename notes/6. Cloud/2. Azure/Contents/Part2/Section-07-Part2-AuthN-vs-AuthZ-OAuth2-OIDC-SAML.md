@@ -1,18 +1,18 @@
 # Section 7 — Authentication vs. Authorization, and Protocol Mechanics
 
-## 7.1 Definition
+## 1. Definition
 
 **Plain language:** Authentication answers "who are you?" — proving your identity, usually with a password, certificate, or biometric factor. Authorization answers "what are you allowed to do?" — a separate decision made _after_ authentication succeeds, based on assigned permissions.
 
 **Precise definition:** Authentication (AuthN) is the process of verifying a claimed identity, resulting in a trusted, verifiable representation of that identity (a token or session). Authorization (AuthZ) is the process of evaluating whether an authenticated identity is permitted to perform a specific action on a specific resource, evaluated separately and after authentication, typically via a policy or role-based mechanism such as Azure RBAC (Section 8).
 
-## 7.2 Why the Distinction Matters
+## 2. Why the Distinction Matters
 
 These two concepts are frequently conflated by newcomers but are architecturally and operationally distinct, handled by different systems even though they happen in close sequence. Entra ID (Section 6) is fundamentally an **authentication and identity directory** service — it proves who you are and issues tokens asserting that identity. Azure RBAC (Section 8) and application-level permission systems are **authorization** systems — they decide what an already-authenticated identity is allowed to do. Understanding this separation matters practically: a user can be perfectly, successfully authenticated (Entra ID confirms they are who they claim) and still be denied every single action (because RBAC grants them zero permissions) — these are two independent checkpoints, and troubleshooting an access problem requires figuring out which one is failing.
 
 > 🎯 **Interview Tip:** "The user can log in but can't do anything" is a classic scenario question specifically designed to test whether a candidate understands that successful authentication does not imply any authorization — a very common real interview probe.
 
-## 7.3 OAuth 2.0
+## 3. OAuth 2.0
 
 **Definition:** OAuth 2.0 is an **authorization framework** (not an authentication protocol on its own) that allows a third-party application to obtain limited, scoped access to resources on behalf of a user, without that application ever handling the user's actual password.
 
@@ -41,7 +41,7 @@ These two concepts are frequently conflated by newcomers but are architecturally
 
 > ⚠️ Exact token lifetimes, specific flow variants (e.g., PKCE requirements for public clients), and default configuration values change over time and by application type — verify current specifics against Microsoft identity platform documentation before relying on exact numbers in production security design.
 
-## 7.4 OpenID Connect (OIDC)
+## 4. OpenID Connect (OIDC)
 
 **Definition:** OpenID Connect is a thin **authentication layer built directly on top of OAuth 2.0**. Where OAuth 2.0 alone only proves "this app has been granted access to X," OIDC adds a standardized **ID token** (a JSON Web Token, or JWT) that specifically asserts "this user's identity has been verified," including standardized identity claims like the user's name, email, and unique identifier.
 
@@ -49,7 +49,7 @@ These two concepts are frequently conflated by newcomers but are architecturally
 
 **In the Azure context:** When a user performs "Sign in with Microsoft," they are going through an OIDC flow against Entra ID as the identity provider — the application receives both an ID token (proving who the user is) and, typically, an access token (authorizing calls to a specific API on the user's behalf), issued together in the same underlying flow.
 
-## 7.5 SAML (Security Assertion Markup Language)
+## 5. SAML (Security Assertion Markup Language)
 
 **Definition:** SAML is an older, XML-based protocol for exchanging authentication and authorization data between an identity provider and a service provider, predominantly used for enterprise single sign-on (SSO).
 
@@ -65,11 +65,11 @@ These two concepts are frequently conflated by newcomers but are architecturally
 | Typical transport   | HTTP redirects with tokens in URL/POST body | HTTP POST with XML payload                     |
 | Mobile-friendliness | Strong                                      | Weaker, generally considered legacy for mobile |
 
-## 7.6 Where RBAC Fits (Preview of Section 8)
+## 6. Where RBAC Fits (Preview of Section 8)
 
 Once OIDC/OAuth2 has authenticated a user and issued tokens, **Azure RBAC** is the system that decides what that authenticated identity can actually do to Azure resources specifically (as opposed to application-level permissions, which are typically defined by the application itself using OAuth scopes). This is the authorization layer referenced throughout this section, and is covered in full depth in Section 8 immediately following.
 
-## 7.7 Configuration Example — Registering an App for OIDC Sign-In
+## 7. Configuration Example — Registering an App for OIDC Sign-In
 
 ```bash
 az ad app create --display-name "internal-dashboard-app" \
@@ -83,7 +83,7 @@ az ad app create --display-name "internal-dashboard-app" \
   - `--web-redirect-uris` — the exact URL(s) Entra ID is allowed to redirect back to after authentication completes; this must exactly match the application's actual callback endpoint, and is a deliberate security control preventing tokens from being redirected to an attacker-controlled URL.
 - **Security impact:** Misconfiguring the redirect URI (e.g., allowing wildcard or overly broad redirect URIs) is a well-known real-world vulnerability class that can enable token theft via open-redirect style attacks — redirect URIs should always be as narrowly and exactly specified as possible.
 
-## 7.8 Troubleshooting
+## 8. Troubleshooting
 
 | Symptom                                                           | Likely Layer                    | Likely Cause                                                                                                                                      |
 | ----------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -92,7 +92,7 @@ az ad app create --display-name "internal-dashboard-app" \
 | Application shows "invalid redirect URI" error                    | OAuth2/OIDC configuration       | Redirect URI in the request doesn't exactly match a registered URI on the App Registration                                                        |
 | Application receives a token but can't call the target API        | Token scope/audience mismatch   | The requested token's `scope`/`audience` doesn't match what the resource server expects — verify scope configuration on both client and API sides |
 
-## 7.9 Interview Questions — Section 7
+## 9. Interview Questions — Section 7
 
 ### 🎯 Intermediate
 
@@ -110,18 +110,18 @@ _Model answer:_ OAuth 2.0 was designed purely for delegated authorization — gr
 
 _What the interviewer is probing:_ whether the candidate understands _why_ a standard exists, not just that it exists — distinguishing genuine protocol-level understanding from surface-level familiarity with buzzwords.
 
-## 7.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - **"OAuth 2.0 is a login protocol."** Not by itself — OAuth 2.0 is an authorization delegation framework; OpenID Connect is the layer that adds actual authentication/login semantics on top of it.
 - **"Once a user authenticates, they can do anything they're able to see in the Portal."** False — visibility in the Portal and actual permission to act are governed by separate RBAC checks (Section 8); a user might see a resource listed but be denied any action on it.
 
-## 7.11 Key Takeaways
+## 11. Key Takeaways
 
 - 🔑 Authentication (who are you) and Authorization (what can you do) are separate, sequential checkpoints handled by different systems — Entra ID authenticates, RBAC (and application logic) authorizes.
 - 🔑 OAuth 2.0 is an authorization delegation framework using scoped, revocable tokens instead of password sharing; OpenID Connect adds standardized authentication semantics on top of it via ID tokens.
 - 🔑 SAML remains relevant for legacy/enterprise SSO integrations despite being architecturally older than OIDC, and Entra ID supports both to serve both modern and legacy application ecosystems.
 - 🔑 Redirect URI configuration is a genuine, exploitable security surface — always scope it exactly, never broadly.
 
-## 7.12 Related Concepts (Next Up)
+## 12. Related Concepts (Next Up)
 
 Section 8 covers **Role-Based Access Control (RBAC)** in full depth — the authorization system referenced repeatedly throughout this section, including built-in vs. custom roles, scope, role assignment mechanics, and how RBAC's inheritance model (introduced conceptually in Section 4.4) works in practice.

@@ -1,11 +1,6 @@
 # Section 1 (Part 1): What Linux Is; Kernel vs. OS vs. Distribution
 
-**Roadmap Reference:** 1.1
-**Phase:** Phase 1 — Foundations
-
----
-
-## 1.1 Definition
+## 1. Definition
 
 **Plain language:** Linux is the "engine" at the core of a huge family of operating systems that run everything from smartphones (Android) to web servers, supercomputers, and cloud infrastructure. When people say "I use Linux," they usually mean they use a complete operating system _built around_ something called the Linux kernel.
 
@@ -13,7 +8,7 @@
 
 > 💡 **Tip:** If you remember nothing else from this section, remember this one line — it resolves half the terminology confusion in Linux administration: **the kernel is a component; the distribution is the product.**
 
-## 1.2 Why the Distinction Matters
+## 2. Why the Distinction Matters
 
 A recurring point of confusion for newcomers — and a favorite interview trap — is conflating "kernel," "operating system," and "distribution." Getting the layering right isn't pedantry; it has direct operational consequences that show up throughout this roadmap:
 
@@ -22,11 +17,11 @@ A recurring point of confusion for newcomers — and a favorite interview trap �
 - **"Which Linux should I run?"** is really two separate decisions bundled into one word: which kernel version/configuration, and which distribution's packaging, release cadence, and support model. Conflating them leads to bad infrastructure decisions (§5 in this Part covers choosing a distribution family properly).
 - **Interviewers use this distinction to filter candidates.** Saying "I upgraded Linux" when you mean "I upgraded Ubuntu's kernel package" signals imprecision that a senior engineer is expected not to have.
 
-## 1.3 Prerequisites and Dependencies
+## 3. Prerequisites and Dependencies
 
 None beyond basic computer literacy — this is the entry point of the entire 125-section roadmap. Everything from here forward assumes the layering model established in this section.
 
-## 1.4 Architecture / Layering Diagram
+## 4. Architecture / Layering Diagram
 
 ```text
 ┌──────────────────────────────────────────────────────┐
@@ -55,11 +50,11 @@ None beyond basic computer literacy — this is the entry point of the entire 12
 
 🔑 **Key Takeaway:** "Linux" is the kernel. A "Linux distribution" is a complete, usable operating system built around that kernel. In casual conversation, "Linux" often refers loosely to the distribution — but a precise engineer keeps the distinction clear, especially in interviews and in patch-management conversations.
 
-## 1.5 Hands-On: Inspecting Kernel vs. Distribution Information
+## 5. Hands-On: Inspecting Kernel vs. Distribution Information
 
 The theory above is directly testable on any running Linux box. These are the commands you reach for first on an unfamiliar host — during onboarding, incident response, or before filing a support ticket.
 
-### 1.5.1 `uname` — Print Kernel and System Information
+### 5.1 `uname` — Print Kernel and System Information
 
 **Purpose:** Report kernel name, version, and hardware/machine identification directly from the running kernel. This is the ground-truth source for "what kernel is actually running right now," independent of what any distro metadata file claims.
 
@@ -98,7 +93,7 @@ x86_64
 
 **Common errors:**
 
-- Assuming `uname -r`'s version number maps directly to upstream kernel.org release notes — distro kernels are patched/backported independently, so the version string alone can be misleading (see §1.6 below).
+- Assuming `uname -r`'s version number maps directly to upstream kernel.org release notes — distro kernels are patched/backported independently, so the version string alone can be misleading (see §6 below).
 - Confusing `-v` (build version/timestamp) with `-r` (release string) — `-v` is rarely what you actually want.
 
 **Security impact:** `uname -r` output is frequently harvested by attackers post-compromise to fingerprint the kernel and select a matching local privilege-escalation exploit. Some hardened environments restrict kernel version disclosure at the application layer (e.g., web server banners) for this reason, though the kernel itself will always answer truthfully to a local user running `uname`.
@@ -107,7 +102,7 @@ x86_64
 
 **Troubleshooting:** If `uname -a` shows an unexpectedly old kernel release after what you believed was a kernel upgrade, the most common cause is that the new kernel package was installed but the system has not yet been rebooted — the running kernel in memory is still the old one until reboot (§9 covers how init/systemd factors into this).
 
-### 1.5.2 `cat /etc/os-release` — Distribution Identity
+### 5.2 `cat /etc/os-release` — Distribution Identity
 
 **Purpose:** Read the standardized, machine-parseable file that identifies the distribution, its version, and related metadata. This is the authoritative source distros themselves populate to answer "what distribution and version am I."
 
@@ -146,7 +141,7 @@ BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
 
 **Troubleshooting:** If `/etc/os-release` is missing or empty (rare, mostly on minimal container base images or old systems), fall back to `hostnamectl` (below) or distro-specific files as a secondary source.
 
-### 1.5.3 `hostnamectl` — Consolidated System Identity (systemd hosts)
+### 5.3 `hostnamectl` — Consolidated System Identity (systemd hosts)
 
 **Purpose:** Print a consolidated summary combining hostname, OS, kernel, and virtualization/hardware information in one human-readable command — useful as a fast first command when logging into an unfamiliar host.
 
@@ -175,7 +170,7 @@ Operating System: Ubuntu 24.04.1 LTS
 
 **Common errors:** Not available on non-systemd distributions (e.g., Alpine Linux by default, which uses OpenRC) — this is a `systemd`-specific convenience tool, not a POSIX-universal one (§65 covers systemd's scope in depth; §5 in this Part covers Alpine as a musl/OpenRC-based distro family).
 
-### 1.5.4 `cat /proc/version` — Kernel Build Provenance
+### 5.4 `cat /proc/version` — Kernel Build Provenance
 
 **Purpose:** Read the kernel's self-reported build string directly from the `/proc` virtual filesystem (introduced conceptually here, covered fully in §24) — including the exact compiler used to build it, which is occasionally relevant for reproducing build environments or diagnosing compiler-specific kernel bugs.
 
@@ -188,19 +183,19 @@ Linux version 6.8.0-45-generic (buildd@lcy02-amd64-119) (x86_64-linux-gnu-gcc-13
 
 **Troubleshooting:** If this file is unreadable or `/proc` appears empty, that's a strong signal you are inside a restricted or non-standard mount namespace (some minimal containers) rather than a normal Linux host — `/proc` should always be present and populated on a real kernel.
 
-## 1.6 Production Usage Notes: Why This Distinction Matters in Practice
+## 6. Production Usage Notes: Why This Distinction Matters in Practice
 
 - **CVE triage against a running fleet:** When a kernel CVE drops, the workflow is: (1) identify the CVE's affected upstream kernel version range, (2) run `uname -r` across the fleet via configuration management to inventory actual running versions, (3) cross-reference against the _distro vendor's_ security advisory — because vendors backport fixes into their own kernel package without necessarily bumping the version number to match upstream. A host reporting an "old" kernel release string may already be patched; a host reporting a "recent" release string may still be vulnerable if the vendor hasn't shipped the fix yet. Relying on the raw version number alone, without checking the vendor advisory, is a common and dangerous mistake.
 - **Support escalation:** Enterprise Linux support contracts (Red Hat, SUSE, Canonical Ubuntu Pro — §14 covers these) are sold against the _distribution_, not "Linux" generically. Knowing precisely which distro and version you're running is the first fact any support ticket requires.
 - **Reproducible environments:** Golden images and immutable infrastructure pipelines (§102) pin both kernel version and distro/package baseline explicitly, because "Linux" alone is not a reproducible specification — two hosts both truthfully described as "running Linux" can differ enormously in behavior, available syscalls, and security posture.
 
-## 1.7 Security Considerations
+## 7. Security Considerations
 
 - Kernel version disclosure (`uname -r`) is low-sensitivity information to a legitimate admin but genuinely useful reconnaissance to an attacker who has gained local shell access, since it narrows the search space for known local privilege-escalation exploits.
 - Distribution identity (`/etc/os-release`) drives which vulnerability scanner definitions and compliance benchmarks (CIS, §96) apply to a host — misidentifying it (e.g., a scanner assuming Debian-family package names on a RHEL-family host) produces false negatives in vulnerability management.
 - Never assume "recent kernel version string" implies "patched" — always corroborate against the vendor's own advisory feed, not just the number.
 
-## 1.8 Common Troubleshooting Scenarios
+## 8. Common Troubleshooting Scenarios
 
 | Symptom                                                                                                            | Likely Cause                                                                                                                                                                         | Resolution Path                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
@@ -209,20 +204,20 @@ Linux version 6.8.0-45-generic (buildd@lcy02-amd64-119) (x86_64-linux-gnu-gcc-13
 | `hostnamectl` command not found                                                                                    | Non-systemd distro (e.g., Alpine/OpenRC)                                                                                                                                             | Use `uname -a` plus `cat /etc/os-release` instead                                                                           |
 | Confusion about "why does this feature exist on one distro but not another" running the same kernel version number | Distro-specific kernel patches, compiled-in config options, or userland tooling differences — same kernel version string does not guarantee identical kernel behavior across vendors | Check the distro's kernel config (`/boot/config-$(uname -r)`) and changelog rather than assuming version-number equivalence |
 
-## 1.9 Best Practices
+## 9. Best Practices
 
 - Always identify both kernel version (`uname -r`) _and_ distribution/version (`/etc/os-release`) when documenting an environment, filing a bug report, or building an inventory — either one alone is an incomplete fingerprint.
 - Treat distro vendor security advisories as the authoritative patch-status source for kernel CVEs, not the raw version string.
 - In automation and configuration management, branch logic on `/etc/os-release`'s `ID`/`ID_LIKE` fields rather than string-matching `uname -a` output, since the standardized file is more stable and portable across distro versions.
 
-## 1.10 Common Anti-Patterns / Mistakes
+## 10. Common Anti-Patterns / Mistakes
 
 - **Saying "upgrade Linux" when you mean "upgrade the kernel package" or "upgrade the distro release."** These are different operations with different risk profiles and rollback strategies.
 - **Judging kernel patch status purely by comparing `uname -r` version numbers against upstream kernel.org release notes**, ignoring that distros backport fixes independently.
 - **Assuming all distributions running "the same kernel version" behave identically** — distro-specific patches, build configuration, and enabled kernel features can differ meaningfully even at an identical nominal version number.
 - **Writing automation that greps `uname -a` free-text output** instead of using the far more stable, structured `/etc/os-release` file for distro identification.
 
-## 1.11 Tiered Interview Questions
+## 11. Interview Questions
 
 **🎯 Beginner:** _"What is the difference between Linux and a Linux distribution like Ubuntu?"_
 **Model answer:** Linux itself is the kernel — the core software that manages CPU scheduling, memory, and hardware device access. Ubuntu is a distribution: it packages the Linux kernel together with userland tools (shell, package manager `apt`, default services, desktop or server configuration) into a complete, installable operating system. Two distributions can run the same kernel version but look and behave very differently because of the userland and defaults layered on top.
@@ -240,14 +235,14 @@ _What the interviewer is probing for:_ Real operational experience with patch ma
 **Model answer:** I'd standardize the things that make fleet-wide operations tractable regardless of distro choice: a single golden-image pipeline process (§102), a common baseline for kernel security posture (minimum patch level policy tied to vendor advisories rather than a hardcoded version number, since each distro patches independently), and a common observability/logging contract so tooling doesn't need to special-case each distro. I'd deliberately leave the actual distro family flexible per-team where there's a real reason (e.g., a team needing RHEL for a specific certified enterprise application vs. a team preferring Debian-family for its package ecosystem), since forcing one distro onto every workload ignores that the kernel/distro distinction exists precisely because "Linux" isn't one fixed product — it's a component that gets assembled differently for different needs. What I would not do is let teams silently drift on kernel patch policy just because they're on different distros; the CVE exposure conversation has to be normalized across the fleet even though the underlying package names, advisory feeds, and patch cadence differ per distro.
 _What the interviewer is probing for:_ Whether the candidate can translate a conceptual distinction (kernel vs. distro) into concrete organizational and pipeline decisions at scale, and whether they understand what should be standardized versus what's legitimately variable.
 
-## 1.12 Common Misconceptions
+## 12. Common Misconceptions
 
 1. **"Linux is an operating system."** Strictly, Linux is the kernel; the operating system is the kernel plus userland. This is loose-but-common usage in casual speech, but a precise engineer distinguishes them, especially in writing and in interviews.
 2. **"All Linux distributions are basically the same OS with a different theme."** Distributions differ meaningfully in package format and manager, release philosophy (rolling vs. point releases), default init system history, security model defaults, and target use case — not merely in visual branding.
 3. **"A newer `uname -r` version number always means more patched/secure."** Not necessarily — backported fixes mean an older-looking version string on one distro can be more current on security fixes than a nominally newer string on another, if the vendor patch cadence differs.
 4. **"GNU/Linux and Linux mean exactly the same thing to everyone."** The "GNU/Linux" naming carries philosophical weight for some communities (crediting the GNU Project's userland contributions) — worth being aware of, not worth arguing about in a professional context.
 
-## 🔑 Key Takeaways
+## 13. 🔑 Key Takeaways
 
 - Linux, strictly, is the **kernel** — one component that manages hardware. A **Linux distribution** is the kernel plus userland, packaged and branded into a usable OS.
 - The layering is: Hardware → Kernel → Userland/System Software → Applications.
@@ -255,8 +250,8 @@ _What the interviewer is probing for:_ Whether the candidate can translate a con
 - Distro vendors backport kernel security fixes independently, so patch exposure must be judged against vendor advisories, not raw kernel version numbers alone.
 - Precision on this distinction is both an operational necessity (patch management, support escalation, reproducible images) and a reliable seniority signal in interviews.
 
-## Related Concepts & What's Next
+## 14. Related Concepts & What's Next
 
-This section establishes the layering vocabulary (kernel, userland, OS, distribution) that the rest of the roadmap builds on. §2 traces how this layering came to exist historically (Unix → GNU → Linux kernel → modern distros). Part 2 (§8–§16) dives inside the kernel box itself — kernel space vs. user space, system calls, the boot process, and kernel modules. §5 (later in this Part) applies the distribution concept concretely, comparing major distribution families and how to choose one. Part 8 (§59–§64) covers the package-management layer that distributions use to assemble and update their userland. Part 12 (§89–§96) returns to the security angle introduced in 1.6–1.7 with full kernel-hardening and patch-management coverage.
+§2 traces how this layering came to exist historically (Unix → GNU → Linux kernel → modern distros). Part 2 (§8–§16) dives inside the kernel box itself — kernel space vs. user space, system calls, the boot process, and kernel modules. §5 (later in this Part) applies the distribution concept concretely, comparing major distribution families and how to choose one. Part 8 (§59–§64) covers the package-management layer that distributions use to assemble and update their userland. Part 12 (§89–§96) returns to the security angle introduced in §6–§7 with full kernel-hardening and patch-management coverage.
 
 **Next Section:** §2 — `Section-02-Part1-History-and-Evolution.md`

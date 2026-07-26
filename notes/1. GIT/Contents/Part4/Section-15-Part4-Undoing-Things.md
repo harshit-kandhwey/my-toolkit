@@ -1,16 +1,16 @@
 # Section 15 (Part 4): Undoing Things — restore, reset, revert, clean (and legacy checkout)
 
-## 15.1 Definition
+## 1. Definition
 
 **Plain language:** Git gives you several distinct "undo" commands, and picking the wrong one is one of the most common ways people either lose work they wanted to keep or fail to undo what they meant to. Each operates on a different one of the three areas from §4, and each has a different safety profile.
 
 **Precise:** Undoing in Git is not one operation but a family of them, differentiated by (1) which area they touch — working directory, index, or committed history — and (2) whether they rewrite existing refs/objects in place (destructive to history, safe only locally) or add new history that cancels out old history (non-destructive, safe on shared branches). `git restore`, `git reset`, and `git revert` are the three modern, purpose-built tools; `git clean` handles untracked files, a separate concern none of the other three touch.
 
-## 15.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Mistakes are constant and varied in kind: a bad edit not yet staged, a bad edit already staged, a bad commit not yet pushed, a bad commit already pushed and fetched by others, stray generated files cluttering `git status`. A single "undo" command cannot safely handle all of these — undoing a local, unpushed commit can safely rewrite history, while undoing a commit already on a shared branch cannot (§14.7's Golden Rule applies here too). Git deliberately provides distinct tools scoped to distinct situations rather than one dangerously overloaded command.
 
-## 15.3 `git restore` — Working Directory & Index Undo
+## 3. `git restore` — Working Directory & Index Undo
 
 Introduced in Git 2.23 alongside `git switch` (§12.6) specifically to give "undo my local edits" a dedicated, narrowly scoped command, splitting this responsibility out of the historically overloaded `git checkout`.
 
@@ -36,7 +36,7 @@ $ git restore --source=HEAD~2 file.txt
 
 > ⚠️ **Critical clarification:** `git restore <file>` is genuinely destructive to uncommitted work — the discarded edits are not staged, not committed, and therefore not in the object database at all; there is no reflog entry, no recovery path, for content that was only ever in the working directory. Always double-check with `git diff` before running it on anything you might still want.
 
-## 15.4 `git reset` — Moving the Branch Pointer, With Three Modes
+## 4. `git reset` — Moving the Branch Pointer, With Three Modes
 
 `git reset` moves the current branch's ref to a different commit, and, depending on the mode, also rewrites the index and/or working directory to match.
 
@@ -81,7 +81,7 @@ $ git reset HEAD -- file.txt
 
 This form is what `git restore --staged` (15.3) replaced for the common case — both exist, `restore --staged` is the modern, narrower recommendation.
 
-## 15.5 `git revert` — Undoing With a New Commit
+## 5. `git revert` — Undoing With a New Commit
 
 ```bash
 # Purpose: create a NEW commit that applies the inverse of a previous commit's changes
@@ -107,7 +107,7 @@ $ git revert -n a1b2c3d
 
 > ⚠️ **Reverting a merge commit** requires specifying which parent's line of history to treat as the "mainline" via `-m <parent-number>` (`git revert -m 1 <merge-commit>`), since a merge commit has two parents and Git cannot infer which side you're reverting relative to — a common trip-up when trying to back out a bad merge.
 
-## 15.6 `reset` vs `revert` — Direct Contrast
+## 6. `reset` vs `revert` — Direct Contrast
 
 |                                                     | `git reset`                                                       | `git revert`                                                                      |
 | --------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -119,7 +119,7 @@ $ git revert -n a1b2c3d
 
 > 💡 **Tip:** A blunt rule of thumb that resolves nearly every "which one do I use" question: **if it's already pushed and someone else might have it, `revert`; if it's purely local and unpushed, `reset` is fine and often simpler.**
 
-## 15.7 `git clean` — Removing Untracked Files
+## 7. `git clean` — Removing Untracked Files
 
 None of `restore`, `reset`, or `revert` touch **untracked** files — files Git has never been told to track at all (build output, stray scratch files, `.env.local` copies). `git clean` is the dedicated tool for that separate concern.
 
@@ -148,7 +148,7 @@ $ git clean -fdx
 
 > ⚠️ **Critical clarification:** `git clean -f` (and especially `-fdx`) is genuinely, permanently destructive with **no reflog safety net whatsoever** — untracked files were never Git objects to begin with, so there is nothing in `.git/objects` to recover from. Always run `-n` first, without exception, on anything beyond a scratch repo.
 
-## 15.8 Legacy: `git checkout -- <file>`
+## 8. Legacy: `git checkout -- <file>`
 
 Pre-2.23, discarding working-directory changes to a file was `git checkout -- <file>` — the same command, `git checkout`, also used for switching branches (§12.6), disambiguated only by the `--` separator marking everything after it as a pathspec, not a branch name.
 
@@ -159,7 +159,7 @@ $ git checkout -- file.txt
 
 This is exactly the ambiguity §12.6 described as motivating `switch`/`restore`'s creation — a missing `--`, or a filename that happens to match a branch name, could make Git interpret the command entirely differently. It remains extremely common in existing scripts, tutorials, and muscle memory; recognizing it is essential even though `git restore` is the modern recommendation for new work.
 
-## 15.9 Decision Table — "I Want to Undo X, in Situation Y"
+## 9. Decision Table — "I Want to Undo X, in Situation Y"
 
 | Situation                                               | Command                                                       |
 | ------------------------------------------------------- | ------------------------------------------------------------- |
@@ -174,7 +174,7 @@ This is exactly the ambiguity §12.6 described as motivating `switch`/`restore`'
 | Wipe untracked files **and** ignored build artifacts    | `git clean -n` then `git clean -fdx`                          |
 | "I think I lost a commit entirely"                      | `git reflog`, then `git switch -c <name> <hash>` (§6.6)       |
 
-## 15.10 Hands-On — Comparing All Three Modern Tools on the Same Mistake
+## 10. Hands-On — Comparing All Three Modern Tools on the Same Mistake
 
 ```bash
 $ mkdir undodemo && cd undodemo && git init -q
@@ -198,7 +198,7 @@ a1b2c3d v1
 # Both the mistake AND the correction are visible in history — nothing hidden, nothing rewritten
 ```
 
-## 15.11 Troubleshooting
+## 11. Troubleshooting
 
 | Symptom                                                                                   | Likely cause                                                                                         | Fix                                                                                                       |
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -207,7 +207,7 @@ a1b2c3d v1
 | `git clean -f` deleted something important                                                | No `.gitignore` entry protected it, and it wasn't tracked/committed                                  | No recovery via Git; check editor local history, OS backups, or version-aware cloud sync as a last resort |
 | `git revert` produces a conflict                                                          | The commit being reverted overlaps with later changes to the same lines                              | Resolve exactly like a merge conflict (§13.8): edit markers, `git add`, `git revert --continue`           |
 
-## 15.12 Interview Questions
+## 12. Interview Questions
 
 **[Beginner] Q1. What's the difference between `git restore` and `git reset`?**
 **Model answer:** `git restore` operates on the working directory and/or index without moving the branch pointer at all — it discards uncommitted edits or unstages files, never touching committed history. `git reset` moves the current branch's pointer to a different commit, optionally also resetting the index and working directory to match, depending on `--soft`/`--mixed`/`--hard` — it operates on committed history, undoing commits rather than uncommitted edits.
@@ -224,7 +224,7 @@ a1b2c3d v1
 **[Senior] Q5. Design a team policy for undoing commits that distinguishes "local mistake" from "public mistake," and explain the reasoning.**
 **Model answer:** The dividing line should be whether the commit has been pushed to a shared branch and could plausibly have been fetched by someone else — not simply "is it on the remote," since a personal backup push to a branch nobody else touches is still effectively local. For anything not yet shared, `git reset` (in whichever mode fits) is appropriate and simpler, since there's no one else's history to invalidate. Once a commit is on a shared branch, policy should mandate `git revert`, because it preserves the shared branch's existing commit identities entirely and only adds new history, meaning anyone who already has the old commits experiences a normal, ordinary `git pull` with no rewritten hashes and no need to reconcile diverged history. I'd also explicitly carve out `--force-with-lease` as a narrowly permitted exception for coordinated, communicated rewrites of shared branches (e.g., cleaning up a PR branch before merge, with active collaborators notified) rather than a blanket ban, since an absolute "never force-push" rule is sometimes more restrictive than the actual risk warrants.
 
-## 15.13 Common Misconceptions
+## 13. Common Misconceptions
 
 1. **"`reset` and `revert` do the same thing, just with different names."** `reset` moves a branch pointer and can rewrite the index/working directory in place; `revert` never touches existing commits at all and only ever adds a new one. Their safety profiles on shared history are opposite.
 2. **"`git reset --hard` deletes the commits I'm resetting past."** It only moves the branch pointer away from them; the commit objects remain in the database, recoverable via reflog, until garbage collection actually prunes truly unreferenced objects.
@@ -232,7 +232,7 @@ a1b2c3d v1
 4. **"`git checkout -- <file>` is deprecated."** It still works exactly as before; `git restore` is the newer, narrower, recommended alternative, not a replacement that removes the old form.
 5. **"Reverting a commit removes it from history."** The opposite — the original commit stays fully visible in `git log`; a new commit is added afterward canceling its effect. Both are permanently part of the record.
 
-## 15.14 🔑 Key Takeaways
+## 14. 🔑 Key Takeaways
 
 - `git restore` undoes uncommitted working-directory/index changes; `git reset` moves the branch pointer through committed history with three modes of increasing destructiveness (`--soft`/`--mixed`/`--hard`); `git revert` adds a new commit that cancels an old one without touching existing history.
 - The single most load-bearing distinction: `reset` rewrites/removes refs to existing history (unsafe once shared, per §14.7's Golden Rule), while `revert` only ever adds new commits (always safe, even on shared branches).
@@ -240,6 +240,6 @@ a1b2c3d v1
 - Commit objects removed from a branch's line by `reset` are not deleted; they remain recoverable via the reflog (§6.6) until garbage collection. Working-directory-only content has no such backing and, once discarded, is unrecoverable through Git.
 - `git checkout -- <file>` is the legacy equivalent of `git restore <file>`, still fully functional, superseded in recommendation but not removed.
 
-## 15.15 Related Concepts & What's Next
+## 15. Related Concepts & What's Next
 
 Undoing committed or staged work is one thing; §16 covers the adjacent, distinct need to temporarily set aside **uncommitted** work-in-progress without committing it at all — stashing — which is often the right tool reached for just before you'd otherwise be tempted to use one of this section's more destructive options.

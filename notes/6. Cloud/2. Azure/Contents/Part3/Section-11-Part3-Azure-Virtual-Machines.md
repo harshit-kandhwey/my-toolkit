@@ -1,16 +1,16 @@
 # Section 11 — Azure Virtual Machines: Architecture, Sizing, Images
 
-## 11.1 Definition
+## 1. Definition
 
 **Plain language:** An Azure Virtual Machine (VM) is a software-based emulation of a physical computer, running on Microsoft's shared hardware, that you can create in minutes, choose the size and OS of, and fully control from the OS level upward — the core IaaS compute building block introduced conceptually in Section 2.4.
 
 **Precise definition:** An Azure VM is a virtualized compute instance running atop the Azure Hypervisor on physical host hardware within an Azure data center, provisioned from a disk image, allocated a defined quantity of virtual CPU, memory, and network/storage bandwidth according to its selected VM size (SKU), and billed based on that size, running duration, and any attached resources (disks, public IPs).
 
-## 11.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Some workloads require full operating-system-level control: custom kernel parameters, specific unsupported legacy software, direct hardware-adjacent configuration, or simply an exact lift-and-shift replica of an existing on-premises server with minimal re-engineering. Azure VMs solve this by providing IaaS-level compute (Section 2.4) — Microsoft manages only the physical host and hypervisor, while the customer retains full control of everything from the guest OS upward, at the cost of taking on OS patching, security hardening, and availability configuration as their own responsibility.
 
-## 11.3 Internal Working — Virtualization Architecture
+## 3. Internal Working — Virtualization Architecture
 
 **How virtualization works (foundational concept):** A **hypervisor** is a thin layer of software running directly on physical server hardware that creates and manages multiple isolated **virtual machines**, each believing it has exclusive access to its own CPU, memory, and devices, while the hypervisor actually multiplexes the real physical hardware among all VMs running on that host. Azure's compute fleet runs on the **Azure Hypervisor**, a Microsoft-built, Hyper-V-based hypervisor purpose-built for Azure's hyperscale, multi-tenant environment.
 
@@ -18,7 +18,7 @@ Some workloads require full operating-system-level control: custom kernel parame
 
 ⚠️ For workloads with strict regulatory or compliance requirements against any hardware multi-tenancy, Azure offers **Dedicated Hosts** — physical servers reserved exclusively for one customer's VMs, eliminating co-tenancy at the hardware level entirely, at a corresponding cost premium; verify current Dedicated Host availability and pricing against official documentation when this requirement arises.
 
-### 11.3.1 Architecture Diagram
+### 3.1 Architecture Diagram
 
 ```
 Physical Host Server (in an Azure data center)
@@ -36,7 +36,7 @@ Each VM:
  └── Virtual Network Interface — connects to a Virtual Network (Section 21)
 ```
 
-## 11.4 VM Sizing (SKUs)
+## 4. VM Sizing (SKUs)
 
 **Definition:** A **VM size** (or SKU) is a predefined bundle of virtual CPU count, memory, temporary storage, and maximum network/disk throughput that a VM is provisioned with. Azure organizes VM sizes into **series**, each optimized for a different workload profile.
 
@@ -61,7 +61,7 @@ Each VM:
 
 💡 **Tip:** A very common real-world mistake is over-provisioning "just in case" rather than right-sizing based on actual measured utilization and using autoscaling (Section 12, VM Scale Sets) to handle genuine peak demand — right-sizing plus autoscaling is almost always more cost-effective than a permanently oversized static VM.
 
-## 11.5 VM Images
+## 5. VM Images
 
 **Definition:** An **image** is the template used to create a VM's OS disk — containing a pre-configured operating system (and optionally, pre-installed software) that Azure copies to create the new VM's initial disk state.
 
@@ -73,7 +73,7 @@ Each VM:
 
 ⚠️ **Generalized vs. specialized images** is an important distinction: a **generalized** image has had machine-specific information (like the computer name and security identifiers) removed via a tool like `sysprep` (Windows) or `waagent -deprovision` (Linux), making it safe to use as a template for multiple new VMs; a **specialized** image retains that machine-specific information and is intended to preserve a single, specific VM's exact state (e.g., for disaster recovery), not to be used as a multi-VM template — using a specialized image incorrectly as a multi-instance template can cause identity conflicts between the resulting VMs.
 
-## 11.6 Configuration & Hands-On Example
+## 6. Configuration & Hands-On Example
 
 **Creating a VM with a specific size and querying available sizes first:**
 
@@ -111,25 +111,25 @@ az image create --resource-group rg-myapp-prod --name img-webapp-golden --source
 - **Purpose:** Converts a manually-configured, known-good VM into a reusable generalized image, following the golden-image pattern used to standardize new VM deployments.
 - ⚠️ The exact generalization command differs meaningfully by OS (Linux typically uses `waagent -deprovision+user` run inside the VM before the Azure-level `az vm generalize` step; Windows uses `sysprep` inside the VM first) — always verify the current, correct OS-specific generalization procedure in official documentation before capturing a production golden image, since doing this incorrectly can produce a broken or insecure template.
 
-## 11.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 Enterprises rarely create VMs manually and repeatedly from marketplace images for ongoing operations — instead, they build and maintain a small set of standardized, hardened **golden images** (via Azure Compute Gallery) that bake in required security agents, monitoring agents, and baseline configuration, then deploy new VMs (often via VM Scale Sets, Section 12, rather than individual VMs) from those standardized images through Infrastructure as Code pipelines. VM sizing decisions at enterprise scale are typically informed by actual usage telemetry (via Azure Monitor, Part 10) rather than guesswork, with periodic right-sizing reviews as part of cost governance (Part 12).
 
-## 11.8 Security Considerations
+## 8. Security Considerations
 
 - The guest OS is entirely the customer's responsibility to patch and harden under the IaaS model (Section 2.4) — unpatched VM operating systems are a common real-world breach vector, making automated patch management (or automated VM replacement from updated golden images) an operational necessity, not optional.
 - Golden images should have security baselines (disabled unnecessary services, applied hardening benchmarks, pre-installed required security/monitoring agents) baked in before being used as a deployment template, rather than relying on post-deployment configuration to achieve consistent hardening.
 - Direct public internet exposure of a VM's management ports (like SSH port 22 or RDP port 3389) is a common and serious misconfiguration; this is addressed via Network Security Groups and just-in-time VM access, covered in Part 5 and Part 11 respectively.
 
-## 11.9 Performance Considerations
+## 9. Performance Considerations
 
 VM performance is bounded not just by vCPU count but by the size's associated network and disk throughput limits — a workload that's disk-I/O-bound will not improve by simply choosing a size with more vCPUs if that size doesn't also increase disk throughput limits; matching the size's full resource profile (CPU, memory, disk throughput, network bandwidth) to the actual workload bottleneck is essential and is a frequent source of "why isn't scaling up helping" troubleshooting scenarios.
 
-## 11.10 Monitoring
+## 10. Monitoring
 
 Basic VM health and performance metrics (CPU utilization, disk I/O, network throughput) are available by default through Azure Monitor (Part 10) at the platform level; deeper, in-guest metrics and log collection require installing the Azure Monitor Agent inside the VM — this distinction between platform-level and in-guest monitoring is elaborated fully in Part 10.
 
-## 11.11 Troubleshooting
+## 11. Troubleshooting
 
 | Symptom                                                                      | Likely Cause                                                               | Fix                                                                                                                  |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -137,7 +137,7 @@ Basic VM health and performance metrics (CPU utilization, disk I/O, network thro
 | VM created from a "specialized" image conflicts with an identical sibling VM | Machine-specific identifiers weren't removed before capture                | Recapture the image after properly generalizing (sysprep/waagent deprovision) the source VM                          |
 | VM performance doesn't improve after resizing to more vCPUs                  | The actual bottleneck is disk or network throughput, not CPU               | Re-profile the workload's actual resource bottleneck; choose a size that increases the specific constrained resource |
 
-## 11.12 Interview Questions — Section 11
+## 12. Interview Questions — Section 11
 
 ### 🎯 Beginner
 
@@ -155,21 +155,21 @@ _Model answer:_ I'd establish a small set of standardized base images (e.g., one
 
 _What the interviewer is probing:_ whether the candidate thinks about image management as an ongoing governance and lifecycle practice at organizational scale, not just a one-time technical capture operation — a strong signal of real platform-engineering experience.
 
-## 11.13 Common Misconceptions
+## 13. Common Misconceptions
 
 - **"A bigger VM size is always better performance."** False — performance is bounded by whichever resource dimension (CPU, memory, disk throughput, network bandwidth) is the actual bottleneck for the workload; scaling the wrong dimension yields no improvement.
 - **"You can use a specialized image the same way as a generalized image to create multiple VMs."** False and risky — specialized images preserve machine-specific identity information and are intended for single-instance recovery scenarios, not multi-VM templating.
 
-## 11.14 Key Takeaways
+## 14. Key Takeaways
 
 - 🔑 Azure VMs run on the Azure Hypervisor, which provides strict isolation between co-tenant VMs sharing the same physical host — a foundational public cloud security guarantee.
 - 🔑 VM sizing should be driven by actual workload resource-bottleneck analysis (CPU, memory, disk throughput, network bandwidth), not guesswork or arbitrary over-provisioning.
 - 🔑 Generalized images (via sysprep/waagent deprovisioning) are the correct template mechanism for creating multiple VMs; specialized images preserve single-instance identity and are unsuitable as multi-VM templates.
 - 🔑 Enterprise environments manage golden images centrally through Azure Compute Gallery with a regular rebuild cadence, rather than relying on ad hoc marketplace image usage per team.
 
-## 11.15 VM Workload Availability & Disaster Recovery
+## 15. VM Workload Availability & Disaster Recovery
 
-### 11.15.1 Availability Sets vs. Availability Zones vs. VM Scale Sets
+### 15.1 Availability Sets vs. Availability Zones vs. VM Scale Sets
 
 Azure provides three distinct, sometimes-confused mechanisms for VM-level resilience, each addressing a different scope of failure and suited to a different scenario:
 
@@ -183,7 +183,7 @@ Azure provides three distinct, sometimes-confused mechanisms for VM-level resili
 
 💡 **Tip:** For genuinely stateful, non-horizontally-scalable singleton workloads (e.g., a single legacy database VM that can't run as multiple identical replicas), neither Availability Sets nor Availability Zones alone provide _failover_ — they only reduce the _likelihood_ of simultaneous failure. True failover for a stateful singleton workload requires a database/application-level HA mechanism (such as SQL Server Always On Availability Groups on IaaS, or a managed PaaS alternative like Azure SQL Database's built-in HA, Section 29.3.4) layered on top of the chosen placement strategy.
 
-### 11.15.2 VM Backup
+### 15.2 VM Backup
 
 **Definition:** **Azure Backup** provides application-consistent, scheduled backups of VMs (and their attached Managed Disks), stored in a Recovery Services Vault, independent of the VM's own lifecycle — protecting against data loss, corruption, accidental deletion, or ransomware, none of which Availability Sets/Zones/Scale Sets address, since those mechanisms protect against _infrastructure_ failure, not data-level _corruption or deletion_.
 
@@ -195,7 +195,7 @@ Azure provides three distinct, sometimes-confused mechanisms for VM-level resili
 - **Application-consistent snapshots** — Azure Backup coordinates with the VM's guest OS (via the VM agent) to quiesce the file system and, where supported, application-level state (like a database's transaction log) before taking the snapshot, ensuring the recovery point is usable without corruption, rather than a purely crash-consistent snapshot that might capture data mid-write.
 - **Recovery Services Vault** — the storage container holding backup data, itself benefiting from its own redundancy configuration (LRS/GRS, conceptually similar to Section 20's Storage Account redundancy options).
 
-### 11.15.3 Disaster Recovery Options for VMs
+### 15.3 Disaster Recovery Options for VMs
 
 **Azure Site Recovery (ASR)** (introduced by name here, covered in full in Section 62, Part 12) provides VM-level disaster recovery by continuously replicating a VM's disk changes to a secondary region, allowing the VM to be failed over and brought online in that secondary region if the primary region becomes unavailable — a fundamentally different capability from backup (which restores data to a point in time, generally with some recovery _time_, i.e. it isn't designed for rapid regional failover) and from Availability Zones (which protect within a region, not across regions).
 
@@ -209,7 +209,7 @@ These three layers address genuinely different failure modes and are not interch
 
 🎯 **Interview Tip:** "We have Availability Zones configured — are we protected against data corruption or a full regional outage?" is a common trap question. The correct answer is no on both counts: Availability Zones protect against a zone-level infrastructure failure only; data corruption requires Backup, and a full regional outage requires Site Recovery (or an equivalent DR strategy). Being able to clearly separate these three concerns is one of the most reliable signals of genuine, practical Azure resilience design experience.
 
-### 11.15.4 Interview Questions — Section 11.15
+### 15.4 Interview Questions — Section 11.15
 
 **🎯 Intermediate**
 **Q: Can a single VM be placed in both an Availability Set and a specific Availability Zone simultaneously?**
@@ -225,12 +225,12 @@ _Model answer:_ I'd clarify that Availability Zones protect specifically against
 
 _What the interviewer is probing:_ whether the candidate can correctly identify and communicate the gap between infrastructure-level HA and the separate concerns of data protection and regional DR — a genuinely common real-world miscommunication this question is designed to surface.
 
-### 11.15.5 Key Takeaways — Section 11.15
+### 15.5 Key Takeaways — Section 11.15
 
 - 🔑 Availability Sets (data-center-local fault/update domains) and Availability Zones (data-center-level separation) are mutually exclusive per VM; VM Scale Sets can span zones directly and are the generally preferred modern mechanism for horizontally-scalable workloads.
 - 🔑 Azure Backup protects against data-level loss/corruption (a concern HA mechanisms do not address); Azure Site Recovery protects against full regional loss (a concern neither HA nor Backup alone addresses).
 - 🔑 A complete VM resilience strategy deliberately layers all three: intra-region HA (Sets/Zones/VMSS), data backup, and cross-region DR — treating any one as sufficient on its own is a common and consequential design gap.
 
-## 11.16 Related Concepts (Next Up)
+## 16. Related Concepts (Next Up)
 
 Section 12 covers **VM Scale Sets** — the mechanism for running and automatically scaling a fleet of identical VMs (built from the same images and sizing principles just covered) to handle variable load and provide high availability across Availability Zones (Section 3.3.2), directly extending the single-VM concepts covered in this section to a managed, elastic group.

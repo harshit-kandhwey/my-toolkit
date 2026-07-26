@@ -1,16 +1,16 @@
 # Section 34 (Part 4): GKE Operations, Scaling & Upgrades — Part 4 Wrap-Up
 
-## 34.1 Definition
+## 1. Definition
 
 **Plain language:** Building a GKE cluster is the easy part; keeping it running well over months and years — patched, right-sized as load changes, and neither over- nor under-provisioned — is the ongoing operational work this section covers.
 
 **Precise:** GKE operations spans three related but distinct concerns: **upgrades** (keeping the control plane and node OS/`kubelet` version current, via release channels and maintenance windows, Section 30), **workload-level scaling** (the **Horizontal Pod Autoscaler (HPA)** and **Vertical Pod Autoscaler (VPA)**, which resize the number or size of Pods based on observed demand), and **infrastructure-level scaling** (the **Cluster Autoscaler** and **node auto-provisioning (NAP)**, which resize and reshape the node fleet underneath those Pods to match).
 
-## 34.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 A cluster sized correctly on day one is wrong within weeks — traffic grows, shrinks, and shifts shape, and Kubernetes minor versions ship roughly every few months upstream with their own security patches that can't be deferred indefinitely. Manually re-sizing Deployments and node pools, and manually scheduling upgrade windows, doesn't scale past a handful of clusters — it's exactly the kind of continuous, reactive toil that made self-managed Kubernetes control planes painful before GKE (Section 30). Automated scaling and automated upgrades exist to make "matching capacity to demand" and "staying patched" continuous background properties of a cluster rather than a recurring manual task for a platform team.
 
-## 34.3 Auto-Upgrades and Maintenance Windows
+## 3. Auto-Upgrades and Maintenance Windows
 
 GKE clusters on a **release channel** (Section 30) receive **automatic upgrades** for both the control plane and node pools, gated to versions Google has already validated for that channel. Two customer-facing controls shape when upgrades actually happen:
 
@@ -21,7 +21,7 @@ Node upgrades within a pool proceed via a **surge upgrade** strategy by default 
 
 > ⚠️ **Interview-relevant nuance:** Maintenance windows control _when_ GKE is allowed to act; they don't prevent upgrades from happening at all. A cluster on a release channel will still eventually be upgraded to keep pace with that channel's supported versions — maintenance exclusions, not windows, are the tool for genuinely blocking upgrades during a specific critical period, and even those are time-bounded, not permanent opt-outs.
 
-## 34.4 Workload-Level Scaling: HPA and VPA
+## 4. Workload-Level Scaling: HPA and VPA
 
 | Autoscaler                          | Scales                                             | Trigger                                                                                     | Typical Fit                                                                                          |
 | ----------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -30,17 +30,17 @@ Node upgrades within a pool proceed via a **surge upgrade** strategy by default 
 
 HPA and VPA are not interchangeable and, in their default configuration, **should not target the same resource metric on the same workload simultaneously** — HPA reacting to CPU by adding replicas while VPA simultaneously resizes CPU requests on those replicas can fight each other, producing thrashing rather than stable scaling. VPA is commonly run in **recommendation-only mode** even alongside HPA, purely to inform what resource requests a workload's manifest should declare, without VPA actively resizing running Pods.
 
-## 34.5 Infrastructure-Level Scaling: Cluster Autoscaler and Node Auto-Provisioning
+## 5. Infrastructure-Level Scaling: Cluster Autoscaler and Node Auto-Provisioning
 
 - **Cluster Autoscaler** watches for Pods that can't be scheduled due to insufficient node capacity and adds nodes to an existing node pool to fit them; it also removes nodes that have been underutilized for a sustained period and whose Pods can be safely rescheduled elsewhere, within the min/max bounds configured per node pool.
 - **Node auto-provisioning (NAP)** goes a step further than the Cluster Autoscaler: rather than only scaling existing node pools, NAP can create **entirely new node pools** automatically — with an appropriate machine type — when scheduled Pods need a shape of resources (e.g., a specific GPU type, or a much larger memory ratio) no existing pool provides, within limits the operator defines.
 - In **Autopilot** (Section 32), this entire layer is invisible to the customer — Google performs the equivalent of Cluster Autoscaler and NAP behind the scenes automatically, which is precisely the operational burden Autopilot removes.
 
-## 34.6 GKE Managed Istio (Brief Mention)
+## 6. GKE Managed Istio (Brief Mention)
 
 GKE offers a managed **Istio-based service mesh add-on** (historically branded Anthos Service Mesh / Cloud Service Mesh) that layers mutual TLS between Pods, fine-grained traffic management (canary splitting, retries, circuit breaking), and mesh-wide observability on top of the networking primitives covered in Section 31, without requiring the customer to operate Istio's control plane themselves. It's typically adopted once an organization's number of interdependent microservices grows large enough that Gateway API-level routing (Section 31) alone no longer gives enough east-west traffic control and observability — a deeper architectural topic outside this Part's scope, noted here as the natural next step past what Sections 28–34 cover.
 
-## 34.7 Hands-On Example
+## 7. Hands-On Example
 
 **Beginner example — apply an HPA to a Deployment:**
 
@@ -79,18 +79,18 @@ NAME         NODE_POOL     AUTOSCALING   MIN_NODES  MAX_NODES
 my-cluster   default-pool  enabled       1          8
 ```
 
-## 34.8 Production & Enterprise Usage
+## 8. Production & Enterprise Usage
 
 - Production clusters set **maintenance windows** deliberately (typically low-traffic hours) and use **maintenance exclusions** proactively around known critical business periods, rather than discovering an in-progress node upgrade during a peak event.
 - Combining **HPA on custom/external metrics** (e.g., a queue-depth metric from Cloud Monitoring rather than raw CPU) is standard for workloads whose real bottleneck isn't CPU-bound, since CPU-only HPA can badly under- or over-scale a queue-processing workload.
 - **Node auto-provisioning** is common in shared, multi-tenant enterprise clusters running heterogeneous workloads (some needing GPUs, some memory-optimized), so new node shapes appear automatically as new workload types are onboarded, rather than requiring a platform-team ticket to pre-create every needed node pool.
 
-## 34.9 Common Misconceptions
+## 9. Common Misconceptions
 
 - **Misconception:** "A maintenance window prevents upgrades from ever happening outside it." A maintenance window only controls _when_ GKE is permitted to perform maintenance — a release-channel cluster will still be upgraded eventually to remain within its channel's supported version range; only maintenance exclusions can genuinely block maintenance for a bounded period.
 - **Misconception:** "HPA and VPA can safely both actively manage the same resource metric on the same workload." Running HPA and VPA both actively targeting CPU on the same workload can cause the two autoscalers to work against each other; the common safe pattern is HPA for replica count plus VPA in recommendation-only mode, or scoping VPA to a different resource dimension than HPA's trigger metric.
 
-## 34.10 Interview Questions
+## 10. Interview Questions
 
 **🎯 Beginner:** _What's the difference between the Horizontal Pod Autoscaler and the Cluster Autoscaler?_
 **Model answer:** HPA operates at the workload level — it changes the number of Pod replicas for a Deployment based on observed metrics like CPU. The Cluster Autoscaler operates at the infrastructure level — it changes the number of _nodes_ in a node pool, adding nodes when Pods can't be scheduled due to insufficient capacity and removing underutilized nodes. They work together: HPA creating more Pods can trigger the Cluster Autoscaler to add nodes to fit them.
@@ -101,7 +101,7 @@ my-cluster   default-pool  enabled       1          8
 **🎯 Senior/Architect:** _Design the autoscaling and upgrade strategy for a multi-tenant GKE cluster running a mix of steady web services and bursty batch/GPU workloads._
 **Model answer:** I'd separate the workloads into distinct node pools by shape — a general-purpose pool for steady web services and a GPU pool for batch workloads — with **node auto-provisioning** enabled so new node shapes for future workload types can appear automatically without a manual node-pool-creation step each time. Web services get **HPA** on request-latency or custom queue-depth metrics rather than raw CPU where that's the truer bottleneck, backed by the **Cluster Autoscaler** on their pool; the GPU batch pool relies more heavily on the Cluster Autoscaler scaling to zero between batch runs, since GPU capacity is expensive to hold idle. For upgrades, I'd put this cluster on the **Regular** release channel with a maintenance window during the batch workload's known-quiet hours, plus maintenance exclusions around any known business-critical processing windows, and would size `max-surge`/`max-unavailable` conservatively for the GPU pool specifically, since GPU node replacement during an upgrade is more disruptive to reschedule than general-purpose capacity.
 
-## 34.11 Part 4 Consolidated Knowledge Map
+## 11. Part 4 Consolidated Knowledge Map
 
 Kubernetes on GCP (Part 4) breaks down into:
 
@@ -115,7 +115,7 @@ Kubernetes on GCP (Part 4) breaks down into:
 
 **Throughline:** S28–29 establish what actually runs in a cluster before a cluster exists. S30–31 build the cluster itself — the managed control plane, node pools, and the networking/storage fabric Pods run on. S32 is the fundamental mode decision (who manages the nodes) that reshapes everything downstream of it. S33 layers identity and network hardening on top of whichever mode was chosen. S34 closes the loop with what keeps a chosen architecture healthy indefinitely — scaling to match demand and staying current without manual toil.
 
-## 34.12 Part 4 Key-Takeaways Checklist
+## 12. Part 4 Key-Takeaways Checklist
 
 - Explain the GKE control plane vs. node pool split, and why regional (not just multi-zonal) clusters protect against a control-plane zone outage.
 - State the difference between VPC-native alias IP Pod networking and an overlay network, and why it matters for firewall/Flow Log visibility.
@@ -125,7 +125,7 @@ Kubernetes on GCP (Part 4) breaks down into:
 - Distinguish HPA from VPA from the Cluster Autoscaler from node auto-provisioning — what each one actually resizes.
 - Explain the difference between a maintenance window and a maintenance exclusion.
 
-## 34.13 Part 4 Interview Drill
+## 13. Part 4 Interview Drill
 
 **How do the GKE control plane and a node pool divide responsibility, and how does that change under Autopilot?**
 In Standard mode, Google fully manages the control plane (API server, `etcd`, scheduler, controller manager) while the customer manages node pools — Compute Engine VMs they size and scale. Under Autopilot, Google additionally manages node provisioning and sizing itself, billing per Pod resource request instead of per VM, so the customer's remaining responsibility shrinks to declaring what their Pods need.
@@ -148,7 +148,7 @@ The two autoscalers can work against each other — HPA adding replicas in respo
 **Design a resilient, cost-aware GKE setup for a workload with unpredictable traffic spikes.**
 Regional cluster (control-plane resilience) on the Regular release channel with a sensible maintenance window; either Autopilot (if no node-level restrictions apply, for automatic capacity matching with no idle-node cost) or Standard with Cluster Autoscaler and HPA tuned to a leading-indicator metric (queue depth, request latency) rather than lagging CPU alone, so scale-out begins before user-facing latency degrades; Workload Identity and a private cluster regardless of mode chosen, since neither depends on the scaling-mode decision.
 
-## 34.14 Related Concepts
+## 14. Related Concepts
 
 Container fundamentals (Section 28), Artifact Registry (Section 29), GKE architecture and release channels (Section 30), GKE networking and storage (Section 31), Autopilot vs. Standard (Section 32), Workload Identity and cluster security (Section 33), and — looking ahead — IAM fundamentals and service accounts opening Part 5 (Section 35) all connect directly to the operational practices covered here.
 

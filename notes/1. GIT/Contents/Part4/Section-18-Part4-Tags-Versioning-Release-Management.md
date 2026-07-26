@@ -1,16 +1,16 @@
 # Section 18 (Part 4): Tags, Versioning & Release Management
 
-## 18.1 Definition
+## 1. Definition
 
 **Plain language:** A tag is a permanent, human-readable label on one exact commit — used to mark releases so "version 2.3.1" always means one specific, unchanging point in history. This section is about using tags as part of a real release-management discipline, not just their ref mechanics.
 
 **Precise:** Practically, release management with Git combines three layers: tags (the pointer mechanism, already covered structurally in §5.5.4 and §6.5), a versioning **scheme** giving tag names consistent meaning (Semantic Versioning), and a commit-message **convention** that lets tooling derive version bumps and changelogs automatically (Conventional Commits). None of these three layers is Git-enforced — all are team/tooling conventions layered on top of plain refs.
 
-## 18.2 Recap — Tag Ref Mechanics (Full Depth: §5.5.4, §6.5)
+## 2. Recap — Tag Ref Mechanics (Full Depth: §5.5.4, §6.5)
 
 Two tag kinds exist at the ref level: a **lightweight tag** (a plain file under `.git/refs/tags/`, structurally identical to a branch pointer, just conventionally not moved) and an **annotated tag** (a real, distinct tag object in the object database carrying tagger identity, timestamp, message, and optionally a signature). §5.5.4 already established the rule this section assumes: **use annotated tags for anything that will be shared, released, or audited.**
 
-## 18.3 Creating Tags
+## 3. Creating Tags
 
 ```bash
 # Lightweight — quick, throwaway, no metadata
@@ -39,7 +39,7 @@ commit 9f2c1a4...
 ...
 ```
 
-## 18.4 Listing and Filtering Tags
+## 4. Listing and Filtering Tags
 
 ```bash
 # Purpose: list all tags, alphabetically
@@ -57,7 +57,7 @@ $ git tag --sort=-creatordate
 
 > ⚠️ **Common confusion to preempt:** plain alphabetical `git tag` listing sorts `v1.10.0` **before** `v1.2.0` (string comparison, not numeric), which looks wrong at a glance — `--sort=-v:refname` sorts using Git's version-aware comparator instead, correctly ordering `v1.2.0` before `v1.10.0`.
 
-## 18.5 Pushing Tags — The Common Gotcha
+## 5. Pushing Tags — The Common Gotcha
 
 > ⚠️ **Critical clarification:** tags are **not pushed automatically** by a plain `git push` — this catches nearly everyone at least once. Creating and pushing tags are two separate steps, deliberately, so you can create local, exploratory tags without ever sharing them.
 
@@ -79,7 +79,7 @@ $ git push --follow-tags     # only pushes ANNOTATED tags reachable from what's 
 | `git push origin --tags` | **Every** local tag, including throwaway lightweight ones — can be noisier than intended                     |
 | `git push --follow-tags` | Commits plus any annotated tags reachable from them — the disciplined middle ground most teams actually want |
 
-## 18.6 Deleting Tags — Local and Remote
+## 6. Deleting Tags — Local and Remote
 
 ```bash
 # Purpose: delete a LOCAL tag
@@ -95,7 +95,7 @@ As with branches (§20's remote mechanics), local and remote copies of a tag are
 
 > ⚠️ **Critical clarification:** deleting and recreating a tag that's already been fetched by anyone else is exactly the supply-chain integrity risk §6.11 flagged — never move or reuse a released tag name. Cut a new version instead (e.g., `v1.2.4`) if a released tag turns out to be wrong.
 
-## 18.7 Checking Out a Tag — Detached HEAD (Full Mechanics: §6.4.2)
+## 7. Checking Out a Tag — Detached HEAD (Full Mechanics: §6.4.2)
 
 ```bash
 $ git checkout v1.2.3
@@ -105,7 +105,7 @@ You are in 'detached HEAD' state...
 
 Checking out a tag always enters detached HEAD, since a tag is a fixed marker, not a movable branch pointer — exactly the mechanics §6.4.2 already covered. This is the standard way to inspect, build, or debug the exact state of a past release without disturbing any branch.
 
-## 18.8 Semantic Versioning (SemVer)
+## 8. Semantic Versioning (SemVer)
 
 The near-universal convention for what a version number itself _means_: `MAJOR.MINOR.PATCH`, e.g. `2.4.1`.
 
@@ -132,7 +132,7 @@ v2.5.1-beta.3+build.789
 
 > 💡 **Tip:** SemVer is a **convention**, not something Git or any package manager can enforce mechanically — nothing stops a maintainer from making a breaking change in a patch release. It's valuable precisely because downstream consumers (and automated tooling, like dependency resolvers using version ranges such as `^2.4.0`) rely on the promise being honored; breaking it silently erodes trust in a package's versioning.
 
-## 18.9 Conventional Commits
+## 9. Conventional Commits
 
 A structured commit-message format that gives commit history itself enough machine-readable semantic content to drive version bumps and changelogs automatically, rather than requiring a human to manually decide "was this a major, minor, or patch change" at release time.
 
@@ -160,13 +160,13 @@ $ git commit -m "feat(api)!: remove deprecated v1 endpoints
 BREAKING CHANGE: /api/v1/* routes have been removed; use /api/v2/*"
 ```
 
-### 18.9.1 How tooling consumes this
+### 9.1 How tooling consumes this
 
 Tools like **semantic-release**, **standard-version**, and `release-please` parse the commit history since the last tag, scan every commit's `type:` prefix, compute the correct next SemVer version automatically (any `BREAKING CHANGE` forces a major bump regardless of other commits; otherwise the highest of `feat`→minor / `fix`→patch wins), generate a categorized changelog grouped by type, create the new annotated tag, and often push a hosting-platform Release (18.11) — all without a human manually deciding the version number. This is the concrete mechanism tying commit-message discipline directly into CI/CD automation (§25): a merge to `main` can trigger a fully automated release pipeline purely because the commit messages themselves carried enough structured information to drive it.
 
 > 🔑 **Interview-grade summary:** SemVer defines what a version number _means_; Conventional Commits gives Git history enough structure for tooling to _compute_ that version number and changelog automatically, rather than a human deciding it by hand at release time.
 
-## 18.10 Signed Tags — Preview (Full Mechanics: §28)
+## 10. Signed Tags — Preview (Full Mechanics: §28)
 
 ```bash
 # Purpose: create a GPG- or SSH-signed annotated tag, cryptographically
@@ -179,7 +179,7 @@ $ git tag -v v1.2.3
 
 A signed tag builds directly on the annotated tag object (§5.5.4) by adding a cryptographic signature over its content — meaning any tampering with the tagged commit, the tag message, or the tagger identity invalidates the signature. Full key management, GPG vs SSH signing, and verification policy in CI are §28's subject; noted here because it's a natural next step once you're using annotated tags for real releases and want tamper-evidence beyond Git's baseline hash-chaining (§2.4.4).
 
-## 18.11 GitHub/GitLab Releases — A Platform Feature Built on Tags
+## 11. GitHub/GitLab Releases — A Platform Feature Built on Tags
 
 A hosting platform's "Release" (GitHub Releases, GitLab Releases) is **not** a separate Git concept — it's a database record on the platform that wraps an existing tag with additional, platform-hosted content: release notes (often auto-generated from Conventional Commits or PR titles), downloadable binary attachments, and a "latest release" marker.
 
@@ -192,7 +192,7 @@ A hosting platform's "Release" (GitHub Releases, GitLab Releases) is **not** a s
 
 > ⚠️ **Critical clarification:** deleting a GitHub Release does **not** delete the underlying Git tag, and vice versa — they're managed independently even though the platform's UI presents them together. Automated release tooling (18.9.1) typically creates both in one pipeline step, but they remain two separate systems underneath.
 
-## 18.12 Hands-On — Full Release Workflow
+## 12. Hands-On — Full Release Workflow
 
 ```bash
 $ mkdir releasedemo && cd releasedemo && git init -q
@@ -218,13 +218,13 @@ $ git push origin --follow-tags
 
 The version sequence here — `1.0.0` → `1.1.0` (a `feat:` commit, no breaking change) → `2.0.0` (a `feat!:`/`BREAKING CHANGE:` commit) — is exactly what an automated release tool would compute purely by reading the commit messages, with no human manually deciding the numbers.
 
-## 18.13 Production & Enterprise Usage
+## 13. Production & Enterprise Usage
 
 - CI/CD pipelines (§25) commonly gate a release job on pushes to `main` that include a new annotated tag matching a version pattern, triggering build, publish, and Release-creation steps automatically.
 - Enterprises with compliance requirements often mandate **signed** tags (18.10, §28) for anything reaching production, giving an auditable, tamper-evident chain from a specific approved commit to a specific released artifact.
 - Package registries (npm, PyPI, crates.io, Docker registries) almost universally expect SemVer-compliant version strings, making the convention load-bearing far beyond just Git — a Git tag frequently becomes the literal version string published to a package registry in the same CI step.
 
-## 18.14 Troubleshooting
+## 14. Troubleshooting
 
 | Symptom                                                  | Likely cause                                                                                  | Fix                                                                                                                |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -233,7 +233,7 @@ The version sequence here — `1.0.0` → `1.1.0` (a `feat:` commit, no breaking
 | Automated release tool computed the "wrong" version bump | A commit's type prefix was missing, wrong, or a `BREAKING CHANGE` footer was mistyped/missing | Review Conventional Commits formatting; some teams enforce it via a commit-msg hook (§24) or CI lint step          |
 | Deleted a tag but the GitHub Release still shows         | Release and tag are independently managed (18.11)                                             | Delete the Release explicitly via the platform's UI/API, separate from the `git tag`/`git push --delete` operation |
 
-## 18.15 Interview Questions
+## 15. Interview Questions
 
 **[Beginner] Q1. Why doesn't `git push` send my tags to the remote automatically?**
 **Model answer:** Pushing commits and pushing tags are deliberately separate operations in Git — a plain `git push` only sends commits on the current branch to its tracked upstream. This lets you create local, exploratory, or personal tags without accidentally sharing them. To actually publish a tag you need `git push origin <tag-name>`, `git push origin --tags` for everything, or `git push --follow-tags` for a more disciplined middle ground that only pushes annotated tags reachable from what you're pushing.
@@ -250,7 +250,7 @@ The version sequence here — `1.0.0` → `1.1.0` (a `feat:` commit, no breaking
 **[Senior] Q5. Explain the relationship between a Git tag and a GitHub Release, and a scenario where confusing the two causes a real problem.**
 **Model answer:** A Git tag is a plain, portable Git ref (or, if annotated, a real object) that travels with the repository through any clone or push — it's Git's own concept, host-agnostic. A GitHub Release is a separate, platform-hosted database record that wraps a tag with additional content: formatted release notes, binary attachments, and a "latest" marker — it cannot exist without an underlying tag, but a tag needs no Release to be valid. A real problem this causes: a team migrating from GitHub to a self-hosted Git server or GitLab (§23) correctly transfers every tag via a normal clone/push, but discovers all their carefully written Release notes and binary download attachments simply don't exist on the new platform, because Releases were never actually part of the Git data at all — they lived exclusively in GitHub's own database and require separate, deliberate export/migration if they need to be preserved.
 
-## 18.16 Common Misconceptions
+## 16. Common Misconceptions
 
 1. **"`git push` sends my tags along with my commits."** It does not, by default — tags require an explicit `git push origin <tag>`, `--tags`, or `--follow-tags`.
 2. **"SemVer is enforced by Git or npm/pip automatically."** It's a convention that tooling _relies on_ being honored; nothing prevents a maintainer from technically violating it.
@@ -258,7 +258,7 @@ The version sequence here — `1.0.0` → `1.1.0` (a `feat:` commit, no breaking
 4. **"Deleting a GitHub Release also deletes the tag (or vice versa)."** They are managed independently on the platform, even though the UI usually presents them together.
 5. **"Lightweight tags are fine for real releases as long as I remember the version number."** They carry no tagger identity, date, message, or signature — exactly the metadata compliance audits and incident post-mortems typically need a year later; always use annotated (and, where appropriate, signed) tags for real releases.
 
-## 18.17 🔑 Key Takeaways
+## 17. 🔑 Key Takeaways
 
 - Tags aren't pushed automatically by `git push` — use `git push origin <tag>`, `--tags`, or the more disciplined `--follow-tags`; never delete and recreate a released tag, for the same supply-chain-integrity reasons as force-moving one.
 - Semantic Versioning (`MAJOR.MINOR.PATCH`, with pre-release and build-metadata suffixes) defines what a version number means; it's a convention downstream tooling relies on, not something Git enforces.
@@ -266,6 +266,6 @@ The version sequence here — `1.0.0` → `1.1.0` (a `feat:` commit, no breaking
 - Signed tags (§28 for full mechanics) add cryptographic tamper-evidence on top of the annotated tag object, appropriate for anything reaching production in a compliance-sensitive environment.
 - A platform Release (GitHub/GitLab) always wraps an underlying tag but is a separate, platform-hosted, non-portable record — migrating repositories transfers tags automatically but not Releases.
 
-## 18.18 Related Concepts & What's Next
+## 18. Related Concepts & What's Next
 
 Everything in Part 4 so far has been about creating, combining, undoing, and marking commits. §19 closes out the part with the tools for **interrogating** history you didn't create yourself, or made long ago and no longer remember precisely — advanced `git log`, `git blame`, `git bisect`'s systematic search for a regression, and `git grep`'s historical-tree search — the investigative toolkit that everything from incident response to code archaeology depends on.

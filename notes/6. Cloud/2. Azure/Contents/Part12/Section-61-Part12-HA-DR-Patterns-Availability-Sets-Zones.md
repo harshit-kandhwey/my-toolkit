@@ -6,7 +6,7 @@
 
 ---
 
-## 61.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section formalizes High Availability (HA) and Disaster Recovery (DR) as distinct, precisely-defined concepts, and covers Azure's compute-level resilience mechanisms — Availability Sets and Availability Zones — in depth, including the specific, commonly-tested trade-offs between them. This section also introduces the standard HA/DR metrics (RTO/RPO) used to specify resilience requirements precisely, and formalizes the shared-responsibility-adjacent principle already touched on in Section 38.5.3: Azure provides the infrastructure primitives for HA/DR, but designing and implementing an actual resilience strategy for a specific workload remains the customer's responsibility.
 
@@ -14,17 +14,17 @@ This section formalizes High Availability (HA) and Disaster Recovery (DR) as dis
 
 ---
 
-## 61.2 HA vs. DR — Precise Definitions and Metrics
+## 2. HA vs. DR — Precise Definitions and Metrics
 
-### 61.2.1 High Availability (HA)
+### 2.1 High Availability (HA)
 
 - **Definition:** the design and implementation of a system to remain continuously operational, with minimal or no perceptible downtime, in the face of _routine, expected_ component failures — a single VM crashing, a single disk failing, a single rack or datacenter losing power — typically achieved _within_ a single Azure region using redundancy across fault domains/update domains (Availability Sets) or physically separate datacenters (Availability Zones).
 
-### 61.2.2 Disaster Recovery (DR)
+### 2.2 Disaster Recovery (DR)
 
 - **Definition:** the design and implementation of a strategy to recover a system's availability and data after a _large-scale, catastrophic_ event — most commonly modeled as an entire Azure region becoming unavailable — explicitly planning for and accepting some amount of downtime and/or data loss, quantified precisely via RTO and RPO (61.2.3), rather than targeting the near-zero-downtime goal HA pursues.
 
-### 61.2.3 RTO and RPO — The Metrics That Make DR Requirements Precise
+### 2.3 RTO and RPO — The Metrics That Make DR Requirements Precise
 
 | Metric                             | Definition                                                                                                                                                                                                        | Example                                                                                                                                                                                                                   |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,47 +33,47 @@ This section formalizes High Availability (HA) and Disaster Recovery (DR) as dis
 
 🎯 **Interview Tip:** RTO and RPO are among the most commonly, precisely interview-tested DR concepts specifically because they force concrete, business-driven trade-off conversations — a near-zero RTO/RPO is technically achievable but at real cost (synchronous multi-region replication, active-active architecture, Section 38.5.3's fuller treatment) versus a more relaxed RTO/RPO enabling a cheaper, simpler DR strategy (periodic backup restoration). A strong answer always frames RTO/RPO as **business decisions requiring input from business stakeholders**, not purely technical parameters an engineer decides unilaterally — the acceptable cost of achieving a given RTO/RPO must be weighed against the actual business cost of downtime/data loss for that specific workload, a conversation requiring business context an engineer alone cannot supply.
 
-### 61.2.4 Why HA Alone Does Not Provide DR
+### 2.4 Why HA Alone Does Not Provide DR
 
 ⚠️ **Warning:** a system with excellent HA (VMs spread across Availability Zones, Section 61.4, with automatic failover between them) provides **zero protection** against an entire-region-level disaster, since Availability Zones are all physically located within the same broader region (Section 3's AZ definition — physically separate datacenters, but within one region's metro area). A genuinely region-level catastrophic event (a large-scale natural disaster, a fundamental region-wide platform issue) would affect every Availability Zone within that region simultaneously. HA and DR are complementary, addressing different failure scales, and a complete resilience strategy requires both — HA within a region for routine failures, and a genuinely separate-region DR strategy (Section 62's fuller Azure Site Recovery/Backup treatment) for catastrophic, region-level events.
 
 ---
 
-## 61.3 Availability Sets
+## 3. Availability Sets
 
-### 61.3.1 Definition
+### 3.1 Definition
 
 **Plain language:** an Availability Set is a logical grouping of VMs (Section 11) that Azure guarantees will be spread across multiple physically distinct pieces of underlying infrastructure — separate power/network sources and separate physical racks/hosts — within a single datacenter, so that a single hardware failure or planned maintenance operation cannot simultaneously affect every VM in the set.
 
 **Precise definition:** an Availability Set is a logical construct instructing the Azure platform to distribute member VM instances across multiple **fault domains** and **update domains** within a single datacenter, providing resilience against localized hardware failures and planned host maintenance.
 
-### 61.3.2 Fault Domains and Update Domains
+### 3.2 Fault Domains and Update Domains
 
 | Concept                | Protects Against                                                                                                     | Mechanism                                                                                                                                                                                                                                                                                                                                                             |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Fault Domain (FD)**  | Simultaneous hardware failure (e.g., a shared power source or network switch failing) affecting multiple VMs at once | Azure spreads Availability Set members across multiple physically distinct racks (each with independent power and network), typically up to 3 fault domains, ensuring no single rack-level hardware failure takes down every VM in the set simultaneously.                                                                                                            |
 | **Update Domain (UD)** | Simultaneous unavailability during planned Azure platform maintenance (host OS patching, etc.)                       | Azure sequences planned maintenance operations across update domains one at a time (typically up to 20 update domains available, though an Availability Set uses a subset based on VM count), ensuring not every VM in the set is rebooted/maintained simultaneously — at least one update domain's worth of VMs remains available while another is being maintained. |
 
-### 61.3.3 Practical Requirement: Minimum VM Count for Meaningful HA
+### 3.3 Practical Requirement: Minimum VM Count for Meaningful HA
 
 💡 **Tip:** an Availability Set with only a single VM provides no actual HA benefit — the fault/update domain distribution mechanism only provides protection when there are _multiple_ VMs to actually spread across separate domains; the practical, commonly-cited guidance is a minimum of **two VMs** in an Availability Set (ideally more, depending on the application's own load-balancing/redundancy design) for the construct to provide any genuine resilience value, since a single-VM "Availability Set" has nothing to distribute.
 
 ---
 
-## 61.4 Availability Zones
+## 4. Availability Zones
 
-### 61.4.1 Definition (Recap and Extension of Section 3)
+### 4.1 Definition (Recap and Extension of Section 3)
 
 Section 3 introduced Availability Zones as physically separate datacenters within a region, each with independent power, cooling, and networking, connected by low-latency, high-bandwidth private fiber. This section extends that foundational definition into its direct application for VM-level HA design.
 
-### 61.4.2 Zone-Redundant vs. Zonal Deployment
+### 4.2 Zone-Redundant vs. Zonal Deployment
 
 | Pattern                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Zonal deployment**          | A specific VM (or other zone-aware resource) is pinned to a single, specific Availability Zone — providing the resource with the resilience benefit of that zone's independent infrastructure, but not automatic multi-zone redundancy on its own; achieving actual HA requires deploying multiple zonal instances across _different_ zones deliberately (e.g., VM instance 1 in Zone 1, VM instance 2 in Zone 2, VM instance 3 in Zone 3), with a Load Balancer (Section 24) distributing traffic across them. |
 | **Zone-redundant deployment** | The resource itself (available for specific resource types — e.g., Standard Load Balancer, Application Gateway v2, zone-redundant storage) is automatically, natively spread across multiple zones by the platform, without the customer needing to manually provision and distribute individual zonal instances themselves.                                                                                                                                                                                    |
 
-### 61.4.3 Availability Sets vs. Availability Zones — The Direct, Commonly-Tested Comparison
+### 4.3 Availability Sets vs. Availability Zones — The Direct, Commonly-Tested Comparison
 
 | Aspect                     | Availability Set                                                                                        | Availability Zone                                                                                                                                                                                                                    |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -85,31 +85,31 @@ Section 3 introduced Availability Zones as physically separate datacenters withi
 
 🎯 **Interview Tip:** the precise, correct answer to "which should I use, Availability Sets or Availability Zones?" is: **use Availability Zones whenever the target region supports them**, since they provide a strictly stronger resilience guarantee (protection against an entire datacenter failure, not just a rack-level one) at generally comparable cost/complexity — Availability Sets remain relevant specifically for regions that don't yet support Availability Zones, or for legacy architectures not yet migrated. This is not a close trade-off in most cases; it's a "use the stronger option when available" default, distinct from many other genuine architectural trade-offs covered elsewhere in this roadmap.
 
-### 61.4.4 Mutual Exclusivity
+### 4.4 Mutual Exclusivity
 
 ⚠️ **Warning:** a VM (or VM Scale Set) cannot be simultaneously placed in an Availability Set **and** assigned to a specific Availability Zone — these are mutually exclusive placement mechanisms, a specific, commonly-tested technical detail worth remembering precisely; the architectural choice between them must be made explicitly at deployment time, not layered together.
 
 ---
 
-## 61.5 Applying HA Patterns Across Compute Types (Direct Roadmap Synthesis)
+## 5. Applying HA Patterns Across Compute Types (Direct Roadmap Synthesis)
 
-### 61.5.1 VMs and VM Scale Sets (Sections 11–12)
+### 5.1 VMs and VM Scale Sets (Sections 11–12)
 
 - VM Scale Sets (Section 12) natively support zone-redundant deployment (spreading scale set instances automatically across multiple configured zones) — directly applying this section's Availability Zone material to the autoscaling compute model already covered in Part 3.
 
-### 61.5.2 AKS (Sections 36–38) — Direct Resolution of Section 36.3.3's Forward Reference
+### 5.2 AKS (Sections 36–38) — Direct Resolution of Section 36.3.3's Forward Reference
 
 🔑 **Key Takeaway, fully resolving a forward reference from Section 36.3.3:** Section 36.3.3 noted that AKS control plane HA across Availability Zones is handled transparently by Azure on qualifying regions/tiers, while node pool zone spreading is a customer-configured choice — this section now provides the underlying mechanism: node pools can be configured to spread their VM Scale Set-backed instances (Section 36.3.5) across multiple Availability Zones using exactly the zone-redundant deployment pattern from 61.4.2, and the customer's responsibility (per this section's shared-responsibility-adjacent framing) is ensuring adequate pod replica count and anti-affinity configuration (Section 37) so that application-level resilience actually takes advantage of the underlying zone-spread infrastructure, rather than assuming infrastructure-level zone spreading alone guarantees application-level HA without any corresponding application-level configuration.
 
-### 61.5.3 Databases (Section 29–30)
+### 5.3 Databases (Section 29–30)
 
 - Section 29's SQL Database Business Continuity material (§28.15) and Section 30's Cosmos DB material both apply Availability Zone concepts at the database-service level — a zone-redundant SQL Database configuration provides HA within a region using the exact same Availability Zone infrastructure this section covers, now understood in its full underlying context rather than as a database-specific feature in isolation.
 
 ---
 
-## 61.6 DR Architecture Patterns (Preview — Full Depth in Section 62)
+## 6. DR Architecture Patterns (Preview — Full Depth in Section 62)
 
-### 61.6.1 The DR Pattern Spectrum
+### 6.1 The DR Pattern Spectrum
 
 | Pattern                                               | RTO/RPO Characteristics                                                                                                                                                     | Cost                                                                                                                                       |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -122,19 +122,19 @@ Section 3 introduced Availability Zones as physically separate datacenters withi
 
 ---
 
-## 61.7 Production and Enterprise Usage
+## 7. Production and Enterprise Usage
 
-### 61.7.1 RTO/RPO Should Be Defined Per Workload, Not Organization-Wide
+### 7.1 RTO/RPO Should Be Defined Per Workload, Not Organization-Wide
 
 💡 **Tip:** a mature enterprise resilience strategy defines RTO/RPO **per workload/application tier**, not as a single organization-wide blanket target — a customer-facing checkout service (Section 49's recurring revenue-critical example) may justify a near-zero RTO/RPO active-active architecture, while an internal reporting tool may reasonably accept a multi-hour RTO and a daily-backup-driven RPO, at dramatically lower cost — treating every workload identically either over-invests in resilience for low-criticality systems or under-invests for genuinely critical ones, neither of which reflects sound cost-vs-risk decision-making.
 
-### 61.7.2 Testing DR, Not Just Designing It
+### 7.2 Testing DR, Not Just Designing It
 
 ⚠️ **Warning:** a DR strategy that has never actually been tested (a genuine, executed failover drill, not merely a documented runbook) cannot be trusted to work correctly when a real disaster occurs — untested DR procedures are a well-documented, recurring cause of failed real-world disaster recovery attempts, where the actual failover process reveals gaps (missing permissions, undocumented dependencies, stale runbook steps) only during the genuine crisis, when the cost of discovering them is highest. Regular, scheduled DR testing/drills should be a standard operational practice, not a one-time design-and-forget exercise.
 
 ---
 
-## 61.8 Troubleshooting Reference
+## 8. Troubleshooting Reference
 
 | Symptom                                                                                                 | Likely Cause                                                                                                                                                                                                                    | Diagnostic Step                                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -145,7 +145,7 @@ Section 3 introduced Availability Zones as physically separate datacenters withi
 
 ---
 
-## 61.9 Best Practices Checklist
+## 9. Best Practices Checklist
 
 - [ ] Availability Zones used in preference to Availability Sets whenever the target region supports them, given their strictly stronger resilience guarantee.
 - [ ] Availability Sets used deliberately only for regions without zone support or specific legacy-architecture constraints.
@@ -157,7 +157,7 @@ Section 3 introduced Availability Zones as physically separate datacenters withi
 
 ---
 
-## 61.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - "High Availability and Disaster Recovery are the same thing, or DR is just 'more HA.'" _Correction:_ they address fundamentally different failure scales and have fundamentally different design goals (near-zero-downtime within a region vs. explicitly-planned-for downtime/data-loss recovery from a regional catastrophe) — this is the single most important distinction this section establishes (61.2.4's explicit warning).
 - "A VM spread across Availability Zones is protected against a regional disaster." _Correction:_ Availability Zones are all within the same region; they protect against datacenter-level failures, not region-level catastrophic events, which require a genuinely separate-region DR strategy (Section 62).
@@ -165,7 +165,7 @@ Section 3 introduced Availability Zones as physically separate datacenters withi
 
 ---
 
-## 61.11 Interview Questions (Consolidated)
+## 11. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between High Availability and Disaster Recovery?"
 _Model answer:_ High Availability addresses resilience against routine, expected failures (a single VM crashing, a rack losing power) typically within a single region, targeting continuous availability with minimal-to-no downtime. Disaster Recovery addresses resilience against large-scale, catastrophic events — most commonly an entire region becoming unavailable — explicitly planning for and accepting some downtime and/or data loss, quantified via RTO (how long recovery takes) and RPO (how much recent data can be lost). They're complementary, not interchangeable: HA alone provides zero protection against a genuinely region-level disaster.
@@ -183,7 +183,7 @@ _What the interviewer is probing:_ the ability to apply differentiated, business
 
 ---
 
-## 61.12 Key Takeaways Summary
+## 12. Key Takeaways Summary
 
 🔑 HA (within-region, routine-failure resilience) and DR (cross-region, catastrophic-event recovery) are distinct, complementary concepts — HA alone provides zero protection against a genuine regional disaster, and conflating the two is a common, consequential architecture mistake.
 
@@ -197,7 +197,7 @@ _What the interviewer is probing:_ the ability to apply differentiated, business
 
 ---
 
-## 61.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 3 (prerequisite, completed):** Regions, Availability Zones, and Region Pairs — the foundational infrastructure concepts this section applies directly to VM/compute-level HA design.
 - **Section 36.3.3 (prerequisite, completed):** the AKS control-plane-HA forward reference fully resolved in 61.5.2.

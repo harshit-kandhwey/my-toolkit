@@ -1,12 +1,12 @@
 # Section 44 (Part 6): BigQuery — Deep Dive
 
-## 44.1 Definition
+## 1. Definition
 
 **Plain language:** BigQuery is Google's fully managed data warehouse — you load or stream data into it and run SQL queries over billions of rows in seconds, without ever provisioning a server, picking a disk size, or managing an index.
 
 **Precise:** BigQuery is a serverless, highly scalable, multi-cloud-capable enterprise data warehouse that separates storage and compute: data is stored in Google's distributed columnar storage system (**Colossus**) and queries are executed by a massively parallel distributed query engine (descended from **Dremel**), with compute capacity allocated dynamically per query via units called **slots**.
 
-## 44.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Traditional data warehouses (on-prem appliances, or early cloud warehouses) coupled storage and compute tightly: to get more query throughput, you had to add more nodes, and each node carried both storage and compute capacity whether you needed more of one or the other. This meant:
 
@@ -16,9 +16,9 @@ Traditional data warehouses (on-prem appliances, or early cloud warehouses) coup
 
 BigQuery solves this by decoupling storage from compute entirely: storage in Colossus scales independently and cheaply, while compute (slots) is allocated per-query on demand from a shared global pool (or a dedicated reservation), so a single one-off query can burst to use thousands of slots for a few seconds, and cost/capacity planning for storage and compute become two separate, independent decisions.
 
-## 44.3 Core Concepts
+## 3. Core Concepts
 
-### 44.3.1 Architecture: Storage/Compute Separation and the Dremel/Colossus Lineage
+### 3.1 Architecture: Storage/Compute Separation and the Dremel/Colossus Lineage
 
 BigQuery's architecture traces directly back to internal Google infrastructure discussed in Section 1: **Dremel**, an internal Google tool for interactive, large-scale ad hoc query analysis, was opened to the public in 2013 as BigQuery. Two key internal systems underpin it today:
 
@@ -28,7 +28,7 @@ BigQuery's architecture traces directly back to internal Google infrastructure d
 
 Because storage and compute are physically and architecturally separate, you pay for storage (cheap, per-GB) and compute (slots, consumed only during query execution) independently — a design fundamentally different from cluster-based warehouses where every node bundles both.
 
-### 44.3.2 Slots and Pricing Models
+### 3.2 Slots and Pricing Models
 
 A **slot** is a unit of computational capacity (CPU + memory) used to execute BigQuery SQL queries. Every query consumes some number of slots for its duration.
 
@@ -37,17 +37,17 @@ A **slot** is a unit of computational capacity (CPU + memory) used to execute Bi
 
 > ⚠️ **Interview-relevant nuance:** On-demand billing charges for **bytes scanned**, not query runtime or CPU time — a query that scans a huge unpartitioned table but finishes quickly is still expensive, while a slow query against a small, well-pruned partition is cheap. This is why partitioning and clustering (44.3.3) are cost levers, not just performance levers, under on-demand pricing.
 
-### 44.3.3 Partitioning and Clustering
+### 3.3 Partitioning and Clustering
 
 - **Partitioning** divides a table into segments based on a column (commonly a date/timestamp, or an integer range), so a query with a filter on the partitioning column only scans the relevant partitions instead of the entire table — directly reducing bytes scanned (and therefore on-demand cost) and query latency.
 - **Clustering** sorts data _within_ each partition (or within the whole table, if unpartitioned) by up to four specified columns, so BigQuery can skip blocks of data that don't match a filter or benefit from more efficient aggregation on the clustered columns — a finer-grained optimization than partitioning, applied after partition pruning.
 - Both features together mirror the guidance from Athena/Redshift Spectrum-style lake engines: coarse pruning first (partitioning), then fine-grained pruning (clustering), before any row is actually read.
 
-### 44.3.4 BigQuery ML
+### 3.4 BigQuery ML
 
 **BigQuery ML (BQML)** lets you create, train, and run machine learning models directly against BigQuery data using SQL statements (`CREATE MODEL`, `ML.PREDICT`), without exporting data to a separate ML environment. It supports models ranging from simple linear/logistic regression and k-means clustering to imported TensorFlow models and integration with Vertex AI (Part 10) for more advanced use cases — removing the data-movement step that traditionally separates data warehousing from ML experimentation.
 
-## 44.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
         ┌─────────────────────────────────────────────────────────┐
@@ -70,7 +70,7 @@ A **slot** is a unit of computational capacity (CPU + memory) used to execute Bi
              clustered tables            (CREATE MODEL, ML.PREDICT)
 ```
 
-## 44.5 Comparison: BigQuery vs. Redshift vs. Synapse Analytics
+## 5. Comparison: BigQuery vs. Redshift vs. Synapse Analytics
 
 | Dimension                     | BigQuery (GCP)                                                 | Redshift (AWS)                                                                                                        | Synapse Analytics (Azure)                                                                                |
 | ----------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -81,7 +81,7 @@ A **slot** is a unit of computational capacity (CPU + memory) used to execute Bi
 | **ML integration**            | BigQuery ML — SQL-native model training/inference              | Redshift ML — SQL-native, built on SageMaker under the hood                                                           | Synapse has native Spark pools and integrates with Azure ML                                              |
 | **Lineage**                   | Internal Dremel/Colossus, opened to public in 2013             | Built on ParAccel (a PostgreSQL-derived MPP engine)                                                                   | Evolved from Azure SQL Data Warehouse, unifying with Spark/Data Factory                                  |
 
-## 44.6 Hands-On Example
+## 6. Hands-On Example
 
 **Purpose:** Create a partitioned and clustered table, then query it in a way that benefits from both.
 
@@ -118,18 +118,18 @@ running this query will process 42 MB of data.
 
 > 💡 **Tip:** `--dry_run` never executes the query or incurs compute cost — it only estimates bytes scanned, making it a free, fast way to sanity-check that partition/cluster pruning is actually working before running the real query at scale.
 
-## 44.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Reservations for multi-team governance:** Enterprises with many analyst teams querying the same organization's data typically use **BigQuery Reservations** to assign dedicated slot pools per team or workload class, preventing one team's runaway query from starving another's dashboard refresh — directly analogous to Redshift Workload Management (WLM) queues.
 - **Materialized views for repeated aggregations:** Frequently-run aggregation queries (e.g., a daily sales rollup dashboard) are commonly backed by materialized views, which BigQuery automatically and incrementally refreshes, avoiding the cost of re-scanning the full base table on every dashboard load.
 - **Cost control guardrails:** Enterprises commonly set custom query cost quotas (maximum bytes billed per query, per-user or per-project daily quotas) to prevent a single mistaken `SELECT *` over an unpartitioned multi-terabyte table from generating a large unexpected bill.
 
-## 44.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "BigQuery has no indexes, so it must be slow." BigQuery deliberately avoids traditional row-level indexes in favor of columnar storage plus partitioning/clustering, which is a different and, for large-scale analytical scan-and-aggregate workloads, generally faster strategy than index-based row lookups — the trade-off only becomes unfavorable for point-lookup-style access patterns BigQuery isn't designed for.
 - **Misconception:** "On-demand pricing is always cheaper than reservations." For low, sporadic query volume, on-demand is usually cheaper; for consistently high query volume, a capacity-based reservation is usually cheaper and more predictable — the crossover point depends on actual sustained usage, and should be measured, not assumed.
 
-## 44.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What does it mean that BigQuery separates storage and compute?_
 **Model answer:** Data lives in Colossus (Google's distributed storage) independent of the compute (slots) used to query it. You can grow your stored data indefinitely without needing more query compute, and a single query can burst to use a large amount of compute momentarily without needing to pre-provision permanent capacity — the two scale and are billed independently, unlike traditional coupled-node warehouses.
@@ -140,13 +140,13 @@ running this query will process 42 MB of data.
 **🎯 Senior/Architect:** _An enterprise has ten analytics teams sharing one BigQuery environment, and wants predictable monthly cost plus fairness across teams. How would you design this?_
 **Model answer:** Move from on-demand to a capacity-based edition with **BigQuery Reservations**, creating separate reservations per team (or per workload criticality tier) so no team's queries can consume slots beyond its allotted pool and starve another team — mirroring Redshift WLM queues or Synapse resource classes. I'd size each reservation based on measured historical slot usage per team (available via `INFORMATION_SCHEMA.JOBS` and slot utilization metrics), set a modest shared "on-demand overflow" pool for genuine bursts if the edition supports it, and combine this with per-project cost quotas and mandatory partitioning/clustering conventions enforced via a table-creation review process, so cost predictability comes from both the reservation model and the underlying query efficiency of the tables themselves.
 
-## 44.10 Key Takeaways 🔑
+## 10. Key Takeaways 🔑
 
 - 🔑 BigQuery's storage/compute separation traces directly to Google's internal Dremel (query engine) and Colossus (storage) systems, first opened to the public in 2013 (Section 1).
 - 🔑 On-demand pricing bills per byte scanned, making partitioning and clustering direct cost levers, not just performance levers.
 - 🔑 Capacity-based reservations trade on-demand's simplicity for predictable, guaranteed slot capacity — the right choice depends on sustained query volume.
 - 🔑 BigQuery ML lets SQL users train and run models without exporting data, differentiating it from warehouses that require a separate ML pipeline.
 
-## 44.11 Related Concepts
+## 11. Related Concepts
 
 Cloud Storage and the lakehouse pattern via BigLake (Section 49), Dataflow/Dataproc for pre-warehouse processing (Section 45), Dataplex for cataloging BigQuery datasets (Section 47), Looker/Looker Studio consuming BigQuery as a source (Section 48), and Vertex AI for advanced ML beyond BigQuery ML's scope (Part 10).

@@ -1,20 +1,20 @@
 # Section 22 (Part 5): Branching Strategies — Git Flow, GitHub Flow, GitLab Flow & Trunk-Based Development
 
-## 22.1 Definition
+## 1. Definition
 
 **Plain language:** A branching strategy is a team-wide agreement about which branches exist, what each one means, how long branches live, and exactly when and how they merge into each other — the policy layer sitting on top of the mechanical branch commands from §12.
 
 **Precise:** Formally, a branching strategy specifies: (1) the set of **long-lived** branches and their roles, (2) the rules for creating **short-lived** branches from them, (3) the merge direction and method (§21.6) permitted between each pair, and (4) how releases and hotfixes are cut. None of this is enforced by Git itself — it's convention, optionally backed by platform tooling like protected branches (§23).
 
-## 22.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Branches are cheap (§12.2) — that's exactly the problem a strategy solves. Cheap branches mean a team of twenty can easily end up with two hundred branches, no shared understanding of which ones are safe to build on, which are stale, which represent what's actually in production versus what's merely "done," and no consistent process for cutting a release or an emergency hotfix. A branching strategy answers, in advance and for the whole team: where do I branch from to start new work, where does my work go when it's done, and how does a fix reach production. Different strategies answer these questions differently because different teams have genuinely different constraints — release cadence, number of concurrently supported versions, team size, and deployment model all push toward different answers.
 
-## 22.3 Git Flow
+## 3. Git Flow
 
 Introduced by Vincent Driessen in a widely circulated 2010 blog post, Git Flow was the first branching model to gain broad, named adoption — for years it was treated as _the_ default answer to "what's your branching strategy," to the point of becoming near-synonymous with "using Git properly" in many teams' minds.
 
-### 22.3.1 The Model
+### 3.1 The Model
 
 Five branch types, each with a defined role:
 
@@ -43,15 +43,15 @@ develop  ●────●──────●─────────●�
 - **Preparing a release:** branch `release/1.1` from `develop` once `develop` has everything the release needs; only bug fixes land on the release branch during stabilization; when ready, merge into both `main` (tagging the release, §18) and back into `develop` (so those fixes aren't lost from ongoing development).
 - **Emergency production fix:** branch `hotfix/x` directly from `main` (skipping `develop` entirely, since `develop` may contain unfinished, unreleased work you don't want in the emergency fix), fix, merge into both `main` (tag a new patch release) and `develop`.
 
-### 22.3.2 Why It's Considered Heavyweight Today
+### 3.2 Why It's Considered Heavyweight Today
 
 Git Flow was designed for a world of **scheduled, infrequent releases** — think desktop software shipped quarterly, where "what's in `develop`" and "what's actually released" are genuinely different things worth tracking separately. Two long-lived branches plus three categories of short-lived ones, each with strict merge-direction rules, is substantial process overhead. For teams practicing continuous delivery — deploying many times a day, where every merge to `main` can go to production within minutes — the `develop`/`main` split adds a layer of indirection with no corresponding benefit: there's no meaningful gap between "integrated" and "released" to model. This is precisely why the simpler models below emerged and now dominate for web/SaaS-style delivery, while Git Flow (or something close to it) still fits contexts that genuinely have Git Flow's original constraints: shipping multiple supported versions simultaneously (e.g., versioned desktop or embedded software, libraries with LTS branches).
 
-## 22.4 GitHub Flow
+## 4. GitHub Flow
 
 A deliberately minimal model, popularized by GitHub for its own simplicity: **one long-lived branch, everything else is short-lived, deploy from feature branches or immediately after merge.**
 
-### 22.4.1 The Model
+### 4.1 The Model
 
 ```
 main  ●───●───────●───────●───────●───────●─────────►   always deployable
@@ -70,16 +70,16 @@ main  ●───●───────●───────●───�
 
 There is no `develop`, no `release/*`, no `hotfix/*` — a production bug fix is just a normal branch off `main`, reviewed and merged the same way as any feature, because there's no separate integration branch it needs to reconcile with.
 
-### 22.4.2 Trade-offs
+### 4.2 Trade-offs
 
 - **Strength:** minimal ceremony, matches continuous-deployment reality directly, easy to teach to a new team member in five minutes.
 - **Weakness:** offers no built-in answer for supporting multiple released versions simultaneously (there's only one `main`, representing "current"), and provides no natural "stabilization window" for teams that do need one before a release.
 
-## 22.5 GitLab Flow
+## 5. GitLab Flow
 
 Positioned explicitly as a middle ground: keep GitHub Flow's simplicity for day-to-day feature work, but add environment or release branches for teams that need a deployment-stage story or must support multiple released versions — needs Git Flow addressed but GitHub Flow deliberately left out.
 
-### 22.5.1 Environment Branches Variant
+### 5.1 Environment Branches Variant
 
 ```
 main        ●───●───●───●───●───►   merged features land here first
@@ -93,11 +93,11 @@ production   ●────────────●
 
 Code always flows **downstream** — `main` → `staging` → `production` — by merging forward through environment branches, never by branching an environment off arbitrarily. Each environment branch's tip is, by definition, what's actually deployed there right now, giving you a precise, git-native answer to "what's in production" (`git log production`) without a separate deployment tracking system.
 
-### 22.5.2 Release Branches Variant
+### 5.2 Release Branches Variant
 
 For teams shipping multiple supported versions (closer to Git Flow's original problem): `main` stays the trunk, and a `release/2.4` branch is cut when version 2.4 ships. Fixes destined for the current release are cherry-picked (§17) from `main` onto the relevant `release/*` branch rather than developed there directly — keeping `main` as the single source of truth for all new work while still letting `2.4.1`, `2.4.2` patch releases happen independently.
 
-### 22.5.3 GitLab Flow vs the Other Two
+### 5.3 GitLab Flow vs the Other Two
 
 | Aspect              | Git Flow                                        | GitHub Flow                                   | GitLab Flow                                                                                                    |
 | ------------------- | ----------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -106,11 +106,11 @@ For teams shipping multiple supported versions (closer to Git Flow's original pr
 | Release visibility  | Tags on `main`, separate from `develop`         | Deploys are just "merged to `main`"           | Environment branch tips directly show what's deployed where                                                    |
 | Ceremony            | High                                            | Low                                           | Medium — only as much as the team's actual deployment/release needs require                                    |
 
-## 22.6 Trunk-Based Development
+## 6. Trunk-Based Development
 
 Not a naming convention for branches so much as a discipline about branch **lifetime**: everyone works off one shared trunk (`main`), branches — if used at all — live for hours to a couple of days, and integration happens continuously rather than in occasional large merges.
 
-### 22.6.1 The Model
+### 6.1 The Model
 
 ```
 main  ●─●──●─●───●──●─●────●──●───●─●──●────►   many small, frequent
@@ -126,19 +126,19 @@ Two operating variants:
 - **Branch-per-change, merged same-day** — the common variant, compatible with PR review; branches exist mainly as a PR staging area, not as a place work lives for weeks.
 - **Committing straight to `main`** — some highly disciplined teams (notably at Google-scale, with very strong CI/testing gates and code review before submit rather than after) skip feature branches almost entirely, relying on pre-submit review and automated testing as the gate instead of a long-lived branch.
 
-### 22.6.2 Feature Flags: The Enabling Technology
+### 6.2 Feature Flags: The Enabling Technology
 
 Trunk-based development's central problem is obvious: if everyone merges to `main` constantly and `main` is always deployable, how do you work on something that takes three weeks without shipping a half-finished feature to users? The answer is **feature flags** (also called feature toggles): the incomplete code merges to `main` and ships to production like anything else, but is wrapped in a runtime conditional that keeps it inactive (or active only for internal users/a canary cohort) until it's ready. This decouples **merging** (a Git/code event, safe and continuous) from **releasing** (a business/product event, controlled separately) — a distinction that's central to modern continuous-delivery pipelines and is revisited from the deployment-automation side in §25.
 
 > 💡 **Tip:** Feature flags trade a code-complexity cost (conditional logic, eventual flag cleanup debt) for a process-complexity win (no long-lived branches, no giant merge-day risk). Teams that adopt trunk-based development without disciplined flag lifecycle management (removing flags once a feature is fully rolled out) accumulate exactly the kind of cruft the model was supposed to avoid.
 
-### 22.6.3 Why Large Tech Companies Favor It
+### 6.3 Why Large Tech Companies Favor It
 
 - **Merge conflict cost grows with branch lifetime and divergence**, roughly proportional to how much both `main` and the branch have changed since they diverged — short-lived branches keep this cost small and constant; long-lived branches accumulate it exponentially, culminating in the dreaded multi-day "integration merge" that Git Flow's `develop`-then-`release` model is especially prone to at scale.
 - **Continuous integration is only meaningful with frequent integration.** CI (§25) is designed to catch problems the moment code is combined; a team that branches for weeks before merging is running CI on isolated code that hasn't actually been "integrated" until the final merge, defeating much of CI's purpose.
 - **Large organizations, huge monorepos, thousands of daily commits** (§1.8's Google/Meta/Microsoft examples) make long-lived divergent branches operationally unworkable at scale — the coordination cost of many teams each holding weeks-old branches against a fast-moving trunk compounds badly.
 
-## 22.7 Decision Framework
+## 7. Decision Framework
 
 | Factor                       | Leans toward Git Flow                     | Leans toward GitHub Flow         | Leans toward GitLab Flow                                | Leans toward Trunk-Based                                 |
 | ---------------------------- | ----------------------------------------- | -------------------------------- | ------------------------------------------------------- | -------------------------------------------------------- |
@@ -150,7 +150,7 @@ Trunk-based development's central problem is obvious: if everyone merges to `mai
 
 No strategy is objectively "best" — the honest senior answer is always "it depends on release cadence, how many versions you support in parallel, and how mature your CI/testing/feature-flag tooling is," not a single favorite recited from memory.
 
-## 22.8 Interview Questions
+## 8. Interview Questions
 
 **[Beginner] Q1. What problem does a branching strategy solve that plain Git branching (§12) doesn't already solve?**
 **Model answer:** Git makes branches cheap and easy to create, but it has no opinion at all about what any given branch _means_, how long it should live, or which branches are allowed to merge into which. A branching strategy is the team-level convention that answers those questions — for example, that `feature/*` branches always come from and return to `develop`, or that `main` must always be deployable — so that everyone on the team shares the same mental model of the repository's branch structure instead of each person inventing their own.
@@ -167,7 +167,7 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 **[Senior] Q5. A 200-person engineering org is debating trunk-based development vs GitLab Flow with release branches. What questions would you ask before recommending one?**
 **Model answer:** The central question is whether the org needs to support multiple released versions of the product simultaneously, or only ever has one "current" version live. If it's the latter — a typical SaaS product with continuous deployment — trunk-based development is usually the stronger fit, but only if the org actually has the supporting maturity: fast, reliable automated test suites (since there's no long-lived branch acting as a review buffer), a working feature-flag system with discipline around flag cleanup, and strong code-review or pre-submit gating to compensate for short-lived or absent branches. If the org genuinely ships and patches multiple versions in parallel — for example, enterprise customers pinned to different release trains — GitLab Flow's release-branch variant, cherry-picking fixes from `main` onto the relevant `release/*` branches, models that reality directly in a way pure trunk-based development doesn't naturally handle. I'd also probe team structure: 200 engineers on one trunk needs very strong CI throughput and merge-conflict tooling, or trunk-based development becomes a bottleneck rather than a speed-up; a large org sometimes splits into services/monorepo boundaries specifically to keep each trunk's contributor count manageable, which is really an architecture question wearing a branching-strategy costume.
 
-## 22.9 Common Misconceptions
+## 9. Common Misconceptions
 
 1. **"Git Flow is the 'correct' or 'official' Git branching model."** It's one popular convention proposed in a 2010 blog post, not a feature of Git itself or an endorsed standard; Git has no opinion on branching strategy at all.
 2. **"Trunk-based development means no branches, ever."** It means branches, if used, are short-lived (hours to a couple of days), not that branching is forbidden — most trunk-based teams still use short-lived branches as a PR staging mechanism.
@@ -175,7 +175,7 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 4. **"Feature flags are only a trunk-based-development concept."** They're broadly useful in any strategy for decoupling deploy from release (e.g., dark-launching a feature), but they're specifically _necessary_ — not just useful — for trunk-based development's viability, which is why they're treated as core to it.
 5. **"Choosing a branching strategy is a purely technical decision the tech lead makes alone."** It has to match release cadence, support/versioning commitments, team size, and CI/testing maturity — getting it wrong shows up as either excessive process overhead or chaotic, conflict-heavy integration, so it's as much an organizational fit question as a technical one.
 
-## 22.10 🔑 Key Takeaways
+## 10. 🔑 Key Takeaways
 
 - Branching strategies are team convention layered on Git's mechanically opinion-free branch primitives (§12) — Git enforces none of this on its own.
 - Git Flow: `main` + `develop` permanent, plus `feature/*`, `release/*`, `hotfix/*` temporary branches — built for scheduled releases and multi-version support; heavyweight for continuous delivery.
@@ -184,6 +184,6 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 - Trunk-based development: very short-lived branches (or direct trunk commits), enabled by feature flags decoupling merge from release; favored at scale because merge-conflict and integration cost grows with branch divergence.
 - No strategy is universally best — match it to release cadence, number of supported versions, team size, and CI/testing/feature-flag maturity.
 
-## 22.11 Related Concepts & What's Next
+## 11. Related Concepts & What's Next
 
 This section built on §12's branch mechanics and §21's PR/review workflow to describe the higher-level policies teams layer on top of both. §23 closes out Part 5 by looking at where all of this actually runs: the hosting platforms (GitHub, GitLab, Bitbucket) and the governance features — protected branches, CODEOWNERS, org-level permissions — that make a chosen branching strategy actually enforceable rather than merely agreed-upon.

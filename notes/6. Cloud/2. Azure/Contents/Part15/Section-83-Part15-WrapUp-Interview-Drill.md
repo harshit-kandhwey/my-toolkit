@@ -6,7 +6,7 @@
 
 ---
 
-## 83.1 Introduction
+## 1. Introduction
 
 This final section of Part 15 closes out the nine-section data engineering and analytics arc — a section-by-section build from raw storage through to consumption and architectural synthesis. It consolidates the single most important takeaway from each section, restates the recurring cross-cutting decision patterns that appeared throughout the Part, and provides a rapid-fire interview drill spanning all of Part 15's material, before transitioning into Part 16's AI/ML coverage.
 
@@ -14,7 +14,7 @@ This final section of Part 15 closes out the nine-section data engineering and a
 
 ---
 
-## 83.2 Master Key-Takeaways Checklist by Section
+## 2. Master Key-Takeaways Checklist by Section
 
 ### Section 75 — Data Lake Fundamentals & ADLS Gen2
 
@@ -58,7 +58,7 @@ This final section of Part 15 closes out the nine-section data engineering and a
 
 ---
 
-## 83.3 Cross-Cutting Patterns Recurring Throughout Part 15
+## 3. Cross-Cutting Patterns Recurring Throughout Part 15
 
 1. **Storage-format consolidation reduces operational overhead.** ADLS Gen2 as one shared lake underlying every engine (Section 75), Delta Lake as one shared table format across Databricks/Synapse/Fabric (Sections 78, 81), and OneLake as one shared logical lake across every Fabric experience (Section 81) are all instances of the same underlying idea: converging on one storage layer/format that multiple compute engines read/write natively, rather than each engine requiring its own separately-managed copy.
 2. **Provisioned/always-on compute vs. on-demand/scale-to-zero compute is a recurring cost lever.** Synapse dedicated SQL pools (pause/resume, Section 76.3.3) vs. serverless SQL pools (Section 76.4); Databricks All-Purpose vs. Job Clusters (Section 78.3.2) — the same "provisioned costs continuously until explicitly stopped, on-demand scales to zero automatically" trade-off recurs across every compute engine in this Part.
@@ -70,7 +70,7 @@ This final section of Part 15 closes out the nine-section data engineering and a
 
 ---
 
-## 83.4 Rapid-Fire Interview Drill — Part 15
+## 4. Rapid-Fire Interview Drill — Part 15
 
 ### Q1: What's the one-sentence difference between ADLS Gen2 and plain Blob Storage?
 
@@ -106,7 +106,7 @@ _Answer:_ Streaming carries materially higher operational complexity and cost th
 
 ---
 
-## 83.5 Part 15 Cross-Topic Dependency Graph
+## 5. Part 15 Cross-Topic Dependency Graph
 
 ```
 ADLS Gen2 (Section 75, built on Blob Storage / Part 4)
@@ -124,7 +124,7 @@ ADLS Gen2 (Section 75, built on Blob Storage / Part 4)
 
 ---
 
-## 83.6 Closing Note
+## 6. Closing Note
 
 Part 15 comprised nine sections building Azure's data engineering and analytics stack from the storage foundation up: ADLS Gen2 as the shared data lake; Synapse and Databricks as the processing and warehousing engines; Data Factory as the orchestration layer moving data between them; Power BI and Azure AI Search as the two genuinely distinct consumption patterns (visual reporting vs. search/retrieval) sitting on top of curated output; Microsoft Fabric as the newer attempt to converge all of the above into one unified SaaS product; and the medallion/lakehouse architectural patterns tying every prior section into one coherent design framework. Consistent with this roadmap's established discipline, fast-evolving specifics (Fabric's feature set and positioning, exact SKU/pricing details across every service) were explicitly flagged for independent verification rather than asserted as permanent fact.
 

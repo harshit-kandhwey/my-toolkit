@@ -1,21 +1,10 @@
 # Section 4 (Part 1): Linux Philosophy and Design Principles
 
-**Roadmap Reference:** 1.4
-**Phase:** Phase 1 — Foundations
-
----
-
-## 1.4 Linux Philosophy and Design Principles
-
-### 1.4.0 Why a Philosophy Section Belongs This Early
-
-`§2` covered _how_ Linux came to exist (Unix → GNU → Linux). This section covers _why_ it looks the way it does. Every command syntax, every configuration file format, and every architectural convention you will meet in Parts 2–14 is a direct, traceable consequence of a small number of design values inherited from Unix and sharpened over five decades of production use. Learning the philosophy first means that later material — `/proc`, pipes, plain-text configs, the permission model, containers — stops looking like a pile of unrelated trivia and starts looking like the _same handful of ideas_ applied over and over. That is also exactly what senior interviewers are listening for: not "what does `chmod` do" but "why does Linux permission-check _files_ instead of having a separate access-control subsystem for every kind of resource."
-
-### 1.4.1 The Core Principles
+## 1. The Core Principles
 
 These five principles, inherited largely from Unix, explain _why_ the Linux toolset is shaped the way it is, and each one resurfaces — with a dedicated Part of its own — later in this roadmap.
 
-#### Principle 1 — Everything Is a File (or File-Like)
+### 1.1 Principle 1 — Everything Is a File (or File-Like)
 
 Regular files, directories, block/character devices, and even live kernel and process state are all reachable through the same file I/O interface: `open()`, `read()`, `write()`, `close()`. One generic interface replaces what other operating systems implement as many bespoke APIs (a registry API, a device-manager API, a process-introspection API, …).
 
@@ -46,9 +35,9 @@ Because `/proc/1/status`, `/dev/sda`, and an ordinary text file all speak the sa
 
 > 💡 **Tip:** "Everything is a file" is a design _ideal_, not a literal universal law — network sockets, for instance, are file-descriptor-based but not navigable in a filesystem the way `/proc` entries are. Treat it as "everything is accessed through file-like descriptors and file-like semantics wherever practical," not as a rule with zero exceptions.
 
-#### Principle 2 — Small, Single-Purpose Tools Composed Together
+### 1.2 Principle 2 — Small, Single-Purpose Tools Composed Together
 
-Rather than one large program that does everything, Unix/Linux favors many small tools — `grep`, `sort`, `wc`, `cut`, `uniq` — each doing one job well, combined via pipes (`|`) into pipelines. The worked example in `§1.4.3` below builds a non-trivial pipeline from scratch; here is a second, different one to show the pattern is general, not a one-off trick:
+Rather than one large program that does everything, Unix/Linux favors many small tools — `grep`, `sort`, `wc`, `cut`, `uniq` — each doing one job well, combined via pipes (`|`) into pipelines. The worked example in `§2` below builds a non-trivial pipeline from scratch; here is a second, different one to show the pattern is general, not a one-off trick:
 
 ```bash
 # Which processes are consuming the most resident memory right now?
@@ -57,7 +46,7 @@ $ ps -eo pid,comm,rss --sort=-rss | awk 'NR>1 {printf "%-8s %-20s %6.1f MB\n", $
 
 Five tools — `ps` (list processes), `awk` (reformat and compute), and their composition via a pipe — replace what would otherwise be a dedicated "top memory consumers" program. Nobody had to write, ship, or maintain that program; the shell composed it on the spot from parts that already existed for unrelated purposes. This is precisely why `§41`–`§50` (Part 6 — Shell, Scripting, and Text Processing) is the single largest part of this entire roadmap: fluency with a dozen small tools and the pipe operator effectively gives you an unbounded number of ad-hoc programs.
 
-#### Principle 3 — Text Streams as a Universal Interface
+### 1.3 Principle 3 — Text Streams as a Universal Interface
 
 Configuration, logs, and program output are overwhelmingly plain text. This is what makes Principle 2 possible at all: `grep` can filter _anything_ — a log file, a process list, a config file — precisely because it doesn't need to understand any format beyond "lines of text." A config example, `/etc/hosts`, illustrates this at the configuration layer rather than the data-stream layer:
 
@@ -76,11 +65,11 @@ UUID=3a1f...  /               ext4    defaults        0 1
 UUID=88bc...  /var/log        xfs     defaults,noatime 0 2
 ```
 
-#### Principle 4 — Prefer Simplicity and Transparency Over Hidden Magic
+### 1.4 Principle 4 — Prefer Simplicity and Transparency Over Hidden Magic
 
 Configuration lives in visible, human-readable files under `/etc/`, not in an opaque binary store — a deliberate contrast with operating systems that centralize configuration in a proprietary database. The practical payoff: when a service misbehaves, you can `cat` its config, see _exactly_ what it will do, edit it with the same tools you use for everything else, and put it under version control (Git — `§28`'s signed-commit auditability applies here too if you manage `/etc` as a repo). Nothing is hidden behind a vendor-specific editor or a format only one tool can parse.
 
-#### Principle 5 — Multi-User, Multi-Tasking From the Ground Up
+### 1.5 Principle 5 — Multi-User, Multi-Tasking From the Ground Up
 
 Linux assumes, from day one, that many users and many processes share one machine safely and concurrently — this is not a bolted-on feature but a foundational design constraint that shapes the permission model (`§25`–`§32`) and the process model (`§33`–`§40`). A concrete multi-user permission scenario:
 
@@ -99,7 +88,7 @@ uid=1002(deploy) gid=1002(deploy) groups=1002(deploy),2000(developers)
 
 Ownership (`alice:developers`) plus mode (`750`) plus group membership together answer "who can do what to this resource" without alice and deploy needing separate accounts on separate machines, and without deploy's compromise giving it write access to alice's source tree. This three-dimensional model (owner / group / other, each with r/w/x) is the direct ancestor of everything in `§27` (standard permissions), `§28` (SUID/SGID/sticky bit), and `§30` (ACLs) — Linux never had to _add_ multi-tenancy later because it was there from the first design.
 
-### 1.4.2 Worked Hands-On Example: Composing a Pipeline From Scratch
+## 2. Worked Hands-On Example: Composing a Pipeline From Scratch
 
 The philosophy is easiest to internalize by building something real. The task: **given an SSH authentication log, find the top 5 source IP addresses responsible for failed login attempts.** This mirrors real SRE/security triage work (full incident-response context in `§89`–`§96`, Part 12 — Security Hardening) and it is exactly the kind of task where "one giant custom program" and "five small composed tools" produce the same answer at wildly different cost.
 
@@ -128,7 +117,7 @@ grep "Failed password" /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -
       2 198.51.100.9
 ```
 
-#### Full Command Documentation for This Pipeline
+### 2.1 Full Command Documentation for This Pipeline
 
 | Stage | Command                                    | Purpose                                                                                                                                                                                                                      | Why this tool (not a custom script)                                                                                                                 |
 | ----- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -148,7 +137,7 @@ Six tools, none written for this specific task, none aware of the others' existe
 
 > ⚠️ **Warning:** This pipeline is illustrative of the _philosophy_, not a production-grade intrusion-detection tool. Log formats vary by distro/`rsyslog` config, IPv6 addresses need different field handling, and `journalctl` (`§68`) is the modern retrieval path on systemd hosts rather than a flat `/var/log/auth.log`. Real fail2ban-style tooling, log rotation, and centralized logging pipelines are covered in `§87` (Part 11).
 
-### 1.4.3 Anti-Patterns: What Happens When the Philosophy Is Ignored
+## 3. Anti-Patterns: What Happens When the Philosophy Is Ignored
 
 The philosophy is not aesthetic preference — violating it has predictable, recurring operational costs:
 
@@ -157,7 +146,7 @@ The philosophy is not aesthetic preference — violating it has predictable, rec
 - **Running everything as root "because permissions were too much overhead."** A team disables permission checks or runs every service as `root` to avoid debugging `Permission denied` errors during development, and the habit survives into production. Result: a single compromised web application process now has unrestricted filesystem and process access instead of being contained to what it actually needs; a single typo in a cleanup script (`rm -rf $UNSET_VAR/*`) can destroy the entire filesystem instead of just the service's own directory. Principle 5's multi-user model exists specifically to bound the blast radius of both attackers and mistakes — this is exactly the reasoning formalized later as least-privilege in `§31` (`sudo`/`sudoers`) and hardened further with SELinux/AppArmor in `§91`.
 - **One giant "God" configuration file instead of `/etc/*.d` drop-in directories.** Ignoring composability at the config level too: cramming all of a service's settings, plus every plugin's settings, into one undifferentiated file makes automated config management (Ansible/Terraform touching just one concern — `§97`–`§102`) fragile, because every tool that wants to add one setting must parse and rewrite the whole file.
 
-### 1.4.4 How This Philosophy Predicts Later Conventions
+## 4. How This Philosophy Predicts Later Conventions
 
 The five principles are not abstract history — they are the reason specific, sometimes surprising, design choices reappear throughout this roadmap. Recognizing the throughline is a strong signal of seniority in interviews.
 
@@ -169,16 +158,16 @@ The five principles are not abstract history — they are the reason specific, s
 | Multi-user/multi-tasking foundation        | The rwx permission model, SUID/SGID/sticky bit, ACLs, `sudo`                                                                                                                                                                                                     | Part 4 in full, `§25`–`§32`                                   |
 | All five combined                          | Containers: namespaces + cgroups + chroot + OverlayFS take "isolate what a multi-tasking, file-centric OS already does" and sharpen it into Docker/Kubernetes primitives — text-based Dockerfiles and YAML manifests are Principle 3/4 applied to infrastructure | `§99` (Part 13 — Linux as the Foundation for Containers)      |
 
-The container row is worth dwelling on: Docker did not invent a new operating-system model. `chroot` (filesystem isolation), namespaces (process/network/mount isolation — itself refining Principle 5's multi-tasking guarantee), and cgroups (resource limiting) are Linux kernel features that already existed, composed together, the same way `grep | sort | uniq` composes small tools into a bigger capability. Understanding `§1.4` deeply is what makes `§99` feel inevitable rather than novel.
+The container row is worth dwelling on: Docker did not invent a new operating-system model. `chroot` (filesystem isolation), namespaces (process/network/mount isolation — itself refining Principle 5's multi-tasking guarantee), and cgroups (resource limiting) are Linux kernel features that already existed, composed together, the same way `grep | sort | uniq` composes small tools into a bigger capability. Understanding `§4` deeply is what makes `§99` feel inevitable rather than novel.
 
-### 1.4.5 Common Misconceptions
+## 5. Common Misconceptions
 
 1. **"Unix philosophy means avoiding all abstraction and never building bigger tools."** False. The philosophy is about composability and single responsibility, not about refusing to build anything substantial. `systemd` (Part 9), Kubernetes, and modern package managers are large, sophisticated systems — but well-designed versions of them still expose composable, scriptable, text-based interfaces (`systemctl`, `kubectl get -o yaml`) rather than becoming opaque monoliths. Bigness is fine; opacity and monolithic coupling are what the philosophy warns against.
 2. **"Everything is a file" means every OS resource is literally browsable as a file on disk.** Not quite — it means the _interface_ (open/read/write/close semantics) is uniform wherever practical. Network sockets and pipes are file-descriptor-based but aren't paths you `ls` in a normal directory tree the way `/proc` entries are.
 3. **"Plain text config is unprofessional/unscalable compared to a real database."** Plain text scales far better than assumed once paired with the right practices — version control, config-management tools (Ansible/Terraform, Part 13), and structured-but-still-text formats like YAML/JSON. The "real database" instinct usually just reintroduces the opacity problem Principle 4 avoids.
 4. **"Small tools means slow/inefficient — a compiled monolithic program is always faster."** Pipes stream data between processes with the kernel doing the plumbing; for the vast majority of admin/ops tasks the composability win vastly outweighs any marginal process-spawn overhead, and for genuinely hot paths, nothing stops you from writing a compiled tool that _also_ follows the philosophy (reads stdin, writes stdout, does one job).
 
-### 1.4.6 Interview Questions
+## 6. Interview Questions
 
 **[Beginner] Q1. What does "everything is a file" mean in Linux, and give one concrete example.**
 **Model answer:** It means that regular files, directories, devices, and even live kernel/process information are all accessed through the same file operations — open, read, write, close — rather than each needing its own specialized API. For example, `/proc/cpuinfo` isn't a real file on disk; it's a view into live kernel data that you can read with the exact same `cat` command you'd use on any text file, because the kernel presents it through the standard file interface.

@@ -1,16 +1,16 @@
 # Section 10 — Conditional Access, MFA, and Privileged Identity Management (PIM)
 
-## 10.1 Definition
+## 1. Definition
 
 **Plain language:** Even after Entra ID confirms who someone is (authentication, Section 7) and RBAC decides what they're theoretically allowed to do (authorization, Section 8), a mature security posture adds one more layer: dynamically deciding _whether this specific sign-in, right now, from this device and location, should be allowed at all_, and ensuring that powerful, standing access isn't just sitting around waiting to be misused or stolen.
 
 **Precise definition:** Conditional Access is a policy engine within Entra ID that evaluates signals (user, device, location, application, risk level) at sign-in time and enforces controls (block, require MFA, require compliant device) before granting a session. Multi-Factor Authentication (MFA) is the requirement that a user prove their identity using more than one independent factor. Privileged Identity Management (PIM) is a service that enables **just-in-time**, time-bound activation of privileged roles instead of granting them as permanent, standing access.
 
-## 10.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Static authentication and RBAC alone leave real gaps. A stolen password, by itself, is often enough to authenticate successfully — MFA closes this gap by requiring a second factor an attacker is far less likely to also possess. A legitimate, correctly-authenticated user signing in from an unusual location or a compromised device might still represent real risk — Conditional Access closes this gap by evaluating contextual signals beyond just "was the password correct," and can require additional verification or block the sign-in entirely based on that context. Finally, even correctly-assigned privileged roles (like Global Administrator or subscription Owner) represent standing risk simply by existing permanently — if that identity is ever compromised, the attacker inherits full standing privilege immediately, with no additional barrier. PIM closes this gap by making privileged access temporary and requested on-demand, drastically shrinking the window during which a compromised privileged credential is actually dangerous.
 
-## 10.3 Multi-Factor Authentication (MFA)
+## 3. Multi-Factor Authentication (MFA)
 
 **Definition:** MFA requires a user to present two or more independent authentication factors before being granted access, typically drawn from these categories: **something you know** (a password), **something you have** (a phone/authenticator app generating a time-based code, or a hardware security key), and **something you are** (biometrics, like a fingerprint).
 
@@ -18,7 +18,7 @@ Static authentication and RBAC alone leave real gaps. A stolen password, by itse
 
 ⚠️ Specific supported MFA methods (SMS, authenticator app push notifications, time-based codes, hardware FIDO2 security keys, and others) and Microsoft's current guidance on which methods are considered strongest evolve over time — SMS-based MFA in particular is now widely considered a weaker method industry-wide due to SIM-swapping attack risk, and current official guidance should be checked before designing an MFA policy around a specific method.
 
-## 10.4 Conditional Access
+## 4. Conditional Access
 
 **Definition:** Conditional Access policies are "if-then" rules evaluated at sign-in time: **if** certain signals are true (e.g., "user is a member of the Finance group," "sign-in is from outside the corporate network," "the device is not marked compliant"), **then** enforce a specific control (require MFA, block access entirely, require a compliant/managed device, require a specific approved application).
 
@@ -39,7 +39,7 @@ Static authentication and RBAC alone leave real gaps. A stolen password, by itse
 
 💡 **Tip:** A very common enterprise baseline policy is "require MFA for all users, all applications, from any location" as a starting floor, layering additional, more restrictive conditions on top for higher-sensitivity applications or privileged roles specifically — starting from a strong baseline and adding exceptions is generally safer than starting permissive and trying to tighten later.
 
-### 10.4.1 Architecture — Conditional Access Evaluation Flow
+### 4.1 Architecture — Conditional Access Evaluation Flow
 
 ```
 User attempts sign-in
@@ -62,7 +62,7 @@ If all required controls are satisfied → session granted
 If any required control fails → access denied
 ```
 
-## 10.5 Privileged Identity Management (PIM)
+## 5. Privileged Identity Management (PIM)
 
 **Definition:** PIM enables **just-in-time (JIT) privileged access** — instead of a user holding a powerful role (like Global Administrator, or Owner on a critical subscription) permanently, PIM allows that role to be "eligible" rather than "active" by default, requiring the user to explicitly activate it (often with additional MFA, a business justification, and/or approval from another administrator) for a limited, time-bound window whenever they actually need it.
 
@@ -75,7 +75,7 @@ If any required control fails → access denied
 
 🎯 **Interview Tip:** "How would you reduce the risk of standing administrative access?" is a very common senior/architect-level security question, and PIM (just-in-time, time-bound privileged access with approval workflows) is close to the canonical correct answer within the Azure ecosystem.
 
-## 10.6 Configuration & Commands
+## 6. Configuration & Commands
 
 **Illustrative Conditional Access policy structure (concept, not a literal CLI command — Conditional Access is most commonly configured via the Portal or Microsoft Graph API):**
 
@@ -102,16 +102,16 @@ Access Controls:
 5. Role automatically reverts to "eligible" (inactive) when the window expires
 ```
 
-## 10.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 Mature enterprise Azure environments treat MFA as a non-negotiable baseline for every account without exception, layer Conditional Access policies that scale enforcement strictness with sensitivity (general staff require MFA; administrators require MFA plus a compliant device plus a stricter session timeout; break-glass emergency accounts are handled via a separate, tightly controlled exception process rather than being subject to policies that could lock out emergency access), and mandate PIM for all privileged directory and subscription-level roles so that no human holds standing Global Administrator or subscription Owner access indefinitely. This combination — strong baseline authentication requirements, contextual risk-based access decisions, and time-bound privileged access — forms the practical backbone of what's often referred to as a **Zero Trust** security posture (a broader industry framework, worth knowing by name, that assumes no user or device should be implicitly trusted regardless of network location, and instead verifies every access request based on available signals).
 
-## 10.8 Security Considerations
+## 8. Security Considerations
 
 - Conditional Access policies should always include a documented **break-glass emergency access account** exempted from the strictest policies (particularly device-compliance requirements), so that a Conditional Access misconfiguration or an identity provider outage cannot lock administrators out of their own tenant entirely — this account should be monitored closely and its credentials tightly controlled precisely because it's exempted from normal restrictions.
 - PIM approval workflows should route to genuinely available approvers — a workflow that requires approval from someone perpetually unavailable effectively blocks legitimate emergency access, which can itself become an operational and security problem.
 
-## 10.9 Troubleshooting
+## 9. Troubleshooting
 
 | Symptom                                                                          | Likely Cause                                                                                                  | Fix                                                                                                                        |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -119,7 +119,7 @@ Mature enterprise Azure environments treat MFA as a non-negotiable baseline for 
 | User has a role assigned in PIM but API calls still fail with "Forbidden"        | The role is "eligible" but not currently "active" — PIM roles grant no access until explicitly activated      | Activate the role through PIM before attempting the action                                                                 |
 | Administrators locked out of the tenant after a Conditional Access policy change | No break-glass account was exempted, and the new policy's conditions unintentionally blocked all admin access | Use the documented break-glass account (which should bypass Conditional Access) to sign in and correct the policy          |
 
-## 10.10 Interview Questions — Section 10
+## 10. Interview Questions — Section 10
 
 ### 🎯 Intermediate
 
@@ -137,18 +137,18 @@ _Model answer:_ PIM converts standing privileged access into just-in-time, time-
 
 _What the interviewer is probing:_ whether the candidate can articulate both the security benefit and the honest operational trade-off, rather than presenting PIM as a strictly free security improvement — recognizing and planning for that friction is itself a mark of senior-level judgment.
 
-## 10.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - **"MFA alone is sufficient security hygiene; Conditional Access is optional extra."** Understating the risk — MFA addresses credential compromise specifically, while Conditional Access addresses a broader set of contextual risk signals (device health, location, detected anomalous behavior); mature environments layer both rather than treating either as sufficient alone.
 - **"A role assigned in PIM as 'eligible' provides the same access as an active assignment."** False and a common configuration misunderstanding — an eligible-but-not-activated PIM role grants zero access until the user explicitly activates it.
 
-## 10.12 Key Takeaways
+## 12. Key Takeaways
 
 - 🔑 MFA closes the "stolen password alone is enough" gap by requiring a second, independent factor.
 - 🔑 Conditional Access adds contextual, signal-based decision-making at sign-in time (location, device, risk), layered on top of — not a replacement for — authentication and RBAC.
 - 🔑 PIM converts standing privileged access into just-in-time, time-bound, justified, and optionally approval-gated activation, dramatically shrinking the exploitable window for privileged credential compromise.
 - 🔑 A documented, monitored break-glass account exempted from strict Conditional Access policies is essential to avoid a self-inflicted tenant-wide lockout.
 
-## 10.13 Related Concepts / Part 2 Wrap-Up
+## 13. Related Concepts / Part 2 Wrap-Up
 
 This completes **Part 2 — Identity & Access Management**, covering Entra ID fundamentals, authentication protocols, RBAC, non-human identities, and advanced identity security controls. **Part 3 — Core Compute** begins next with Section 11, covering Azure Virtual Machines — the first concrete infrastructure resource type this roadmap addresses in depth, and one to which every identity and access concept covered in Part 2 directly applies (every VM created, started, or accessed is subject to the authentication, RBAC, and Conditional Access mechanisms just covered).

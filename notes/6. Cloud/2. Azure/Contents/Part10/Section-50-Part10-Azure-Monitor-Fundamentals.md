@@ -6,7 +6,7 @@
 
 ---
 
-## 50.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section establishes Azure Monitor as the unifying observability platform underlying every other topic in Part 10 — Log Analytics/KQL (Section 51), Application Insights (Section 52), and Alerts (Section 53) are not separate, competing services but specific _components and consumers_ within Azure Monitor's overall architecture. This section covers Azure Monitor's data model (metrics vs. logs), the diagnostic settings mechanism that routes data into it, and how every Azure resource type covered throughout this roadmap actually surfaces its operational data into this unified platform.
 
@@ -14,20 +14,20 @@ This section establishes Azure Monitor as the unifying observability platform un
 
 ---
 
-## 50.2 What Is Azure Monitor and Why It Exists
+## 2. What Is Azure Monitor and Why It Exists
 
-### 50.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Azure Monitor is Azure's platform for collecting, analyzing, and acting on telemetry from every layer of an Azure environment — infrastructure health metrics, application logs and traces, custom business metrics — giving operators one place to understand what's happening across resources that would otherwise each have their own siloed, inconsistent monitoring data.
 
 **Precise definition:** Azure Monitor is a comprehensive observability platform that collects, stores, analyzes, and visualizes telemetry (metrics and logs) from Azure resources, on-premises resources, and multi-cloud resources, providing the data foundation for alerting, dashboards, and automated responses across the entire monitored estate.
 
-### 50.2.2 Why a Unified Platform Exists — The Problem It Solves
+### 2.2 Why a Unified Platform Exists — The Problem It Solves
 
 - **Every Azure resource type would otherwise have its own siloed monitoring:** without a unifying platform, understanding the health of a system spanning a VM (Section 11), an AKS cluster (Section 36–38), a SQL Database (Section 29), and a Function App (Section 40) would mean checking each service's own separate, differently-shaped monitoring interface — Azure Monitor instead provides one consistent data model and query surface across resource types, letting an operator correlate an application-level error with the underlying infrastructure metric that may have caused it, in one place.
 - **Automatic collection with minimal configuration for platform-level data:** every Azure resource emits a baseline set of platform metrics automatically, with no configuration required, directly into Azure Monitor's metrics store — providing an immediate observability floor for any resource the moment it's created, before any deliberate monitoring setup work happens.
 
-### 50.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                                     | Definition                                                                                                                                                                                                                                                  |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,33 +41,33 @@ This section establishes Azure Monitor as the unifying observability platform un
 
 ---
 
-## 50.3 The Data Model: Metrics vs. Logs
+## 3. The Data Model: Metrics vs. Logs
 
-### 50.3.1 Metrics
+### 3.1 Metrics
 
 - **Definition:** a numerical measurement collected at regular time intervals, optimized for extremely fast querying and lightweight, near-real-time alerting.
 - **Characteristics:** stored in a specialized, time-series-optimized store distinct from the Log Analytics workspace; retained for a fixed period (default retention varies but is commonly around 93 days for platform metrics — verify current specifics against documentation); queried via a purpose-built metrics API/explorer rather than KQL; well suited to numeric trend visualization (CPU over time, request count over time) and low-latency alerting (metric-based alerts typically evaluate faster than log-based alerts, 50.x).
 - **Example platform metrics:** VM `Percentage CPU`, App Service `Http Server Errors`, AKS node `Available Memory Bytes` — automatically available with no configuration.
 
-### 50.3.2 Logs
+### 3.2 Logs
 
 - **Definition:** structured or semi-structured event records with a timestamp and an arbitrary, resource-type-specific set of properties, stored in a Log Analytics workspace and queried via KQL (Section 51).
 - **Characteristics:** far richer detail than a metric (a single log entry might contain a full HTTP request's method, path, status code, duration, and custom properties, versus a metric's single numeric value), but with materially higher storage cost and typically higher query latency than metrics — a genuine trade-off, not merely "logs are strictly more capable," worth naming precisely.
 - **Log types relevant across this roadmap:** **Activity logs** (50.2.3, subscription-level control-plane operations), **resource logs** (formerly called "diagnostic logs," resource-specific operational logs such as AKS's `kube-audit` log or a Storage Account's request logs — the volume/detail data requiring explicit diagnostic settings configuration, 50.4), and **Application Insights telemetry** (application-level traces/requests/dependencies/exceptions, Section 52, itself stored in a Log Analytics workspace in the modern "workspace-based" configuration).
 
-### 50.3.3 Why Both Exist — Not a Redundant Overlap
+### 3.3 Why Both Exist — Not a Redundant Overlap
 
 🎯 **Interview Tip:** a precise answer to "why does Azure Monitor have both metrics and logs instead of just one data type?" names the genuine trade-off: metrics are optimized for fast, cheap, near-real-time numeric trend analysis and alerting at the cost of limited detail (a single number per time interval); logs provide arbitrary richness and correlatable detail at the cost of higher storage/query cost and latency. Production monitoring uses both deliberately — metrics for the "is something wrong right now" fast signal and dashboarding, logs for the "why is it wrong, and what exactly happened" deep investigation — rather than treating either as a strictly superior universal choice.
 
 ---
 
-## 50.4 Diagnostic Settings: Getting Resource Data Into Azure Monitor
+## 4. Diagnostic Settings: Getting Resource Data Into Azure Monitor
 
-### 50.4.1 Why This Is a Distinct, Necessary Configuration Step
+### 4.1 Why This Is a Distinct, Necessary Configuration Step
 
 While platform metrics (50.3.1) are collected automatically with zero configuration, the richer **resource logs** (50.3.2) for most Azure services are **not** collected or retained anywhere by default — they must be explicitly routed via a **diagnostic setting** configured on that specific resource, specifying which log categories to export and to which destination(s).
 
-### 50.4.2 Diagnostic Setting Destinations
+### 4.2 Diagnostic Setting Destinations
 
 | Destination                 | Purpose                                                                                                                                                                                                                                                                    |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -78,7 +78,7 @@ While platform metrics (50.3.1) are collected automatically with zero configurat
 
 ⚠️ **Warning:** a very common real-world gap is discovering, _during_ an incident investigation, that a critical resource's diagnostic settings were never configured — meaning the detailed logs needed to diagnose exactly what happened simply don't exist for the relevant time window, since resource logs are not retroactively collectible. Diagnostic settings should be configured proactively, as a standard part of resource provisioning (ideally via the same Infrastructure as Code templates provisioning the resource itself, Sections 46–48, ensuring monitoring configuration is never an afterthought left to manual, inconsistent follow-up), not reactively after a first incident reveals the gap.
 
-### 50.4.3 Example: Bicep Diagnostic Setting (Direct Application of Section 47)
+### 4.3 Example: Bicep Diagnostic Setting (Direct Application of Section 47)
 
 ```bicep
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
@@ -101,47 +101,47 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 
 ---
 
-## 50.5 Azure Monitor Agent (Data Collection for VMs and Hybrid Resources)
+## 5. Azure Monitor Agent (Data Collection for VMs and Hybrid Resources)
 
-### 50.5.1 Why an Agent Is Needed for Some Resources but Not Others
+### 5.1 Why an Agent Is Needed for Some Resources but Not Others
 
 PaaS resources (App Service, AKS control plane, managed databases) expose their platform metrics and resource logs directly through Azure's own management infrastructure, requiring no separate agent. **VMs** (Section 11) — including AKS worker nodes underneath (Section 36.3.5) — are different: the _guest operating system's_ internal telemetry (process-level CPU/memory, application logs written to files inside the VM, Windows Event Log entries) is not visible to Azure's management plane without something running _inside_ the VM's guest OS to collect and forward it.
 
-### 50.5.2 Azure Monitor Agent (AMA)
+### 5.2 Azure Monitor Agent (AMA)
 
 - **Definition:** the current-generation agent installed inside a VM's (or other supported compute's) guest OS, collecting configured data (performance counters, specific log files, Windows Event Log channels, Syslog) and forwarding it to a Log Analytics workspace — replacing the older, now-legacy "Log Analytics agent" (MMA/OMS agent), which has followed its own separate, since-completed deprecation timeline (verify current status against documentation, as agent generations and their exact support timelines have evolved).
 - **Data Collection Rules (DCRs):** AMA's configuration is expressed via a separate Azure resource (a Data Collection Rule) specifying exactly what data to collect and where to send it, decoupled from the agent installation itself — a more flexible, centrally manageable model than the legacy agent's more monolithic configuration approach, and itself provisionable via Infrastructure as Code (Sections 46–48) consistent with 50.4.2's guidance.
 
-### 50.5.3 Relevance to AKS Specifically
+### 5.3 Relevance to AKS Specifically
 
 - **Container Insights** (50.6.2) deploys a specialized agent (based on the same underlying collection technology family) as a DaemonSet within the AKS cluster (a Kubernetes pattern ensuring one instance runs per node, not yet formally introduced elsewhere in this roadmap but relevant here specifically) to collect node- and pod-level telemetry — a concrete, AKS-specific instance of the general "guest-level telemetry needs an in-VM/in-cluster collection agent" principle from 50.5.1.
 
 ---
 
-## 50.6 Insights: Curated Monitoring Solutions
+## 6. Insights: Curated Monitoring Solutions
 
-### 50.6.1 Why Curated Insights Exist Beyond Generic Azure Monitor
+### 6.1 Why Curated Insights Exist Beyond Generic Azure Monitor
 
 While the generic Azure Monitor platform (metrics, logs, diagnostic settings) can monitor any resource type, certain resource types have specific, well-understood monitoring needs common enough to warrant a purpose-built, pre-configured experience — reducing the setup burden of manually configuring the "right" set of metrics/logs/dashboards for a well-known resource type from scratch every time.
 
-### 50.6.2 Container Insights (AKS-Specific, Directly Extending Sections 36–38)
+### 6.2 Container Insights (AKS-Specific, Directly Extending Sections 36–38)
 
 - **Definition:** a curated monitoring solution for AKS (and other container platforms), collecting node-, pod-, and container-level performance metrics and logs (via the DaemonSet-based agent from 50.5.3), with pre-built dashboards and integration with `kubectl`-familiar concepts (namespace, pod, node-level views).
 - **Direct value connecting back to Section 38's operational material:** Container Insights provides the concrete observability substrate for diagnosing many of Section 38.7's consolidated runbook scenarios (widespread Pending pods, node resource exhaustion) — this section's monitoring material and Section 38's operational runbook are two halves of one practical AKS operations capability.
 
-### 50.6.3 VM Insights
+### 6.3 VM Insights
 
 - **Definition:** a curated monitoring solution for VMs (and VM Scale Sets), deploying AMA (50.5.2) with a pre-configured Data Collection Rule covering common performance counters, plus a **dependency map** feature visualizing network connections between monitored VMs and external endpoints — useful for understanding an unfamiliar VM-based application's actual runtime communication topology, including discovering undocumented dependencies.
 
 ---
 
-## 50.7 The Activity Log
+## 7. The Activity Log
 
-### 50.7.1 Definition and Distinction From Resource Logs
+### 7.1 Definition and Distinction From Resource Logs
 
 The **Activity Log** is a subscription-scoped record of control-plane operations — every create, update, delete, and specific action performed against Azure resources via ARM (Section 4), regardless of whether initiated through the Portal, CLI, an ARM/Bicep/Terraform deployment (Sections 46–48), or a pipeline (Section 45/46). This is fundamentally distinct from resource logs (50.3.2/50.4): the Activity Log records _who changed the resource's configuration and when_, while resource logs record _what the resource itself did during its operation_ (a request it served, a query it ran).
 
-### 50.7.2 Why It Matters
+### 7.2 Why It Matters
 
 - **Audit and compliance:** the Activity Log provides the authoritative record for "who deleted this resource" or "who changed this NSG rule" investigations, directly relevant to the compliance/governance concerns covered more fully in Part 11.
 - **Troubleshooting configuration-change-correlated incidents:** a very common, effective troubleshooting first step when an incident's onset doesn't obviously correlate with an application-level cause is checking the Activity Log for any recent configuration change to the affected resource or its dependencies around the incident's start time — directly complementing the resource-log-focused troubleshooting reference tables throughout this roadmap (e.g., Section 38.7) with a "did someone change something" check.
@@ -149,14 +149,14 @@ The **Activity Log** is a subscription-scoped record of control-plane operations
 
 ---
 
-## 50.8 Production and Enterprise Usage
+## 8. Production and Enterprise Usage
 
 - **Centralized vs. per-resource-group Log Analytics workspace strategy:** enterprises face a genuine design choice between a small number of centralized Log Analytics workspaces (simpler cross-resource querying and centralized cost/retention management, but potentially broader access-control granularity challenges — RBAC on a Log Analytics workspace can be scoped at the workspace or table level, but a single shared workspace serving many teams requires deliberate access-control design) versus per-team/per-application dedicated workspaces (cleaner access-control boundaries, but harder cross-cutting queries and duplicated retention/cost management overhead) — directly paralleling the multi-tenancy/blast-radius trade-off discussions already established for AKS clusters (Section 36.8) and Terraform state organization (Section 48.8), now applied to observability data specifically.
 - **Cost management:** Log Analytics ingestion and retention cost scales directly with data volume — indiscriminately enabling every available diagnostic log category at maximum retention across every resource can produce a substantial, often underestimated cost; a deliberate, workload-risk-informed selection of which log categories genuinely warrant collection (weighed against 50.4.2's "don't discover the gap during an incident" warning) is a real, ongoing cost-optimization exercise (previewed here, covered more fully in Section 64's cost-optimization material).
 
 ---
 
-## 50.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                                   | Likely Cause                                                                                                                                         | Diagnostic Step                                                                                                                                                                  |
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,7 +167,7 @@ The **Activity Log** is a subscription-scoped record of control-plane operations
 
 ---
 
-## 50.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Diagnostic settings configured proactively via Infrastructure as Code alongside resource provisioning, not left as a manual, easily-forgotten follow-up step.
 - [ ] Log Analytics workspace strategy (centralized vs. per-team) deliberately chosen based on the organization's actual cross-querying needs and access-control requirements.
@@ -178,7 +178,7 @@ The **Activity Log** is a subscription-scoped record of control-plane operations
 
 ---
 
-## 50.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Azure Monitor is a single dashboard/tool." _Correction:_ it's an umbrella platform encompassing metrics, logs (via Log Analytics), Application Insights, and alerting — the specific tools/views covered in Sections 51–53 are components and consumers within this platform, not separate, unrelated services.
 - "Every Azure resource's detailed logs are automatically collected and available." _Correction:_ only platform metrics are automatic; resource logs require explicit diagnostic settings configuration (50.4.1) — a very common, costly-to-discover-late gap.
@@ -186,7 +186,7 @@ The **Activity Log** is a subscription-scoped record of control-plane operations
 
 ---
 
-## 50.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between a metric and a log in Azure Monitor?"
 _Model answer:_ a metric is a lightweight numerical measurement at a point in time, optimized for fast querying and near-real-time alerting, with limited detail (a single number per interval). A log is a richer, structured event record with arbitrary detail, stored in a Log Analytics workspace and queried via KQL, at higher storage/query cost and typically higher latency than metrics. Production monitoring uses both deliberately: metrics for fast trend/alerting signals, logs for detailed investigation.
@@ -204,7 +204,7 @@ _What the interviewer is probing:_ the ability to design a workspace/retention s
 
 ---
 
-## 50.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Azure Monitor is the umbrella observability platform, not a single tool — Log Analytics/KQL (Section 51), Application Insights (Section 52), and Alerts (Section 53) are components and consumers within it.
 
@@ -218,7 +218,7 @@ _What the interviewer is probing:_ the ability to design a workspace/retention s
 
 ---
 
-## 50.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 51 — Log Analytics & KQL (next):** the query language and workspace environment this section's log-data model (50.3.2) is actually queried and analyzed through.
 - **Section 52 — Application Insights:** the application-level telemetry layer, itself built on the Log Analytics workspace foundation established in this section, providing traces/requests/dependencies/exceptions specifically for application code (extending the Functions/App Service/AKS-hosted application observability referenced in Sections 40.7.3/13/35-37).

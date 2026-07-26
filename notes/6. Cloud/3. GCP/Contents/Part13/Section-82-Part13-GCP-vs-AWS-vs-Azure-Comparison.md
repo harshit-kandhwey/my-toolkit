@@ -1,12 +1,12 @@
 # Section 82 (Part 13): GCP vs. AWS vs. Azure — Comprehensive Comparison
 
-## 82.1 Definition
+## 1. Definition
 
 **Plain language:** Every major cloud provider solves the same underlying problems — compute, storage, networking, identity, data, AI, and operations — but names its services differently and makes different architectural choices. Interviewers and real multi-cloud/migration work both routinely require translating fluently between GCP, AWS, and Azure. This section is a single reference table doing exactly that translation for every service covered across this entire 85-section knowledge base.
 
 **Precise:** This section maps each GCP service introduced in Parts 1–12 to its closest functional equivalent(s) in AWS and Azure, organized by category, followed by an honest assessment of where GCP genuinely differentiates itself and where it genuinely lags the other two providers.
 
-## 82.2 Why This Comparison Matters
+## 2. Why This Comparison Matters
 
 - **Interviews:** senior cloud/DevOps interviews frequently ask "what's the GCP equivalent of X" or "how would this AWS-native design change if built on GCP" — fluent translation signals genuine platform-agnostic architectural understanding rather than single-vendor memorization.
 - **Multi-cloud and migration work:** organizations migrating between providers, or running deliberately multi-cloud, need this mapping as day-one working knowledge, not something looked up mid-project.
@@ -14,7 +14,7 @@
 
 > ⚠️ **Accuracy note:** Feature parity between providers shifts constantly — a service listed as "no direct equivalent" today may exist next quarter, and vice versa. Treat this table as a snapshot of the well-established, stable mappings rather than a permanently fixed reference; verify against current documentation before relying on any specific parity claim in a real design decision.
 
-## 82.3 Compute
+## 3. Compute
 
 | GCP Service (Section)        | AWS Equivalent                                  | Azure Equivalent                                  |
 | ---------------------------- | ----------------------------------------------- | ------------------------------------------------- |
@@ -25,7 +25,7 @@
 | Cloud Batch (9)              | AWS Batch                                       | Azure Batch                                       |
 | Compute Decision Matrix (10) | (no single AWS equivalent — decision framework) | (no single Azure equivalent — decision framework) |
 
-## 82.4 Storage and Databases
+## 4. Storage and Databases
 
 | GCP Service (Section)            | AWS Equivalent                                                                         | Azure Equivalent                                           |
 | -------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -40,7 +40,7 @@
 
 > 💡 **Tip:** Cloud Spanner is the one row on this table with the weakest true equivalent — it is Google's genuinely distinctive offering (globally distributed, strongly consistent, horizontally scalable relational SQL with TrueTime-based external consistency), and neither AWS nor Azure has shipped a fully equivalent product as of this writing; this is a legitimate, frequently-cited GCP differentiator, covered in depth in Section 14.
 
-## 82.5 Networking
+## 5. Networking
 
 | GCP Service (Section)                               | AWS Equivalent                                                     | Azure Equivalent                                                                     |
 | --------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
@@ -56,7 +56,7 @@
 
 > ⚠️ **Interview-relevant nuance:** GCP's VPC is a **global** resource with **regional** subnets (Section 19–20); both AWS's VPC and Azure's VNet are inherently **regional** resources with zonal/regional subnets. This is the single most frequently probed cross-provider networking distinction in interviews.
 
-## 82.6 Containers and Kubernetes
+## 6. Containers and Kubernetes
 
 | GCP Service (Section)                 | AWS Equivalent                                          | Azure Equivalent                    |
 | ------------------------------------- | ------------------------------------------------------- | ----------------------------------- |
@@ -70,7 +70,7 @@
 
 > 🔑 **Note:** GKE is widely regarded as the most mature of the three managed Kubernetes offerings, a direct reflection of Google's Borg heritage (Section 1) — this is one of GCP's clearest genuine differentiators, not just marketing.
 
-## 82.7 Identity, Governance, and Security
+## 7. Identity, Governance, and Security
 
 | GCP Service (Section)                              | AWS Equivalent                                                                      | Azure Equivalent                                                 |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -86,7 +86,7 @@
 
 > ⚠️ **Gap worth naming honestly:** VPC Service Controls (Section 41) — a perimeter-based data-exfiltration control around managed services — has no clean one-to-one AWS or Azure equivalent; this is a genuine GCP differentiator in the security direction, not a gap, and is worth highlighting distinctly from the gaps noted in Section 82.10.
 
-## 82.8 Data, Analytics, and AI/ML
+## 8. Data, Analytics, and AI/ML
 
 | GCP Service (Section)                    | AWS Equivalent                                   | Azure Equivalent                                              |
 | ---------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
@@ -101,7 +101,7 @@
 | MLOps on GCP (69)                        | SageMaker Pipelines/Model Registry               | Azure ML Pipelines/Model Registry                             |
 | AI/ML Security & Responsible AI (70)     | SageMaker security features + Bedrock Guardrails | Azure AI Content Safety / Responsible AI dashboard            |
 
-## 82.9 DevOps, Observability, and Security Operations
+## 9. DevOps, Observability, and Security Operations
 
 | GCP Service (Section)                        | AWS Equivalent                                                    | Azure Equivalent                             |
 | -------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------- |
@@ -116,20 +116,20 @@
 | Automated Incident Response (75)             | Security Hub automated response / EventBridge-driven remediation  | Sentinel automation (Logic Apps playbooks)   |
 | SOC Patterns (76)                            | Security Hub + Detective                                          | Sentinel + Defender for Cloud                |
 
-## 82.10 GCP's Genuine Differentiators
+## 10. GCP's Genuine Differentiators
 
 - **BigQuery's serverless analytics model:** no cluster to provision or manage at all — query pricing is purely on bytes scanned or flat-rate slots, a genuinely distinct operational model versus Redshift's or Synapse's provisioned-cluster foundations (Section 44).
 - **Global VPC model:** GCP's VPC-as-a-global-resource design (Section 19–20) is architecturally distinct from both AWS's and Azure's regional-VPC models, simplifying multi-region network design in ways the other two providers require Transit Gateway/Virtual WAN overlays to approximate.
 - **Kubernetes/GKE heritage:** GKE's direct lineage from Google's internal Borg system (Section 1) gives it a maturity and operational polish — Autopilot's fully-managed node layer, first-class Workload Identity — that both EKS and AKS have converged toward but arrived at later.
 - **TPUs (Tensor Processing Units):** custom AI/ML accelerator silicon unique to GCP (Section 65–66), offering a genuinely different price/performance profile for large-scale training workloads than GPU-only offerings from AWS and Azure.
 
-## 82.11 GCP's Genuine Gaps
+## 11. GCP's Genuine Gaps
 
 - **Smaller marketplace and region footprint:** GCP has fewer regions and a smaller third-party marketplace ecosystem than AWS, meaning some workloads with strict low-latency-to-every-market requirements or deep marketplace-integration needs are easier to satisfy on AWS today.
 - **No native chaos-engineering product:** as covered in Sections 78–79, GCP has no first-party equivalent to AWS Fault Injection Simulator or Azure Chaos Studio — chaos engineering on GCP requires open-source tooling (Chaos Mesh, Gremlin) rather than a fully-managed native service.
 - **Smaller enterprise landing-zone tooling ecosystem:** as covered in Section 59, GCP has no single managed product equivalent to AWS Control Tower or Azure Landing Zone accelerators — the Enterprise Foundations Blueprint is a Terraform reference architecture you deploy and own yourself, not a console-driven managed service, meaning more up-front assembly work for enterprise governance.
 
-## 82.12 Interview Questions
+## 12. Interview Questions
 
 **🎯 Beginner:** _What is the AWS equivalent of Cloud Run, and how are they similar?_
 **Model answer:** AWS App Runner is the closest direct equivalent — both are fully managed serverless platforms for running containerized applications without managing the underlying infrastructure, scaling automatically (including to zero) based on incoming traffic. AWS Fargate (via ECS) is a broader analog for "serverless containers" generally, though it requires more orchestration setup than Cloud Run's single-command deploy model.
@@ -140,13 +140,13 @@
 **🎯 Senior/Architect:** _A team is deciding between GCP and AWS for a new global, latency-sensitive multi-region application. What's the most architecturally significant infrastructure difference they should factor into that decision?_
 **Model answer:** GCP's global VPC model (Section 19) versus AWS's regional VPC model is the most architecturally significant difference for this use case — on GCP, a single VPC spans every region with regional subnets, meaning cross-region private connectivity requires no VPC peering or Transit Gateway at all; on AWS, achieving equivalent cross-region private connectivity requires explicitly provisioning Transit Gateway or peering between regional VPCs. This doesn't make one provider strictly better, but it meaningfully changes the network architecture's complexity and operational surface for a genuinely global, multi-region design, and should be weighed alongside region count, service availability per region, and team familiarity rather than decided on service-name parity alone.
 
-## 82.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 Nearly every GCP service covered in this knowledge base has a direct or close AWS and Azure equivalent — fluent translation across all three is a genuinely valuable, frequently-tested interview and real-world skill.
 - 🔑 GCP's global VPC model, BigQuery's serverless analytics, GKE's Borg heritage, and TPUs are its clearest genuine differentiators, not marketing claims.
 - 🔑 GCP's gaps are real and specific — smaller region/marketplace footprint, no native chaos-engineering product, and a less turnkey landing-zone tooling ecosystem than AWS Control Tower or Azure Landing Zones.
 - 🔑 Feature parity across providers shifts constantly; treat any specific parity claim as a snapshot to be re-verified before it drives a real architectural decision.
 
-## 82.14 Related Concepts
+## 14. Related Concepts
 
 This comparison table draws on every prior Part of this knowledge base; it feeds directly into the consolidated interview preparation in Section 83 and the capstone labs in Section 84, both of which assume fluency with these cross-provider mappings.

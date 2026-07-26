@@ -1,12 +1,12 @@
 # Section 48 (Part 6): Looker & Looker Studio — BI & Visualization
 
-## 48.1 Definition
+## 1. Definition
 
 **Plain language:** Once curated data exists in BigQuery (Section 44), someone still has to turn it into dashboards and reports that business stakeholders can actually read and trust. Google offers two very different tools for this: **Looker Studio**, a free, lightweight, drag-and-drop report builder anyone can pick up in an afternoon, and **Looker**, an enterprise BI platform where metrics are defined once in code and reused consistently across every dashboard, team, and tool in the organization.
 
 **Precise:** Looker and Looker Studio are Google's two business intelligence and visualization offerings. **Looker Studio** (formerly Google Data Studio) is a free, self-service reporting and dashboarding tool for connecting to data sources and building visualizations directly. **Looker** is a full enterprise BI platform built around **LookML**, a version-controlled semantic modeling language that centrally defines metrics, dimensions, and business logic once, so every downstream report, dashboard, and embedded analytics experience queries the same governed definitions rather than each author redefining "revenue" or "active user" independently.
 
-## 48.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Two distinct, related problems show up as organizations grow their use of dashboards and reports:
 
@@ -15,17 +15,17 @@ Two distinct, related problems show up as organizations grow their use of dashbo
 
 These are not competing solutions to the same problem — they solve different problems at different scales, and many organizations use both: Looker Studio for ad hoc, individual reporting, and Looker for governed, organization-wide metrics.
 
-## 48.3 Core Concepts
+## 3. Core Concepts
 
-### 48.3.1 Looker Studio — Self-Service Reporting
+### 3.1 Looker Studio — Self-Service Reporting
 
 Looker Studio is a free, browser-based tool where a user connects directly to a data source (BigQuery, Google Sheets, Google Analytics, Cloud SQL, and many third-party connectors) and drags charts, tables, and filters onto a canvas — no code or modeling step required. Reports can be shared like a Google Doc (view/edit permissions per user or group), embedded in a webpage, or scheduled for email delivery. There is no separate semantic layer: each report's calculated fields and filters live inside that report itself, meaning the same underlying data queried by two different reports can easily produce two different numbers if the report authors defined a metric slightly differently.
 
-### 48.3.2 Looker — Enterprise BI Platform
+### 3.2 Looker — Enterprise BI Platform
 
 Looker is a paid, enterprise-grade BI platform where the primary unit of work is not "a chart" but **the model** — a structured definition of how a business's data should be interpreted, written once and reused everywhere. Looker generates SQL dynamically against the underlying warehouse (commonly BigQuery, but also other databases) based on this model, rather than each dashboard author writing or approximating their own SQL.
 
-### 48.3.3 LookML — The Semantic Modeling Layer
+### 3.3 LookML — The Semantic Modeling Layer
 
 **LookML** is Looker's declarative modeling language, stored as version-controlled text files (typically in Git), used to define:
 
@@ -35,11 +35,11 @@ Looker is a paid, enterprise-grade BI platform where the primary unit of work is
 
 Because LookML lives in Git, changes go through the same review, versioning, and rollback discipline as application code — a materially different governance posture than a dashboard author quietly changing a filter inside a single Looker Studio report.
 
-### 48.3.4 Looker's Query and Delivery Model
+### 3.4 Looker's Query and Delivery Model
 
 A business user browsing an Explore in Looker never writes SQL directly — they pick dimensions and measures visually, and Looker translates that selection into SQL against the underlying warehouse **at query time**, using the governed LookML definitions. This is a fundamentally different execution model from Looker Studio's per-report calculated fields, and it is also different from BI tools that pre-extract and cache a full copy of the data (Looker's default mode queries live, though caching and precomputed **Aggregate Awareness** tables are available for performance at scale). Looker also supports **embedded analytics** — surfacing governed Looker content inside another application — and API access, so the same governed metric definitions can power a customer-facing dashboard, an internal Slack bot, and a scheduled report identically.
 
-## 48.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
                     Looker Studio path (self-service)
@@ -64,7 +64,7 @@ A business user browsing an Explore in Looker never writes SQL directly — they
    (all four consume the SAME governed LookML definitions)
 ```
 
-## 48.5 Comparison: Looker vs. Looker Studio vs. AWS QuickSight vs. Azure Power BI
+## 5. Comparison: Looker vs. Looker Studio vs. AWS QuickSight vs. Azure Power BI
 
 | Capability                   | Looker Studio (GCP)                      | Looker (GCP)                                               | QuickSight (AWS)                                  | Power BI (Azure)                                                          |
 | ---------------------------- | ---------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -78,7 +78,7 @@ A business user browsing an Explore in Looker never writes SQL directly — they
 
 > ⚠️ **Interview-relevant nuance:** Looker Studio and Looker are not "basic vs. advanced versions of the same product" — they have fundamentally different architectures. Looker Studio has no semantic layer at all (each report is self-contained), while Looker's entire value proposition is centered on LookML as a single governed semantic layer. Confusing the two, or assuming Looker is "just Looker Studio with more seats," is a common and telling mistake in interviews.
 
-## 48.6 Hands-On Example
+## 6. Hands-On Example
 
 **Purpose:** Looker Studio has no `gcloud`/`bq` CLI surface (it's a browser-based tool), but a report can be created programmatically via linking parameters, and the underlying BigQuery view it reports against is managed with `bq` as usual.
 
@@ -114,18 +114,18 @@ https://lookerstudio.google.com/reporting/create?c.reportId=REPORT_ID
 
 > 💡 **Tip:** Because Looker Studio has no CLI or version-controlled modeling layer, "automating" it in practice usually means automating the BigQuery view or table it points at (as above) — the report itself remains a manually maintained, UI-authored artifact. Looker's LookML files, by contrast, are plain text and fully manageable through a normal Git-based CI/CD workflow (Part 7).
 
-## 48.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Tiered BI strategy:** Many enterprises deliberately run both tools side by side — Looker Studio for individual teams' fast, low-stakes reporting needs, and Looker for the smaller set of metrics that are business-critical, widely consumed, and require guaranteed consistency (e.g., revenue reported to finance, executive KPI dashboards).
 - **LookML as the single source of truth for metric definitions:** Organizations standardizing on Looker treat LookML models as the authoritative definition of core business metrics, reviewed via pull requests like application code, specifically to prevent the "two dashboards, two different revenue numbers" trust failure that ungoverned self-service reporting tends to produce at scale.
 - **Embedded, white-labeled analytics products:** SaaS companies commonly use Looker's embedded analytics and API capabilities to expose customer-facing analytics dashboards inside their own product, reusing the same governed LookML models that power their internal dashboards, rather than building and maintaining a separate customer-facing analytics stack.
 
-## 48.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "Looker Studio and Looker are the same product at different price points." They are architecturally different products — Looker Studio has no semantic modeling layer at all, while LookML-based semantic modeling is the entire point of Looker; migrating from one to the other is a genuine re-platforming, not a plan upgrade.
 - **Misconception:** "Looker caches all its data like a traditional extract-based BI tool." Looker's default behavior is to generate and run live SQL against the underlying warehouse at query time using LookML definitions; caching and Aggregate Awareness exist as performance optimizations layered on top, not as the default architecture, in contrast to tools built primarily around a pre-extracted, cached dataset.
 
-## 48.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What is the key architectural difference between Looker Studio and Looker?_
 **Model answer:** Looker Studio is a free, self-service tool where each report defines its own calculated fields and connects directly to a data source with no shared modeling layer — fast to use, but with no built-in consistency guarantee across reports. Looker is built around LookML, a version-controlled semantic layer where metrics and dimensions are defined once and reused by every dashboard, embedded view, and API consumer, so numbers stay consistent across the organization by design rather than by convention.
@@ -136,7 +136,7 @@ https://lookerstudio.google.com/reporting/create?c.reportId=REPORT_ID
 **🎯 Senior/Architect:** _A company has 30 teams independently building Looker Studio reports against BigQuery, and finance has flagged that quarterly revenue figures differ by several percent across different teams' dashboards. How would you address this, and would you fully replace Looker Studio?_
 **Model answer:** The root cause is architectural, not a training problem — Looker Studio gives each report its own calculated-field definitions with no enforced shared semantic layer, so 30 independently authored reports predictably drift apart over time even with well-intentioned authors. Rather than a wholesale replacement, I'd introduce Looker specifically for the metrics that are business-critical and widely consumed — starting with the exact quarterly revenue figure finance flagged — defining it once in LookML, version-controlled and reviewed, and pointing finance's and any exec-facing dashboards at that governed Explore. I would not necessarily force all 30 teams' ad hoc reporting onto Looker; Looker Studio remains reasonable for lower-stakes, team-local reporting where full governance overhead isn't justified. The practical outcome is a tiered strategy: Looker as the single source of truth for the small set of metrics where cross-team consistency genuinely matters, and Looker Studio retained for everything else — directly matching governance investment to where inconsistency actually causes business harm, rather than either extreme of "govern everything" or "govern nothing."
 
-## 48.10 Key Takeaways 🔑
+## 10. Key Takeaways 🔑
 
 - 🔑 Looker Studio is free, self-service, and has no shared semantic layer — every report defines its own calculated fields independently.
 - 🔑 Looker's core value is LookML: a version-controlled semantic layer defining metrics once, reused consistently across dashboards, embedded analytics, and APIs.
@@ -144,6 +144,6 @@ https://lookerstudio.google.com/reporting/create?c.reportId=REPORT_ID
 - 🔑 The two tools solve different problems at different organizational scales, and many enterprises deliberately run both rather than treating them as competitors.
 - 🔑 Looker's closest cross-cloud analogues are AWS QuickSight and Azure Power BI, though neither has a code-first, Git-versioned semantic layer with quite the same governance model as LookML.
 
-## 48.11 Related Concepts
+## 11. Related Concepts
 
 BigQuery (Section 44) as the primary data source both tools query against, Dataplex Catalog (Section 47) for discovering and governing the underlying tables before they reach a dashboard, and the Data Pipeline Architecture Patterns synthesis (Section 49) tying the full curated-data-to-dashboard pipeline together.

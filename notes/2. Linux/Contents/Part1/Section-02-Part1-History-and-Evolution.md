@@ -1,13 +1,6 @@
 # Section 2 (Part 1): History and Evolution (Unix → GNU → Linux → Modern Distros)
 
-**Roadmap Reference:** 1.2
-**Phase:** Phase 1 — Foundations
-
----
-
-## 1.2 History and Evolution (Unix → GNU → Linux → Modern Distros)
-
-### 1.2.1 The Unix Lineage
+## 1. The Unix Lineage
 
 Understanding Linux's history explains _why_ it looks the way it does — its design choices are not arbitrary; they are the accumulated residue of real engineering and licensing battles fought since 1969. A senior engineer who knows this lineage can reason about _why_ Linux behaves the way it does in situations the manual doesn't cover.
 
@@ -19,9 +12,9 @@ Understanding Linux's history explains _why_ it looks the way it does — its de
 - **1991 — Linus Torvalds writes the missing kernel.** Linus Torvalds, a computer science student at the University of Helsinki, began writing a Unix-like kernel as a personal, hobby project — partly inspired by and initially developed on **Minix**, a small teaching Unix-clone written by Andrew Tanenbaum. He announced it on the `comp.os.minix` newsgroup on August 25, 1991, famously describing it as "just a hobby, won't be big and professional like gnu." He released the source under his own restrictive license at first, then — in early 1992 — relicensed it under the **GNU GPL**. This licensing decision is widely regarded as _the_ pivotal moment in Linux's success: it guaranteed the kernel (and every derivative built from it) would remain free and open forever, aligning it directly with the already-mature GNU userland.
 - **The union.** The Linux kernel combined with the (already mostly complete) GNU userland produced, for the first time, a fully free, fully functional Unix-like operating system — hence the term **"GNU/Linux"**, which the FSF and some communities (notably Debian) use specifically to credit both projects; most of the industry colloquially just says "Linux," referring to the kernel as shorthand for the whole stack (this Kernel-vs-OS-vs-Distribution distinction is unpacked in full in §1).
 
-> 💡 **Tip:** Linux is not a Unix derivative in any literal source sense — no AT&T Unix code exists inside the Linux kernel. It is a **from-scratch reimplementation** of Unix's design principles and, largely, its system-call API (POSIX). This is worth internalizing now; it resolves one of the most common misconceptions, covered in 1.2.5.
+> 💡 **Tip:** Linux is not a Unix derivative in any literal source sense — no AT&T Unix code exists inside the Linux kernel. It is a **from-scratch reimplementation** of Unix's design principles and, largely, its system-call API (POSIX). This is worth internalizing now; it resolves one of the most common misconceptions, covered in 5.
 
-### 1.2.2 BSD vs. System V — Why Two Family Trees Still Matter
+## 2. BSD vs. System V — Why Two Family Trees Still Matter
 
 Modern Linux administrators occasionally still bump into "BSD-style vs. System V-style" as a way of describing two different conventions that trace back to this split:
 
@@ -34,7 +27,7 @@ Modern Linux administrators occasionally still bump into "BSD-style vs. System V
 
 Linux is not a direct descendant of either tree — it's a new implementation influenced by both and standardized primarily against **POSIX** (the portable OS interface standard both lineages influenced) — but administrators who have touched BSD or older commercial Unix will recognize these fossils in Linux tooling.
 
-### 1.2.3 Growth Timeline
+## 3. Growth Timeline
 
 | Era              | Milestone                                                                                                                                             | Why It Mattered                                                                                                                                                                                                           |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,7 +45,7 @@ Linux is not a direct descendant of either tree — it's a new implementation in
 | 2013–2014        | Docker (2013) and Kubernetes (2014) built directly on Linux kernel primitives (namespaces, cgroups)                                                   | Containers are not a new OS feature — they're a _packaging_ of kernel capabilities Linux had for years; this is why containers are fundamentally a Linux technology (deep dive: §97, Part 13)                             |
 | Today            | Linux dominates public cloud infrastructure, the large majority of the TOP500 supercomputers, and the vast majority of Kubernetes/container workloads | ⚠️ Exact market-share and adoption percentages shift yearly and by source (cloud vendor reports, TOP500.org, Stack Overflow surveys) — verify current figures rather than trusting a fixed number here                    |
 
-### 1.2.4 Why This History Matters Operationally
+## 4. Why This History Matters Operationally
 
 💡 **Tip:** Several design consequences trace directly back to this history and show up constantly in real day-to-day administration:
 
@@ -63,7 +56,7 @@ Linux is not a direct descendant of either tree — it's a new implementation in
 
 ⚠️ **Warning:** Don't confuse "the kernel is free (GPL)" with "every distribution's support model is free." RHEL's kernel source is legally available, but Red Hat's compiled binaries, patches, and support contract are commercial products — this tension (and how it plays out in real enterprise procurement) is covered in §110, Part 14.
 
-### 1.2.5 Hands-On: Inspecting Kernel Lineage on a Running System
+## 5. Hands-On: Inspecting Kernel Lineage on a Running System
 
 Even on a purely historical topic, it's worth grounding the narrative in commands you'll actually run. Every running Linux system reports its kernel build lineage directly.
 
@@ -83,7 +76,7 @@ Even on a purely historical topic, it's worth grounding the narrative in command
   $ uname -a
   Linux web-prod-03 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC Thu Mar 6 15:24:22 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
   ```
-- **Reading the output:** `Linux` (kernel name) → `web-prod-03` (hostname) → `6.8.0-45-generic` (kernel release: mainline version `6.8.0`, distro build `45`, `generic` flavor) → build timestamp → `x86_64` (architecture, repeated for hardware/OS-arch/platform) → `GNU/Linux` (a nod to the GNU/Linux naming convention discussed in 1.2.1).
+- **Reading the output:** `Linux` (kernel name) → `web-prod-03` (hostname) → `6.8.0-45-generic` (kernel release: mainline version `6.8.0`, distro build `45`, `generic` flavor) → build timestamp → `x86_64` (architecture, repeated for hardware/OS-arch/platform) → `GNU/Linux` (a nod to the GNU/Linux naming convention discussed in 1).
 - **Production relevance:** This is the first command to run when triaging "does this bug/CVE affect us" — kernel CVEs are announced against specific version ranges, and `uname -r` tells you instantly whether a host is exposed before you go further (kernel module compatibility, LTS-vs-mainline questions, and patching strategy are covered in depth in §16 and §106).
 
 ---
@@ -97,12 +90,12 @@ Even on a purely historical topic, it's worth grounding the narrative in command
   $ cat /proc/version
   Linux version 6.8.0-45-generic (buildd@lcy02-amd64-039) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-23ubuntu4) 13.2.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #45-Ubuntu SMP PREEMPT_DYNAMIC Thu Mar 6 15:24:22 UTC 2026
   ```
-- **Reading the output:** This confirms the kernel version, tells you exactly _which compiler toolchain_ (GCC 13.2.0 here) built the running kernel, and who built it (`buildd@...` — a distro's automated build infrastructure). Notice `GNU ld` in the string: a direct, literal trace of GNU tooling (the linker) inside the artifact that boots your machine — the GNU/Linux union from 1.2.1 made concrete.
+- **Reading the output:** This confirms the kernel version, tells you exactly _which compiler toolchain_ (GCC 13.2.0 here) built the running kernel, and who built it (`buildd@...` — a distro's automated build infrastructure). Notice `GNU ld` in the string: a direct, literal trace of GNU tooling (the linker) inside the artifact that boots your machine — the GNU/Linux union from 1 made concrete.
 - **Production relevance:** Useful when debugging kernel-module build failures (a module compiled against a mismatched GCC version can fail to load), and it's a quick way to distinguish a distro-patched kernel (`Ubuntu`, `.el9` for RHEL-family) from a vanilla upstream kernel when auditing a fleet for consistency.
 
 > 💡 **Tip:** `uname -a` and `/proc/version` report almost the same data, but `/proc/version` is a live kernel-generated file (part of the `/proc` pseudo-filesystem, §24) while `uname` is a small C program that reads the same information via a system call (`uname(2)`) — a preview of the syscall boundary formally covered in §11, Part 2.
 
-### 1.2.6 Common Misconceptions
+## 6. Common Misconceptions
 
 1. **"Linux is a fork of Unix."** False. No AT&T or BSD Unix source code exists inside the Linux kernel. Linux is a **from-scratch reimplementation** of Unix's design concepts and, to a large extent, its POSIX system-call interface — written independently by Linus Torvalds and thousands of later contributors. "Unix-like" is the technically correct term; "Unix" itself is in fact a trademark (owned today by The Open Group) with formal certification requirements that Linux distributions have generally never sought.
 2. **"GNU/Linux and Linux are different operating systems."** They are the same thing described at different levels: "Linux" strictly refers only to the kernel; "GNU/Linux" emphasizes that the vast majority of the surrounding userland (shell, compiler, core utilities) originated from the GNU Project. Most of the industry says "Linux" as shorthand for the whole stack; this is a naming-convention debate, not a technical distinction (fully resolved in §1).
@@ -110,7 +103,7 @@ Even on a purely historical topic, it's worth grounding the narrative in command
 4. **"Because Linux is free, no company profits from it."** False, and important for enterprise interviews — Red Hat, SUSE, Canonical, and every major cloud provider run substantial commercial businesses on top of a technically free kernel, by selling support, certification, managed services, and value-added tooling, not the source code itself (§110).
 5. **"Older = worse; Linux replaced Unix because Unix was bad technology."** Unix wasn't bad — it was excellent, foundational engineering. Linux won market share primarily because of **licensing and economics** (free, unencumbered, redistributable), not because it was technically superior to mature commercial Unix variants at the time. Understanding this distinguishes engineers who understand _why_ ecosystems shift from those who assume technical merit alone decides outcomes.
 
-### 1.2.7 Interview Questions
+## 7. Interview Questions
 
 **[Beginner] Q1. In one or two sentences, how did Linux come to exist?**
 **Model answer:** Unix existed since 1969 but became commercially fragmented and restrictively licensed through the 1970s–80s, which motivated Richard Stallman's GNU Project (1983) to build a completely free Unix-compatible operating system — GNU built almost everything except a working kernel. In 1991, Linus Torvalds wrote that missing kernel as a personal project and released it under the GPL, and combining it with the existing GNU userland produced the first fully free, complete Unix-like operating system.
@@ -146,8 +139,8 @@ _What the interviewer is probing for:_ systems-and-business thinking beyond pure
 - §3 — Open-Source Licensing, GPL mechanics, and community governance (the legal deep dive on the licensing decisions summarized here).
 - §4 — Linux Philosophy and Design Principles ("everything is a file," small composable tools) — the _why_ behind the historical design choices covered here.
 - §5 — Major Distribution Families and how to choose between them — the direct descendant of the 1993 Slackware/Debian distribution model.
-- §6 — Where Linux Runs Today (servers, cloud, embedded, Android, supercomputers, containers) — the payoff of the growth timeline in 1.2.3.
-- §11 (Part 2) — System calls and the kernel–userland boundary, the formal version of the `uname(2)` syscall touched on in 1.2.5.
+- §6 — Where Linux Runs Today (servers, cloud, embedded, Android, supercomputers, containers) — the payoff of the growth timeline in 3.
+- §11 (Part 2) — System calls and the kernel–userland boundary, the formal version of the `uname(2)` syscall touched on in 5.
 - §16 (Part 2) and §106 (Part 14) — Kernel versioning, patch management, and enterprise upgrade strategy, which build directly on the `uname -r` triage habit introduced here.
 - §97 (Part 13) — Namespaces and cgroups, the kernel primitives underneath Docker/Kubernetes referenced in the 2013–2014 timeline entry.
 

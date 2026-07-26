@@ -1,6 +1,6 @@
 # Section 34 (Part 8): Interview Preparation — Tiered Questions with Model Answers (Beginner → FAANG)
 
-## 34.1 Purpose of This Section
+## 1. Purpose of This Section
 
 **Plain language:** Every section in this corpus (§1-33) already ends with its own tiered interview questions scoped to that section's material. This section is different: it's a curated, cross-cutting review — the questions interviewers actually reach for when they want to probe breadth and depth at once, organized by theme instead of by section number, plus a handful of harder system-design-style questions that don't belong to any single earlier section because they require synthesizing several.
 
@@ -8,7 +8,7 @@
 
 > 💡 **Tip:** If you can only prepare from one section of this entire 36-section corpus before an interview, make it this one — but only after having actually read the sections it draws from. This section is a review layer, not a substitute for understanding.
 
-## 34.2 How to Actually Prepare (Read This First)
+## 2. How to Actually Prepare (Read This First)
 
 1. **Hands-on practice beats memorization, decisively.** An interviewer can tell within thirty seconds whether you've run `git rebase -i` yourself or only read about it — the hesitations, the specific vocabulary ("it opens an editor with pick/squash/fixup lines"), and the offhand mention of a gotcha you personally hit are unfakeable. §35's labs exist precisely to generate that lived experience; do them before an interview, not just this section.
 2. **Practice explaining your reasoning out loud, not just producing the right final command.** Most Git interview questions aren't really testing "do you know the flag" — they're testing whether you can narrate _why_ a specific tool is safe or unsafe in a specific situation (the Golden Rule from §14.7 is the canonical example). Say the reasoning aloud, even alone, before the interview. Silence while typing a command, followed by "there, done," reads as weaker than a narrated "I'm using `--force-with-lease` here instead of `--force` because it aborts if the remote moved since my last fetch."
@@ -21,7 +21,7 @@
    - Treating branching-strategy questions as "which one is correct" instead of "which trade-offs fit this team's constraints" (§22) — a memorized preference for Git Flow or trunk-based development, stated without qualification, is a junior tell.
    - Being unable to explain what `.git` actually contains physically (§4.3) — "it's just metadata" is wrong and reveals no hands-on exploration has happened.
 
-## 34.3 Theme: Core Concepts & The Object Model
+## 3. Theme: Core Concepts & The Object Model
 
 **[Beginner] Q1. What are the three areas in Git, and what does each command touch?**
 **Model answer:** Working directory (the files you edit), index/staging area (`.git/index`, a single file recording what the next commit will contain), and the object database plus refs (`.git/objects` and `.git/refs`, the permanent, immutable history). `git add` writes a blob and updates the index; `git commit` builds tree and commit objects from the index's current content and moves the branch ref; `git checkout`/`git switch` writes both the working directory and the index from the object database. Full detail: §4.
@@ -35,7 +35,7 @@
 **[Senior] Q4. Explain the Merkle DAG structure of Git's object graph and why it gives Git its integrity guarantees.**
 **Model answer:** Every object (blob, tree, commit) is named by the hash of its own content, and higher-level objects embed the hashes of the objects they reference — a tree embeds its blobs' and subtrees' hashes, a commit embeds its tree's and parents' hashes. This is a Merkle structure: any change to any object, at any depth, changes that object's hash, which changes every object that references it, all the way up to the branch tip. The practical consequence is that a branch pointer's hash is a cryptographic commitment to the entire history beneath it — you cannot tamper with any historical file, commit message, or authorship record without it being detectable as a hash mismatch somewhere in the chain, which is why Git can detect corruption (`git fsck`, §29) and why signed commits/tags (§28) only need to sign the tip to vouch for everything beneath it. Full detail: §5, §28.
 
-## 34.4 Theme: Branching, Merging & Rebasing
+## 4. Theme: Branching, Merging & Rebasing
 
 **[Beginner] Q5. What's the difference between merge and rebase?**
 **Model answer:** Merge creates a new commit with two parents, joining two lines of history together while leaving both original sequences of commits untouched — it preserves the true, branchy shape of what happened. Rebase replays one branch's commits, one at a time, on top of a different base, creating brand-new commits with new hashes and abandoning the originals, producing a linear history with no merge commit. Merge is always safe on shared branches; rebase is only safe on commits nobody else has built on top of (the Golden Rule, §14.7). Full detail: §13, §14.
@@ -46,7 +46,7 @@
 **[Senior] Q7. When would you deliberately choose merge over rebase for integrating a feature into `main`, even on a team that generally prefers rebase for personal branches?**
 **Model answer:** Once a branch is genuinely shared — multiple people have pushed commits on top of each other on it — rebasing and force-pushing rewrites history out from under collaborators, which is the Golden Rule failure mode regardless of team preference. Separately, in contexts where the true temporal shape of history has audit or compliance value (regulated environments wanting an honest record of when parallel work actually diverged and rejoined), a merge commit's two-parent structure preserves that fact, while rebase actively erases it. The choice is a genuine trade-off, not a universal best practice — full nuance in §14.4, §14.7.
 
-## 34.5 Theme: Undoing Mistakes
+## 5. Theme: Undoing Mistakes
 
 **[Beginner] Q8. I staged a file by mistake. How do I unstage it without losing my edits?**
 **Model answer:** `git restore --staged <file>` — it reverts the index entry back to what HEAD has, but the working directory edit is completely untouched. This is distinct from `git restore <file>` (no `--staged`), which discards the _working directory_ edit and is destructive with no recovery path, since uncommitted-only content never enters the object database. Full detail: §15.3.
@@ -57,7 +57,7 @@
 **[Senior] Q10. `reset` and `revert` both "undo" a commit — when is each the right tool, and why does that split exist?**
 **Model answer:** `reset` moves the branch pointer backward, effectively removing commits from the branch's history (they still exist, unreferenced, in the object database until garbage collected). That's a rewrite, so it requires a force-push to share and runs straight into the Golden Rule the moment anyone else has fetched those commits. `revert` creates a _new_ commit that applies the inverse diff of a target commit, leaving the original commit fully present and reachable — it's purely additive, so it's unconditionally safe on shared history, including commits already deployed to production. The rule of thumb: `reset` for local, not-yet-shared mistakes; `revert` for anything already pushed and potentially depended on. Full detail: §15.4, §15.5.
 
-## 34.6 Theme: Collaboration, Remotes & Recovery (FAANG-Style Scenario)
+## 6. Theme: Collaboration, Remotes & Recovery (FAANG-Style Scenario)
 
 **[FAANG-style, Scenario] Q11. A teammate force-pushed over shared history on a feature branch. Five people now have confused or broken local state. Walk me through the recovery.**
 **Model answer:** First, stop anyone from making the situation worse — tell the team not to force-push anything else on that branch until this is resolved, and not to run `git pull` naively (which can create a confusing merge of unrelated-looking histories, per §14.7). Second, establish ground truth: find the pre-force-push tip. The most reliable source is each affected developer's own `git reflog` — it records every position `HEAD` and branch refs have held locally on that machine, including the commit the branch pointed to right before their last fetch/pull picked up the rewritten history (`git reflog show <branch>` or `git reflog show origin/<branch>` depending on where the old state is recorded). Anyone who fetched before the force-push likely still has the old tip reachable in their reflog or as a local branch. Third, reconstruct: from whichever developer has the most complete pre-force-push state, create a recovery branch at that commit (`git branch recovery-branch <old-sha>`) so it's pinned and won't be garbage collected. Fourth, reconcile the two histories deliberately rather than mechanically: diff the old tip against the new force-pushed tip to see exactly what the force-push discarded (`git log old-tip..new-tip` and the reverse), identify which commits from the old line are genuinely missing from the new one, and cherry-pick (§17) those specific commits onto the current branch tip — this preserves the intended new history while recovering lost work, rather than blindly reverting the force-push and losing whatever legitimate reason it happened for. Fifth, once reconciled, everyone else resets their local branch to match the agreed-upon new tip (`git fetch && git reset --hard origin/<branch>`) after confirming they have no uncommitted local work of their own at risk. Finally, prevent recurrence: adopt `--force-with-lease` as the required force-push form (it refuses if the remote moved since your last fetch, catching exactly this scenario before it happens) and consider branch protection rules (§23) that block force-push entirely on shared branches. The core insight the interviewer is listening for: nothing is usually actually gone — reflog entries and unreferenced-but-not-yet-GC'd objects are the safety net — but recovery requires methodically reconstructing intent, not just reverting mechanically. Full grounding: §6.6 (reflog), §14.7 (Golden Rule), §17 (cherry-pick), §29-§30 (maintenance/disaster recovery).
@@ -71,7 +71,7 @@
 **[FAANG-style, Scenario] Q14. A secret (API key) was committed and pushed weeks ago, and has since been merged into `main` and cherry-picked into three release branches. Walk me through remediation.**
 **Model answer:** Two separate tracks, and the first matters more than the second: (1) **rotate the credential immediately** — treat it as compromised the moment it left a private context, regardless of whether anyone is known to have seen it, because a purge from Git history does not retroactively un-expose it to anyone who already cloned, forked, or has it cached in CI logs, and public repos in particular may already be scraped by automated credential-harvesting bots within minutes. Rotation is the only step that actually neutralizes the risk; everything else is cleanup. (2) Purge from history using `git filter-repo` (the modern, recommended tool — not the deprecated `filter-branch`), targeting the specific file or a content pattern, across every branch that carries it, including all three release branches, not just `main`. This rewrites commit hashes on every branch touched, so it requires a coordinated, scheduled operation: notify the team of a hard cutover time, force-push every rewritten branch, and have every developer re-clone or hard-reset rather than merge/pull (merging old and new histories reintroduces the purged content). Also purge any tags pointing at affected commits and invalidate cached copies where feasible — forks and any CI artifact/cache storage that might retain old blobs are outside Git's control and need separate handling. Finally, prevent recurrence: pre-commit hooks or a secret-scanning tool (§24, §28) that blocks commits matching credential patterns before they ever reach history, and mandatory secret-scanning in CI as a second layer. The interviewer is checking whether you lead with rotation (the actual security fix) rather than jumping straight to history rewriting (which alone gives false confidence, since exposure already happened). Full grounding: §28.
 
-## 34.7 Theme: Internals, Performance & Scaling
+## 7. Theme: Internals, Performance & Scaling
 
 **[Intermediate] Q15. Why does `git gc` matter, and what does it actually do?**
 **Model answer:** Over normal use, Git accumulates **loose objects** — one file per object, written individually as you commit — plus unreferenced objects left behind by operations like `reset --hard` or amended/rebased commits. `git gc` consolidates loose objects into compact, delta-compressed **packfiles** (§7), which are both smaller on disk and faster to transfer over the network, and prunes objects that are unreachable from any ref and older than the safety grace period (default two weeks), which is what actually frees disk space from abandoned commits. It's largely automatic (Git runs it opportunistically after operations that create enough loose objects), but very large or very active repos benefit from explicit scheduled maintenance. Full detail: §7, §29.
@@ -79,7 +79,7 @@
 **[Senior] Q16. A `git status` that takes ten seconds on a monorepo with two million files — what's actually slow, and what are the fixes?**
 **Model answer:** `git status` has to determine which tracked files changed, and the naive path is stat-ing every single tracked file to compare size/mtime against what the index recorded, then falling back to full content hashing when the fast metadata check is ambiguous — at two million files, that stat storm dominates. Fixes, roughly in order of impact: enable `core.fsmonitor` (Watchman or Git's built-in FSMonitor), which maintains a live watch on the filesystem and tells Git exactly which paths changed since the last check, skipping the full stat scan entirely; adopt **sparse-checkout** so a given engineer's working directory only materializes the subset of the repo they actually work in, shrinking the scan surface directly; ensure the untracked-cache and split-index features are enabled, both of which reduce redundant work across invocations. At the most extreme end, this is exactly the pressure that pushed Google to Piper and Meta to Sapling/EdenFS (§1.8) rather than stretching plain Git further — worth mentioning as the ceiling this optimization path eventually hits. Full detail: §4.10, §26.
 
-## 34.8 Theme: Security & Enterprise Practice
+## 8. Theme: Security & Enterprise Practice
 
 **[Intermediate] Q17. What does commit signing actually protect against, and what does it not protect against?**
 **Model answer:** A signed commit or tag (GPG or SSH signing) proves that the private key holder vouches for that exact object's content — since the signature covers the object's hash, and the hash covers the full content including parentage, signing the tip of a branch cryptographically attests to everything beneath it via the Merkle structure. What it does _not_ protect against: it doesn't stop someone from committing malicious code under their own honestly-signed identity, it doesn't verify the _author_ field (which is just text anyone can set) independent of the _signer_, and an unsigned or wrongly-configured remote can still accept unsigned commits unless server-side policy enforces signing. It's an integrity and non-repudiation control, not a code-review substitute. Full detail: §28.
@@ -87,7 +87,7 @@
 **[Senior] Q18. Your organization requires SOC 2 compliance and wants every merge to `main` traceable to an approved, reviewed pull request with no possibility of a direct unreviewed push. How do you enforce this with Git and hosting-platform features, and where are the actual enforcement boundaries?**
 **Model answer:** Git itself has no concept of "approval" — that layer is enforced entirely by the hosting platform, not by core Git, which is a distinction worth stating explicitly since it's a common confusion. Enforcement: branch protection rules (§23) on `main` requiring at least N approving reviews, requiring status checks (CI) to pass, and disabling direct pushes (including for admins, if the platform supports it, since an "admin bypass" is exactly the gap an auditor will flag) forces every change through a pull request. CODEOWNERS (§23) ensures the _right_ reviewers are required for sensitive paths. Commit signing (§28) adds cryptographic non-repudiation on top — proving which key produced each commit, useful when "who actually wrote this" needs to survive a compromised or shared account scenario. The genuine enforcement boundary: branch protection is a platform-database setting, not a Git-repository property — cloning the repo elsewhere, or an admin with sufficient platform permissions, can bypass it, so the audit trail's actual root of trust is the hosting platform's own access logs and configuration history, not Git's object model. I'd flag this boundary explicitly to an auditor rather than overstate what Git alone guarantees. Full grounding: §23, §28.
 
-## 34.9 Cross-Reference Map
+## 9. Cross-Reference Map
 
 | Theme                              | Primary sections to review |
 | ---------------------------------- | -------------------------- |
@@ -98,13 +98,13 @@
 | Internals / performance / scaling  | §7, §26, §29               |
 | Security / enterprise              | §23, §24, §28              |
 
-## 34.10 🔑 Key Takeaways
+## 10. 🔑 Key Takeaways
 
 - This section is a synthesis layer, not a first read — every model answer here leans on §1-33 rather than re-deriving mechanics.
 - Hands-on practice (§35) and out-loud reasoning practice matter more than memorizing these exact answers; interviewers probe for understanding, not recitation.
 - The four FAANG-style scenarios (34.6) are the shape of question that separates strong candidates: force-push recovery, branching strategy at scale, monorepo migration, and secret remediation all require synthesizing multiple sections rather than reciting one.
 - The most common red flag across real interviews is a shaky fetch-vs-pull distinction or an object-model answer that says "Git stores diffs" — both are cheap to fix by reviewing §5 and §20 directly.
 
-## 34.11 Related Concepts
+## 11. Related Concepts
 
 This section draws on nearly the entire corpus; §34.9's table is the map. For the hands-on practice this section's "how to prepare" guidance recommends, proceed to §35. For the final synthesis of the whole corpus, see §36.

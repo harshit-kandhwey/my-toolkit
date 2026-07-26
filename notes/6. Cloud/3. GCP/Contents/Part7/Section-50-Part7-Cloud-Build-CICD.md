@@ -1,12 +1,12 @@
 # Section 50 (Part 7): Cloud Build & CI/CD on GCP
 
-## 50.1 Definition
+## 1. Definition
 
 **Plain language:** Cloud Build is Google's managed continuous integration/continuous delivery (CI/CD) service — it watches for a trigger (a code push, a pull request, or a manual command), then runs a sequence of containerized steps (compile, test, build an image, push it, deploy it) on infrastructure Google provisions and tears down for you.
 
 **Precise:** Cloud Build is a serverless CI/CD execution engine that runs builds as an ordered sequence of OCI/Docker container steps defined in a `cloudbuild.yaml` (or `cloudbuild.json`) configuration file, triggered by source repository events (Cloud Source Repositories, GitHub, GitLab, Bitbucket), a Pub/Sub message, a webhook, or manual invocation, executing each step in an ephemeral worker VM (or, for network-isolated needs, a **private pool**) and billing per build-minute.
 
-## 50.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Before managed CI/CD, teams either ran their own Jenkins fleet (patching, scaling, and securing the CI servers themselves) or paid for a third-party SaaS CI product that lived outside their cloud's IAM and networking boundary. Cloud Build exists to solve three problems specific to teams already standardized on GCP:
 
@@ -14,9 +14,9 @@ Before managed CI/CD, teams either ran their own Jenkins fleet (patching, scalin
 - **Native IAM integration.** Build steps run as a **service account** with normal GCP IAM permissions, so pushing an image to Artifact Registry or deploying to Cloud Run/GKE requires only an IAM role grant, not a separately managed credential/secret injected into a third-party CI tool.
 - **Everything is a container.** Every build step is just "run this container image with these args," which means the build environment is exactly reproducible and extending it (adding a linter, a security scanner, a custom deploy step) is as simple as pointing to another image — no plugin ecosystem to manage.
 
-## 50.3 Core Concepts
+## 3. Core Concepts
 
-### 50.3.1 Triggers
+### 3.1 Triggers
 
 A **trigger** is the event binding that starts a build automatically. GCP supports three trigger models:
 
@@ -26,7 +26,7 @@ A **trigger** is the event binding that starts a build automatically. GCP suppor
 
 Triggers can also fire from **Pub/Sub messages** or generic **webhooks**, enabling builds to be kicked off by non-Git events (e.g., a scheduled Cloud Scheduler job publishing to Pub/Sub, or an upstream pipeline signaling completion).
 
-### 50.3.2 `cloudbuild.yaml` and Build Steps
+### 3.2 `cloudbuild.yaml` and Build Steps
 
 The `cloudbuild.yaml` file defines the build as an ordered list of **steps**, each running a container image:
 
@@ -65,15 +65,15 @@ options:
 - Steps run **sequentially by default**, sharing a `/workspace` volume so files produced by one step (e.g., compiled binaries) are visible to the next; a step can declare `waitFor` to run in parallel with (or independently of) other steps.
 - The top-level `images` field tells Cloud Build which built images to push to a registry automatically at the end of a successful build, and `artifacts` similarly for non-image build outputs (binaries, tarballs) pushed to Cloud Storage.
 
-### 50.3.3 Private Pools
+### 3.3 Private Pools
 
 By default, Cloud Build runs steps on Google-managed worker VMs with **no direct network path** into your VPC. A **private pool** is a dedicated, VPC-peered pool of Cloud Build workers that lets builds reach private resources — an internal artifact mirror, an on-prem system over Interconnect/VPN, a private GKE cluster's control plane — that a default public worker cannot reach, and also allows custom machine types (more CPU/memory than the default worker) for compute-heavy builds.
 
-### 50.3.4 Build Service Account and Permissions
+### 3.4 Build Service Account and Permissions
 
 Every build runs as a **service account** — either the legacy default Cloud Build service account or, preferably, a **user-specified service account** with narrowly scoped IAM roles (e.g., `roles/artifactregistry.writer`, `roles/run.developer` for the specific steps that build needs) rather than the broad default. This is the mechanism that lets a build push an image or deploy a service without any separately managed API key or credential file.
 
-## 50.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
    Git push / PR / manual / Pub/Sub message
@@ -105,7 +105,7 @@ Every build runs as a **service account** — either the legacy default Cloud Bu
    your VPC (internal artifact mirrors, on-prem via Interconnect/VPN).
 ```
 
-## 50.5 Comparison vs. AWS CodeBuild and Azure Pipelines
+## 5. Comparison vs. AWS CodeBuild and Azure Pipelines
 
 | Concept                       | GCP Cloud Build                              | AWS CodeBuild                                                       | Azure Pipelines                                                                       |
 | ----------------------------- | -------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -116,7 +116,7 @@ Every build runs as a **service account** — either the legacy default Cloud Bu
 | Identity for deploy steps     | Build service account (IAM role bindings)    | CodeBuild service role (IAM policy)                                 | Service connections (scoped credentials per target)                                   |
 | Pricing model                 | Per build-minute, by machine type            | Per build-minute, by compute type                                   | Free tier of parallel jobs, then per-parallel-job/minute                              |
 
-## 50.6 Hands-On Examples
+## 6. Hands-On Examples
 
 **Submit an ad hoc build (Beginner):**
 
@@ -166,19 +166,19 @@ gcloud builds submit --config=cloudbuild.yaml --worker-pool=projects/my-project/
 
 **Purpose:** Forces the build to run on a VPC-peered private pool worker instead of the default public worker, so a step can reach an internal-only artifact mirror.
 
-## 50.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Least-privilege build service accounts:** Enterprises create a distinct service account per trigger (or per pipeline stage) with only the IAM roles that specific build needs, rather than granting the default Cloud Build service account project-wide `Editor`.
 - **Build provenance and supply-chain security:** Cloud Build integrates with **SLSA build provenance** attestations and Binary Authorization (Section 43), letting a GKE/Cloud Run deploy step _require_ that an image was produced by a trusted, provenance-attested Cloud Build pipeline before it is allowed to run.
 - **Private pools for regulated environments:** Organizations with data-residency or network-isolation requirements route all builds through private pools so build traffic never traverses Google's public worker fleet and can reach on-prem systems via existing Interconnect/VPN.
 - **Approval gating on production triggers:** Production-deploy triggers are frequently left as **manual-only** (or wired through Cloud Deploy's approval gates, Section 51) rather than auto-firing on merge, keeping a human decision point before customer-facing environments change.
 
-## 50.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "Cloud Build is only for building container images." In reality, Cloud Build steps can run any containerized command — compiling non-container binaries, running test suites, generating documentation, executing Terraform, or deploying — the "image" framing is just the most common use case, not the only one.
 - **Misconception:** "A pull request trigger automatically blocks a bad merge." Cloud Build only _runs_ the build and reports a status check; the branch protection rule that actually blocks merging on a failed check must be configured separately in the source repository (e.g., GitHub branch protection), not in Cloud Build itself.
 
-## 50.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What is the difference between a source push trigger and a manual trigger in Cloud Build?_
 **Model answer:** A source push trigger fires automatically whenever a commit matching a configured branch or tag pattern is pushed to a connected repository, requiring no human action. A manual trigger is stored the same way but only runs when explicitly invoked — via the console, `gcloud builds triggers run`, or `gcloud builds submit` for an ad hoc build — commonly used for production deployments where a human decision point is wanted before the pipeline runs.
@@ -189,13 +189,13 @@ gcloud builds submit --config=cloudbuild.yaml --worker-pool=projects/my-project/
 **🎯 Senior/Architect:** _Design a Cloud Build pipeline for a regulated fintech application that must prove every deployed image was built from reviewed, tested source and never tampered with before reaching production._
 **Model answer:** I would connect the repository with pull-request triggers running lint/test steps as a required status check, so no code merges to `main` without passing review and automated tests. On merge to `main`, a source-push trigger builds the image inside a private pool (isolating build traffic from the public internet and enabling network egress controls), runs a container vulnerability scan step, and pushes the image to Artifact Registry with SLSA build provenance attached, generated automatically by Cloud Build. I would configure Binary Authorization (Section 43) on the target GKE/Cloud Run environment to require that provenance attestation before any image is allowed to run, so an image built outside this exact pipeline — even if manually pushed to the same registry — is rejected at deploy time. Production promotion itself would go through Cloud Deploy (Section 51) with a mandatory manual approval gate, so build automation handles everything up to "ready to release," but a human explicitly approves the production rollout, keeping the build service account's permissions narrowly scoped to build-and-push only, never to production deploy.
 
-## 50.10 Key Takeaways
+## 10. Key Takeaways
 
 - 🔑 Cloud Build runs builds as an ordered sequence of container-image steps defined in `cloudbuild.yaml`, triggered by source pushes, pull requests, Pub/Sub messages, or manual invocation.
 - 🔑 Build steps run as an IAM service account, so pushing to Artifact Registry or deploying to Cloud Run/GKE requires only a role grant — not a separately managed credential.
 - 🔑 Private pools are VPC-peered worker pools needed to reach private/internal resources or to use custom machine types; the default worker pool has no path into your VPC.
 - 🔑 Cloud Build pairs with Cloud Deploy (Section 51) for managed, gated continuous delivery, and with Binary Authorization (Section 43) for supply-chain provenance enforcement.
 
-## 50.11 Related Concepts
+## 11. Related Concepts
 
 Cloud Deploy for managed continuous delivery (Section 51), Terraform on GCP for pipeline-defined infrastructure (Section 52), Artifact Registry as the image destination (Section 29), Binary Authorization for provenance enforcement (Section 43), and the GCP vs. AWS vs. Azure comparison (Section 82) all connect directly to the CI/CD model introduced here.

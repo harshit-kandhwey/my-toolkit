@@ -1,10 +1,10 @@
 # Section 36 (Part 8): Key Takeaways, Knowledge Graph & Recommended Next Topics
 
-## 36.1 Why This Section Exists
+## 1. Why This Section Exists
 
 This is the last of 36 sections. It is deliberately not another technical deep dive — §1 through §35 already did that work. Instead, this section does three things a corpus this size owes its reader at the end: it shows how the eight parts connect into one coherent whole rather than 36 independent topics, it names the single idea that, if internalized, makes the other 35 sections predictable instead of memorized, and it points beyond this corpus's boundary to what to learn next.
 
-## 36.2 The Knowledge Graph — How the Eight Parts Build on Each Other
+## 2. The Knowledge Graph — How the Eight Parts Build on Each Other
 
 ```
  Part 1 (§1-3)              Part 2 (§4-7)
@@ -67,7 +67,7 @@ This is the last of 36 sections. It is deliberately not another technical deep d
 
 > 💡 **Tip:** Notice the graph's shape: Part 2 is the only part with an arrow into _every_ subsequent part, directly or indirectly. That's not a coincidence of how this corpus was organized — it reflects how Git itself is actually built. This is the subject of 36.3.
 
-## 36.3 The One Idea That Matters Most
+## 3. The One Idea That Matters Most
 
 If this entire corpus compressed to a single sentence, it would be this:
 
@@ -83,7 +83,7 @@ This was stated once precisely in §2's design-philosophy discussion and demonst
 
 The practical upshot for anyone who has read this far: when you hit unfamiliar Git behavior in the future — and you will, since Git's command surface keeps growing — the fastest path to understanding it is usually to ask "what does this imply about objects and refs," not "what's the exact flag syntax." The flag syntax is the part that's genuinely worth looking up each time; the data model is the part worth having memorized, because it's what makes the syntax make sense.
 
-## 36.4 If You Remember Nothing Else — The Top List
+## 4. If You Remember Nothing Else — The Top List
 
 1. **A commit is a snapshot, not a diff.** Delta compression is a packfile storage detail (§7), invisible at the logical object-model level (§5).
 2. **Everything in `.git/objects` is content-addressed and immutable.** "Changing history" always means creating new objects and moving a pointer, never editing an object in place (§5, §14.3).
@@ -96,7 +96,7 @@ The practical upshot for anyone who has read this far: when you hit unfamiliar G
 9. **Git's weaknesses are real and worth knowing, not just its strengths.** Large binaries, extreme monorepo scale, and per-path permissions are areas where Git needs help (LFS, partial clone/sparse-checkout, platform-level access control) or where other tools still legitimately win in their niche (§1.7, §26, §32).
 10. **Automation (hooks, CI) enforces discipline that individual willpower won't sustain at team scale** — and client-side enforcement (hooks) is bypassable in a way server-side enforcement (branch protection, required CI checks) is not; use both, but know which one is load-bearing (§24, §25, §35.9).
 
-## 36.5 Recommended Next Topics Beyond This Corpus
+## 5. Recommended Next Topics Beyond This Corpus
 
 This corpus intentionally stayed Git-specific and platform-general. Four directions extend naturally from where it stops:
 
@@ -105,7 +105,7 @@ This corpus intentionally stayed Git-specific and platform-general. Four directi
 - **A deep dive into one hosting platform's advanced CI/CD**, GitHub Actions or GitLab CI end-to-end. §23 and §25 covered hosting and CI/CD in the platform-general terms needed to reason about any provider, but real job requirements increasingly expect fluency in one specific platform's advanced features — reusable workflows, matrix builds, environments and approval gates, self-hosted runners, and platform-specific security features (OIDC federation to cloud providers instead of long-lived secrets, for one recent, increasingly-expected pattern).
 - **Mercurial or Perforce in depth, if your work actually touches one.** §1.6.2 and (per the roadmap) §32 covered both comparatively, enough to be conversant and to migrate away from them, but a role at a game studio (Perforce) or a Meta-style Mercurial/Sapling shop needs operational depth this corpus didn't attempt to provide, by design — the comparative grounding here should make that depth much faster to acquire when actually needed.
 
-## 36.6 Keeping This Knowledge Current
+## 6. Keeping This Knowledge Current
 
 Git is not a finished, static tool — treat this corpus as a snapshot of a moving target, not a permanent reference:
 
@@ -113,7 +113,7 @@ Git is not a finished, static tool — treat this corpus as a snapshot of a movi
 - **Git itself releases roughly quarterly**, and features that were "advanced/experimental" at the time of writing (partial clone, sparse-checkout improvements, FSMonitor, `--force-with-lease` refinements) have a track record of graduating into defaults over a few years. Skim release notes for major Git versions periodically rather than assuming today's defaults are permanent.
 - **Best practices evolve with tooling, not just opinion.** Trunk-based development's rise and Git Flow's relative decline (§22) happened because deployment practices changed (continuous delivery becoming the norm), not because anyone proved Git Flow was "wrong" — the next shift in dominant practice will likewise be driven by how teams actually ship software, which is worth tracking rather than treating any single strategy as eternally correct.
 
-## 36.7 🔑 Key Takeaways
+## 7. 🔑 Key Takeaways
 
 - The eight parts form a genuine dependency chain, not an arbitrary syllabus order: Part 2's data model is the foundation every later part either directly or indirectly depends on, and Part 7's recoverability guarantees exist specifically _because_ of Part 2's content-addressed, mostly-immutable design.
 - The single most important insight in the whole corpus: Git's command surface is an inconsistent, organically-grown interface over a small, elegant data model — learn the model, and the interface's quirks become derivable instead of memorized.
@@ -121,7 +121,7 @@ Git is not a finished, static tool — treat this corpus as a snapshot of a movi
 - This corpus stops deliberately at the boundary of Git itself — IaC/Terraform, containerization, one platform's CI/CD in depth, and Mercurial/Perforce operational depth are the natural next steps, chosen based on where your actual work takes you.
 - Git is actively evolving (SHA-256, quarterly releases, shifting best practices) — this corpus is a snapshot, not a permanent reference.
 
-## 36.8 Related Concepts — Where to Go Back, and For What
+## 8. Related Concepts — Where to Go Back, and For What
 
 This is the final section of the corpus, so this list points backward only.
 

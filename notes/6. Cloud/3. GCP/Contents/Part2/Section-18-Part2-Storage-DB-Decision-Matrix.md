@@ -1,16 +1,16 @@
 # Section 18 (Part 2): Storage & Database Decision Matrix — Part 2 Wrap-Up
 
-## 18.1 Definition
+## 1. Definition
 
 **Plain language:** This section doesn't introduce a new service — it steps back and puts every storage and database service from Part 2 (Sections 11–17) side by side, so that given a real workload's requirements, the correct service is a lookup rather than a guess.
 
 **Precise:** This is a consolidated decision framework comparing Cloud Storage, Persistent Disks/Filestore, Cloud SQL, Cloud Spanner, Firestore/Datastore, Bigtable, and Memorystore across consistency model, latency profile, scalability ceiling, cost shape, and ideal use case, followed by a cross-section interview drill and a transition into Part 3 (Networking).
 
-## 18.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Each individual service section (11–17) explains one service in isolation, but real architectural decisions are comparative: "should this be Firestore or Cloud SQL?", "should this be Bigtable or Spanner?", "does this need Memorystore in front of it at all?" Without a consolidated view, it's easy to reach for a familiar service (e.g., always defaulting to Cloud SQL) rather than the one that actually matches the workload's consistency, latency, and scale requirements. This section exists to make that trade-off space explicit in one place.
 
-## 18.3 Part 2 Consolidated Knowledge Map
+## 3. Part 2 Consolidated Knowledge Map
 
 Storage & Databases (Part 2) breaks down into:
 
@@ -24,7 +24,7 @@ Storage & Databases (Part 2) breaks down into:
 
 **Throughline:** S11–12 cover raw storage primitives (object and block/file) that underpin everything else. S13–16 progress through increasingly specialized databases: Cloud SQL (familiar relational, single-region ceiling) → Spanner (relational at global scale, at a cost premium) → Firestore (flexible NoSQL for client-facing apps) → Bigtable (purpose-built for extreme-scale, row-key-based throughput). S17 closes the loop by showing that almost none of the above are fast enough for sub-millisecond access patterns on their own, and that Memorystore is the caching layer that sits in front of them rather than a replacement for any of them.
 
-## 18.4 Consolidated Decision Matrix
+## 4. Consolidated Decision Matrix
 
 | Service                               | Data model                                                            | Consistency                                                                   | Typical latency                                          | Scale ceiling                                                                | Cost shape                                                              | Ideal use case                                                                                                          |
 | ------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@ Storage & Databases (Part 2) breaks down into:
 
 > 💡 **Tip:** The fastest way to narrow this table for a real question is to ask, in order: (1) Does this need to be queried by structure (SQL joins, filters) or just fetched by key? (2) What's the durability requirement — can this data be lost and rebuilt? (3) What's the realistic scale — single-region moderate load, or genuinely global/massive? Those three answers eliminate most of the table immediately.
 
-## 18.5 Consolidated Key-Takeaways Checklist
+## 5. Consolidated Key-Takeaways Checklist
 
 - Explain why Cloud Storage's flat namespace and storage classes make it fundamentally different from a filesystem, and when Filestore's POSIX semantics are actually required instead.
 - Explain the difference between Persistent Disks (single-instance block device) and Filestore (shared network filesystem), and map each to the workload that needs it.
@@ -49,7 +49,7 @@ Storage & Databases (Part 2) breaks down into:
 - Explain why Memorystore must always sit in front of a durable store rather than replace one, and the difference in durability guarantees between its Basic and Standard tiers.
 - Given a workload description (access pattern, consistency need, scale, latency budget), select the correct service from this matrix and justify the rejection of at least one plausible alternative.
 
-## 18.6 Part 2 Cross-Section Interview Drill
+## 6. Part 2 Cross-Section Interview Drill
 
 **🎯 Q1 (Beginner):** _When would you choose Cloud Storage over Persistent Disks for the same piece of data?_
 **Model answer:** Cloud Storage is for data accessed via API/HTTP as discrete objects — backups, images, logs, data lake files — with no need for POSIX filesystem semantics or attachment to a specific running instance. Persistent Disks are for data that must behave like a local disk mounted to a VM (a database's data files, an OS boot volume) where the application expects normal filesystem read/write/seek behavior. If the access pattern is "fetch this whole file by name from anywhere," it's Cloud Storage; if it's "this VM needs a disk it can format and write to like local storage," it's a Persistent Disk.
@@ -69,18 +69,18 @@ Storage & Databases (Part 2) breaks down into:
 **🎯 Q6 (Senior/Architect):** _A cost review flags that a team is running Cloud Spanner for a workload with under 50GB of data and modest single-region traffic. What's the architectural conversation to have?_
 **Model answer:** The conversation starts with "what requirement led to Spanner originally" — if it was genuine multi-region strong consistency or anticipated horizontal scale that hasn't materialized, that's a premature-scaling decision, and the workload should be evaluated for migration to Cloud SQL, which would handle 50GB and modest traffic comfortably at a fraction of Spanner's node-hour cost. If, however, there's a specific external-consistency or future-scale requirement that's documented and real, staying on Spanner is justified even at low current volume — the fix isn't "always downsize," it's "verify the requirement that justified the premium service still holds," which is the same discipline that should have driven the original choice.
 
-## 18.7 Progressive Hands-On Lab — Part 2 Capstone
+## 7. Progressive Hands-On Lab — Part 2 Capstone
 
 1. Store a set of files in Cloud Storage using at least two storage classes (Standard and Nearline) and a lifecycle rule transitioning objects after 30 days.
 2. Provision a Cloud SQL instance and a Firestore database side by side; model the same simple entity (e.g., a user profile) in both, and write the same read/write operation against each to feel the API and consistency differences directly.
 3. Provision a Memorystore for Redis Basic-tier instance and implement cache-aside in front of the Cloud SQL instance from step 2 for a single frequently-read query.
 4. Write a one-paragraph decision justification for each of the four data types in the Q5 game-backend scenario, citing this section's matrix.
 
-## 18.8 Transition to Part 3
+## 8. Transition to Part 3
 
 Part 2 established every core storage and database primitive on GCP — object storage, block/file storage, and the full spectrum of relational and NoSQL databases, plus the caching layer that sits in front of all of them. None of these services exist in isolation, though: a Cloud SQL instance needs a VPC to be reachable, a Bigtable cluster needs firewall rules and private connectivity to be secure, and a globally distributed Spanner instance needs a network topology that actually spans regions sensibly. Part 3 (Sections 19–27) moves to Networking — VPCs, subnets, firewall rules, load balancing, Cloud DNS, hybrid connectivity (VPN/Interconnect), and the traffic-management concepts that determine how everything built in Part 1 and Part 2 actually talks to the outside world and to itself.
 
-## 18.9 Key Takeaways
+## 9. Key Takeaways
 
 - 🔑 No single storage or database service is a universal default — the correct choice is a function of consistency requirement, latency budget, and realistic scale, not familiarity.
 - 🔑 Cloud SQL and Cloud Spanner are both relational, but the decision between them hinges on whether a single-region, vertically-scaled instance's ceiling is a real constraint, not a hypothetical one.
@@ -88,6 +88,6 @@ Part 2 established every core storage and database primitive on GCP — object s
 - 🔑 Memorystore is never a replacement for a durable store — it is a caching or ephemeral-state layer that sits in front of one, chosen for latency, not for durability.
 - 🔑 Premature adoption of a premium/globally-distributed service (Spanner, multi-cluster Bigtable) for a workload that hasn't demonstrated the need is a common and avoidable cost/complexity mistake.
 
-## 18.10 Related Concepts
+## 10. Related Concepts
 
 Every service in Part 2 (Sections 11–17) individually; VPC networking and private connectivity that all of these managed services depend on for secure access (Part 3, starting Section 19); Dataflow/Dataproc/BigQuery pipelines that commonly read from and write into these storage/database services (Part 6); IAM roles and permissions that gate access to each service (Part 5); and the full GCP vs. AWS vs. Azure service-mapping comparison that recurs across this knowledge base (Section 82).

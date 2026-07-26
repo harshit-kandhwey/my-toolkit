@@ -1,10 +1,10 @@
 # Section 64 (Part 9): Part 9 Wrap-Up — Landing Zone Synthesis & Interview Drill
 
-## 64.1 Purpose of This Section
+## 1. Purpose of This Section
 
 Part 9 covered GCP's enterprise landing zone model across five sections: the overall architecture and Enterprise Foundations Blueprint (Section 59), Organization Policy hierarchy design (Section 60), centralized logging and security projects (Section 61), Shared VPC at scale (Section 62), and automated folder/project vending (Section 63). This closing section consolidates that material into one reference architecture, drills the material with tiered interview questions spanning all five sections, and transitions into Part 10's AI/ML coverage.
 
-## 64.2 Part 9 Recap — What Was Covered
+## 2. Part 9 Recap — What Was Covered
 
 | §   | Section                                        | Core Idea                                                                                                                                                                                                                                                                    |
 | --- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ Part 9 covered GCP's enterprise landing zone model across five sections: the ove
 | 62  | Shared VPC at Scale & Multi-Project Networking | Host/service project topology is a deliberate landing-zone decision; subnet-level `compute.networkUser` delegation and Private Service Connect let networking scale to many teams without a central bottleneck or unsegmented reachability.                                  |
 | 63  | Folder/Project Vending Automation              | New projects are provisioned via a Terraform project-factory module (or Config Connector), applying a consistent baseline — folder, IAM, network attachment, budget alert, logging inheritance — by construction, removing both manual drift and provisioning latency.       |
 
-## 64.3 The Unifying Architecture: Enterprise Landing Zone Reference Diagram
+## 3. The Unifying Architecture: Enterprise Landing Zone Reference Diagram
 
 ```
                                              Organization (example.com)
@@ -50,7 +50,7 @@ pipeline)      Bucket Lock)   export feed,
 
 > 🔑 **The single repeated principle across Part 9:** consistency is achieved **by construction**, not by manual diligence — Organization Policy inheritance (Section 60) guarantees every project under a folder gets that folder's floor automatically; the aggregated log sink (Section 61) guarantees every project's audit trail is captured centrally without per-project setup; and project vending (Section 63) guarantees every new project gets correct baseline IAM, network attachment, and budget alerting the moment it's created. Every section in this Part is a different layer of the same underlying idea: make the correct configuration the automatic default, not a checklist item someone can forget.
 
-## 64.4 Cross-Section Decision Framework
+## 4. Cross-Section Decision Framework
 
 | Question                                                                                                 | Answer                                                                                                                                                             |
 | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -62,7 +62,7 @@ pipeline)      Bucket Lock)   export feed,
 | Provisioning the two-hundredth project for a new team?                                                   | Automated project vending (Section 63) via the shared factory module — never manual, checklist-driven creation                                                     |
 | A guardrail/constraint is generating many one-off exception requests?                                    | Reassess the constraint's tier design itself (Section 60.3.3), not just keep approving individual exceptions                                                       |
 
-## 64.5 Common Mistakes Spanning This Part
+## 5. Common Mistakes Spanning This Part
 
 - Applying one uniform Organization Policy set everywhere instead of tiering strictness by folder risk profile (Section 60).
 - Granting an exception at the folder level to accommodate one outlier project, silently loosening the floor for every other project in that folder (Section 60.3.3).
@@ -71,7 +71,7 @@ pipeline)      Bucket Lock)   export feed,
 - Continuing manual, checklist-driven project creation after a vending pipeline exists, reintroducing the drift and latency automation was meant to remove (Section 63.2).
 - Describing GCP's landing zone as having "a Control Tower equivalent" rather than correctly framing it as a self-owned, Terraform-codified architecture built from existing primitives (Section 59.6).
 
-## 64.6 Part 9 Interview Drill
+## 6. Part 9 Interview Drill
 
 ### 🎯 Beginner Tier
 
@@ -103,7 +103,7 @@ pipeline)      Bucket Lock)   export feed,
 **Q8:** Six months after this landing zone goes live, an audit finds: three production projects have Organization Policy exceptions with no documented expiry, one service project has `compute.networkUser` bound at the host-project level instead of a specific subnet, and two projects were created manually outside the vending pipeline and are missing budget alerts. What does this pattern indicate, and how do you remediate it?
 **A:** This is a signature of governance existing on paper but not being operationally enforced by construction — exactly the gap Part 9's automation-first principle (Section 64.3) exists to close. First, I'd treat each finding as a symptom of a missing guardrail rather than three isolated cleanups: the undocumented exceptions indicate the exception-approval process (Section 60.3.3) isn't actually requiring an expiry field before granting, so I'd fix the process itself, not just backfill expiry dates on these three. Second, the project-level `networkUser` binding indicates either the vending module has a bug or someone bound it manually outside the pipeline (Section 62.4) — I'd correct it to a subnet-scoped binding and add drift detection (Section 63.7) comparing live IAM bindings against what the factory module would produce, so this class of deviation is caught automatically going forward. Third, the two manually created projects indicate the vending pipeline isn't the _only_ practical path to a new project — I'd restrict project-creation IAM at the org level to a small, tightly controlled set of principals (mirroring the Account-Factory-equivalent lesson from AWS, Section 63.9), making the factory module the only sanctioned path for essentially everyone, then backfill the missing budget alerts and required baseline on the two existing projects. Across all three findings, the durable fix is the same: move from "policy exists and people should follow it" to "policy is enforced by the pipeline and drift is automatically detected," which is the throughline of every section in this Part.
 
-## 64.7 Key Takeaways — Part 9 Overall
+## 7. Key Takeaways — Part 9 Overall
 
 - 🔑 GCP's landing zone has no single managed equivalent to Control Tower; it is a self-owned Terraform architecture (the Enterprise Foundations Blueprint) built from folders, Organization Policy, Shared VPC, and log sinks (Section 59).
 - 🔑 Organization Policy strategy means tiered strictness by folder risk profile with a non-negotiable security-critical floor everywhere, and exceptions granted at the most specific node possible, documented and time-boxed (Section 60).
@@ -111,10 +111,10 @@ pipeline)      Bucket Lock)   export feed,
 - 🔑 Shared VPC scales to many teams through subnet-level `compute.networkUser` delegation and Private Service Connect, never through project-level network grants or unmanaged VPC peering sprawl (Section 62).
 - 🔑 Automated project vending is what makes every other Part 9 guarantee — correct policy tier, correct network attachment, correct logging inheritance — actually hold true for every project, by construction, at the two-hundredth project just as reliably as the first (Section 63).
 
-## 64.8 Transition to Part 10
+## 8. Transition to Part 10
 
 Part 9 established the governed, consistently provisioned foundation an enterprise stands every workload on top of. Part 10 moves up that foundation to GCP's AI/ML and Generative AI platform, starting with **Section 65: Vertex AI Fundamentals** — how GCP's unified machine learning platform trains, tunes, deploys, and serves models, and how the landing-zone guarantees from this Part (project vending's budget alerts and baseline IAM, Shared VPC's Private Service Connect for private model endpoint access, the centralized logging project's audit trail) carry directly into governing AI/ML workloads at the same enterprise scale.
 
-## 64.9 Related Concepts
+## 9. Related Concepts
 
 Resource hierarchy (Section 3), Organization Policy fundamentals (Section 37) and its hierarchy deep dive (Section 60), Shared VPC and Private Service Connect fundamentals (Section 25), Cloud Monitoring/Logging (Section 54), Security Command Center (Section 39), Chronicle SIEM (Section 72), Cloud Build CI/CD underlying the vending pipeline (Section 50), and the GCP vs. AWS vs. Azure comparison (Section 82) all connect to the material synthesized in this section, and Vertex AI (Section 65, next) is where Part 10 begins.

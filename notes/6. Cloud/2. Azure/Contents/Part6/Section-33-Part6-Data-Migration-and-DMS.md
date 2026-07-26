@@ -1,41 +1,41 @@
 # Section 33 — Data Migration & Azure Database Migration Service
 
-## 33.1 Definition
+## 1. Definition
 
 **Plain language:** Moving an existing database — whether from on-premises, another cloud, or one Azure database type to another — into one of the Azure database services covered in this Part is its own specialized task, with its own tools and challenges around minimizing downtime and ensuring data integrity. Azure Database Migration Service (DMS) is Microsoft's purpose-built tool for this.
 
 **Precise definition:** Azure Database Migration Service (DMS) is a fully managed service that facilitates database migrations from various source database engines (SQL Server, PostgreSQL, MySQL, MongoDB, Oracle, and others) to corresponding Azure database targets, supporting both one-time (offline) migrations and continuous, minimal-downtime (online) migrations that keep the source and target synchronized until a final cutover.
 
-## 33.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Every database service covered in this Part (Azure SQL Database/Managed Instance, Cosmos DB, PostgreSQL/MySQL) is only useful to an organization with existing data if that data can actually be moved there reliably — and database migration is genuinely difficult to do well: naive approaches (a simple backup/restore, or a bulk export/import) typically require significant application downtime while the migration completes, risk data loss or corruption if not handled carefully, and don't easily handle the reality that source data often continues changing during the migration window itself. DMS exists specifically to address these challenges in a managed, purpose-built way — particularly by supporting online migrations that keep a continuously-updated target in sync with the still-active source database, allowing the actual cutover (the moment the application switches from the old database to the new one) to happen with minimal downtime, rather than requiring the source to be taken fully offline for the entire migration duration.
 
-## 33.3 Core Concepts
+## 3. Core Concepts
 
-### 33.3.1 Offline vs. Online Migration
+### 3.1 Offline vs. Online Migration
 
 - **Offline Migration** — the source database is taken offline (or at minimum, write access is stopped) for the duration of the migration; data is copied once, and the application cuts over to the new target only after the migration completes. Simpler to execute and reason about, but requires a maintenance window sized to the full migration duration, which can be substantial for large databases.
 - **Online Migration** — the source database remains fully operational and continues accepting writes throughout the migration; DMS performs an initial full data copy, then continuously applies ongoing changes from the source to the target (via change-data-capture-style mechanisms specific to the source engine) until the target is caught up and closely synchronized, at which point a brief, final cutover (stopping the source, applying any last remaining changes, and redirecting the application to the new target) completes the migration with dramatically less downtime than an offline approach.
 
 💡 **Tip:** Online migration is generally preferred for any production database where extended downtime isn't acceptable, but it requires more careful planning (the source engine must support the specific change-tracking mechanism DMS relies on for continuous sync) and a more involved cutover procedure than offline migration's comparatively simple "stop, copy, restart" approach.
 
-### 33.3.2 Migration Assessment
+### 3.2 Migration Assessment
 
 Before migrating, DMS (and related Microsoft tooling like the **Azure Migrate** and specific engine-focused assessment tools) can perform a **compatibility assessment** against the source database, identifying features, syntax, or configurations used by the source that aren't supported (or behave differently) in the target Azure service — surfacing potential migration blockers or required application changes **before** the migration is attempted, rather than discovering them mid-migration or, worse, after cutover when the application unexpectedly breaks.
 
 **Why this connects directly to earlier sections:** This assessment step is precisely what would surface issues like the PostgreSQL extension compatibility gap discussed in Section 31.3.3, or the instance-level feature dependency (cross-database queries, SQL Agent) discussed in Section 29.4.3 that would push a SQL Server migration toward Managed Instance rather than Azure SQL Database — a thorough upfront assessment is what makes an informed target-service decision possible, rather than choosing a target first and discovering incompatibilities later.
 
-### 33.3.3 Source and Target Combinations
+### 3.3 Source and Target Combinations
 
 DMS supports a range of source-to-target combinations aligned with the database services covered throughout this Part, including (illustrative, not exhaustive): SQL Server (on-premises or another cloud) to Azure SQL Database or Managed Instance; PostgreSQL/MySQL (on-premises, another cloud, or a different managed provider) to the corresponding Azure Database for PostgreSQL/MySQL service; and MongoDB to Cosmos DB's MongoDB API (Section 30.3.1). ⚠️ The exact current list of supported source engines, versions, and corresponding target combinations should always be verified against official documentation before planning a specific migration, since this compatibility matrix is actively maintained and expanded over time.
 
-### 33.3.4 Schema and Data Migration Phases
+### 3.4 Schema and Data Migration Phases
 
 A typical migration project, whether using DMS directly or in combination with complementary tools, generally proceeds through distinguishable phases: **schema migration** (recreating the source database's table structures, indexes, constraints, and other schema objects on the target — sometimes requiring translation/adaptation if migrating between different database engines, such as SQL Server to PostgreSQL, which is a meaningfully more complex "heterogeneous" migration than a same-engine "homogeneous" migration like SQL Server to Azure SQL Database), **initial data load** (the bulk copy of existing data), and, for online migrations, **continuous synchronization** until cutover.
 
 ⚠️ **Heterogeneous migrations** (migrating between fundamentally different database engines, e.g., Oracle to Azure SQL Database, or SQL Server to PostgreSQL) are meaningfully more complex than **homogeneous migrations** (same engine, e.g., on-premises SQL Server to Azure SQL Managed Instance) — schema and even query/stored-procedure logic often require substantial translation and testing when engines differ, and this added complexity should be planned for explicitly rather than assumed to be a comparably simple undertaking to a same-engine migration.
 
-## 33.4 Architecture Diagram — Online Migration Flow
+## 4. Architecture Diagram — Online Migration Flow
 
 ```
 Source Database (on-premises SQL Server, still actively serving the application)
@@ -63,7 +63,7 @@ Cutover (brief, planned downtime window)
 Target Database (Azure SQL Database / Managed Instance)
 ```
 
-## 33.5 Configuration & Hands-On Example
+## 5. Configuration & Hands-On Example
 
 **High-level DMS project setup (conceptual — full setup involves substantial prerequisite configuration):**
 
@@ -87,25 +87,25 @@ az dms project create \
 - ⚠️ A real DMS migration additionally requires network connectivity configuration (DMS typically needs network access to both the source database and the target, often via VPN Gateway or ExpressRoute, Section 26, if the source is on-premises), source database prerequisite configuration (such as enabling specific change-tracking mechanisms for online migration), and a defined cutover plan — this illustrative command sequence represents only the initial resource-creation step, not a complete migration runbook; always follow current official migration guides for the specific source/target combination in use.
 - **Production usage note:** Given the complexity and risk involved, production database migrations are typically preceded by one or more test migrations against non-production copies of the source data, validating both the migration process itself and the target application's correct functioning against the migrated schema/data before ever attempting the production cutover.
 
-## 33.6 Production & Enterprise Usage
+## 6. Production & Enterprise Usage
 
 Enterprises undertaking database migrations as part of a broader cloud adoption or modernization initiative typically begin with the compatibility assessment phase (Section 33.3.2) across their full database estate, using the findings to inform not just migration feasibility but the actual target-service decision itself (e.g., discovering an application's heavy reliance on SQL Server Agent jobs during assessment might redirect the target choice from Azure SQL Database to Managed Instance, connecting directly back to the decision framework established in Section 29.4.3). Large-scale enterprise migrations commonly run many individual database migrations in parallel or in planned waves, prioritized by business criticality, complexity, and risk tolerance — often migrating lower-risk, less-critical databases first to build organizational confidence and refine the migration process before tackling the most business-critical systems.
 
-## 33.7 Security Considerations
+## 7. Security Considerations
 
 - Migration projects necessarily involve data flowing between source and target, often across a network boundary (on-premises to Azure) — this traffic should be secured appropriately (via the hybrid connectivity mechanisms covered in Section 26, and encryption in transit), particularly for migrations involving sensitive or regulated data.
 - Credentials used by DMS to access both source and target databases should follow least-privilege principles, scoped specifically to what the migration process requires, and should be securely managed (ideally via Key Vault, Section 56) rather than embedded directly in migration configuration.
 - Post-migration, a formal decommissioning plan for the source database (once the target is validated and confirmed stable) should account for any data-retention or compliance requirements that might require the source's data (or the source system itself) to remain available or recoverable for some defined period, rather than being immediately and permanently deleted upon cutover.
 
-## 33.8 Performance Considerations
+## 8. Performance Considerations
 
 Migration duration — particularly for the initial data load phase — depends heavily on database size, available network bandwidth between source and target (making a high-bandwidth connectivity option like ExpressRoute, Section 26, valuable for large on-premises-to-Azure migrations), and the DMS instance's own provisioned compute tier; migration timelines should be estimated based on realistic bandwidth and data-volume calculations rather than optimistic assumptions, since underestimating migration duration can create significant project-planning and stakeholder-expectation problems.
 
-## 33.9 Monitoring
+## 9. Monitoring
 
 DMS provides migration progress tracking (schema migration status, initial load progress, ongoing synchronization latency for online migrations) throughout the process, essential both for project management visibility and, specifically for online migrations, for determining when the target has caught up closely enough with the source to safely proceed with cutover — cutting over while the target is still meaningfully behind the source risks data loss or inconsistency.
 
-## 33.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                               | Likely Cause                                                                                                             | Fix                                                                                                                                                                                      |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -113,7 +113,7 @@ DMS provides migration progress tracking (schema migration status, initial load 
 | Online migration's continuous synchronization never seems to catch up with the source | Source database write volume exceeds the rate DMS can replicate changes to the target, or a network bandwidth constraint | Review network bandwidth between source and target; consider a higher DMS compute tier; investigate whether source write volume could be temporarily reduced during the migration window |
 | Post-cutover application errors reveal missed schema objects or data                  | Incomplete schema migration, or a heterogeneous migration's translation gaps not caught during pre-migration testing     | This underscores the importance of thorough test migrations and validation against non-production data before production cutover, rather than skipping this step under time pressure     |
 
-## 33.11 Interview Questions — Section 33
+## 11. Interview Questions — Section 33
 
 ### 🎯 Intermediate
 
@@ -131,25 +131,25 @@ _Model answer:_ I'd begin with a comprehensive compatibility assessment across t
 
 _What the interviewer is probing:_ whether the candidate can design a genuinely large-scale, multi-database, multi-engine migration program — sequencing by risk, matching target services to actual per-database compatibility findings rather than a one-size-fits-all decision, and building in validation discipline — rather than describing migration only at the level of a single database's mechanics.
 
-## 33.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - **"Migration is purely a data-copying exercise."** False — schema compatibility, especially for heterogeneous (cross-engine) migrations, and application-level validation against the target are equally critical and often more time-consuming and risk-laden than the raw data transfer itself.
 - **"Online migration eliminates downtime entirely."** Not quite accurate — online migration dramatically _reduces_ downtime compared to offline migration by keeping the source live during most of the process, but a final cutover step, however brief, is still required to safely transition the application to the new target.
 
-## 33.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 Azure Database Migration Service supports both offline (simpler, requires a full migration-duration downtime window) and online (continuous synchronization, minimal-downtime cutover) migration approaches, chosen based on the source database's acceptable downtime tolerance.
 - 🔑 Pre-migration compatibility assessment is essential and should directly inform target service selection (e.g., Managed Instance vs. Azure SQL Database) rather than being treated as a formality after the target has already been chosen.
 - 🔑 Heterogeneous (cross-engine) migrations carry meaningfully more schema/logic translation complexity than homogeneous (same-engine) migrations and should be planned and resourced accordingly.
 - 🔑 Large-scale enterprise migrations benefit from wave-based sequencing (lower-risk databases first) and rigorous test-migration validation before any production cutover.
 
-## 33.14 Data Validation, Rollback, and Application Cutover Planning
+## 14. Data Validation, Rollback, and Application Cutover Planning
 
-### 33.14.1 Why This Extends Beyond Section 33.3's Migration Mechanics
+### 14.1 Why This Extends Beyond Section 33.3's Migration Mechanics
 
 Sections 33.3–33.5 covered how DMS actually moves schema and data. This subsection addresses the equally critical, often under-planned questions that determine whether a migration is _safe_ to execute in production: how do you confirm the migrated data is actually correct, what do you do if it isn't, and how does the application itself transition to the new database without an uncontrolled outage or silent data loss.
 
-### 33.14.2 Data Validation
+### 14.2 Data Validation
 
 **Definition:** **Data validation** is the process of confirming that data in the target database genuinely and completely matches the source, beyond simply trusting that the migration tool reported success — since a migration tool reporting "completed" reflects that the _process_ ran without error, not necessarily that every row, relationship, and constraint landed correctly and completely.
 
@@ -162,7 +162,7 @@ Sections 33.3–33.5 covered how DMS actually moves schema and data. This subsec
 
 ⚠️ Validation should be performed against a **non-production test migration** first (as already emphasized in Section 33.5's production usage note), refining the validation approach itself before it's relied upon to gate an actual production cutover decision — treating the validation process as something that itself needs testing and confidence-building, not just the migration mechanics alone.
 
-### 33.14.3 Rollback Planning
+### 14.3 Rollback Planning
 
 **Definition:** A **rollback plan** defines the specific, pre-determined steps to revert the application back to the original source database if validation fails post-cutover, or if unexpected problems emerge after the application has already started using the new target — this must be planned and, ideally, tested _before_ cutover, not improvised during an actual incident under time pressure.
 
@@ -174,7 +174,7 @@ Sections 33.3–33.5 covered how DMS actually moves schema and data. This subsec
 
 🎯 **Interview Tip:** "What's your rollback plan?" is one of the most common questions in a migration design review, and a candidate who hasn't considered it — treating the migration as a one-way, can't-fail operation — is a significant red flag to an experienced interviewer. A credible answer always addresses source retention, data-drift handling, and ideally rollback rehearsal.
 
-### 33.14.4 Application Connection Cutover Planning
+### 14.4 Application Connection Cutover Planning
 
 **Definition:** **Cutover** is the actual moment the application stops using the source database and starts using the target — this requires the application's connection configuration (connection strings, DNS names, or a configuration-driven endpoint) to change, and how that change is executed materially affects both downtime and rollback simplicity.
 
@@ -186,7 +186,7 @@ Sections 33.3–33.5 covered how DMS actually moves schema and data. This subsec
 
 **Coordinating cutover with online migration's synchronization state (connecting to Section 33.3.1):** For an online migration specifically, cutover should only be executed once the continuous synchronization phase has confirmed the target is caught up (minimal replication lag) — cutting over prematurely, while the target is still meaningfully behind the source, risks the application reading and writing against incomplete or stale data immediately after cutover, undermining much of the point of using online migration's minimal-downtime approach in the first place.
 
-### 33.14.5 Configuration Example — Illustrative Cutover Checklist
+### 14.5 Configuration Example — Illustrative Cutover Checklist
 
 ```text
 Pre-Cutover Validation Gate (all must pass before proceeding):
@@ -211,7 +211,7 @@ Post-Cutover:
 
 - **Purpose:** Illustrates how the validation, rollback, and cutover concepts from this subsection combine into a concrete, checklist-driven cutover runbook — the kind of artifact that should exist and be reviewed _before_ a production migration cutover is attempted, not improvised in the moment.
 
-### 33.14.6 Interview Questions — Section 33.14
+### 14.6 Interview Questions — Section 33.14
 
 **🎯 Senior/Architect**
 **Q: Walk through how you'd validate a completed database migration and plan for cutover, for a production system that cannot tolerate silent data loss.**
@@ -220,13 +220,13 @@ _Model answer:_ I'd start with row count reconciliation as a fast first-pass san
 
 _What the interviewer is probing:_ whether the candidate treats migration validation and rollback as first-class, deliberately-planned concerns with specific concrete techniques, rather than assuming a successful-looking migration tool run is sufficient evidence the migration is actually safe to finalize.
 
-### 33.14.7 Key Takeaways — Section 33.14
+### 14.7 Key Takeaways — Section 33.14
 
 - 🔑 A migration tool reporting success reflects the process completing without error, not proof the data is correct — explicit validation (row counts, checksums, application-level smoke tests) is a separate, necessary step.
 - 🔑 Rollback plans must be defined (and ideally rehearsed) before cutover, explicitly addressing source-database retention and how any target-only writes during the post-cutover window would be handled if rollback becomes necessary.
 - 🔑 Cutover mechanism choice (direct connection string, DNS repointing, or an abstraction-layer flag) directly affects both achievable downtime and how easily rollback can be executed — an abstraction layer generally offers the fastest, cleanest cutover and rollback if the application architecture supports it.
 - 🔑 For online migrations, cutover should only proceed once synchronization lag is confirmed within an acceptable threshold — premature cutover undermines the minimal-downtime benefit online migration is meant to provide.
 
-## 33.15 Related Concepts / Part 6 Wrap-Up
+## 15. Related Concepts / Part 6 Wrap-Up
 
 This completes **Part 6 — Databases & Data Services**, covering Azure SQL Database/Managed Instance, Cosmos DB, PostgreSQL/MySQL, Azure Cache for Redis, and database migration strategy and tooling. **Part 7 — Containers & Orchestration** begins next with Section 34, covering Docker fundamentals on Azure, building toward Azure Kubernetes Service (AKS) — revisiting and building substantially on the container concepts first introduced with Azure Container Instances in Section 15, now moving into full container orchestration at production scale.

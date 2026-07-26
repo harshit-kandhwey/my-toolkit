@@ -1,12 +1,12 @@
 # Section 73 (Part 11): Chronicle Deep Dive & Detection Engineering
 
-## 73.1 Definition
+## 1. Definition
 
 **Plain language:** Section 72 introduced Chronicle as the place where all your security logs land and get normalized. This section is about what you actually _do_ with that normalized data day to day: writing rules that automatically flag suspicious activity, using Google's pre-built detection content instead of writing everything from scratch, ranking which alerts deserve attention first, and pulling in outside threat intelligence about known-bad actors so your detections are informed by more than just your own logs.
 
 **Precise:** Chronicle detection engineering covers writing and tuning **YARA-L** rules against the Unified Data Model (UDM), subscribing to Google-maintained **curated detections** (pre-built, continuously updated rule packs), using **entity risk scoring** to prioritize which users/hosts/IPs need investigation first, enriching detections with **Mandiant threat intelligence**, and feeding Security Command Center (Section 39) findings into Chronicle as an additional detection input.
 
-## 73.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 A SIEM that only ingests and normalizes logs (Section 72) is a very expensive, very fast search engine — useful for investigation, but not proactive. The problem detection engineering solves is turning that normalized data into automatic, prioritized alerts _before_ an analyst goes looking. Three specific gaps drive the features in this section:
 
@@ -14,9 +14,9 @@ A SIEM that only ingests and normalizes logs (Section 72) is a very expensive, v
 2. **A flood of true-but-low-value alerts is as bad as no alerts.** A rule firing correctly on a real anomaly is still a problem if it fires 500 times a day with no way to tell which of the 500 matters most. Entity risk scoring exists to rank alerts and entities by aggregate risk, not just surface a flat, equally-weighted list.
 3. **Your own logs don't know what a known-bad IP or malware hash looks like.** A firewall log showing a connection to `203.0.113.45` is unremarkable in isolation. Mandiant threat intelligence exists to tell Chronicle that IP is a known command-and-control server, turning an unremarkable log line into a high-confidence detection.
 
-## 73.3 Core Concepts
+## 3. Core Concepts
 
-### 73.3.1 Writing Multi-Event YARA-L Rules
+### 3.1 Writing Multi-Event YARA-L Rules
 
 Section 72.3.4 showed a minimal two-event YARA-L rule. Real detection engineering typically chains more conditions and uses **placeholders** and **outcome variables** to enrich the alert itself:
 
@@ -52,7 +52,7 @@ rule impossible_travel_login {
 - **`outcome`** is the section that did not appear in the Section 72 minimal example — it lets a rule compute and attach values (a risk contribution, a deduplicated list of IPs involved) directly onto the generated detection, so an analyst opening the alert sees enriched context immediately rather than re-deriving it from raw events.
 - **MITRE ATT&CK tagging** in `meta` (shown here as `mitre_technique`) is a strong production convention — it lets SOC dashboards (Section 76) and reporting roll detections up by adversary technique rather than by rule name alone.
 
-### 73.3.2 Curated Detections
+### 3.2 Curated Detections
 
 **Definition:** curated detections are pre-built, Google-authored and Google-maintained YARA-L rule packs covering common attacker techniques, mapped to MITRE ATT&CK, that a Chronicle customer subscribes to and enables rather than authoring independently.
 
@@ -62,7 +62,7 @@ rule impossible_travel_login {
 
 > ⚠️ **Common mistake:** Treating curated detections and custom rules as mutually exclusive. Mature deployments run both — curated detections provide broad, continuously updated baseline coverage; custom rules cover the organization-specific context Google cannot know in advance (e.g., "this service account normally only ever touches project X, alert if it touches anything else").
 
-### 73.3.3 Entity Risk Scoring
+### 3.3 Entity Risk Scoring
 
 **Definition:** entity risk scoring is Chronicle's mechanism for aggregating signal across multiple detections, alerts, and context sources into a single, continuously updated risk score per entity (a user, host, or IP address), so analysts can triage by "which entities are riskiest right now" rather than working a flat, unranked alert queue.
 
@@ -70,7 +70,7 @@ rule impossible_travel_login {
 - Risk scores decay over time absent new signal, so an entity's score reflects _recent_ behavior rather than accumulating indefinitely from stale, long-resolved incidents.
 - This is the mechanism SOC tiered triage (Section 76) is built on top of: Tier 1 analysts typically start from the highest-risk-scored entities rather than scanning every individual detection chronologically.
 
-### 73.3.4 Mandiant Threat Intelligence Integration
+### 3.4 Mandiant Threat Intelligence Integration
 
 **Definition:** Mandiant is Google's threat intelligence and incident response organization; its intelligence feeds — indicators of compromise (IOCs), threat actor profiles, and campaign tracking — are natively integrated into Chronicle so that raw UDM events are automatically enriched and matched against known-bad indicators.
 
@@ -78,11 +78,11 @@ rule impossible_travel_login {
 - **Threat actor and campaign context** is attached to matches — a detection is not just "this IP is bad," it can be "this IP is associated with threat actor group X's known campaign Y," giving analysts far more actionable context for prioritization and response than a bare indicator match.
 - This integration is the direct analog to how the entity risk scoring in 73.3.3 gets some of its highest-confidence signal: a confirmed Mandiant IOC match is a strong, well-attributed contributor to an entity's risk score, distinct from a heuristic pattern match from a custom rule.
 
-### 73.3.5 Security Command Center as a Chronicle Input
+### 3.5 Security Command Center as a Chronicle Input
 
 Security Command Center (Section 39) findings — misconfigurations, vulnerabilities, and GCP-resource-scoped threat detections — can themselves be routed into Chronicle as an additional UDM event source. This closes the loop described in Section 72.8: SCC and Chronicle are not redundant, they are layered. SCC's GCP-resource-scoped findings become one more correlatable signal inside Chronicle's broader cross-source view — a SCC finding that a service account key was exposed, correlated inside Chronicle against subsequent anomalous API activity from that same service account logged elsewhere, is a stronger combined signal than either finding alone.
 
-## 73.4 Detection Pipeline Diagram
+## 4. Detection Pipeline Diagram
 
 ```
    Raw UDM Events (Section 72)
@@ -113,7 +113,7 @@ Security Command Center (Section 39) findings — misconfigurations, vulnerabili
    SCC Findings (Section 39) ──────► feed in as additional UDM events
 ```
 
-## 73.5 Comparison: Chronicle Detection Engineering vs. Azure Sentinel
+## 5. Comparison: Chronicle Detection Engineering vs. Azure Sentinel
 
 | Aspect                      | Chronicle (GCP)                                                             | Microsoft Sentinel (Azure)                                                                                            |
 | --------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -126,7 +126,7 @@ Security Command Center (Section 39) findings — misconfigurations, vulnerabili
 
 > 💡 **Interview-relevant nuance:** Both platforms converge on the same underlying idea — ship pre-built detection content instead of expecting every customer to author everything, and provide entity-level risk aggregation on top of individual alerts. The differentiator worth naming in an interview is _provenance_: Chronicle's curated detections and Mandiant intel come from a single, tightly integrated vendor pipeline (Google/Mandiant), whereas Sentinel's Content Hub is a more open marketplace model spanning Microsoft and many third-party publishers — a trade-off between curated consistency and broader ecosystem breadth.
 
-## 73.6 Hands-On Example: Enabling a Curated Detection Rule Set via `gcloud`
+## 6. Hands-On Example: Enabling a Curated Detection Rule Set via `gcloud`
 
 **Purpose:** Chronicle's curated detections and rule management are primarily configured via the Chronicle console or its dedicated API, but organizations that manage detection-as-code often drive Chronicle configuration through automation. This example shows retrieving Chronicle-forwarded findings via the Security Command Center API surface, illustrating how SCC findings (73.3.5) are queried before being routed toward Chronicle correlation.
 
@@ -149,19 +149,19 @@ RESOURCE_NAME                                          CATEGORY            SEVER
 
 > 💡 **Tip:** Detection-as-code workflows for YARA-L rules (version-controlling rule text, deploying via the Chronicle API in CI/CD) are a common maturity marker in production SOCs — treating detection rules with the same rigor as application code (code review, testing against sample UDM events, staged rollout) rather than editing them ad hoc in a console.
 
-## 73.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Curated-first, custom-second rule strategy.** Mature deployments enable relevant curated detection rule sets as the baseline and reserve custom YARA-L authoring effort for genuinely organization-specific logic, avoiding duplicated effort re-inventing detections Google already maintains.
 - **Regular tuning against false-positive rate.** New custom rules are typically deployed in a "test"/silent mode first, observed against real traffic to measure false-positive rate, and only promoted to actively alerting once tuned — deploying straight to production alerting is a common source of analyst alert fatigue.
 - **Risk score thresholds drive automation triggers.** Organizations with automated response (Section 75) commonly gate automation on entity risk score crossing a threshold, not on any single detection firing alone — reducing the chance a single noisy rule triggers an aggressive automated action.
 
-## 73.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "Curated detections replace the need for custom rules entirely." Curated content covers common, broadly applicable techniques; it cannot know an organization's specific expected behavior (which service accounts normally touch which resources, internal naming conventions), which is exactly the gap custom rules fill.
 - **Misconception:** "Entity risk scoring is just a fancier way of counting alerts per entity." It aggregates across multiple signal types (rule detections, Mandiant IOC matches, SCC findings) with decay over time, producing a materially different and more current signal than a raw alert count would.
 - **Misconception:** "Mandiant integration means Chronicle does threat hunting for you automatically." IOC matching is automatic, but proactive threat hunting (Section 76) — analysts actively querying UDM data for patterns not yet covered by any existing rule or known indicator — remains a distinct, human-driven activity Mandiant intelligence supports but does not replace.
 
-## 73.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What is the difference between a curated detection and a custom YARA-L rule?_
 **Model answer:** A curated detection is a pre-built, Google-authored and continuously maintained rule that a customer enables, covering common attacker techniques broadly applicable across organizations. A custom YARA-L rule is authored by the organization's own detection engineers to cover logic specific to that organization — internal naming conventions, expected service account behavior, or custom application logs — that generic curated content cannot anticipate.
@@ -172,7 +172,7 @@ RESOURCE_NAME                                          CATEGORY            SEVER
 **🎯 Senior/Architect:** _Your detection engineering team wants to reduce alert fatigue without silently missing real incidents. Walk through how you'd use Chronicle's features to do this._
 **Model answer:** I would first separate the two failure modes: too many low-value alerts, and risk of missing real ones, because they pull in opposite directions if handled carelessly. For volume reduction, I'd audit custom rules for ones deployed straight to active alerting without a tuning period, move new rules through a silent/test phase to measure false-positive rate before promotion, and lean more heavily on curated detections, which Google continuously tunes, rather than maintaining marginal custom rules with high false-positive rates. Rather than deleting noisy rules outright — which risks the missed-incident failure mode — I would use entity risk scoring as the triage layer: keep the rules firing, but ensure Tier 1 analysts (Section 76) work from the risk-ranked entity view rather than a flat rule-firing log, so noisy-but-low-severity rules contribute proportionally to risk score without individually demanding investigation. I'd also confirm Mandiant IOC matches and SCC findings are correctly feeding into the same risk aggregation, since high-confidence external signal should outrank a purely heuristic pattern match, and periodically validate against known incident scenarios (red team exercises or past incident replay) that reducing noise has not caused any real technique to fall below the triage threshold.
 
-## 73.10 Key Takeaways
+## 10. Key Takeaways
 
 - 🔑 YARA-L rules can use `outcome` blocks to attach computed context (risk contribution, deduplicated fields) directly to a generated detection, beyond the minimal `events`/`match`/`condition` structure introduced in Section 72.
 - 🔑 Curated detections are Google-maintained, continuously updated rule content that should form the baseline of detection coverage, with custom rules reserved for organization-specific logic.
@@ -181,6 +181,6 @@ RESOURCE_NAME                                          CATEGORY            SEVER
 - 🔑 Security Command Center findings (Section 39) can feed into Chronicle as an additional correlatable event source, making SCC and Chronicle complementary layers rather than redundant tools.
 - 🔑 Chronicle's curated detections/Mandiant pairing is architecturally closest to Sentinel's analytics rule templates/Content Hub plus UEBA, differing mainly in vendor provenance (tightly integrated vs. open marketplace).
 
-## 73.11 Related Concepts
+## 11. Related Concepts
 
 Chronicle SIEM Fundamentals and the UDM (Section 72), Security Command Center (Section 39), automated incident response acting on these detections (Section 75), and SOC triage workflows built on entity risk scoring (Section 76) all connect directly to the detection engineering practices covered here.

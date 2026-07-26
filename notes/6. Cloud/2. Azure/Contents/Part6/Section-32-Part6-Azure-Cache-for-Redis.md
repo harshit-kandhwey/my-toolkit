@@ -1,39 +1,39 @@
 # Section 32 — Azure Cache for Redis
 
-## 32.1 Definition
+## 1. Definition
 
 **Plain language:** Azure Cache for Redis is a managed, super-fast, in-memory data store — instead of hitting your database every time an application needs the same piece of data repeatedly, you store a copy in Redis, sitting in memory, which can be read back far faster than any disk-backed database.
 
 **Precise definition:** Azure Cache for Redis is a fully managed implementation of the open-source Redis in-memory data structure store, providing sub-millisecond-latency key-value and richer data-structure storage, used primarily as a caching layer to reduce load on backend databases and reduce application latency, with additional use cases including session storage, pub/sub messaging, and distributed locking.
 
-## 32.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Databases — whether Azure SQL Database (Section 29), Cosmos DB (Section 30), or PostgreSQL/MySQL (Section 31) — are disk-backed (even when using SSD storage) and optimized for durability, consistency, and rich querying, not raw read speed for frequently-repeated, simple lookups. Many applications have data that's read far more often than it changes (a product catalog page, a user's session data, a frequently-computed aggregate) — repeatedly querying the primary database for this same, rarely-changing data wastes database capacity and adds unnecessary latency compared to serving it from a purpose-built, in-memory store designed specifically for extremely fast key-based lookups. Azure Cache for Redis exists to fill this specific role: an extremely fast, purpose-built caching layer that sits between the application and its primary data stores, absorbing repetitive read load and reducing end-user-facing latency.
 
-## 32.3 Core Concepts
+## 3. Core Concepts
 
-### 32.3.1 Caching Patterns
+### 3.1 Caching Patterns
 
 - **Cache-Aside (Lazy Loading)** — the most common pattern: the application first checks the cache for requested data; on a cache miss, it queries the primary database, then writes the result into the cache before returning it, so subsequent requests for the same data are served from the cache until it expires or is invalidated.
 - **Write-Through** — the application writes to the cache and the primary database together (or the cache itself is configured to propagate writes to the backing store), keeping the cache consistently up to date with every write, at the cost of added write-path latency and complexity compared to Cache-Aside's simpler "populate cache only on read" approach.
 
 💡 **Tip:** Cache-Aside is the most commonly used pattern in practice specifically because of its operational simplicity and resilience — if the cache is unavailable or empty (e.g., after a restart), the application gracefully falls back to querying the primary database directly, whereas patterns tightly coupling every write to cache updates introduce more failure modes and complexity for the marginal benefit of guaranteed cache freshness on every single write.
 
-### 32.3.2 Expiration and Eviction
+### 3.2 Expiration and Eviction
 
 Cached data is typically given a **Time-To-Live (TTL)**, similar in concept to the CDN/Blob Storage tiering TTL concepts covered in Sections 17 and 25, after which it's automatically considered stale and removed (or, more precisely, eligible for removal) — appropriate TTL selection balances cache hit-rate benefit (longer TTL means more requests served from cache) against data freshness requirements (shorter TTL means changes propagate to users faster, since a cached value won't reflect an underlying data change until it expires and is refreshed).
 
 When the cache reaches its configured memory capacity, an **eviction policy** determines which existing cached items are removed to make room for new ones — common policies include removing the **Least Recently Used (LRU)** items first, among several other available eviction strategies suited to different access-pattern assumptions.
 
-### 32.3.3 Data Structures Beyond Simple Key-Value
+### 3.3 Data Structures Beyond Simple Key-Value
 
 Redis (and therefore Azure Cache for Redis) supports richer data structures beyond simple string key-value pairs, including **Lists**, **Sets**, **Sorted Sets** (useful for leaderboard-style ranked data), and **Hashes** — enabling use cases beyond pure caching, such as real-time leaderboards (using Sorted Sets' built-in ranking capabilities), rate-limiting counters, and session-state storage with structured fields.
 
-### 32.3.4 Pub/Sub Messaging
+### 3.4 Pub/Sub Messaging
 
 Redis supports a **publish/subscribe (pub/sub)** messaging pattern, where publishers send messages to named channels and subscribers listening on those channels receive them in real time — a lightweight, low-latency messaging mechanism distinct from the more durable, feature-rich messaging services covered in Part 8 (Service Bus, Event Grid, Event Hubs), appropriate for scenarios prioritizing raw speed over message durability/guaranteed delivery (Redis pub/sub messages are not persisted or guaranteed to be delivered if a subscriber is temporarily disconnected, an important distinction from the durable messaging services covered later).
 
-### 32.3.5 Service Tiers
+### 3.5 Service Tiers
 
 Azure Cache for Redis is offered in multiple tiers:
 
@@ -44,7 +44,7 @@ Azure Cache for Redis is offered in multiple tiers:
 
 ⚠️ Exact tier names, their specific feature boundaries, and current recommended tier for various production scenarios should be verified against official documentation, since this tier structure has evolved (particularly with the introduction of Enterprise tiers) and continues to be an actively maintained part of the service catalog.
 
-## 32.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
 Application Tier (VMSS / App Service)
@@ -68,7 +68,7 @@ Application Tier (VMSS / App Service)
 Primary Database (absorbs only cache-miss traffic, not every read)
 ```
 
-## 32.5 Configuration & Hands-On Example
+## 5. Configuration & Hands-On Example
 
 **Creating a Standard-tier Azure Cache for Redis instance:**
 
@@ -104,25 +104,25 @@ def get_product(product_id):
 - **Purpose:** Demonstrates the Cache-Aside pattern described in Section 32.3.1 — check cache first, fall back to the database on a miss, then populate the cache for subsequent requests, with an explicit TTL (`ex=300`) ensuring the cached value doesn't persist indefinitely without ever being refreshed from the source of truth.
 - ⚠️ Exact client library syntax varies by language/SDK — this is illustrative of the pattern, not a specific production-ready code sample; verify current client library syntax against official documentation for the specific language in use.
 
-## 32.6 Production & Enterprise Usage
+## 6. Production & Enterprise Usage
 
 Enterprises deploy Azure Cache for Redis in front of read-heavy database workloads specifically where measured database load or application latency indicates caching would provide meaningful benefit — introducing a cache adds architectural complexity (cache invalidation logic, the "two sources of truth" problem where cached and primary data can temporarily diverge) that shouldn't be adopted reflexively for every workload without evidence it's actually needed. Session-state storage for web applications (particularly important for applications running multiple instances behind a load balancer, Section 24, where in-memory session state on one specific instance wouldn't be accessible if the load balancer routes a user's subsequent request to a different instance) is another very common enterprise use case, using Redis as a shared, fast, external session store accessible from any application instance.
 
-## 32.7 Security Considerations
+## 7. Security Considerations
 
 - Azure Cache for Redis supports VNet deployment (Premium tier and above) for network isolation, and Private Link for further isolation, following the same networking patterns established for other Azure PaaS services throughout this roadmap.
 - Access keys (similar in risk profile to Storage Account shared keys, Section 16.7) should be rotated periodically and, where supported, Entra ID-based authentication should be preferred to reduce reliance on long-lived shared secrets.
 - TLS should be enforced for client connections, ensuring cached data in transit is encrypted, particularly important if the cache holds any sensitive data (like session tokens) rather than purely non-sensitive, publicly-derivable content.
 
-## 32.8 Performance Considerations
+## 8. Performance Considerations
 
 Cache effectiveness is measured by **cache hit ratio** (the proportion of requests served from cache versus falling through to the primary database) — a low hit ratio suggests either an inappropriate TTL (too short, causing excessive expiration), a poorly-suited caching strategy for the actual access pattern (e.g., caching data that's rarely re-requested before it naturally changes), or insufficient cache memory capacity causing premature eviction of still-useful cached items; monitoring hit ratio (Section 32.9) is the primary diagnostic signal for tuning cache effectiveness.
 
-## 32.9 Monitoring
+## 9. Monitoring
 
 Azure Cache for Redis integrates with Azure Monitor (Part 10), providing cache hit/miss ratio, memory utilization, connected client count, and server-side latency metrics — essential both for validating the cache is actually providing the intended benefit (a persistently low hit ratio suggests the caching strategy needs reconsideration) and for capacity planning (memory utilization trending toward capacity suggests either a larger tier or a more aggressive eviction/TTL strategy is needed).
 
-## 32.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                         | Likely Cause                                                                                                                | Fix                                                                                                                                            |
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -130,7 +130,7 @@ Azure Cache for Redis integrates with Azure Monitor (Part 10), providing cache h
 | Application serves visibly stale data to users                                  | TTL too long relative to how quickly the underlying data actually changes, or missing cache invalidation logic on writes    | Shorten TTL, or implement explicit cache invalidation (removing/updating the relevant cache entry) at the point the underlying data is written |
 | Cache memory utilization consistently near capacity, causing excessive eviction | Cache tier/size undersized for the actual working set of frequently-accessed data                                           | Upgrade to a larger cache size/tier, or review whether the caching strategy is caching more data than necessary                                |
 
-## 32.11 Interview Questions — Section 32
+## 11. Interview Questions — Section 32
 
 ### 🎯 Intermediate
 
@@ -148,27 +148,27 @@ _Model answer:_ I'd start by examining what specific data is being cached and it
 
 _What the interviewer is probing:_ a methodical, metrics-driven diagnostic approach distinguishing between several genuinely distinct possible root causes (access pattern mismatch, TTL misconfiguration, capacity/eviction pressure) rather than jumping to a single assumed fix.
 
-## 32.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - **"Data in Redis is automatically persisted and safe like a database."** Not by default — Redis is fundamentally an in-memory store; without explicitly enabling persistence (a Premium-tier-and-above capability), cache data is lost on a restart, which is generally acceptable for a pure cache (since the primary database remains the source of truth) but is an important distinction from database-grade durability guarantees.
 - **"Adding a cache is always a straightforward performance win with no downsides."** False — caching introduces genuine complexity (invalidation logic, potential temporary staleness, an additional operational component to monitor and secure) that should be adopted deliberately, based on evidence of actual database load or latency problems, not applied reflexively to every workload.
 
-## 32.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 Azure Cache for Redis provides a managed, extremely fast, in-memory caching layer, primarily used via the Cache-Aside pattern to reduce backend database load and application latency for frequently-accessed, infrequently-changing data.
 - 🔑 TTL and eviction policy configuration directly determine cache effectiveness (hit ratio) and data freshness — both should be tuned deliberately based on actual data-access and change patterns, not left at arbitrary defaults.
 - 🔑 Redis's richer data structures (Sorted Sets, Lists, Hashes) and pub/sub capability enable use cases beyond pure caching, including leaderboards, rate limiting, and lightweight real-time messaging (distinct from the more durable messaging services in Part 8).
 - 🔑 Service tier selection (Basic/Standard/Premium/Enterprise) should reflect actual production availability requirements — Basic tier's lack of replication makes it inappropriate for production use.
 
-## 32.14 Cache Stampede Mitigation, Warm-Up, and Failure-Mode Guidance
+## 14. Cache Stampede Mitigation, Warm-Up, and Failure-Mode Guidance
 
-### 32.14.1 The Cache Stampede Problem
+### 14.1 The Cache Stampede Problem
 
 **Definition:** A **cache stampede** (also called a "thundering herd") occurs when a popular, frequently-requested cache entry expires (or is evicted, or the cache is cold after a restart), and a large number of concurrent requests all experience a cache miss for that same key simultaneously — each of those requests then independently queries the primary database and attempts to repopulate the cache, causing a sudden, sharp spike of redundant load against the primary database at exactly the moment the cache was supposed to be protecting it.
 
 **Why this is a genuine production risk, not a theoretical edge case:** A single popular cached item (e.g., a trending product page, a widely-viewed piece of content) with high concurrent request volume is exactly the scenario where Cache-Aside (Section 32.3.1) — check cache, miss, query database, repopulate — breaks down at scale: if 10,000 concurrent requests all miss simultaneously, the database may receive 10,000 near-simultaneous identical queries instead of the single query that should have sufficed to repopulate the cache once, potentially overwhelming the database and defeating the entire purpose of caching at the precise moment load is highest.
 
-### 32.14.2 Mitigation Strategies
+### 14.2 Mitigation Strategies
 
 - **Locking / Mutex on cache repopulation** — when a cache miss occurs, the first request to detect the miss acquires a lock (itself often implemented using Redis, e.g., via `SETNX`-style atomic set-if-not-exists operations) before querying the database and repopulating the cache; other concurrent requests for the same key either wait briefly for the lock holder to complete and then read the now-populated cache, or are served a slightly stale previous value if one is available, rather than every concurrent request independently hitting the database.
 - **Probabilistic early expiration** — rather than a hard TTL cutoff, some requests probabilistically "expire" a cache entry slightly _before_ its actual TTL, triggering a background repopulation ahead of the real expiration, spreading repopulation load out over time instead of concentrating it at the exact expiration moment shared by many concurrent requesters.
@@ -177,13 +177,13 @@ _What the interviewer is probing:_ a methodical, metrics-driven diagnostic appro
 
 💡 **Tip:** For genuinely high-traffic, high-value cache keys (a "hot key" in the application's actual traffic profile), combining locking/mutex-based repopulation with jittered TTLs is a common, effective default mitigation approach — the lock prevents redundant concurrent database queries for that one key's stampede, while jitter prevents many _different_ hot keys from all stampeding in a synchronized wave.
 
-### 32.14.3 Cache Warm-Up
+### 14.3 Cache Warm-Up
 
 **Definition:** **Cache warm-up** refers to deliberately pre-populating the cache with known-hot data _before_ it's actually requested by real traffic — rather than relying purely on organic Cache-Aside population (where the very first request for any given key always experiences a cache miss), a warm-up process proactively primes the cache, typically executed as part of application deployment, a scheduled job, or immediately following planned maintenance/failover events.
 
 **Why it matters specifically after a cache restart or failover:** A cache that has just restarted, failed over (Standard/Premium tier automatic failover, Section 32.3.5), or been newly deployed starts completely empty — if warm-up isn't performed, the application experiences exactly the cache-stampede-like scenario described in Section 32.14.1, but for the _entire_ working set simultaneously rather than just one hot key, since every single request across the whole application is now a cache miss until the cache organically repopulates through normal traffic. Proactive warm-up (loading known-critical data immediately after a cache instance becomes available, before directing production traffic at it) avoids this "cold cache stampede" scenario at exactly the moment — right after a failover or restart — when the system is often already under some degree of stress.
 
-### 32.14.4 Failure-Mode Design: What Happens When Redis Is Unavailable
+### 14.4 Failure-Mode Design: What Happens When Redis Is Unavailable
 
 **Definition:** Application code using Cache-Aside should be explicitly designed to handle the cache being **entirely unavailable** (not just experiencing a miss for a specific key, but the Redis instance itself being unreachable) — a scenario distinct from a normal cache miss, requiring its own deliberate failure-mode handling rather than assuming the cache is always reachable.
 
@@ -191,7 +191,7 @@ _What the interviewer is probing:_ a methodical, metrics-driven diagnostic appro
 
 ⚠️ **This graceful-degradation fallback itself has a scaling risk worth planning for:** if the cache becomes unavailable during a period of significant traffic, _all_ traffic falling through to the primary database simultaneously (essentially the full-application version of the cache-stampede problem, Section 32.14.1) can overwhelm a database that was sized assuming the cache would absorb the majority of read load. Production capacity planning for the primary database should account for this worst-case "cache is down" scenario, or the application should implement additional protective measures (such as request throttling/circuit-breaking against the database) during a detected cache outage, rather than assuming graceful degradation alone is sufficient at any traffic volume.
 
-### 32.14.5 Interview Questions — Section 32.14
+### 14.5 Interview Questions — Section 32.14
 
 **🎯 Senior**
 **Q: Your application's most popular product page uses Cache-Aside with a 5-minute TTL. Every 5 minutes, you observe a sharp spike in database load. Diagnose and propose a fix.**
@@ -207,13 +207,13 @@ _Model answer:_ First, application code must be explicitly designed to catch cac
 
 _What the interviewer is probing:_ whether the candidate thinks through the full failure-mode chain (cache down → fallback to database → database itself now at risk) rather than stopping at "just fall back to the database," which is necessary but insufficient reasoning on its own for a genuinely resilient design.
 
-### 32.14.6 Key Takeaways — Section 32.14
+### 14.6 Key Takeaways — Section 32.14
 
 - 🔑 Cache stampede occurs when a popular cache entry's expiration triggers many concurrent cache misses, each independently hitting the database simultaneously — mitigated via locking/mutex repopulation, probabilistic early expiration, stale-while-revalidate, and jittered TTLs.
 - 🔑 Cache warm-up proactively pre-populates known-hot data after a restart/failover, avoiding a "cold cache stampede" across the entire working set at exactly the moment the system may already be under stress.
 - 🔑 Application code must explicitly handle complete cache unavailability (not just individual misses) via graceful degradation to the primary database — an uncaught cache-connectivity failure should never become a full application outage.
 - 🔑 Graceful degradation to the database carries its own stampede-like risk under high traffic; production database capacity planning should account for the worst-case "cache is down" scenario, or be protected with throttling/circuit-breaking during detected cache outages.
 
-## 32.15 Related Concepts (Next Up)
+## 15. Related Concepts (Next Up)
 
 Section 33 completes Part 6 — Databases & Data Services with **Data Migration & Azure Database Migration Service** — covering the tooling and strategies for actually moving existing on-premises or other-cloud database workloads into the Azure database services (SQL Database/Managed Instance, PostgreSQL/MySQL, Cosmos DB) covered throughout this Part.

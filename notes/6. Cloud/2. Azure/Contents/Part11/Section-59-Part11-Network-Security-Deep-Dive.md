@@ -6,7 +6,7 @@
 
 ---
 
-## 59.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This final section of Part 11 covers Azure's network-layer security services in depth: Azure Firewall (a managed, stateful network firewall for perimeter/segmentation control), Web Application Firewall/WAF (application-layer protection against common web exploits, extending Section 24's Application Gateway and Section 25's Front Door material), and Azure DDoS Protection. This section builds directly on NSGs (Section 22) as the foundational network control, showing how these additional services layer on top to address gaps NSGs alone cannot cover.
 
@@ -14,21 +14,21 @@ This final section of Part 11 covers Azure's network-layer security services in 
 
 ---
 
-## 59.2 Azure Firewall
+## 2. Azure Firewall
 
-### 59.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Azure Firewall is a managed, cloud-native network firewall service providing centralized traffic filtering and logging for an entire virtual network (or hub-and-spoke network topology), going beyond NSGs' per-subnet/per-NIC rules to provide a single, centrally-managed, stateful firewall with application-aware (FQDN/URL-based) filtering capability.
 
 **Precise definition:** Azure Firewall is a fully managed, highly available network security service that provides stateful Layer 3–Layer 7 traffic filtering, threat intelligence-based filtering, and centralized policy management across VNets and subscriptions, deployed as a dedicated resource within a VNet.
 
-### 59.2.2 Why It Exists Beyond NSGs (Section 22)
+### 2.2 Why It Exists Beyond NSGs (Section 22)
 
 - **Centralized policy management at scale:** NSGs (Section 22) are configured per subnet/NIC, meaning a large, multi-subscription network topology (Section 66/63's hub-and-spoke architecture, upcoming) would require managing potentially hundreds of individual NSG rule sets across many subnets/subscriptions for consistent policy — Azure Firewall, deployed once in a hub VNet, provides a single, centrally-managed policy applied to all traffic routed through it, directly addressing the same "centralize governance rather than replicate per-team configuration" principle already established repeatedly throughout Parts 9–11 (management-group-scoped Policy, Section 57; centrally-owned Key Vaults, Section 56.9.1).
 - **FQDN/application-aware filtering — NSGs cannot do this:** NSGs filter based on IP address/port/protocol only (Section 22) — they have no concept of "allow outbound traffic only to `*.microsoft.com`" or "allow only to this specific SaaS API's domain name," since a domain name isn't a stable IP address an NSG rule could target reliably (the underlying IP behind a domain can change). Azure Firewall's **FQDN filtering** operates at the DNS/application layer specifically to solve this, allowing rules expressed in terms of domain names rather than IP addresses — a genuinely different filtering capability NSGs structurally cannot provide.
 - **Threat intelligence-based filtering:** Azure Firewall can automatically block traffic to/from IP addresses and domains known to be associated with malicious activity, using Microsoft's own continuously-updated threat intelligence feed — a capability requiring active, maintained threat data that an NSG's static rule set has no mechanism to incorporate.
 
-### 59.2.3 Azure Firewall Rule Types
+### 2.3 Azure Firewall Rule Types
 
 | Rule Collection Type  | Operates On                                                           | Example                                                                                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -36,7 +36,7 @@ This final section of Part 11 covers Azure's network-layer security services in 
 | **Application rules** | L7 — FQDN/URL, for outbound HTTP/HTTPS traffic specifically           | Allow outbound traffic only to `*.azurecr.io` (directly relevant to controlling which registries AKS nodes, Section 35/35, can actually reach) and explicitly deny everything else outbound.                    |
 | **DNAT rules**        | Destination Network Address Translation — inbound traffic redirection | Redirect inbound traffic on the firewall's public IP to a specific internal resource's private IP, providing controlled, centrally-logged inbound access without exposing that internal resource's IP directly. |
 
-### 59.2.4 Deployment Pattern: Hub-and-Spoke
+### 2.4 Deployment Pattern: Hub-and-Spoke
 
 ```
                     ┌─────────────────────────┐
@@ -59,53 +59,53 @@ This final section of Part 11 covers Azure's network-layer security services in 
 
 ---
 
-## 59.3 Web Application Firewall (WAF)
+## 3. Web Application Firewall (WAF)
 
-### 59.3.1 Definition and the Layer-7-Specific Gap It Fills
+### 3.1 Definition and the Layer-7-Specific Gap It Fills
 
 **Plain language:** WAF specifically protects web applications against common web-based attack patterns (SQL injection, cross-site scripting, and other OWASP-catalogued exploit techniques) by inspecting the actual content of HTTP requests, not just their network-layer characteristics — a capability neither NSGs nor even Azure Firewall's application rules (which control _destination_, not _payload content_) provide.
 
 🔑 **Key Takeaway, precisely distinguishing WAF from Azure Firewall:** Azure Firewall's application rules (59.2.3) control **where** traffic is allowed to go (which FQDNs/URLs), operating on the request's destination; WAF inspects **what's inside** the request itself — the actual HTTP payload, headers, query parameters — looking for known malicious patterns (a SQL injection string in a form field, a script-injection attempt in a URL parameter). These are genuinely different, complementary capabilities, not overlapping alternatives — a common and important interview-level distinction.
 
-### 59.3.2 WAF Deployment Options (Direct Extension of Sections 24–25)
+### 3.2 WAF Deployment Options (Direct Extension of Sections 24–25)
 
 - **WAF on Application Gateway** (Section 24): deployed as a specific SKU/configuration of Application Gateway, protecting traffic routed through it — directly relevant to the AGIC (Application Gateway Ingress Controller) pattern introduced in Section 37.3.3, meaning an AKS-hosted application fronted by AGIC can gain WAF protection as a direct extension of that existing ingress infrastructure.
 - **WAF on Azure Front Door** (Section 25): deployed at Front Door's global edge, protecting traffic before it even reaches the origin region — providing WAF inspection closer to the requesting client and blocking malicious traffic at the edge rather than allowing it to traverse all the way to origin infrastructure first, a meaningful latency and origin-load benefit for globally-distributed applications specifically.
 
-### 59.3.3 OWASP Core Rule Set (CRS)
+### 3.3 OWASP Core Rule Set (CRS)
 
 - WAF's rule engine is commonly based on the **OWASP Core Rule Set** — a widely adopted, community-maintained set of generic attack-signature rules covering the OWASP Top 10 web application security risks (injection attacks, broken authentication patterns, and others) — providing broad, continuously-updated protection against well-known attack categories without the customer needing to author detection rules themselves.
 - **Detection vs. Prevention mode:** WAF can operate in **Detection mode** (logs matched malicious patterns without blocking them — useful for initial rollout, directly paralleling Section 57.8.2's audit-first Policy rollout guidance, now applied to WAF specifically) or **Prevention mode** (actively blocks matched requests) — the same "preview/audit before enforcing" principle recurring yet again across this roadmap's governance and security material.
 - **Custom rules:** beyond the managed CRS ruleset, WAF supports custom rules for organization-specific requirements — e.g., geo-blocking specific countries, rate-limiting requests from a specific source, or blocking based on custom-matched request characteristics not covered by the generic CRS.
 
-### 59.3.4 False Positives and Tuning
+### 3.4 False Positives and Tuning
 
 ⚠️ **Warning:** WAF's generic CRS rules, being pattern-based and broadly applicable across arbitrary web applications, can produce **false positives** — legitimate application traffic incidentally matching a malicious-pattern signature (e.g., a legitimate form field genuinely containing text that happens to resemble a SQL injection pattern) and being incorrectly blocked. This is why Detection-mode rollout (59.3.3) before switching to Prevention mode is a genuine, important operational practice, not merely a formality — allowing the specific application's actual traffic patterns to be reviewed against the ruleset and specific rule exclusions/tuning applied before any real traffic is at risk of being incorrectly blocked in production.
 
 ---
 
-## 59.4 DDoS Protection
+## 4. DDoS Protection
 
-### 59.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** DDoS (Distributed Denial of Service) Protection defends against attacks specifically aimed at overwhelming a resource's availability — flooding it with an enormous volume of traffic (volumetric attacks) or exploiting network protocol weaknesses (protocol attacks) to exhaust its capacity to serve legitimate requests — a fundamentally different threat category from WAF's application-exploit focus or Azure Firewall's traffic-filtering focus.
 
-### 59.4.2 DDoS Protection Tiers
+### 4.2 DDoS Protection Tiers
 
 | Tier                                         | Coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Cost                                        |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | **Basic**                                    | Automatically enabled for every public IP in Azure, providing baseline protection against common, large-scale volumetric/protocol attacks using Azure's own always-on global network-scale mitigation infrastructure                                                                                                                                                                                                                                                         | Free, no configuration required             |
 | **Network Protection (formerly "Standard")** | Enhanced mitigation capabilities specifically tuned to the customer's own VNet traffic patterns, providing more sophisticated, application-aware attack detection/mitigation, plus attack analytics/reporting and — critically — **cost protection** guarantees (Azure credits covering the cost of resource scale-out triggered by a genuine, confirmed DDoS attack, since autoscaling in response to an attack could otherwise itself generate an enormous, unwanted cost) | Paid, requires explicit enablement per VNet |
 
-### 59.4.3 Why Basic Tier Alone Is Often Insufficient for Production-Critical Workloads
+### 4.3 Why Basic Tier Alone Is Often Insufficient for Production-Critical Workloads
 
 💡 **Tip:** Basic tier's always-on, free protection genuinely does provide real value against common, large-scale attacks — but Network Protection tier's traffic-pattern-tuned mitigation, attack analytics (critical for post-incident review and understanding what actually happened), and cost-protection guarantee together represent a meaningfully stronger posture specifically warranted for production-critical, internet-facing workloads where availability itself is a business-critical concern — this is a genuine tier-selection decision worth making deliberately based on the actual criticality of the protected workload, rather than assuming Basic tier's free, automatic coverage is sufficient for every scenario without consideration.
 
 ---
 
-## 59.5 Layering the Four Controls Together
+## 5. Layering the Four Controls Together
 
-### 59.5.1 Complete Architecture Example
+### 5.1 Complete Architecture Example
 
 ```
 Internet
@@ -131,7 +131,7 @@ Application (AKS/App Service/VM)
 
 🔑 **Key Takeaway:** this layered architecture directly embodies the **defense-in-depth** principle — no single control is relied upon exclusively; each layer addresses a specific threat category the others don't fully cover, and a request must pass through multiple, independently-configured filtering mechanisms before reaching the actual application. This is the network-security-specific instance of a principle that has appeared throughout this roadmap in other forms (Section 55.13's Advisor-plus-Defender-for-Cloud-plus-Policy layering, Section 47.11's Bicep-module-plus-Policy layering) — redundant, complementary controls rather than a single point of protection.
 
-### 59.5.2 Which Layers Apply to Which Traffic Direction
+### 5.2 Which Layers Apply to Which Traffic Direction
 
 - **Inbound, internet-facing traffic:** benefits from the full stack shown above (DDoS Protection → WAF at edge/gateway → NSGs at the subnet level).
 - **Outbound traffic** (e.g., an AKS node reaching out to pull an image from ACR, Section 35, or call an external API): Azure Firewall's FQDN-based application rules (59.2.3) are the primary relevant control, restricting _which_ external destinations internal resources are permitted to reach — directly relevant to a security-conscious AKS network design restricting node/pod outbound traffic to only explicitly required destinations (ACR, required APIs) rather than unrestricted internet egress.
@@ -139,23 +139,23 @@ Application (AKS/App Service/VM)
 
 ---
 
-## 59.6 Production and Enterprise Usage
+## 6. Production and Enterprise Usage
 
-### 59.6.1 Azure Firewall Manager and Policy Inheritance
+### 6.1 Azure Firewall Manager and Policy Inheritance
 
 - **Azure Firewall Manager** provides centralized policy management for Azure Firewall instances across multiple VNets/hubs, supporting policy inheritance (a base, organization-wide policy that individual hub-specific policies can extend) — directly paralleling Azure Policy's own assignment-inheritance model (Section 57.5.2), now applied specifically to firewall rule management at genuine multi-hub enterprise scale.
 
-### 59.6.2 Integration With Defender for Cloud (Direct Connection to Section 55)
+### 6.2 Integration With Defender for Cloud (Direct Connection to Section 55)
 
 - Defender for Cloud (Section 55) surfaces network-security-specific recommendations (e.g., flagging an NSG rule that's overly permissive, recommending WAF enablement for an internet-facing Application Gateway lacking it) as part of its broader CSPM posture assessment — meaning this section's material isn't a separate, siloed concern from Part 11's earlier sections but is directly assessed and surfaced through the same Secure Score/recommendations mechanism already covered in Section 55, closing the loop on that section's general framework applied to network security specifically.
 
-### 59.6.3 Logging and the KQL Connection
+### 6.3 Logging and the KQL Connection
 
 - Azure Firewall and WAF both support diagnostic logging (Section 50.4's mechanism, applied directly here) to a Log Analytics workspace, enabling KQL-based (Section 51) investigation of blocked/allowed traffic patterns, WAF rule matches, and firewall rule hit counts — directly reusing this roadmap's entire Part 10 observability foundation for network-security-specific investigative and reporting needs, rather than requiring separate, unfamiliar tooling.
 
 ---
 
-## 59.7 Troubleshooting Reference
+## 7. Troubleshooting Reference
 
 | Symptom                                                                                                   | Likely Cause                                                                                                                                                                 | Diagnostic Step                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,7 +167,7 @@ Application (AKS/App Service/VM)
 
 ---
 
-## 59.8 Best Practices Checklist
+## 8. Best Practices Checklist
 
 - [ ] Layered defense-in-depth architecture applied deliberately (DDoS Protection, WAF, Azure Firewall, NSGs each addressing their specific threat category), rather than relying on any single control.
 - [ ] WAF rolled out in Detection mode first, with logged matches reviewed and tuned, before switching to Prevention mode in production.
@@ -179,7 +179,7 @@ Application (AKS/App Service/VM)
 
 ---
 
-## 59.9 Common Misconceptions
+## 9. Common Misconceptions
 
 - "Azure Firewall and WAF provide the same protection, just with different names." _Correction:_ Azure Firewall's application rules control traffic _destination_ (which FQDNs are reachable); WAF inspects request _content_ for known exploit patterns — genuinely different, complementary capabilities addressing different threat categories (59.3.1's precise distinction).
 - "NSGs alone are sufficient network security for a production environment." _Correction:_ NSGs provide essential but limited L3/L4 filtering with no FQDN awareness, no threat intelligence integration, and no L7 application-content inspection — a mature architecture layers Azure Firewall and WAF on top for the specific gaps NSGs cannot address (59.2.2, 59.3.1).
@@ -187,7 +187,7 @@ Application (AKS/App Service/VM)
 
 ---
 
-## 59.10 Interview Questions (Consolidated)
+## 10. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between a Network Security Group and Azure Firewall?"
 _Model answer:_ an NSG provides basic Layer 3/Layer 4 traffic filtering (IP address, port, protocol) applied per subnet or network interface, with no centralized management across a large network and no application-layer (FQDN/content) awareness. Azure Firewall is a centralized, managed firewall service providing stateful L3–L7 filtering across an entire VNet/hub topology, including FQDN-based application rules and threat intelligence-based filtering — capabilities NSGs structurally cannot provide. They're complementary, not alternatives: a mature architecture uses NSGs for basic per-subnet filtering and Azure Firewall for centralized, application-aware policy across the broader network.
@@ -205,7 +205,7 @@ _What the interviewer is probing:_ the ability to synthesize all four network-se
 
 ---
 
-## 59.11 Key Takeaways Summary
+## 11. Key Takeaways Summary
 
 🔑 NSGs, Azure Firewall, WAF, and DDoS Protection operate at genuinely different layers addressing genuinely different threat categories — a mature architecture layers all four deliberately as defense-in-depth, not as substitutes for one another.
 
@@ -219,7 +219,7 @@ _What the interviewer is probing:_ the ability to synthesize all four network-se
 
 ---
 
-## 59.12 Part 11 Complete: Consolidated Dependency Recap
+## 12. Part 11 Complete: Consolidated Dependency Recap
 
 ```
 Section 55 (Microsoft Defender for Cloud) — CSPM posture assessment + CWPP threat detection
@@ -238,7 +238,7 @@ Part 11 is now complete, providing the full security and governance foundation �
 
 ---
 
-## 59.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 22 (prerequisite, completed):** NSGs, the foundational network filtering layer this section's additional controls build directly on top of.
 - **Section 24–25 (prerequisite, completed):** Application Gateway and Front Door, the specific services hosting WAF in this section's deployment options (59.3.2).

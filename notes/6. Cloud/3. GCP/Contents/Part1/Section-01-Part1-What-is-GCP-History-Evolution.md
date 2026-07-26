@@ -1,12 +1,12 @@
 # Section 1 (Part 1): What is GCP, History & Evolution, Problem It Solves
 
-## 1.1 Definition
+## 1. Definition
 
 **Plain language:** Google Cloud Platform (GCP) is a collection of computing, storage, networking, database, and management services that Google rents out over the internet. Instead of buying physical servers and running them in your own data center, you "rent" virtual servers, storage, and higher-level managed services from Google, paying only for what you use.
 
 **Precise:** GCP is a public cloud platform providing Infrastructure-as-a-Service (IaaS), Platform-as-a-Service (PaaS), and Software-as-a-Service (SaaS) offerings, built on top of Google's global physical infrastructure (data centers, fiber-optic network backbone, and custom hardware). It exposes these capabilities via web console, REST APIs, command-line tools (`gcloud`, `gsutil`, `bq`), and client SDKs in multiple languages.
 
-## 1.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Before public cloud platforms existed, every organization that needed compute capacity had to:
 
@@ -18,14 +18,14 @@ Before public cloud platforms existed, every organization that needed compute ca
 
 GCP (and public cloud generally) solves this by converting infrastructure from a CapEx model to an **operational expenditure (OpEx)** model: you rent exactly the compute/storage/network capacity you need, when you need it, and release it when you don't. Google owns and maintains the physical hardware; you consume it as a service over the internet, provisioned in minutes instead of months.
 
-## 1.3 What Existed Before It
+## 3. What Existed Before It
 
 - **On-premises data centers:** Organizations owned and operated their own hardware. Full control, but slow to scale, high CapEx, and required deep operational expertise (power, cooling, physical security, hardware replacement).
 - **Colocation ("colo"):** Organizations owned the hardware but rented physical space, power, and cooling from a third-party facility. Reduced facility burden but hardware ownership and provisioning delays remained.
 - **Managed hosting:** A provider owned and racked the hardware and rented dedicated or virtual servers, but with limited self-service automation and typically manual provisioning via support tickets.
 - **Early public cloud (AWS launched 2006):** Amazon Web Services pioneered the modern self-service, API-driven, pay-as-you-go public cloud model years before Google or Microsoft entered the market.
 
-## 1.4 History & Evolution of GCP
+## 4. History & Evolution of GCP
 
 | Year      | Milestone                                                                                                                                                                                                                                                           |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +41,7 @@ GCP (and public cloud generally) solves this by converting infrastructure from a
 
 > 💡 **Tip:** GCP's compute and container strategy is deeply informed by Google's own internal infrastructure history. Google ran containerized workloads internally at massive scale for over a decade (via a system called **Borg**) before Kubernetes — the open-source descendant of Borg's ideas — became an industry standard. This lineage is why GKE is widely regarded as one of the most mature managed Kubernetes offerings among cloud providers; it is not a bolt-on service, it reflects over a decade of Google's own operational experience running containers at scale.
 
-## 1.5 Terminology (defined at first use)
+## 5. Terminology (defined at first use)
 
 - **Cloud computing:** The on-demand delivery of computing resources (servers, storage, databases, networking, software) over the internet, with pay-as-you-go pricing.
 - **IaaS (Infrastructure as a Service):** The cloud provider gives you raw building blocks — virtual machines, storage, networks — and you are responsible for the operating system, runtime, and application. Example on GCP: Compute Engine.
@@ -55,7 +55,7 @@ GCP (and public cloud generally) solves this by converting infrastructure from a
 - **`gcloud`:** The primary command-line interface (CLI) tool for interacting with most GCP services.
 - **SLA (Service Level Agreement):** A contractual commitment from Google about a service's guaranteed uptime/availability, with financial credits owed if the commitment is missed.
 
-## 1.6 Modern Use Cases
+## 6. Modern Use Cases
 
 - **Web and mobile application hosting** — from simple websites (App Engine, Cloud Run) to complex multi-service backends (GKE).
 - **Data warehousing and analytics** — organizations use BigQuery to run SQL analytics over petabytes of data without managing any database servers.
@@ -65,25 +65,25 @@ GCP (and public cloud generally) solves this by converting infrastructure from a
 - **Startups building cloud-native from day one** — avoiding any hardware ownership entirely, scaling serverless services with demand.
 - **Enterprises migrating legacy data centers** — "lift and shift" of VMs into Compute Engine, followed by gradual modernization into managed services.
 
-## 1.7 Industry Adoption
+## 7. Industry Adoption
 
 GCP is one of the three dominant global public cloud providers, alongside AWS (market leader) and Microsoft Azure (second place), commonly referred to as the "big three." GCP is generally regarded as the third-largest by market share, though it has particular strength and reputation advantages in **data analytics (BigQuery)**, **Kubernetes/containers (GKE)**, and **AI/ML workloads**, reflecting Google's own internal expertise in these areas.
 
 > ⚠️ **Accuracy note:** Precise market share percentages change quarter to quarter and vary by which analyst firm publishes them — verify against current industry reports (e.g., Synergy Research Group, Gartner) rather than relying on any fixed number here, since this is exactly the kind of fast-changing metric that goes stale.
 
-## 1.8 Prerequisites
+## 8. Prerequisites
 
 - No prior cloud experience is required to start GCP.
 - Basic familiarity with the command line (any OS) will help once we reach `gcloud` usage in Section 5 and onward.
 - Basic understanding of client-server architecture (a "server" responds to requests from a "client") is helpful for later networking and compute sections.
 
-## 1.9 Key Takeaways
+## 9. Key Takeaways
 
 - 🔑 GCP converts infrastructure from a CapEx (buy hardware upfront) model to an OpEx (pay for usage) model.
 - 🔑 GCP evolved from Google's internal infrastructure experience — most notably, Kubernetes/GKE traces directly back to Google's internal Borg system.
 - 🔑 GCP offers IaaS (Compute Engine), PaaS (App Engine), and serverless (Cloud Run, Cloud Functions) compute models, each trading off control for convenience differently — this trade-off is explored in depth in Section 10.
 - 🔑 GCP's key differentiators in the market are BigQuery (analytics), GKE (Kubernetes), and AI/ML (Vertex AI, TPUs).
 
-## 1.10 Related Concepts
+## 10. Related Concepts
 
 Region/zone infrastructure (Section 2), resource hierarchy (Section 3), the compute service decision matrix (Section 10), and the GCP vs. AWS vs. Azure comparison (Section 82) all build directly on the concepts introduced here.

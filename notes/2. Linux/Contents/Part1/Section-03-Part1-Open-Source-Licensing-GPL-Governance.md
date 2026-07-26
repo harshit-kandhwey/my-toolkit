@@ -1,11 +1,6 @@
 # Section 3 (Part 1): The Open-Source Model, Licensing (GPL), and Community Governance
 
-**Roadmap Reference:** 1.3
-**Phase:** Phase 1 — Foundations
-
----
-
-## 1.3.1 Definition
+## 1. Definition
 
 **Plain language:** Open source means the source code is publicly available, and — depending on the specific license — others are free to use, study, modify, and redistribute it. "Open" is not a single, uniform promise; different licenses grant different freedoms and impose different obligations, and the specific license attached to a piece of software is a legal fact with real engineering consequences, not a detail to skim past.
 
@@ -14,7 +9,7 @@
 - **Copyleft licenses** (GPL family): if you distribute a **derivative work** of GPL-licensed code, you must distribute it under the same license, and you must make the corresponding source code available to whoever receives the binary. The obligation "propagates forward" — hence "copyleft," a pun on copyright's usual role of restricting copying. The GPL does not restrict private use, internal modification, or running the software for any purpose; the obligations trigger on **distribution**.
 - **Permissive licenses** (MIT, BSD, Apache 2.0): you may take the code, modify it, and redistribute it — including as part of a closed-source, proprietary product — with minimal obligations, typically just preserving a copyright notice and license text. No requirement to share your modifications or your own code that uses the library.
 
-### What counts as a "derivative work" of the kernel
+### 1.1 What counts as a "derivative work" of the kernel
 
 This is where GPLv2 compliance gets genuinely technical, and where real controversy has played out for two decades.
 
@@ -22,7 +17,7 @@ This is where GPLv2 compliance gets genuinely technical, and where real controve
 - **User-space programs that merely run on top of the kernel and talk to it only through system calls** (the stable, published kernel-to-userspace ABI) are _not_ considered derivative works. This is the load-bearing distinction that lets proprietary applications run on Linux at all — see the misconceptions section below.
 - **Kernel modules** occupy the contested middle ground. The kernel exposes `EXPORT_SYMBOL_GPL()` for symbols that only GPL-licensed modules may use, alongside plain `EXPORT_SYMBOL()` for symbols usable by any module regardless of license — the kernel build system enforces this at compile/link time, and `modinfo` reports each module's declared license (see the hands-on section below).
 
-### The binary-blob-driver controversy
+### 1.2 The binary-blob-driver controversy
 
 Many hardware vendors (GPU makers, some Wi-Fi/networking chipset vendors) ship **closed-source kernel modules** — compiled binaries with no available source — typically to protect proprietary intellectual property (e.g., graphics driver algorithms) or because the driver embeds licensed third-party code they cannot redistribute. This is contentious for concrete reasons:
 
@@ -30,7 +25,7 @@ Many hardware vendors (GPU makers, some Wi-Fi/networking chipset vendors) ship *
 - Binary blobs break kernel debugging and stability guarantees: maintainers can't see or fix bugs inside them, they can silently violate internal kernel invariants, and their presence is flagged at boot and in crash reports via the kernel's "tainted" flag (visible in `cat /proc/sys/kernel/tainted` and in `dmesg`/`ktainted` output) specifically so that bug reports involving tainted kernels get treated differently by maintainers.
 - Practically: this is _why_ NVIDIA historically shipped a proprietary driver alongside the community-driven open-source **Nouveau** driver, and why distributions like RHEL/Fedora have policies restricting or flagging kernel taint from proprietary modules for supportability reasons. ⚠️ **Verify current source:** vendor driver licensing strategies change over time (e.g., NVIDIA's open-source kernel module efforts) — don't cite a vendor's current licensing posture from memory in an interview without caveating that it may have moved on.
 
-### Why GPLv2, not GPLv3, for the kernel
+### 1.3 Why GPLv2, not GPLv3, for the kernel
 
 The kernel has deliberately stayed on **GPLv2** and explicitly declined to move to GPLv3 (this is stated directly in the kernel source tree's top-level `COPYING` file). The core reasons cited by Linus Torvalds and other kernel developers:
 
@@ -40,7 +35,7 @@ The kernel has deliberately stayed on **GPLv2** and explicitly declined to move 
 
 > 💡 **Tip:** This is a favorite trivia-adjacent interview question because it tests whether you understand licensing as an _engineering-relevant, not just legal_ decision — GPLv2's specific terms shaped how hardware vendors, embedded device makers, and cloud providers could build on Linux at all.
 
-## 1.3.2 Governance Structure
+## 2. Governance Structure
 
 Linux has no single corporate owner, and its governance is a deliberately layered structure of trademark holder, meritocratic maintainers, and a neutral non-profit umbrella.
 
@@ -64,11 +59,11 @@ Linux has no single corporate owner, and its governance is a deliberately layere
 
 > 🔑 **Two governance ideas worth internalizing:** (1) authority in the kernel is _earned and delegated_, not appointed by a company — a maintainer's standing comes from sustained, trusted contribution; (2) the email-based review workflow is not a legacy relic being phased out — it remains the kernel's primary review mechanism today, and understanding `git send-email` / `Signed-off-by` is directly useful if you ever contribute upstream.
 
-## 1.3.3 Hands-On: Inspecting License Information on a Running System
+## 3. Hands-On: Inspecting License Information on a Running System
 
-Understanding licensing isn't purely theoretical — you can inspect what license governs installed packages and loaded kernel modules on any running Linux system, which matters directly for compliance audits (1.3.4).
+Understanding licensing isn't purely theoretical — you can inspect what license governs installed packages and loaded kernel modules on any running Linux system, which matters directly for compliance audits (4).
 
-### `modinfo` — Inspect a kernel module's license and metadata
+### 3.1 `modinfo` — Inspect a kernel module's license and metadata
 
 **Command Documentation**
 
@@ -96,7 +91,7 @@ Understanding licensing isn't purely theoretical — you can inspect what licens
   - `modinfo` reports the _declared_ license, not a legal determination of whether the module is genuinely GPL-compatible — a self-declared "Proprietary" or "Dual BSD/GPL" module loading successfully doesn't mean its licensing is unambiguous or unchallenged.
   - Checking `dmesg | grep -i taint` or `cat /proc/sys/kernel/tainted` after loading a proprietary module shows the kernel's own signal that it's running with non-GPL or otherwise "tainting" code loaded — useful both for licensing awareness and because kernel maintainers treat bug reports from tainted kernels differently.
 
-### Inspecting distribution package licenses
+### 3.2 Inspecting distribution package licenses
 
 Distributions record the license of every installed package, letting you audit an entire system's licensing posture without reading source code.
 
@@ -105,7 +100,7 @@ Distributions record the license of every installed package, letting you audit a
 
 > 💡 **Tip:** These per-package license fields are exactly the raw data that automated **SBOM (Software Bill of Materials)** tooling and license-compliance scanners (e.g., FOSSA, Black Duck, `license-scanner` type tools referenced again in Part 12/14 compliance contexts) consume to build an auditable inventory — knowing where the data actually lives on disk demystifies what those tools are doing under the hood.
 
-## 1.3.4 Practical Impact for Engineers
+## 4. Practical Impact for Engineers
 
 🔑 **Key Takeaway:** Because Linux is community-governed rather than single-vendor-controlled, no single company can unilaterally deprecate a feature the whole ecosystem depends on overnight — but it also means that some changes (e.g., replacing `iptables` with `nftables`, discussed in §115) roll out unevenly across distributions and versions, which is why version-awareness (Part 15) is a core professional skill, not a nicety.
 
@@ -116,15 +111,15 @@ Beyond that structural point, licensing has concrete day-to-day engineering cons
 - **SBOM relevance.** Modern supply-chain security and compliance practice (increasingly mandated by regulation and large-enterprise procurement policy) requires producing a **Software Bill of Materials** — a full inventory of every component, its version, and its license, in every shipped artifact, including container images built on a Linux base. The `modinfo`/`rpm -q`/`dpkg` inspection techniques above are the manual version of what automated SBOM generators do at scale; understanding them helps you sanity-check SBOM tool output and explain license findings to auditors or legal teams.
 - **Choosing a base distribution for a commercial product** can itself be a licensing decision, not just a technical one — e.g., preferring distros and packages with clearly permissive or well-documented licensing over ones with ambiguous or copyleft-heavy userland components, depending on your product's distribution model.
 
-## 1.3.5 Common Misconceptions
+## 5. Common Misconceptions
 
-1. **"If my proprietary application runs on Linux, I have to open-source it."** **False, and this is the single highest-value misconception to get right.** GPLv2's obligations attach to **derivative works of GPL-licensed code** — specifically, code that incorporates, links against in a way courts and the community treat as derivative, or is compiled into GPL-licensed source. A proprietary application that merely **runs on top of the kernel**, communicating with it only through the stable, published system-call interface, is not a derivative work of the kernel — this is precisely the boundary discussed in 1.3.1, and it is _why_ companies can sell closed-source commercial software (databases, SaaS backends, proprietary CLIs) that runs on Linux without any obligation to release their source. The GPL is about what you do with GPL-licensed _code itself_ — copying it, modifying it, linking it into your own binary in a way that makes your binary a derivative work — not about what operating system your unrelated software happens to execute on. (Caveat, not a contradiction: if you _do_ modify the kernel itself, or write a kernel module that's genuinely a derivative work per 1.3.1, and you _distribute_ that modified kernel or module, GPLv2's source-availability obligation does apply to that component.)
+1. **"If my proprietary application runs on Linux, I have to open-source it."** **False, and this is the single highest-value misconception to get right.** GPLv2's obligations attach to **derivative works of GPL-licensed code** — specifically, code that incorporates, links against in a way courts and the community treat as derivative, or is compiled into GPL-licensed source. A proprietary application that merely **runs on top of the kernel**, communicating with it only through the stable, published system-call interface, is not a derivative work of the kernel — this is precisely the boundary discussed in 1, and it is _why_ companies can sell closed-source commercial software (databases, SaaS backends, proprietary CLIs) that runs on Linux without any obligation to release their source. The GPL is about what you do with GPL-licensed _code itself_ — copying it, modifying it, linking it into your own binary in a way that makes your binary a derivative work — not about what operating system your unrelated software happens to execute on. (Caveat, not a contradiction: if you _do_ modify the kernel itself, or write a kernel module that's genuinely a derivative work per 1, and you _distribute_ that modified kernel or module, GPLv2's source-availability obligation does apply to that component.)
 2. **"GPL means the software is free of charge."** Free as in freedom (to use, study, modify, redistribute), not necessarily free as in price — the GPL explicitly permits charging money for distributing GPL software; you just can't restrict the recipient's further rights to it.
 3. **"Open source and GPL are the same thing."** GPL is one specific copyleft license among many OSI-approved open-source licenses; permissive licenses (MIT, BSD, Apache 2.0) are equally "open source" by any standard definition but impose far fewer downstream obligations. Conflating "open source" with "copyleft" causes real confusion when reasoning about compliance across a mixed dependency tree.
 4. **"A proprietary kernel module is always illegal."** Not automatically — whether a given module is a "derivative work" is a genuinely contested, fact-specific legal and technical question, not a bright line; the kernel community's own stance (favoring modules that use only the stable, non-restricted symbol interface as more defensible) is influential but is not itself a court ruling. Treat specific vendor situations with appropriate caution rather than blanket certainty in either direction.
 5. **"The Linux Foundation controls what goes into the kernel."** It doesn't — it's a funding, infrastructure, and trademark-stewardship body; technical decisions rest entirely with Torvalds and the maintainer hierarchy, which predates and is independent of the Foundation's administrative role.
 
-## 1.3.6 Interview Questions
+## 6. Interview Questions
 
 **[Beginner] Q1. What's the difference between a copyleft license like GPL and a permissive license like MIT?**
 **Model answer:** A permissive license (MIT, BSD, Apache 2.0) lets you take the code, modify it, and redistribute it — including inside a closed-source proprietary product — with minimal obligations, typically just preserving the original copyright notice. A copyleft license like GPL is more restrictive on redistribution: if you distribute a derivative work of GPL code, you must license your derivative under the same terms and make its source available to recipients. The obligation "propagates forward" through the derivative-work chain, which is why it's called copyleft. Both are genuinely open source — GPL just makes a stronger promise that downstream users retain the same freedoms you were given.
@@ -164,7 +159,7 @@ _What the interviewer is probing for:_ whether you can operationalize compliance
 - §4 (next) covers Linux philosophy and design principles — the technical counterpart to this section's legal/governance framing.
 - Part 8 (§59–§64) returns to package management, where per-package license metadata (introduced here) is what tooling like `dpkg`/`rpm`/repository signing actually operates on.
 - Part 12 (§89–§96) covers security hardening and compliance frameworks in depth, where SBOM generation and license-compliance auditing (introduced practically here) become formal, recurring processes.
-- Part 14 (§103–§110) covers enterprise support models (RHEL subscriptions, Ubuntu LTS) — the commercial answer to the governance trade-off (distributed roadmap, no single vendor) discussed in 1.3.4's architect-level material.
+- Part 14 (§103–§110) covers enterprise support models (RHEL subscriptions, Ubuntu LTS) — the commercial answer to the governance trade-off (distributed roadmap, no single vendor) discussed in 4's architect-level material.
 - Part 15 (§111–§115) covers version and distribution differences that matter in practice, including the uneven rollout of ecosystem-wide changes referenced in the Key Takeaway above (e.g., `iptables` → `nftables`).
 
 ---

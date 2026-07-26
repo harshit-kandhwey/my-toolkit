@@ -1,16 +1,16 @@
 # Section 9 (Part 1): Cloud Batch
 
-## 9.1 Definition
+## 1. Definition
 
 **Plain language:** Cloud Batch is Google's managed service for running batch-computing jobs — workloads that process a large amount of work in bulk and then finish, rather than serving live requests. You describe the work (what to run, how many times, on what kind of machine), and Google handles provisioning the compute, running every task to completion, retrying failures, and tearing everything down when the job is done.
 
 **Precise:** Cloud Batch is a fully managed batch job scheduling and execution service that provisions and manages the underlying Compute Engine (Section 2) virtual machines required to run a **job**, composed of one or more **task groups**, each executing a specified number of parallel **tasks**, with built-in retry policies, scheduling, and automatic resource cleanup on completion.
 
-## 9.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Before Cloud Batch, running a large batch workload on GCP meant hand-building the orchestration yourself: creating a Managed Instance Group (MIG) sized for the workload, writing startup scripts to pull and execute the work, tracking which VM had processed which chunk of work, handling partial failures and retries manually, and remembering to tear the MIG down when the job finished (or paying for idle capacity that was never scaled back). Cloud Batch exists to remove that undifferentiated heavy lifting: it is purpose-built for the "run this executable or container N times, in parallel, across as many VMs as needed, then clean up" pattern, letting a batch workload be described declaratively rather than orchestrated by hand.
 
-## 9.3 Core Concepts
+## 3. Core Concepts
 
 - **Job:** The top-level unit submitted to Cloud Batch — a complete unit of batch work with its own scheduling, priority, and lifecycle.
 - **Task group:** A job is composed of one or more task groups, each defining a runnable (a script or container image), a task count, and the resource requirements (machine type, CPU, memory, GPUs if needed) for that group's tasks.
@@ -19,7 +19,7 @@ Before Cloud Batch, running a large batch workload on GCP meant hand-building th
 - **Retry policy:** Cloud Batch can automatically retry failed tasks up to a configured maximum, without the job author having to implement retry logic themselves.
 - **Provisioning model:** Cloud Batch provisions Compute Engine VMs on demand for the job's duration (optionally using Spot VMs for cost savings on interruptible work, Section 2) and deletes them automatically once all tasks complete — no lingering infrastructure to clean up.
 
-## 9.4 Cloud Batch vs. Hand-Orchestrated MIGs
+## 4. Cloud Batch vs. Hand-Orchestrated MIGs
 
 | Aspect                 | Cloud Batch                                                           | Manually Orchestrated MIG for Batch Work                                           |
 | ---------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -33,7 +33,7 @@ Before Cloud Batch, running a large batch workload on GCP meant hand-building th
 
 > ⚠️ **Interview-relevant nuance:** A common architect-level trap is reaching for a hand-rolled MIG-plus-Pub/Sub-queue pattern for batch work "because that's how compute scaling is normally done" — Cloud Batch exists precisely to remove the need for that pattern in the common case, and reinventing it duplicates functionality Cloud Batch already provides for free.
 
-## 9.5 Architecture Diagram
+## 5. Architecture Diagram
 
 ```
                      gcloud batch jobs submit
@@ -61,7 +61,7 @@ Before Cloud Batch, running a large batch workload on GCP meant hand-building th
                     on job completion
 ```
 
-## 9.6 Hands-On Example
+## 6. Hands-On Example
 
 **Purpose:** Submit a Cloud Batch job that runs a script across 200 parallel tasks on Spot VMs.
 
@@ -123,7 +123,7 @@ gcloud batch jobs describe render-job --location=us-central1 --format="value(sta
 RUNNING
 ```
 
-## 9.7 Cloud Batch vs. Dataflow / Dataproc for Data-Processing Batch Jobs
+## 7. Cloud Batch vs. Dataflow / Dataproc for Data-Processing Batch Jobs
 
 A frequent point of confusion is when to reach for Cloud Batch versus GCP's dedicated data-processing services, Dataflow and Dataproc (both covered fully in Section 45). The distinction is about what kind of "batch" work is involved:
 
@@ -136,18 +136,18 @@ A frequent point of confusion is when to reach for Cloud Batch versus GCP's dedi
 
 The practical rule: if the workload is fundamentally "run this program N times over a list of inputs" (rendering, simulation, scientific compute, log post-processing scripts), Cloud Batch is the simpler, more direct fit. If the workload is fundamentally "transform, join, and aggregate large structured/semi-structured datasets," Dataflow or Dataproc's data-aware execution engines do meaningfully more work for you than Cloud Batch would, and reimplementing that logic on top of Cloud Batch would mean rebuilding data-processing primitives Dataflow/Dataproc already provide.
 
-## 9.8 Production & Enterprise Usage
+## 8. Production & Enterprise Usage
 
 - **Rendering and simulation farms:** Media, scientific, and engineering workloads that need to run the same executable across thousands of input variations (frames, parameter sweeps) are a natural fit, especially combined with Spot VMs for cost efficiency on interruptible work.
 - **Scheduled maintenance/reconciliation jobs:** Nightly or periodic bulk-processing scripts (data reconciliation, report generation, bulk file transformation) that don't warrant a persistent data-pipeline framework.
 - **Genomics and scientific computing:** High-throughput scientific workloads with large parameter sweeps commonly use Cloud Batch's task-group model to fan out thousands of independent computations.
 
-## 9.9 Common Misconceptions
+## 9. Common Misconceptions
 
 - **Misconception:** "Cloud Batch is a data-processing service like Dataflow." Cloud Batch is a general-purpose job/VM orchestrator with no data-aware primitives — it runs whatever script or container you give it, without understanding the structure of any data involved. For genuine data-processing pipelines, Dataflow or Dataproc (Section 45) provide substantially more built-in capability.
 - **Misconception:** "You still need to build your own MIG and cleanup logic for large-scale batch work on GCP." Cloud Batch already provisions, schedules, retries, and tears down the underlying VMs automatically — hand-building that orchestration is now rarely necessary outside of highly custom requirements.
 
-## 9.10 Interview Questions
+## 10. Interview Questions
 
 **🎯 Beginner:** _What are the three core building blocks of a Cloud Batch job?_
 **Model answer:** A job is the top-level submitted unit, composed of one or more task groups; each task group defines a runnable (script or container) plus resource requirements and a task count; each task is a single execution of that task group's runnable. A job with a task count of 200 and a parallelism of 50 runs that runnable 200 times total, at most 50 concurrently.
@@ -158,13 +158,13 @@ The practical rule: if the workload is fundamentally "run this program N times o
 **🎯 Senior/Architect:** _A team wants to run a large ETL pipeline that joins and aggregates several terabytes of structured data nightly, and is considering Cloud Batch because "it's just a batch job." How would you advise them?_
 **Model answer:** I'd steer them toward Dataflow or Dataproc (Section 45) instead. Cloud Batch is a general-purpose compute orchestrator — it has no concept of a dataset, a join, a windowed aggregation, or distributed shuffling; implementing a terabyte-scale join-and-aggregate pipeline on top of Cloud Batch would mean hand-building the data-processing engine that Dataflow (Apache Beam) or Dataproc (Spark/Hadoop) already provide, including partitioning the data correctly across tasks, handling skew, and managing intermediate shuffle state. Cloud Batch is the right tool when the workload is "run this program N times" without an inherent data-processing structure; a genuine ETL join-and-aggregate workload has exactly that structure, so a data-aware framework does materially more of the hard work for the team than Cloud Batch would.
 
-## 9.11 Key Takeaways
+## 11. Key Takeaways
 
 - 🔑 Cloud Batch is GCP's managed batch-computing service — job, task group, and task are the core building blocks, with parallelism controlling concurrent execution.
 - 🔑 It automatically provisions and tears down the underlying Compute Engine VMs, including native Spot VM support, removing the need to hand-orchestrate a MIG for batch work.
 - 🔑 Built-in retry policies handle task-level failures without custom retry logic.
 - 🔑 Cloud Batch is for general-purpose "run this program N times" workloads — genuine data-processing pipelines (ETL, joins, aggregations, streaming) belong on Dataflow or Dataproc (Section 45), which provide data-aware execution engines Cloud Batch does not.
 
-## 9.12 Related Concepts
+## 12. Related Concepts
 
 Compute Engine and Managed Instance Groups as the underlying provisioned infrastructure and the manual alternative (Section 2), Spot VMs for cost-optimized interruptible work (Section 2), Dataflow and Dataproc for data-aware batch/streaming processing (Section 45), Cloud Scheduler for triggering recurring batch jobs, and the full compute decision matrix (Section 10) all relate to the batch-computing model introduced here.

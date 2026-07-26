@@ -1,21 +1,21 @@
 # Section 11 (Part 3): Ignoring & Controlling Files — .gitignore and .gitattributes
 
-## 11.1 Definition
+## 1. Definition
 
 **Plain language:** Not every file in a project belongs in version control — build output, dependency folders, secrets, editor junk — and not every tracked file should be treated identically — some are binary, some need consistent line endings across Windows and Linux machines, some shouldn't even end up in a release archive. `.gitignore` and `.gitattributes` are the two path-based configuration files that tell Git how to treat files by pattern.
 
 **Precise:** `.gitignore` is a plain-text pattern file (one or more, at any directory level, plus global/system fallbacks) that tells Git which **untracked** paths to exclude from `git status`, `git add .`, and similar operations — it does not affect files Git already tracks. `.gitattributes` is a separate, more powerful pattern file that assigns **path-specific attributes**: text vs binary handling, line-ending normalization, custom diff drivers, merge strategies, and export behavior — attributes apply to tracked files and influence how Git's core machinery (diff, merge, checkout, archive) processes them.
 
-## 11.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 1. **Generated and environment-specific files pollute `git status` and history.** Compiled binaries, `node_modules/`, `__pycache__/`, IDE settings, log files — none of these belong in a shared history; they're either regenerable, machine-specific, or simply noise. `.gitignore` lets Git filter them out of everyday visibility permanently rather than requiring constant manual discipline.
 2. **Not everything Git tracks is text.** Git's diff/merge machinery assumes line-oriented text by default; binary files (images, compiled artifacts) need Git to detect that and stop trying to line-diff or line-merge them, which would produce garbage or false conflicts. `.gitattributes` gives Git explicit, per-path knowledge of what it's dealing with.
 3. **Cross-platform teams hit a specific, painful failure mode around line endings.** Windows and Unix-family systems have used different line-ending conventions since long before Git existed; without explicit configuration, this silently corrupts diffs and creates spurious conflicts across every text file in a mixed-OS team (11.6 is dedicated entirely to this).
 4. **A repository's working tree and its distributable archive aren't always the same set of files.** `.gitattributes`' `export-ignore` lets internal-only files (CI config, test fixtures) exist in the repo without polluting a `git archive` release tarball.
 
-## 11.3 `.gitignore` Syntax
+## 3. `.gitignore` Syntax
 
-### 11.3.1 Basic patterns
+### 3.1 Basic patterns
 
 ```gitignore
 # Comments start with #
@@ -41,7 +41,7 @@ cache/*.tmp
 logs/**/*.log
 ```
 
-### 11.3.2 Negation with `!`
+### 3.2 Negation with `!`
 
 ```gitignore
 # Ignore all .log files...
@@ -53,7 +53,7 @@ logs/**/*.log
 
 > ⚠️ **Critical clarification:** negation cannot re-include a file if one of its **parent directories** is already ignored — Git never even looks inside an ignored directory to evaluate further rules. `build/` followed by `!build/keep.txt` does **not** work; you'd need to un-ignore the directory itself first (`!build/` then re-ignore its contents selectively), which is awkward enough that the common advice is to structure ignore rules to avoid needing this pattern at all.
 
-### 11.3.3 Directory-only patterns (`/` suffix)
+### 3.3 Directory-only patterns (`/` suffix)
 
 ```gitignore
 # Matches a directory named "build" anywhere, but NOT a file named "build"
@@ -63,7 +63,7 @@ build/
 build
 ```
 
-### 11.3.4 Where `.gitignore` files live and how they combine
+### 3.4 Where `.gitignore` files live and how they combine
 
 | Location                               | Scope                                        | Typically used for                                                                                 |
 | -------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -88,7 +88,7 @@ Thumbs.db
 
 > 💡 **Tip:** Keep project-shared ignores (`node_modules/`, `dist/`) in the committed repo `.gitignore` so every teammate benefits automatically, and keep purely personal preferences (your editor's swap files) in the global gitignore — mixing the two means either polluting the shared file with your personal editor's junk, or forcing every teammate to configure their own machine-wide ignores for things that are really project concerns.
 
-### 11.3.5 Precedence and pattern order
+### 3.5 Precedence and pattern order
 
 More specific rules (later in a file, or in a more deeply nested `.gitignore`) can override earlier, broader ones via negation. A useful debugging tool when a file that "should" be ignored isn't, or vice versa:
 
@@ -98,7 +98,7 @@ $ git check-ignore -v build/output.bin
 .gitignore:3:build/    build/output.bin
 ```
 
-### 11.3.6 `git rm --cached` — Un-tracking a File That's Already Committed
+### 3.6 `git rm --cached` — Un-tracking a File That's Already Committed
 
 > ⚠️ **Critical clarification / common interview trap:** adding a path to `.gitignore` does **nothing** to a file Git is already tracking. `.gitignore` only controls whether Git considers **untracked** paths for staging; a file already committed keeps being tracked, keeps showing modifications in `git status`, and keeps being included in every future commit, ignore rule or not.
 
@@ -117,7 +117,7 @@ $ git commit -m "Stop tracking secrets.env; add to .gitignore"
 
 > ⚠️ **Critical clarification:** this only stops tracking the file **going forward** — the file's prior committed content remains permanently in history, retrievable by anyone with the repo, forever (or until history is rewritten — §15, §28). If the file contained a secret, `git rm --cached` plus `.gitignore` is not remediation; the secret must be treated as compromised and rotated, and full history-scrubbing procedures are §28.
 
-## 11.4 `.gitattributes` Syntax and Purpose
+## 4. `.gitattributes` Syntax and Purpose
 
 `.gitattributes` lives at the repo root (or any subdirectory, scoped like `.gitignore`) and assigns one or more attributes to paths matching a pattern, using the same glob syntax as `.gitignore`.
 
@@ -130,7 +130,7 @@ $ git commit -m "Stop tracking secrets.env; add to .gitignore"
 *.bat                    text eol=crlf
 ```
 
-### 11.4.1 Text vs binary detection
+### 4.1 Text vs binary detection
 
 ```gitattributes
 # Force Git to treat these as binary — never diff, never merge, never line-ending-convert
@@ -143,7 +143,7 @@ $ git commit -m "Stop tracking secrets.env; add to .gitignore"
 
 Without `.gitattributes`, Git guesses text-vs-binary heuristically (checking for a NUL byte in the first several KB of content) — usually correct, but not guaranteed. Explicitly marking known binary types avoids Git ever attempting a line-based diff on, say, a compiled `.dll` and producing meaningless output, or worse, attempting an automatic three-way text merge on a binary file during a merge (§13) and corrupting it.
 
-### 11.4.2 Custom diff drivers
+### 4.2 Custom diff drivers
 
 ```gitattributes
 # Route .docx files through a custom textconv filter for readable diffs
@@ -158,7 +158,7 @@ Without `.gitattributes`, Git guesses text-vs-binary heuristically (checking for
 
 This tells `git diff` to pipe the file through an external converter (here, `pandoc`) before diffing, so a binary-format document produces a readable text diff instead of `Binary files a/doc.docx and b/doc.docx differ`. The same `diff=<name>` mechanism underlies specialized diff drivers for structured formats (e.g. treating JSON or Jupyter notebooks more intelligently than raw text diffing would).
 
-### 11.4.3 `export-ignore` — Excluding Files from Archives
+### 4.3 `export-ignore` — Excluding Files from Archives
 
 ```gitattributes
 # These paths exist in the repo but should NOT appear in a git archive tarball/zip release
@@ -174,7 +174,7 @@ $ git archive --format=zip -o release.zip HEAD
 
 `export-ignore` solves a different problem than `.gitignore`: these files are legitimately tracked, versioned, and needed by contributors working in the repo — they simply shouldn't ship in a packaged release artifact (CI workflow files, internal test fixtures, contributor docs). GitHub's own "download as zip" and `git archive` both honor this attribute.
 
-## 11.5 Other Common Attributes (Brief Survey)
+## 5. Other Common Attributes (Brief Survey)
 
 | Attribute                             | Effect                                                                                                                            |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -185,18 +185,18 @@ $ git archive --format=zip -o release.zip HEAD
 
 Full LFS mechanics are §26; the pattern to internalize now is simply that `.gitattributes` is Git's general-purpose "treat this path specially" mechanism, of which line-ending policy (next) is the single most operationally important use.
 
-## 11.6 Line Endings in Depth
+## 6. Line Endings in Depth
 
 This is the single most common source of "every line in this file shows as changed" confusion on cross-platform teams, and it deserves full treatment.
 
-### 11.6.1 The root cause
+### 6.1 The root cause
 
 - **Windows** text editors have historically written line endings as **CRLF** (`\r\n`, carriage return + line feed).
 - **Unix-family systems** (Linux, macOS) use **LF** only (`\n`).
 
 If a repository's files exist in Git with LF endings but a Windows developer's editor writes CRLF, the moment that developer saves a file, Git sees **every single line** as changed (the LF became a CRLF), even though no meaningful content changed at all. Multiply this across a whole file and a whole team, and diffs become useless, blame history gets destroyed (every line's "last modified" attribution shifts to whoever's editor first flipped the ending), and merge conflicts appear on lines nobody actually touched.
 
-### 11.6.2 `core.autocrlf`
+### 6.2 `core.autocrlf`
 
 ```bash
 # Purpose: convert LF to CRLF on checkout (working dir), convert CRLF back to LF on commit (repo) — Windows default
@@ -217,7 +217,7 @@ $ git config --global core.autocrlf false
 
 `core.autocrlf` is a **per-developer, per-machine** setting (global config, §8.4) — it does not travel with the repository, which is precisely its weakness: a repo relies on every single contributor having configured it correctly and consistently, and one person with the wrong setting (or `false` when everyone else uses `true`) reintroduces the spurious-diff problem for everyone who later touches files they saved.
 
-### 11.6.3 The robust fix: `.gitattributes`
+### 6.3 The robust fix: `.gitattributes`
 
 Because `core.autocrlf` is machine-local and easy to misconfigure, the more reliable approach is to commit line-ending policy **into the repository itself** via `.gitattributes`, so it applies uniformly regardless of any individual developer's Git config:
 
@@ -237,7 +237,7 @@ Because `core.autocrlf` is machine-local and easy to misconfigure, the more reli
 
 > 💡 **Tip:** The generally recommended combination for a cross-platform team is `* text=auto` as a blanket default in a repo-root `.gitattributes`, with explicit `eol=lf`/`eol=crlf` overrides only for the specific file types that functionally require one ending (shell scripts, Windows batch files). This takes the decision out of individual developers' hands entirely — `.gitattributes` is committed, versioned, and applies identically to every clone.
 
-### 11.6.4 Why cross-platform teams still get "every line changed" diffs
+### 6.4 Why cross-platform teams still get "every line changed" diffs
 
 Even with `core.autocrlf` configured correctly by everyone, teams get burned when:
 
@@ -245,7 +245,7 @@ Even with `core.autocrlf` configured correctly by everyone, teams get burned whe
 2. **`.gitattributes` was added after the fact**, so it governs new checkouts/commits but the already-committed blobs in history still hold the old, inconsistent endings — files won't be renormalized until they're re-checked-out and re-committed.
 3. **A tool outside Git's control** (some IDEs, some Windows-native build tools) rewrites line endings on save independent of Git's own conversion, silently reintroducing CRLF into a working directory that Git believes is LF-normalized.
 
-### 11.6.5 Fixing an Already-Messed-Up Repository
+### 6.5 Fixing an Already-Messed-Up Repository
 
 ```bash
 # Purpose: renormalize an existing repo's line endings to match a newly added .gitattributes policy
@@ -267,7 +267,7 @@ $ git commit -m "Normalize line endings per .gitattributes"
 
 > ⚠️ **Common confusion to preempt:** always commit a mass line-ending renormalization as its **own isolated commit**, never mixed with actual code changes. A renormalization commit touches every line of every affected file, which makes `git blame` and code-review diffs on that commit meaningless noise — but an isolated, clearly-labeled "normalize line endings" commit lets `git blame -w` (ignore whitespace) or tools aware of line-ending-only commits skip past it cleanly when tracing real history (§19 covers `blame` in depth).
 
-### 11.6.6 Quick Diagnostic
+### 6.6 Quick Diagnostic
 
 ```bash
 # Purpose: check whether a file in the repo currently has CRLF line endings
@@ -280,7 +280,7 @@ src/script.sh: text: set
 src/script.sh: eol: lf
 ```
 
-## 11.7 Hands-On: Setting Up Both Files for a New Cross-Platform Project
+## 7. Hands-On: Setting Up Both Files for a New Cross-Platform Project
 
 ```bash
 # Purpose: a realistic starter .gitignore + .gitattributes pair for a mixed-OS team's Python/Node project
@@ -324,7 +324,7 @@ $ cat .gitattributes
 tests/ export-ignore
 ```
 
-## 11.8 Troubleshooting
+## 8. Troubleshooting
 
 | Symptom                                                              | Likely cause                                                                                                    | Fix                                                                                                                                  |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -334,7 +334,7 @@ tests/ export-ignore
 | Binary file shows a garbled/useless diff                             | Git guessed "text" via heuristic incorrectly                                                                    | Explicitly mark the pattern `binary` in `.gitattributes`                                                                             |
 | `git archive` output includes files that shouldn't ship in a release | No `export-ignore` configured                                                                                   | Add `export-ignore` to the relevant `.gitattributes` patterns                                                                        |
 
-## 11.9 Interview Questions
+## 9. Interview Questions
 
 **[Beginner] Q1. Does adding a file to `.gitignore` remove it from Git if it's already tracked?**
 **Model answer:** No. `.gitignore` only tells Git which **untracked** paths to leave out of `git status` and `git add`. A file Git is already tracking keeps being tracked, keeps showing modifications, and keeps being committed regardless of any `.gitignore` rule. To actually stop tracking it, you need `git rm --cached <file>`, which removes it from the index (future commits) while leaving the working-directory copy on disk, and then it's genuinely useful to also list it in `.gitignore` so it isn't accidentally re-added later.
@@ -345,7 +345,7 @@ tests/ export-ignore
 **[Senior] Q3. You inherit a repo with years of history containing a mix of CRLF and LF line endings across different files, with no `.gitattributes` in place. How do you fix it without destroying blame history or creating a disruptive commit?**
 **Model answer:** First, add a `.gitattributes` with `* text=auto` (plus any necessary `eol=` overrides for functionally sensitive files like shell scripts) and commit that alone. Then run `git add --renormalize .`, which re-evaluates every tracked file against the new policy and stages whichever files need their stored line endings converted to match; I'd commit that renormalization as its own single, clearly labeled commit ("Normalize line endings per .gitattributes"), never mixed with functional code changes, since it will touch every line of every affected file. This doesn't erase old blame history — `git blame` on lines predating the renormalization still correctly attributes them to their real original author/commit — but I'd make sure the team knows to use `git blame -w` (or `--ignore-rev`/`.git-blame-ignore-revs` for that specific commit hash) so tooling skips past the renormalization commit and keeps surfacing the meaningful prior change instead of the mass line-ending commit. I'd also communicate the change and timing to the team, since anyone with local uncommitted work will see it as a large merge/rebase conflict surface if they don't pull and rebase promptly.
 
-## 11.10 Common Misconceptions
+## 10. Common Misconceptions
 
 1. **"`.gitignore` untracks files."** It only prevents **untracked** files from being picked up; already-tracked files require `git rm --cached` to actually stop tracking.
 2. **"`core.autocrlf` alone is a sufficient fix for line-ending problems."** It's a per-developer, per-machine setting that must be configured correctly and consistently by every single contributor to work at all; a `.gitattributes` policy committed to the repo is the more robust fix because it travels with the repo itself.
@@ -353,7 +353,7 @@ tests/ export-ignore
 4. **"Marking a file `binary` in `.gitattributes` is only about avoiding ugly diff output."** It also disables Git's merge machinery for that path (no attempted three-way text merge), which matters far more — an unwanted automatic text merge on a binary file can silently corrupt it.
 5. **"A `.gitignore` pattern with `!` can always un-ignore something."** Negation cannot re-include a path whose parent directory is already ignored — Git never descends into an ignored directory to evaluate further rules.
 
-## 11.11 🔑 Key Takeaways
+## 11. 🔑 Key Takeaways
 
 - `.gitignore` controls whether **untracked** paths are considered by `git status`/`git add`; it has zero effect on files already tracked — use `git rm --cached` for those.
 - Scope layers from most to least shareable: repo-root `.gitignore` (committed, team-wide), subdirectory `.gitignore`, `.git/info/exclude` (local-only), and the global `core.excludesfile` (machine-wide, personal editor/OS junk).
@@ -361,6 +361,6 @@ tests/ export-ignore
 - Cross-platform line-ending pain comes from CRLF (Windows) vs LF (Unix) mismatches; the robust fix combines correct per-machine `core.autocrlf` with a committed `* text=auto` (+ targeted `eol=`) `.gitattributes` policy.
 - Fixing an already-inconsistent repo requires `git add --renormalize .` after adding the policy, committed as its own isolated commit so it doesn't pollute code-review diffs or blame.
 
-## 11.12 Related Concepts & What's Next
+## 12. Related Concepts & What's Next
 
 The staging concepts referenced here (`git add`, `git status`, `git diff`) were built in full in §10; this section assumed that vocabulary throughout. `export-ignore` and binary-handling attributes reappear when large binary assets are discussed properly in §26 (Git LFS). Renormalization commits and their effect on history-reading tools connect directly to `git blame` and history search, covered fully in §19. With ignoring and attribute-based file control established, Part 4 moves into branching (§12) — the mechanism for developing multiple lines of work in parallel within the repository this and prior sections have shown how to populate and curate.

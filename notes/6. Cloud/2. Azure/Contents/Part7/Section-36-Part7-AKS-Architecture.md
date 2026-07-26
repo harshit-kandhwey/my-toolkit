@@ -6,7 +6,7 @@
 
 ---
 
-## 36.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers the architecture of Azure Kubernetes Service: what Kubernetes is and the problem it solves, the control plane vs. node architecture, how AKS specifically manages the control plane as a service, core Kubernetes objects (pods, deployments, services), and the scheduling and self-healing model. Section 37 builds on this foundation for networking, scaling, and security; Section 38 covers day-2 production operations (upgrades, node pool management, cluster maintenance).
 
@@ -14,15 +14,15 @@ This section covers the architecture of Azure Kubernetes Service: what Kubernete
 
 ---
 
-## 36.2 What Is Kubernetes and What Problem It Solves
+## 2. What Is Kubernetes and What Problem It Solves
 
-### 36.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Kubernetes is a system that runs many containers across many machines, automatically deciding where each container runs, restarting it if it fails, scaling it up or down, and routing network traffic to it — so operators declare the _desired state_ of an application and Kubernetes continuously works to make reality match it.
 
 **Precise definition:** Kubernetes (often abbreviated "K8s") is an open-source container orchestration platform, originally developed by Google and now governed by the Cloud Native Computing Foundation (CNCF), that automates the deployment, scaling, networking, and lifecycle management of containerized applications across a cluster of machines.
 
-### 36.2.2 The Problem It Solves
+### 2.2 The Problem It Solves
 
 Section 34 established that Docker Compose is a local-development convenience, not a production orchestration mechanism, because production requirements Compose does not address include:
 
@@ -32,13 +32,13 @@ Section 34 established that Docker Compose is a local-development convenience, n
 - **Service discovery and load balancing at scale:** with potentially many replicas of many services across many hosts, and replicas being created/destroyed dynamically by scaling and self-healing, static IP-based configuration (as used in simple Compose networking, Section 34.8.3) does not scale; Kubernetes provides a stable virtual IP/DNS name per service that transparently load-balances across whichever pod replicas currently exist.
 - **Rolling updates and rollback:** deploying a new version without downtime, replacing old replicas with new ones gradually while monitoring health, and automatically or manually rolling back if the new version is unhealthy.
 
-### 36.2.3 What Existed Before Kubernetes (Brief)
+### 2.3 What Existed Before Kubernetes (Brief)
 
 - **Docker Swarm:** Docker's own native orchestrator, simpler to operate than Kubernetes but with a much smaller ecosystem and fewer advanced scheduling/extension capabilities; still exists but has a small fraction of Kubernetes' industry adoption today.
 - **Apache Mesos / Marathon:** an earlier general-purpose cluster resource manager (not container-specific), influential in early cluster-scheduling thinking but has been largely superseded by Kubernetes in the container orchestration space.
 - **Google's internal systems (Borg, Omega):** Kubernetes' design is explicitly derived from over a decade of Google's internal experience running containerized workloads at massive scale via these predecessor internal systems, published and open-sourced starting in 2014.
 
-### 36.2.4 Why AKS Specifically (Rather Than Self-Managed Kubernetes on Azure VMs)
+### 2.4 Why AKS Specifically (Rather Than Self-Managed Kubernetes on Azure VMs)
 
 - **Control plane management:** Kubernetes' control plane (36.3) is complex, stateful (etcd), and requires careful operational discipline (upgrades, backup, high availability) to run reliably; AKS manages this entirely, removing that operational burden from the customer.
 - **Azure-native integration out of the box:** identity (Microsoft Entra ID / Managed Identities), networking (Azure CNI, Load Balancer, Application Gateway Ingress), storage (Azure Disks/Files as PersistentVolumes), and monitoring (Azure Monitor/Container Insights) are all pre-integrated, rather than requiring manual configuration of each Kubernetes extension point.
@@ -46,13 +46,13 @@ Section 34 established that Docker Compose is a local-development convenience, n
 
 ---
 
-## 36.3 Kubernetes Architecture: Control Plane and Nodes
+## 3. Kubernetes Architecture: Control Plane and Nodes
 
-### 36.3.1 Definition
+### 3.1 Definition
 
 A Kubernetes cluster consists of two categories of machines: the **control plane** (the "brain" — makes scheduling and cluster-state decisions) and **worker nodes** (the machines that actually run application containers, called pods).
 
-### 36.3.2 Control Plane Components
+### 3.2 Control Plane Components
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -93,7 +93,7 @@ A Kubernetes cluster consists of two categories of machines: the **control plane
 - **`kube-scheduler`:** watches for newly created pods that have no node assignment yet, and assigns each to a suitable node based on resource requirements (33.7.3's cgroup-backed requests/limits), constraints (affinity/anti-affinity, taints/tolerations, covered in Section 37), and current node load.
 - **`kube-controller-manager`:** runs numerous **control loops**, each responsible for one type of reconciliation — for example, the ReplicaSet controller continuously ensures the actual number of running pod replicas matches the declared desired count, and the Node controller tracks node health and evicts pods from nodes that have gone unresponsive.
 
-### 36.3.3 AKS-Specific: Who Manages What
+### 3.3 AKS-Specific: Who Manages What
 
 🔑 **Key Takeaway — the single most important architectural fact about AKS:** in AKS, **Azure fully manages and hosts the control plane** (`kube-apiserver`, `etcd`, `kube-scheduler`, `kube-controller-manager`) on Azure-managed infrastructure, invisible to and inaccessible by the customer directly — there is no VM, no resource group entry, no billed compute the customer sees for these components (aside from the tier-based charge on the paid Uptime SLA tier, per 36.2.4). The customer only sees, manages, and pays for the **node pool VMs**, which are standard Azure VMs / VM Scale Set instances (Section 11–12 concepts apply directly) that the customer _can_ see in their resource group, size, and scale.
 
@@ -103,13 +103,13 @@ This division matters concretely:
 - Azure handles control-plane version upgrades, patching, and high availability of `etcd` and the API server; the customer is responsible for **node pool** OS patching cadence and Kubernetes version upgrades on the node side (though AKS provides managed upgrade automation for this too, covered in Section 38).
 - Control plane high availability (multiple `etcd`/API server replicas across availability zones) is handled transparently by Azure on qualifying tiers/regions, without the customer needing to design or provision it — a stark contrast to self-managed Kubernetes, where achieving a highly available control plane is a substantial, error-prone undertaking.
 
-### 36.3.4 Node Components
+### 3.4 Node Components
 
 - **`kubelet`:** the primary "node agent" — communicates with the control plane's API server, receives pod specifications assigned to its node, and ensures the containers described in those specifications are actually running (via the node's container runtime) and healthy.
 - **`kube-proxy`:** implements the networking rules that make Kubernetes Services (36.5.4) work — maintaining network rules (historically iptables-based, increasingly IPVS or eBPF-based in modern configurations) on each node so that traffic to a Service's virtual IP is correctly routed to one of the backing pods, wherever they are running in the cluster.
 - **Container runtime (`containerd`):** as established in Section 34.4, AKS nodes run `containerd` directly as the CRI-compliant runtime — there is no `dockerd` on modern AKS nodes; `kubelet` talks to `containerd` via the Container Runtime Interface (CRI) to actually create and manage containers, ultimately via `runc` exactly as described in Section 34.4.2.
 
-### 36.3.5 AKS Nodes Are Azure VMs (Direct Application of Section 11)
+### 3.5 AKS Nodes Are Azure VMs (Direct Application of Section 11)
 
 Every AKS worker node is, underneath, a standard Azure VM belonging to a **VM Scale Set** (Section 12 concepts apply directly — AKS node pools are implemented using VM Scale Sets for the standard "Virtual Machine Scale Sets" node pool type). This means:
 
@@ -119,20 +119,20 @@ Every AKS worker node is, underneath, a standard Azure VM belonging to a **VM Sc
 
 ---
 
-## 36.4 Pods: The Fundamental Kubernetes Unit
+## 4. Pods: The Fundamental Kubernetes Unit
 
-### 36.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** a pod is the smallest deployable unit in Kubernetes — usually a single container, but capable of holding a small group of tightly coupled containers that must run together on the same node and share networking and storage.
 
 **Precise definition:** a Pod is a Kubernetes API object representing one or more containers that are guaranteed to be co-located on the same node, share a single network namespace (and therefore a single IP address and port space) and, optionally, shared storage volumes.
 
-### 36.4.2 Why the Pod Abstraction Exists (Rather Than Scheduling Containers Directly)
+### 4.2 Why the Pod Abstraction Exists (Rather Than Scheduling Containers Directly)
 
 - Some application patterns genuinely require multiple tightly coupled processes sharing network/storage — e.g., a "sidecar" container handling log shipping or a service mesh proxy alongside a primary application container. The pod abstraction gives Kubernetes a natural unit for "these containers must always be scheduled and scaled together."
 - Every container in a pod shares the pod's single IP address; containers within a pod communicate with each other via `localhost`, exactly as if they were separate processes on the same physical/virtual machine — this directly parallels the Docker Compose networking model from Section 34.8.3, but formalized as a first-class scheduling unit rather than a development-convenience construct.
 
-### 36.4.3 Pod Lifecycle
+### 4.3 Pod Lifecycle
 
 ```
 Pending → Running → Succeeded / Failed
@@ -146,28 +146,28 @@ Pending → Running → Succeeded / Failed
 - **Succeeded/Failed:** terminal states, typically relevant to batch-style workloads (Jobs) rather than long-running services.
 - ⚠️ **Warning:** a pod that repeatedly crashes shortly after starting enters a `CrashLoopBackOff` status, where Kubernetes progressively increases the delay between restart attempts — this is one of the most common production troubleshooting scenarios and is covered in depth in Section 38's operational troubleshooting material.
 
-### 36.4.4 Pods Are Usually Not Created Directly
+### 4.4 Pods Are Usually Not Created Directly
 
 🎯 **Interview Tip:** a frequent junior-level mistake is describing application deployment purely in terms of "creating pods." In practice, pods are almost never created directly in production; they are created indirectly by higher-level controllers — most commonly a **Deployment** (36.5) — specifically because a directly created pod has no self-healing behavior: if it crashes and its node fails, nothing recreates it. Understanding this distinction, and correctly explaining _why_ Deployments exist rather than just naming them, is a strong signal of genuine understanding versus memorized terminology.
 
 ---
 
-## 36.5 Core Workload and Networking Objects
+## 5. Core Workload and Networking Objects
 
-### 36.5.1 ReplicaSet
+### 5.1 ReplicaSet
 
 - **Definition:** a controller object that ensures a specified number of identical pod replicas are running at all times, continuously reconciling actual replica count toward the declared desired count (36.3.2's controller-manager reconciliation loop, applied concretely).
 - **Why it exists and the problem it solves:** without it, a crashed pod (or a node failure taking a pod down with it) would simply reduce running capacity permanently until a human intervened; the ReplicaSet controller detects the discrepancy between desired and actual replica count and creates a replacement pod automatically, typically within seconds.
 - 💡 **Tip:** ReplicaSets are rarely created directly either — they are typically managed automatically by a Deployment (36.5.2), which adds rolling-update capability on top.
 
-### 36.5.2 Deployment
+### 5.2 Deployment
 
 - **Definition:** a higher-level controller that manages ReplicaSets on behalf of the user, providing declarative updates to pods, including rolling updates and rollback.
 - **Why it exists:** a bare ReplicaSet has no built-in concept of _changing_ the pod template (e.g., deploying a new image version) without manual, error-prone ReplicaSet replacement; Deployment adds a managed update strategy on top.
 - **Lifecycle / workflow:** when a Deployment's pod template is updated (e.g., a new image tag/digest), the Deployment controller creates a _new_ ReplicaSet with the updated template and gradually scales it up while scaling the _old_ ReplicaSet down, according to the configured update strategy (most commonly `RollingUpdate`, with configurable `maxSurge`/`maxUnavailable` controlling how aggressively old pods are replaced), providing a zero-downtime deployment for a correctly configured, horizontally scaled application.
 - **Rollback:** because the Deployment retains a revision history of prior ReplicaSets (by default, a limited number of recent revisions), rolling back to a previous version is a first-class, fast operation (`kubectl rollout undo`), rather than requiring a fresh build/redeploy — directly reinforcing the "build once, deploy many, and be able to instantly revert" principle from Section 34.12.
 
-### 36.5.3 Command — `kubectl` Fundamentals (Applied to Deployments)
+### 5.3 Command — `kubectl` Fundamentals (Applied to Deployments)
 
 #### `kubectl apply`
 
@@ -198,7 +198,7 @@ Pending → Running → Succeeded / Failed
 - **Syntax:** `kubectl rollout status deployment/<name>` / `kubectl rollout undo deployment/<name> [--to-revision=N]`
 - **Production usage:** `kubectl rollout undo` is the fast, first-response tool for a bad deployment causing production issues, restoring the previous known-good ReplicaSet within seconds — a critical incident-response capability covered further in Section 38.
 
-### 36.5.4 Service: Stable Networking for Ephemeral Pods
+### 5.4 Service: Stable Networking for Ephemeral Pods
 
 - **Definition:** a Service is a Kubernetes API object that provides a stable virtual IP address and DNS name for a logical set of pods (selected by a label selector), automatically load-balancing traffic across whichever pods currently match that selector, regardless of how often those pods are individually created or destroyed.
 - **Why it exists — the problem it solves:** pods are inherently ephemeral; a Deployment's rolling update replaces pods (and therefore their individual IP addresses) constantly. Without a stable abstraction in front of them, every client would need to track a constantly changing set of pod IPs directly, which is entirely impractical at scale. A Service solves this exactly the way a Load Balancer solves the equivalent problem for VMs (Section 24's concepts apply directly, one layer down inside the cluster).
@@ -208,7 +208,7 @@ Pending → Running → Succeeded / Failed
   - `LoadBalancer`: provisions an external Azure Load Balancer (Section 24) automatically, giving the service a public (or internal, with annotation) IP address reachable from outside the cluster — the most common way to expose a service directly in AKS, and the clearest example of AKS's Azure-native integration: creating a Kubernetes Service of type `LoadBalancer` triggers Azure to provision an actual Azure Load Balancer resource behind the scenes.
 - 🔑 **Key Takeaway:** the relationship between a Kubernetes Service and Azure's own Load Balancer/networking resources is a direct, concrete example of "Azure-native integration" — Kubernetes' own abstraction (Service) triggers the creation of a real Azure resource (Load Balancer) automatically, without the user manually provisioning it through the Azure Portal or CLI as would be required for a VM-based workload (Section 24).
 
-### 36.5.5 Namespaces (Kubernetes Namespaces — Distinct from Linux Kernel Namespaces)
+### 5.5 Namespaces (Kubernetes Namespaces — Distinct from Linux Kernel Namespaces)
 
 ⚠️ **Warning:** do not confuse this concept with the Linux **kernel** namespaces from Section 34.4.4 (pid, net, mnt, etc.) — they share a name but are entirely unrelated concepts at different layers.
 
@@ -218,16 +218,16 @@ Pending → Running → Succeeded / Failed
 
 ---
 
-## 36.6 Scheduling and Self-Healing in Depth
+## 6. Scheduling and Self-Healing in Depth
 
-### 36.6.1 How Scheduling Decisions Are Made
+### 6.1 How Scheduling Decisions Are Made
 
 The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candidate node using a two-phase process:
 
 1. **Filtering:** eliminates nodes that cannot satisfy the pod's requirements — insufficient available CPU/memory relative to the pod's declared resource `requests` (Section 34.7.3's cgroup concept, now expressed as a Kubernetes API field), node taints the pod does not tolerate, node selector/affinity rules that exclude the node, and so on.
 2. **Scoring:** ranks the remaining candidate nodes by a set of scoring functions (e.g., preferring nodes with more available resources, spreading pods of the same Deployment across nodes/zones for resilience) and selects the highest-scoring node.
 
-### 36.6.2 Self-Healing Mechanisms
+### 6.2 Self-Healing Mechanisms
 
 | Failure Scenario                           | Kubernetes Response                                                                                                                                                                                                     |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -236,7 +236,7 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 | An entire node becomes unresponsive        | The Node controller (part of `kube-controller-manager`) marks the node as unhealthy after a timeout; pods on that node are eventually evicted and rescheduled onto healthy nodes by their owning ReplicaSet/Deployment. |
 | A pod is manually or accidentally deleted  | If owned by a ReplicaSet/Deployment, a replacement pod is created immediately to restore the desired replica count; a standalone pod (36.4.4) is not replaced.                                                          |
 
-### 36.6.3 Health Probes (Liveness, Readiness, Startup)
+### 6.3 Health Probes (Liveness, Readiness, Startup)
 
 - **Liveness probe:** periodically checks whether a container is still functioning correctly; a failing liveness probe causes `kubelet` to restart the container — this is the Kubernetes-native mechanism that supersedes the Dockerfile-level `HEALTHCHECK` instruction (Section 34.6.2) for orchestrated workloads, as noted in Section 34.
 - **Readiness probe:** determines whether a container is ready to receive traffic; a pod failing its readiness probe is removed from a Service's load-balancing pool (36.5.4) without being restarted — critical during startup (an application still initializing should not receive traffic yet) and during transient issues (a temporarily overloaded pod can be pulled from rotation without a disruptive restart).
@@ -245,9 +245,9 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 
 ---
 
-## 36.7 AKS Cluster Creation — Hands-On Orientation
+## 7. AKS Cluster Creation — Hands-On Orientation
 
-### 36.7.1 Command — `az aks create`
+### 7.1 Command — `az aks create`
 
 - **Purpose:** provisions a new AKS cluster, including its managed control plane and an initial node pool.
 - **Syntax (representative, non-exhaustive):**
@@ -269,13 +269,13 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 - **Common errors:** insufficient regional VM quota for the requested size/count (Section 11 quota concepts apply); RBAC permission errors if the deploying identity lacks `Contributor`-equivalent rights on the target resource group.
 - **Production/enterprise usage:** in practice, production clusters are essentially never created via a single ad hoc CLI command; they are defined via Infrastructure as Code (Bicep or Terraform, Sections 47–48) as part of a repeatable, version-controlled provisioning pipeline, with the CLI command shown here serving as the conceptual equivalent for learning purposes.
 
-### 36.7.2 The Resulting Resource Footprint
+### 7.2 The Resulting Resource Footprint
 
 ⚠️ **Warning:** AKS creates **two** resource groups: the one the user specifies (containing the AKS resource itself, a management-plane object) and an automatically generated, Azure-managed **node resource group** (by default named `MC_<resource-group>_<cluster-name>_<region>`) containing the actual node VMs, VM Scale Set, managed disks, Load Balancer, and other infrastructure resources the cluster depends on. Manually modifying or deleting resources inside the managed node resource group outside of Kubernetes-native or `az aks`-driven operations is strongly discouraged and can break the cluster in ways that are difficult to diagnose, since the managed node resource group's contents are expected to be fully owned and reconciled by the AKS control plane, not manually administered like an ordinary resource group.
 
 ---
 
-## 36.8 Production and Enterprise Usage Considerations (Architecture-Level)
+## 8. Production and Enterprise Usage Considerations (Architecture-Level)
 
 - **Multiple node pools:** production clusters typically separate the **system node pool** (running only Azure/Kubernetes system components, tainted to prevent application pods from being scheduled there) from one or more **user node pools** (running actual application workloads, potentially with different VM sizes/specializations, such as a GPU-enabled pool for ML workloads) — a pattern expanded fully in Section 37.
 - **Multi-cluster vs. single large cluster:** enterprises face a genuine architectural trade-off between fewer, larger shared clusters (simpler to operate, better bin-packing efficiency, but a larger blast radius for cluster-wide issues and weaker isolation between tenants) versus many smaller, team- or environment-dedicated clusters (stronger isolation, smaller blast radius, but higher operational overhead multiplied by cluster count). This is a genuine trade-off without a universally correct answer, and should be presented as such — the right choice depends on organizational structure, isolation/compliance requirements, and platform team capacity.
@@ -283,7 +283,7 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 
 ---
 
-## 36.9 Troubleshooting Reference (Architecture-Level Issues)
+## 9. Troubleshooting Reference (Architecture-Level Issues)
 
 | Symptom                                                    | Likely Cause                                                                                                                                                                                                 | Diagnostic Step                                                                                                        |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
@@ -295,7 +295,7 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 
 ---
 
-## 36.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Applications deployed via Deployments (or other appropriate controllers), never bare pods, for self-healing.
 - [ ] Resource `requests`/`limits` set on every container, informing scheduling and preventing noisy-neighbor resource contention.
@@ -307,7 +307,7 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 
 ---
 
-## 36.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "AKS clusters run Docker." _Correction:_ as established in Section 34.2.4 and reaffirmed in 36.3.4, AKS nodes run `containerd` directly via the CRI; there is no `dockerd` on the node.
 - "The AKS control plane is a VM I can see and manage in my resource group." _Correction:_ the control plane is fully Azure-managed and invisible to the customer; only node pool VMs (in the separate, Azure-managed node resource group, 36.7.2) are customer-visible infrastructure.
@@ -315,7 +315,7 @@ The `kube-scheduler` (36.3.2) evaluates each unscheduled pod against every candi
 
 ---
 
-## 36.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between a Pod, a ReplicaSet, and a Deployment?"
 _Model answer:_ a Pod is the smallest deployable unit — one or more co-located containers. A ReplicaSet ensures a specified number of identical pod replicas are running, replacing any that fail. A Deployment manages ReplicaSets on top of that, adding declarative rolling updates and rollback — in practice, applications are almost always deployed via Deployments, which create and manage ReplicaSets automatically, which in turn create and manage the actual pods.
@@ -333,7 +333,7 @@ _What the interviewer is probing:_ whether the candidate can reason about a genu
 
 ---
 
-## 36.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 AKS is standard, upstream-conformant Kubernetes with Azure fully managing the control plane (`kube-apiserver`, `etcd`, scheduler, controller-manager) — the customer sees and manages only node pool VMs, in a separate Azure-managed node resource group.
 
@@ -347,7 +347,7 @@ _What the interviewer is probing:_ whether the candidate can reason about a genu
 
 ---
 
-## 36.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 37 — AKS Networking, Scaling, and Security:** builds directly on this section's Service/node/scheduling foundation to cover Azure CNI vs. kubenet networking models, Ingress, Horizontal Pod Autoscaler and Cluster Autoscaler, Kubernetes RBAC, Network Policies, and pod security hardening (extending Section 34.9's Docker-level security fundamentals to the orchestrated context).
 - **Section 38 — AKS Production Operations:** cluster and node image upgrades, node pool management, backup/DR considerations for stateful workloads, and operational runbooks.

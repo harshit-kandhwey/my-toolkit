@@ -1,12 +1,12 @@
 # Section 10 (Part 3): The Core Workflow — status, add, commit, diff, log
 
-## 10.1 Definition
+## 1. Definition
 
 **Plain language:** This is the loop you run dozens of times a day: look at what changed (`status`), decide what goes into the next snapshot (`add`), record it (`commit`), and later look back at what happened (`diff`, `log`). Everything else in Git is either preparation for this loop or a variation on it.
 
 **Precise:** `git status` reports the working directory and index state relative to `HEAD`'s tree; `git add` copies content into a blob object and updates the index (§4.4.2); `git commit` builds a tree object from the index and a new commit object pointing at it, then advances the current branch ref (§4.5); `git diff` compares two of {working directory, index, a commit} depending on flags; `git log` walks the commit graph from a starting point (default `HEAD`) following parent links. None of these commands introduce new concepts beyond the three-areas model from §4 — this section is about fluency with their day-to-day surface, not new architecture.
 
-## 10.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 1. **You need constant visibility into "what's different right now."** Without a fast, cheap status check, every commit would be a leap of faith. `git status` answers "what have I touched?" in local, near-instant time (§4.10).
 2. **Not every edit belongs in the next commit.** `git add` exists so you can curate — stage exactly the changes that form one coherent unit of work, even down to individual hunks, and leave the rest for later (10.4.3).
@@ -14,9 +14,9 @@
 4. **You need to inspect before and after committing.** `git diff` in its various forms answers "what exactly am I about to stage/commit/have I already committed" — the single most common source of "wait, what did I just do" confusion is not knowing which of these three comparisons you're looking at.
 5. **History is only useful if you can navigate it.** `git log` and its flags turn the commit graph (§5, §6) from an abstract DAG into something a human can actually scan, search, and reason about day to day.
 
-## 10.3 `git status` — What Changed
+## 3. `git status` — What Changed
 
-### 10.3.1 Long format (the default)
+### 3.1 Long format (the default)
 
 ```bash
 # Purpose: see everything Git currently knows about your working directory and index
@@ -38,7 +38,7 @@ Untracked files:
 
 Three buckets, always in this order: **staged** (index differs from `HEAD`), **unstaged** (working directory differs from index, for already-tracked files), **untracked** (files Git has never been told to track). A single file can even appear staged _and_ unstaged simultaneously if you edited it again after `git add` — the index holds one version, the working directory holds a newer one, both differ from `HEAD` and from each other.
 
-### 10.3.2 Short format
+### 3.2 Short format
 
 ```bash
 # Purpose: compact, script-friendly status — one line per changed path
@@ -62,7 +62,7 @@ Two columns matter: the **first character** is the index-vs-HEAD state (staged),
 | `R ` | Renamed (staged)                                           |
 | `UU` | Unmerged — both sides changed, conflict during merge (§13) |
 
-### 10.3.3 Porcelain format
+### 3.3 Porcelain format
 
 ```bash
 # Purpose: a stable, version-independent output format for scripts and tooling
@@ -76,9 +76,9 @@ M  src/app.py
 
 > ⚠️ **Common confusion to preempt:** `git status --short` and `git status --porcelain` produce the same output for the common cases shown above, which tempts people to treat them as interchangeable. They aren't — `--short` is documented as subject to change for human readability; `--porcelain` is the one with a compatibility guarantee. Script against `--porcelain`.
 
-## 10.4 `git add` — Staging Changes
+## 4. `git add` — Staging Changes
 
-### 10.4.1 Basics
+### 4.1 Basics
 
 ```bash
 # Purpose: stage one specific file
@@ -91,7 +91,7 @@ $ git add src/app.py README.md
 $ git add .
 ```
 
-### 10.4.2 `-A` vs `.` vs `-u` — a genuinely confusing trio
+### 4.2 `-A` vs `.` vs `-u` — a genuinely confusing trio
 
 | Command                   | Stages new files | Stages modified files | Stages deletions | Scope                                                  |
 | ------------------------- | ---------------- | --------------------- | ---------------- | ------------------------------------------------------ |
@@ -108,7 +108,7 @@ $ git add -u
 
 `-u` is the deliberate choice when you want "capture everything I changed in tracked files" but are not yet ready to start tracking some new scratch file sitting in the working directory.
 
-### 10.4.3 `git add -p` — Interactive Patch Staging
+### 4.3 `git add -p` — Interactive Patch Staging
 
 The single most powerful everyday staging tool: stage individual **hunks** (contiguous blocks of changed lines) within a file, not the whole file at once.
 
@@ -148,7 +148,7 @@ This is exactly the scenario from §4.2: a real bug fix and an unrelated debug `
 
 > 💡 **Tip:** `git add -p` operates per-file by default when you name a file, or walks every modified tracked file if you run it with no path. `git add -i` is the broader interactive menu `-p` is one mode of — rarely used directly, since `-p` covers the common case.
 
-### 10.4.4 Unstaging
+### 4.4 Unstaging
 
 ```bash
 # Purpose: remove a file from the staging area without touching working directory content
@@ -157,9 +157,9 @@ $ git restore --staged src/app.py
 
 Covered fully as part of the three-areas command table in §4.7; the modern `git restore` subcommand replaced the older, more overloaded `git reset <file>` for this specific purpose (both still work).
 
-## 10.5 `git commit` — Recording a Snapshot
+## 5. `git commit` — Recording a Snapshot
 
-### 10.5.1 Basic forms
+### 5.1 Basic forms
 
 ```bash
 # Purpose: commit with an inline message
@@ -175,7 +175,7 @@ $ git commit
  1 file changed, 3 insertions(+), 1 deletion(-)
 ```
 
-### 10.5.2 `-am` — stage and commit tracked files in one step
+### 5.2 `-am` — stage and commit tracked files in one step
 
 ```bash
 # Purpose: stage all MODIFIED tracked files (not new/untracked ones) and commit, in one command
@@ -186,7 +186,7 @@ $ git commit -am "Update config defaults"
 
 > ⚠️ **Common confusion to preempt:** `git commit -am` skips the review step entirely — there is no chance to inspect a diff before it's committed, unlike the deliberate `add` then `diff --staged` then `commit` sequence. It's a legitimate convenience for small, obviously-correct changes to files you're already tracking, but reaching for it as a default habit reintroduces exactly the "committed something I didn't mean to" risk the index was built to prevent (§4.2).
 
-### 10.5.3 `--amend` — a preview
+### 5.3 `--amend` — a preview
 
 ```bash
 # Purpose: replace the most recent commit with a new one (new message and/or new staged content)
@@ -195,7 +195,7 @@ $ git commit --amend -m "Corrected commit message"
 
 `--amend` doesn't edit history in place — it builds an entirely new commit object with the old one's parent, then moves the branch ref to point at the new commit; the original commit object still exists, unreferenced, until garbage collected (§7, §29). This makes it a genuinely dangerous operation to run on a commit **already pushed and visible to others**, because it changes the commit's hash, which diverges your local branch from anyone who already pulled the old version. The full mechanics — including safely amending, force-pushing conventions, and recovering an amend you regret via the reflog — belong to undo operations in §15; the only thing to internalize here is that `--amend` is a **workflow-level convenience for fixing your last commit before anyone else has seen it**, not a way to edit history that's already shared.
 
-## 10.6 `git diff` — Comparing States
+## 6. `git diff` — Comparing States
 
 This is the command where knowing exactly **which two things are being compared** matters most.
 
@@ -219,7 +219,7 @@ This is the command where knowing exactly **which two things are being compared*
                  staged AND unstaged combined)
 ```
 
-### 10.6.1 The three core comparisons
+### 6.1 The three core comparisons
 
 ```bash
 # Purpose: working directory vs index — what you HAVEN'T staged yet
@@ -239,7 +239,7 @@ $ git diff HEAD
 | `git diff --staged` (= `--cached`) | Index ↔ HEAD        | "What have I staged but not committed?"         |
 | `git diff HEAD`                    | Working dir ↔ HEAD  | "What's different from my last commit, period?" |
 
-### 10.6.2 Comparing arbitrary commits, branches, and files
+### 6.2 Comparing arbitrary commits, branches, and files
 
 ```bash
 # Purpose: compare two specific commits
@@ -257,11 +257,11 @@ $ git diff --stat HEAD~3
 
 > 💡 **Tip:** `git diff branchA branchB` shows the changes needed to turn `branchA` into `branchB` — order matters, and reversing it inverts every `+`/`-`. This is the same "direction" gotcha that trips people up in merge conflict markers (§13).
 
-## 10.7 `git log` — Everyday History Reading
+## 7. `git log` — Everyday History Reading
 
 Full mastery — every filter, format placeholder, and history-searching flag — is §19. This is the working vocabulary you reach for constantly while developing.
 
-### 10.7.1 The default view
+### 7.1 The default view
 
 ```bash
 # Purpose: full log, newest first
@@ -273,7 +273,7 @@ Date:   Fri Jul 25 09:14:02 2026 +0530
     Fix auth token refresh race condition
 ```
 
-### 10.7.2 Compact, everyday flags
+### 7.2 Compact, everyday flags
 
 ```bash
 # Purpose: one line per commit — hash + subject, the single most-used log invocation
@@ -312,7 +312,7 @@ commit 4a1f2c9d8e3b7a6f5c4d3e2b1a0f9e8d7c6b5a4f
 | `--author="name"`                       | Filter by author                                                                                              |
 | `--since="2 weeks ago"` / `--until=...` | Filter by date, accepts natural-language-ish relative dates                                                   |
 
-### 10.7.3 Pretty formats
+### 7.3 Pretty formats
 
 ```bash
 # Purpose: fully custom, script-friendly one-liner format
@@ -325,7 +325,7 @@ Common placeholders: `%h` (abbreviated hash), `%H` (full hash), `%an` (author na
 
 > 💡 **Tip:** Reach for `git log --oneline --graph --all` constantly while learning branching (§12) and merging (§13) — it's the fastest way to build an accurate mental picture of the actual commit graph, rather than guessing at it.
 
-## 10.8 End-to-End Example: Edit → Partial Stage → Commit → Log
+## 8. End-to-End Example: Edit → Partial Stage → Commit → Log
 
 ```bash
 # Purpose: a realistic sequence combining every command from this section
@@ -393,7 +393,7 @@ $ git status --short
 
 This is the loop in full: `status` for orientation, `add -p` for deliberate curation, `diff --staged` for a final pre-commit review, `commit` to make it permanent, `log` to confirm, and `status` again showing the leftover debug line was never swept in by accident — exactly the outcome §4.2 promised the index would enable.
 
-## 10.9 Troubleshooting
+## 9. Troubleshooting
 
 | Symptom                                                         | Likely cause                                                          | Fix                                                                                   |
 | --------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -403,7 +403,7 @@ This is the loop in full: `status` for orientation, `add -p` for deliberate cura
 | `git commit -am` didn't include a new file                      | `-a`/`-am` never stages untracked files                               | `git add <newfile>` explicitly first, or use `git add -A` before committing           |
 | `git log` shows far fewer commits than expected                 | Missing `--all`; you're only seeing the current branch's ancestry     | Add `--all`, or check you're on the branch you think you're on                        |
 
-## 10.10 Interview Questions
+## 10. Interview Questions
 
 **[Beginner] Q1. What's the difference between `git diff` and `git diff --staged`?**
 **Model answer:** `git diff` with no flags compares the working directory against the index — it shows changes you've made but haven't run `git add` on yet. `git diff --staged` (equivalently `--cached`) compares the index against the last commit (`HEAD`) — it shows exactly what will go into the next commit if you run `git commit` right now. They can show completely different content simultaneously: if you edit a file, stage it, then edit it again, `git diff --staged` shows the first edit and plain `git diff` shows the second.
@@ -414,14 +414,14 @@ This is the loop in full: `status` for orientation, `add -p` for deliberate cura
 **[Senior] Q3. A teammate ran `git commit -am "wip"` and pushed. Walk through what is and isn't in that commit, and what you'd check.**
 **Model answer:** `-a` stages modifications and deletions to already-tracked files only — it never stages new, untracked files. So the commit contains every change to files Git was already tracking at the time, but if the teammate created any new file during that work session and never ran `git add` on it at least once, that file is still untracked and simply isn't in the commit at all, possibly silently missing from what they intended to ship. I'd run `git show --stat <commit>` to see exactly which files landed, then `git status` on their branch (or ask them to check locally) for any lingering untracked files that should have been included. Separately, `-am` skips any staged-diff review, so it's worth diffing the commit against its parent to sanity-check the actual content, not just the file list, especially since "wip" as a message tells you nothing about intent for future archaeology (§19 covers writing better messages and searching history when messages like this exist).
 
-## 10.11 Common Misconceptions
+## 11. Common Misconceptions
 
 1. **"`git add .` and `git commit -am` do the same thing."** `add .` stages new, modified, and deleted files (repo-wide behavior in modern Git, scoped to the current directory and below). `commit -am` only auto-stages modifications and deletions to already-tracked files — it never picks up new untracked files. Conflating them is a common source of "why isn't my new file in this commit?"
 2. **"`git diff` with no arguments shows my latest changes, period."** It shows only the working-directory-vs-index comparison. Anything already staged is invisible to plain `git diff` — you need `--staged` for that half of the picture.
 3. **"`--amend` edits the existing commit in place."** It creates a brand-new commit object and moves the branch ref to it; the old commit object still exists, unreferenced, until garbage collected. This matters enormously once the commit has been pushed (§15).
 4. **"`git status --short` and `git status --porcelain` are just two names for the same thing."** They usually render identically today, but only `--porcelain` carries a stability guarantee across Git versions — scripts and hooks should target it specifically.
 
-## 10.12 🔑 Key Takeaways
+## 12. 🔑 Key Takeaways
 
 - `git status` (long, `--short`, `--porcelain`) reports the same three-areas comparison from §4 in three different verbosity levels; `--porcelain` is the only one scripts should parse.
 - `git add` has meaningful variants: plain paths, `.` vs `-A` vs `-u` (scope and what gets swept up differs), and `-p` for hunk-level curation — the direct mechanism for building clean, reviewable commits.
@@ -429,6 +429,6 @@ This is the loop in full: `status` for orientation, `add -p` for deliberate cura
 - `git diff` has three everyday forms distinguished purely by which two areas are being compared: plain (working vs index), `--staged` (index vs HEAD), and `HEAD` (working vs HEAD combined).
 - `git log --oneline --graph --all` is the fastest way to see the real shape of the commit graph; pretty formats (`--pretty=format:...`) build custom, scriptable output.
 
-## 10.13 Related Concepts & What's Next
+## 13. Related Concepts & What's Next
 
 Everything here operates on the assumption of a single line of history; §12 introduces branching, at which point `git log --graph` stops being a curiosity and becomes essential daily reading. `--amend` previewed here gets its full treatment — along with `reset`, `revert`, `restore`, and the reflog as a safety net — in §15 (Undoing Things). `git log`'s complete surface, including `git bisect`, range syntax (`A..B`, `A...B`), and searching history by content (`git log -S`/`-G`), is §19. §11, immediately next, covers keeping files out of this workflow entirely via `.gitignore`.

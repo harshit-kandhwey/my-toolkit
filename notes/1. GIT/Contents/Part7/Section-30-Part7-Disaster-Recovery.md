@@ -1,23 +1,23 @@
 # Section 30 (Part 7): Disaster Recovery — reflog, fsck, Recovering Lost Commits & Repairing Corruption
 
-## 30.1 Definition
+## 1. Definition
 
 **Plain language:** "I think I just destroyed hours of work" is rarely true in Git — almost every apparent loss is recoverable, because Git deletes almost nothing immediately and keeps multiple, layered safety nets. This section is the complete escalation path: from the everyday reflog, to `fsck`-based recovery of objects the reflog no longer remembers, to the last-resort case where the local repository itself is damaged and recovery has to come from somewhere else entirely.
 
 **Precise:** Git's disaster-recovery guarantees rest on three layered facts established across earlier sections: (1) commit objects are never deleted the instant a ref stops pointing at them (§7.6.3), (2) the reflog (§6.6) records ref movements locally and protects recently-orphaned objects from garbage collection for a retention window, and (3) even after both the reflog and any local recovery path are exhausted, every full clone anywhere is an independent, complete copy of history (§1.6.1) that can reseed a damaged or lost local repository entirely.
 
-## 30.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 1. **Destructive-looking operations are common and encouraged in Git's daily workflow** — `reset --hard`, force-pushes, branch deletion, and history rewriting (§14, §15, §28) are all normal, useful operations, not exotic edge cases. A safety net has to exist or none of them would be usable without constant fear.
 2. **Mistakes happen under pressure and often compound** — a wrong-branch `reset --hard`, a panicked force-push, an accidental branch deletion during cleanup. Recovery procedures need to be calm, repeatable, and not dependent on remembering exact hashes from memory.
 3. **Not every loss is recoverable from the same layer** — knowing which tool applies to which stage of "how lost is this" (still on a branch → reflog → fsck → another clone entirely) is the actual skill; reaching for the wrong tool, or assuming something is unrecoverable prematurely, both waste time in an actual incident.
 4. **Corruption, while rare, is categorically different from "lost" history** — a lost commit still exists intact somewhere in the object database; a corrupted object is damaged data that may need to come from an entirely separate, uncorrupted copy.
 
-## 30.3 The Reflog as the Primary Recovery Tool (Deepening §6.6)
+## 3. The Reflog as the Primary Recovery Tool (Deepening §6.6)
 
 The reflog is the first tool to reach for in nearly every recovery scenario, because it directly records the _before_ state of any ref-moving operation — commits, resets, rebases, checkouts, merges.
 
-### 30.3.1 Recovering a commit after a bad `reset --hard`
+### 3.1 Recovering a commit after a bad `reset --hard`
 
 ```bash
 $ git log --oneline
@@ -41,7 +41,7 @@ HEAD is now at 7e4f9a2 commit B
 
 > 💡 **Tip:** `git switch -c recovery-branch HEAD@{1}` is a strictly safer alternative to a second `reset --hard` when recovering — it creates a new branch at the recovered position without touching your current branch pointer again, letting you inspect the recovered state before deciding what to do with it.
 
-### 30.3.2 Recovering a deleted branch
+### 3.2 Recovering a deleted branch
 
 ```bash
 $ git branch -D feature-payments
@@ -56,17 +56,17 @@ $ git branch feature-payments 9d8e7f6
 
 Branch deletion, exactly like `reset`, never deletes the underlying commit objects — it removes only the small pointer file under `.git/refs/heads/` (§6.3.1). Recreating a branch ref at the last known hash — found either from the deletion command's own output or from the reflog — fully restores it.
 
-### 30.3.3 The retention window and its limits
+### 3.3 The retention window and its limits
 
 > ⚠️ **Critical scope limitation (restated from §6.6.3 with full disaster-recovery framing):** the reflog is **local only** — it is never included in a clone, fetch, or push, so a teammate cannot recover _your_ mistake from their copy of the repository via reflog, and a fresh clone of your own repository from another machine has no reflog history either. It also **expires**: unreachable entries by default around 30 days, reachable ones around 90 (exact values are controlled by `gc.reflogExpire` / `gc.reflogExpireUnreachable` and worth confirming against your Git version). Once an entry expires and a subsequent `gc` runs, that recovery path closes permanently — this is precisely why the next tool, `fsck`, matters: it can still find some objects the reflog has already forgotten, provided `gc` hasn't pruned them yet either.
 
-## 30.4 Recovering Dangling Commits the Reflog No Longer Remembers
+## 4. Recovering Dangling Commits the Reflog No Longer Remembers
 
-### 30.4.1 When this applies
+### 4.1 When this applies
 
 The reflog itself has expired the relevant entry, or the loss happened via an operation that didn't create a normal reflog entry you can find (a scripted operation, a different clone/worktree, or simply too much time has passed). The commit object may still physically exist — objects aren't deleted the moment they become unreferenced, only once `gc` actually prunes them (§7.6.1-7.6.3) — but nothing, including the reflog, currently points at it. This is a **dangling** object.
 
-### 30.4.2 `git fsck --full --unreachable`
+### 4.2 `git fsck --full --unreachable`
 
 ```bash
 # Purpose: list every object not reachable from any ref, including ones
@@ -79,7 +79,7 @@ dangling commit 9d8e7f6a1b2c3d4e5f6789012345678901234567
 
 `dangling commit` entries are the primary interest — a fully intact commit object that nothing currently references. Blobs and trees can also show up dangling (e.g., from a `git add` that staged content which was never committed), but a dangling **commit** is usually the recoverable unit of actual work, since it carries its own tree snapshot and message.
 
-### 30.4.3 Inspecting before deciding
+### 4.3 Inspecting before deciding
 
 Never blindly reattach a dangling commit — `fsck` can surface a large number of them in an active repository (amend/rebase leftovers, old detached-HEAD experiments), most of which are genuinely disposable. Inspect first:
 
@@ -104,9 +104,9 @@ $ git switch -c recovered-payment-work 9d8e7f6a1b2c3d4e5f6789012345678901234567
 
 > ⚠️ **Critical clarification:** `fsck --unreachable` is strictly a _superset_ recovery layer beyond the reflog — anything findable via reflog is also findable this way, but `fsck` additionally surfaces objects whose reflog entries have already expired. It is not, however, unlimited: once `git gc` actually prunes an unreachable object (past both the reflog's retention window and `gc`'s own grace period, §7.6.2's `--prune=<date>`), it is genuinely gone from this repository — `fsck` can only find what still physically exists on disk.
 
-## 30.5 Repository Corruption
+## 5. Repository Corruption
 
-### 30.5.1 Symptoms
+### 5.1 Symptoms
 
 ```
 error: object file .git/objects/ab/cdef1234... is empty
@@ -117,7 +117,7 @@ fatal: bad tree object <hash>
 
 These indicate the object database itself is damaged — not merely a ref pointing at the wrong (but intact) place, which is what 30.3-30.4 address. Common causes: disk failures or filesystem errors, an interrupted operation that left a partially-written file, or (rarely) manual/scripted tampering with `.git/objects` outside of Git's own commands.
 
-### 30.5.2 General recovery approaches
+### 5.2 General recovery approaches
 
 1. **Run `git fsck --full` first** to get a complete inventory of exactly what's damaged versus intact — corruption is frequently localized to a handful of objects, not the entire database.
 2. **Re-fetch the missing/corrupt objects from a remote.** If the corrupted object still exists intact on `origin` (or any other remote), a fresh `git fetch` can often repair the local copy without any special recovery procedure, since Git will re-download objects it doesn't already have valid local copies of. This is the direct practical payoff of §1.6.1's point that **every clone is a full, independent backup** — the fastest recovery for local corruption is very often simply "get it again from somewhere else that isn't corrupted."
@@ -136,7 +136,7 @@ Recovery escalation, in order of "how bad is this":
                                                       everything above exists to prevent
 ```
 
-## 30.6 Worked Scenario — Accidental `reset --hard` on the Wrong Branch, Losing 3 Commits
+## 6. Worked Scenario — Accidental `reset --hard` on the Wrong Branch, Losing 3 Commits
 
 **Setup:** you meant to reset a scratch branch but were actually on `main`, and ran `git reset --hard origin/main` — moving `main` backward by three commits that existed only locally and hadn't been pushed yet.
 
@@ -188,13 +188,13 @@ $ git branch -d recovered-retry-work
 
 This walkthrough deliberately uses the safer two-step pattern (recover to a new branch, verify, then fast-forward `main` onto it) rather than immediately `reset --hard HEAD@{1}`-ing `main` directly — in a real incident, verifying the recovered state before touching the branch you actually care about again is the disciplined move, even though the direct reset would have worked identically in this clean example.
 
-## 30.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Bare-repository backups** (§9.5, §23.4.1) maintained via scheduled `git fetch`/`clone --mirror` jobs are the standard enterprise pattern for self-hosted Git infrastructure — a hosting platform's own database backups (users, PRs, permissions, issues — none of which live inside the Git object model itself, per §1.6.1's caveat) are a separate, equally necessary concern that pure repository mirroring does not cover.
 - **"Just re-clone from a teammate" is a genuinely common, informal recovery path** on small teams without dedicated backup infrastructure — it works precisely because of the DVCS guarantee that every clone is complete, but it's not a substitute for deliberate backups at organizational scale, since it depends entirely on some individual's machine still having the needed history.
 - **Incident postmortems for repository disasters** typically reveal the same root causes: force-pushing without `--force-with-lease` (§20.6.2), running destructive commands against the wrong branch due to unclear terminal context, or (rarely) genuine infrastructure failure with inadequate backup cadence — the fixes are largely disciplinary/tooling (clear prompts, `--force-with-lease` as default habit) rather than purely technical.
 
-## 30.8 Interview Questions
+## 8. Interview Questions
 
 **[Beginner] Q1. You accidentally deleted a local branch with `git branch -D` before merging it. Is the work gone?**
 **Model answer:** No, almost certainly not. Deleting a branch only removes the small pointer file that referenced its last commit — the commit objects themselves, and everything they point to, remain fully intact in the object database. The branch deletion itself is recorded in the reflog, and Git even prints the deleted branch's last commit hash in the deletion confirmation message. Recovery is `git branch <name> <hash>`, using either that printed hash or one found via `git reflog`, which recreates the branch pointer exactly where it was.
@@ -211,7 +211,7 @@ This walkthrough deliberately uses the safer two-step pattern (recover to a new 
 **[Architect] Q5. Design a disaster-recovery policy for a self-hosted Git server, given that "every clone is a backup" is true but informal.**
 **Model answer:** I'd treat "every developer's clone is a backup" as a genuinely useful emergent property, not a designed one, and build formal recovery on top of it rather than depending on it directly. Concretely: (1) scheduled, automated bare-repository mirrors (`git clone --mirror` refreshed on a regular fetch cadence) for every hosted repository, stored on infrastructure independent of the primary Git server — this is the actual recoverable backup, not any individual's laptop. (2) Explicit backup coverage for what pure repository mirroring misses: the hosting platform's own database — pull request/merge request state, issues, permissions, webhooks — none of which lives inside Git's object model itself, a gap called out back in §1.6.1. (3) A documented, regularly _tested_ restore procedure — a backup nobody has ever restored from is not a verified backup — including how long a restore takes and what data-loss window it implies (time since the last mirror sync). (4) Team-level practices that reduce how often disaster recovery is even needed: defaulting to `--force-with-lease` over `--force`, protected branches on anything shared (§23.6), and a documented "if you think you've lost something, stop and check `git reflog`/`git fsck` before doing anything else" runbook, since the majority of "disasters" are actually simple reflog-level recoveries if approached calmly rather than compounded by a second panicked destructive command.
 
-## 30.9 Common Misconceptions
+## 9. Common Misconceptions
 
 1. **"A deleted branch or a reset commit is gone."** In the overwhelming majority of cases it's merely unreferenced, not deleted — the commit objects persist in the database until garbage collection actually prunes them, which respects both current refs and the reflog's retention window.
 2. **"The reflog is a shared safety net."** It's strictly local to one machine's repository; it cannot recover a teammate's mistake, and a fresh clone of your own repository elsewhere starts with no reflog history at all.
@@ -219,7 +219,7 @@ This walkthrough deliberately uses the safer two-step pattern (recover to a new 
 4. **"Corruption and 'lost' history are the same problem."** A lost commit is intact data that's simply unreferenced — reflog/fsck fix that. Corruption is damaged data, which local tools generally cannot repair; the fix is re-fetching intact copies from a remote, collaborator, or backup.
 5. **"Re-fetching from origin can't fix a broken local repository."** It very often can — Git re-downloads objects it can't validate locally during a normal fetch, which is frequently the simplest fix for local corruption when an uncorrupted remote copy exists.
 
-## 30.10 🔑 Key Takeaways
+## 10. 🔑 Key Takeaways
 
 - Git deletes almost nothing immediately: unreferenced commits persist until garbage collection actually prunes them, and the reflog protects recent ones from that pruning entirely for a retention window.
 - Recovery escalates in layers: known hash on a branch → `git reflog` → `git fsck --full --unreachable` (for reflog-expired dangling objects) → re-fetch from a remote/collaborator/backup (for local corruption or total local loss).
@@ -228,6 +228,6 @@ This walkthrough deliberately uses the safer two-step pattern (recover to a new 
 - Every full clone of a repository is, by DVCS design (§1.6.1), an independent complete copy of history — the practical foundation of "just re-fetch/re-clone" as a genuine recovery strategy, formalized at organizational scale through dedicated backup mirrors.
 - The calm, correct first response to any apparent loss is to check the reflog before running any further commands — compounding a mistake with a second panicked destructive operation is the actual cause of most truly unrecoverable situations.
 
-## 30.11 Related Concepts & What's Next
+## 11. Related Concepts & What's Next
 
 This closes Part 7 (Security & Reliability) — signing and secret hygiene (§28), routine maintenance and everyday troubleshooting (§29), and now the full disaster-recovery escalation path. Part 8 turns to advanced tooling and the broader professional picture: worktrees, `git rerere`, and `filter-repo` in more general use beyond secret remediation (§31); Git's own evolution, including the SHA-256 transition and how Git compares directly against SVN, Mercurial, and Perforce with the benefit of everything covered since §1 (§32); best practices and anti-patterns distilled across the entire guide, including commit-message conventions (§33); and finally, structured interview preparation, hands-on labs, and a full wrap-up of the material (§34-36).

@@ -1,10 +1,10 @@
 # Section 71 (Part 10): Part 10 Wrap-Up — AI/ML Synthesis & Interview Drill
 
-## 71.1 Purpose of This Section
+## 1. Purpose of This Section
 
 Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations and data management (Section 65), custom training/pipelines/serving (Section 66), no-code AutoML and the Model Garden foundation-model catalog (Section 67), generative AI with Gemini and Vertex AI Studio (Section 68), MLOps for keeping deployed models healthy (Section 69), and AI/ML security and Responsible AI (Section 70). This closing section consolidates that material into one reference architecture, drills it with tiered interview questions spanning all six sections, and transitions into Part 11's Security Operations & Incident Response coverage.
 
-## 71.2 Part 10 Recap — What Was Covered
+## 2. Part 10 Recap — What Was Covered
 
 | §   | Section                                               | Core Idea                                                                                                                                                                                                                        |
 | --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -15,7 +15,7 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 | 69  | MLOps on GCP                                          | Model Monitoring detects skew/drift on deployed endpoints; Vertex AI Experiments tracks training runs reproducibly; CI/CD applies software-delivery discipline to pipeline definitions, closing the monitor-alert-retrain loop.  |
 | 70  | AI/ML Security & Responsible AI                       | IAM least-privilege and VPC Service Controls (Section 41) secure Vertex AI resources and data; Explainable AI provides feature-attribution transparency; Responsible AI principles guide fairness/safety as an ongoing practice. |
 
-## 71.3 The Unifying Architecture: End-to-End Governed ML Lifecycle
+## 3. The Unifying Architecture: End-to-End Governed ML Lifecycle
 
 ```
                          VPC Service Controls Perimeter (Section 41, Section 70.3.2)
@@ -58,7 +58,7 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 
 > 🔑 **The single repeated principle across Part 10:** every path through Vertex AI — whether a model arrives via AutoML, custom training, or Model Garden, and whether it's consumed as a classic prediction endpoint or a generative AI call — converges on the same shared infrastructure: one Model Registry, one Endpoint/serving layer, one Monitoring and Experiments backbone, and one IAM/VPC-SC security perimeter. Vertex AI's core value proposition, established in Section 65 as solving GCP's historical ML tooling fragmentation, is proven out by every subsequent section in this Part: the _how you got a model_ varies, but the _how it's registered, served, monitored, and secured_ does not.
 
-## 71.4 Cross-Section Decision Framework
+## 4. Cross-Section Decision Framework
 
 | Question                                                                                           | Answer                                                                                                           |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -73,7 +73,7 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 | Need to stop training data or model artifacts leaving the org even with valid IAM access?          | VPC Service Controls perimeter around Vertex AI, BigQuery, and Cloud Storage together (Section 70.3.2)           |
 | Production identity only needs to call an endpoint's prediction API?                               | Narrow custom predict-only IAM role, never `roles/aiplatform.user`/`admin` (Section 70.3.1)                      |
 
-## 71.5 Common Mistakes Spanning This Part
+## 5. Common Mistakes Spanning This Part
 
 - Defaulting to custom training for well-understood problem types where AutoML would produce a comparable model faster and with less engineering overhead (Section 67).
 - Treating Vertex AI Studio as a production runtime rather than a prompt design environment whose finalized prompts get exported into application code (Section 68.7).
@@ -84,7 +84,7 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 - Relying on IAM alone to prevent data exfiltration, without a VPC Service Controls perimeter, which blocks unauthorized data movement even for principals with valid IAM permissions (Section 70.8).
 - Treating a pre-launch fairness/bias evaluation as a one-time compliance checkbox rather than an ongoing practice tied into MLOps drift monitoring (Section 70.8).
 
-## 71.6 Part 10 Interview Drill
+## 6. Part 10 Interview Drill
 
 ### 🎯 Beginner Tier
 
@@ -116,7 +116,7 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 **Q8:** Six months after launching a Vertex AI-based credit risk model, an audit finds: the model was trained via a manual notebook run with no pipeline or experiment tracking, the serving service account has `roles/aiplatform.admin`, and no monitoring or explainability is configured on the production endpoint. What does this pattern indicate, and how do you remediate it, in order of priority?
 **A:** This is a system that reached production without any of Part 10's MLOps or governance layers ever being applied — it was trained and deployed as if it were a one-off notebook experiment rather than a production financial-decision system. I'd prioritize by risk: first, the `aiplatform.admin` serving service account is the most acute security exposure — a compromised serving credential could currently modify or delete production models and pipelines, not just request predictions — so I'd immediately replace it with a narrow, predict-only custom role (Section 70.3.1). Second, since this is a credit decision with real regulatory exposure, I'd enable Vertex AI Explainable AI on the endpoint immediately (Section 70.3.4) so every subsequent prediction has a retained feature-attribution record, even before anything else is fixed, closing the audit gap for new decisions going forward. Third, I'd stand up Model Monitoring on the endpoint (Section 69.3.1) to start catching skew/drift now, rather than waiting for the full pipeline rebuild. Finally, and in parallel, I'd rebuild the training process itself as a proper CI/CD-deployed Vertex AI Pipeline (Section 66, Section 69.3.3) with every run logged to Experiments and ML Metadata, so future retraining has the reproducibility and lineage the original manual notebook run never had, and going forward, no new model can be promoted to production without passing through this pipeline and its evaluation gate. This sequencing fixes the most exploitable/least-defensible gap first (broad IAM) while getting explainability and monitoring live quickly, then addresses the deeper structural gap (no pipeline, no lineage) as the sustained fix.
 
-## 71.7 Key Takeaways — Part 10 Overall
+## 7. Key Takeaways — Part 10 Overall
 
 - 🔑 Vertex AI unifies GCP's ML platform under one API/SDK/IAM model, and every model — however it's produced (AutoML, custom training, or Model Garden) — converges on the same Model Registry, Endpoint, Monitoring, and security infrastructure (Sections 65–67).
 - 🔑 Generative AI on Vertex AI (Gemini, Vertex AI Studio, grounding, function calling) is built on the same underlying platform as classic ML, with grounding via Vertex AI Search as GCP's answer to enterprise RAG (Section 68).
@@ -124,10 +124,10 @@ Part 10 covered GCP's AI/ML platform across six sections: Vertex AI foundations 
 - 🔑 AI/ML security layers IAM least-privilege with VPC Service Controls (data cannot move across the perimeter even with valid IAM access), and Responsible AI — fairness, safety, explainability — is an ongoing operational practice, not a one-time launch gate (Section 70).
 - 🔑 Across the entire Part, the recurring theme is convergence: different paths to a model, one shared, governed serving and monitoring backbone underneath all of them.
 
-## 71.8 Transition to Part 11
+## 8. Transition to Part 11
 
 Part 10 covered how GCP builds, deploys, and governs machine learning and generative AI systems. Part 11 shifts from building AI/ML systems to defending the organization running them — **Security Operations & Incident Response**, starting with **Section 72: Chronicle SIEM Fundamentals**, GCP's cloud-native security information and event management platform. This connects directly back to material already introduced: the dedicated security project pattern from Section 61 that feeds Chronicle, Security Command Center from Section 39 whose findings flow into Chronicle detections, and the AI/ML resources secured in Section 70 that Chronicle-fed detection and response coverage will extend to at the organization-wide security-operations level.
 
-## 71.9 Related Concepts
+## 9. Related Concepts
 
 Vertex AI Fundamentals (Section 65), Vertex AI Deep Dive (Section 66), AutoML & Model Garden (Section 67), Generative AI on GCP (Section 68), MLOps on GCP (Section 69), and AI/ML Security & Responsible AI (Section 70) — the full set this section synthesizes — along with VPC Service Controls (Section 41), Security Command Center (Section 39), the dedicated security project pattern (Section 61), and Chronicle SIEM Fundamentals (Section 72, next) which Part 11 begins with.

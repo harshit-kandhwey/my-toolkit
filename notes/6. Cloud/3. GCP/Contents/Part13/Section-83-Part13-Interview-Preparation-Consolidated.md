@@ -1,18 +1,18 @@
 # Section 83 (Part 13): Interview Preparation (Consolidated)
 
-## 83.1 Definition
+## 1. Definition
 
 **Plain language:** A real cloud/DevOps interview loop rarely stays inside one topic — a single day might move from an IAM policy-evaluation question, to a BigQuery cost question, to a live system-design whiteboard, to a behavioral round about a production incident. This section is a rapid-fire consolidated question bank pulling representative questions from every Part of this 85-section knowledge base, plus open-ended system-design prompts and behavioral technique, so the final preparation pass is breadth-first rather than another deep dive into any one topic.
 
 **Precise:** This section provides roughly two to three interview questions per Part (Parts 1–12), tiered Beginner/Intermediate/Senior, each pointing back to its originating section rather than re-deriving the full explanation; followed by open-ended system-design prompts that require synthesizing services across multiple Parts; and closing with behavioral and live-discussion technique specific to cloud architecture interviews.
 
-## 83.2 Why This Section Exists
+## 2. Why This Section Exists
 
 Deep per-topic knowledge (Parts 1–12) is necessary but not sufficient for interview performance. Many technically strong candidates underperform specifically because they haven't rehearsed **rapid cross-topic recall** — jumping cleanly from a networking question to a data-pipeline question to an IAM question without needing to "reload" context each time — and haven't rehearsed **synthesizing services across Parts** into one coherent architecture live, under time pressure. This section drills both explicitly.
 
 > 💡 **Tip:** Use this section as a self-test, not a first read. Cover the model-answer pointer, attempt each question cold, and only then check which section it maps back to — if the answer doesn't come quickly, that section is worth a targeted re-read before an interview, not this whole knowledge base again.
 
-## 83.3 Rapid-Fire Question Bank by Part
+## 3. Rapid-Fire Question Bank by Part
 
 Each question is tagged with a tier and a pointer to the section(s) it draws on. Practice answering each in under 60–90 seconds.
 
@@ -124,7 +124,7 @@ Each question is tagged with a tier and a pointer to the section(s) it draws on.
 36. 🎯 **Senior:** Design a game-day exercise validating a multi-region failover under Section 58's DR plan.
     _Sections 78–79 — use a chaos-engineering tool to simulate regional unavailability, then measure actual RTO/RPO against the documented targets under realistic conditions, not a tabletop walkthrough alone._
 
-## 83.4 Open-Ended System Design Prompts
+## 4. Open-Ended System Design Prompts
 
 These require synthesizing services across multiple Parts, the way a real senior/staff-level system design round does. Practice sketching each in 15–20 minutes, narrating trade-offs out loud.
 
@@ -139,7 +139,7 @@ Outline: landing zone with a dedicated AI/ML folder inheriting org-wide guardrai
 
 > ⚠️ **Interview note:** In all three prompts, the interviewer is evaluating whether you can _name the specific service and justify why_, not just list every service from this knowledge base. A strong answer explicitly says what it's trading off (e.g., "I'm choosing Spanner here specifically because cross-region strong consistency is a hard requirement for a payment ledger — Cloud SQL wouldn't meet that") rather than reciting a service inventory.
 
-## 83.5 Behavioral & Architecture-Discussion Tips for Cloud Interviews
+## 5. Behavioral & Architecture-Discussion Tips for Cloud Interviews
 
 - **Structure incident stories with STAR** (Situation, Task, Action, Result) — cloud/SRE interviews frequently ask about a specific production incident; the material for a strong answer already exists in every "senior" troubleshooting scenario across Parts 1–12, but it needs to be told as _your own specific action_, not "the team fixed it."
 - **Name the trade-off explicitly, every time.** The single most senior-signaling habit across every architecture discussion in this knowledge base is naming _what was given up_, not just what was chosen — "I chose eventual consistency here because the write throughput requirement made strong consistency prohibitively expensive" reads as far more senior than describing the final architecture alone.
@@ -148,13 +148,13 @@ Outline: landing zone with a dedicated AI/ML folder inheriting org-wide guardrai
 - **Recover visibly from a wrong turn.** If a later requirement invalidates an earlier choice, say so explicitly and explain the correction rather than silently forcing the original design to fit — this is viewed far more favorably than appearing not to notice the conflict.
 - **Have a real mistake ready.** A genuine mistake story (a missing VPC Service Controls perimeter that nearly shipped, an IAM role scoped too broadly, an untested DR failover that didn't actually meet RTO) paired with what changed afterward is a stronger signal than a story with no real stakes.
 
-## 83.6 Key Takeaways
+## 6. Key Takeaways
 
 - 🔑 A comprehensive interview loop tests breadth across all 12 technical Parts simultaneously — rapid cross-topic recall practice matters as much as any single deep dive.
 - 🔑 Open-ended system-design prompts are evaluated on explicit, justified service selection and named trade-offs, not on listing every service that could plausibly appear in an architecture.
 - 🔑 Every question in Section 83.3 is a pointer back to its originating section — if an answer doesn't come quickly, that is the targeted section to re-review, not the whole knowledge base.
 - 🔑 Behavioral strength in cloud interviews comes from real, specific incidents told with individual ownership, structured via STAR, alongside a genuine mistake and what changed afterward.
 
-## 83.7 Related Concepts
+## 7. Related Concepts
 
 This section synthesizes every prior Part; it assumes fluency with the cross-provider mappings in Section 82 and feeds directly into the hands-on capstone labs in Section 84, which give the practical, hands-on counterpart to this question bank.

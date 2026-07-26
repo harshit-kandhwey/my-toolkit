@@ -6,7 +6,7 @@
 
 ---
 
-## 56.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Azure Key Vault in full depth — resolving a forward-reference threaded throughout nearly every prior Part of this roadmap. Sections 34.6.2, 35.4.2, 37.6.5, 40.7.2, 42.7, and 42.7.2 have all pointed toward "store secrets in Key Vault, not in plaintext configuration" without covering Key Vault's own architecture, access-control model, or the meaningful distinction between its three object types (secrets, keys, certificates). This section covers that architecture directly, plus Managed HSM, soft-delete/purge-protection, and Key Vault's specific integration patterns already referenced across this roadmap.
 
@@ -14,21 +14,21 @@ This section covers Azure Key Vault in full depth — resolving a forward-refere
 
 ---
 
-## 56.2 What Is Key Vault and Why It Exists
+## 2. What Is Key Vault and Why It Exists
 
-### 56.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Key Vault is Azure's managed service for securely storing and controlling access to secrets, cryptographic keys, and certificates — centralizing sensitive material in one hardened, access-controlled, audited location instead of scattering it across application configuration files, environment variables, or source code.
 
 **Precise definition:** Azure Key Vault is a cloud service providing secure storage and access control for secrets, cryptographic keys (backed by FIPS 140-validated hardware security modules), and X.509 certificates, integrated with Microsoft Entra ID for identity-based authentication and Azure RBAC (or the legacy access-policy model) for authorization, with comprehensive audit logging of every access.
 
-### 56.2.2 Why It Exists — The Problem It Solves, Recapping the Roadmap-Wide Thread
+### 2.2 Why It Exists — The Problem It Solves, Recapping the Roadmap-Wide Thread
 
 - **Recap of the recurring anti-pattern this roadmap has flagged repeatedly:** secrets embedded in Dockerfile `ENV` instructions (Section 34.6.2), Kubernetes Secrets stored as base64-not-encrypted objects (Section 37.6.5), Function App plaintext application settings (Section 40.7.2), and stored Service Principal client secrets in CI/CD service connections (Section 45.7.2) all represent the same underlying risk: sensitive material persisted in a location without dedicated access-control granularity, audit logging, or centralized rotation capability. Key Vault exists specifically to be the _one_ correctly-hardened place sensitive material lives, with every consuming system retrieving it from there rather than each system inventing its own ad hoc storage.
 - **Centralized rotation:** when a secret (a database password, an API key) needs to be rotated, having every consuming application retrieve it from Key Vault at runtime (rather than each holding its own separately-configured copy) means rotation happens in one place, with every consumer picking up the new value on their next retrieval — versus the alternative of manually finding and updating every scattered copy across every application's own configuration, a real, error-prone operational burden Key Vault's centralization directly eliminates.
 - **Audit trail:** every access to a Key Vault object is logged (via diagnostic settings, Section 50.4, directly reusing that mechanism), providing a complete "who accessed this secret, and when" record — essential for both security investigation and compliance requirements (Section 58).
 
-### 56.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                                | Definition                                                                                                                                                                                                                                                                                                                    |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,9 +43,9 @@ This section covers Azure Key Vault in full depth — resolving a forward-refere
 
 ---
 
-## 56.3 Secrets, Keys, and Certificates — The Critical Distinction
+## 3. Secrets, Keys, and Certificates — The Critical Distinction
 
-### 56.3.1 Secrets: Retrieve and Use
+### 3.1 Secrets: Retrieve and Use
 
 ```
 GET https://myvault.vault.azure.net/secrets/db-connection-string
@@ -55,7 +55,7 @@ GET https://myvault.vault.azure.net/secrets/db-connection-string
 - The application retrieves the raw value and uses it directly (e.g., passes the connection string to a database client library) — the value leaves Key Vault's boundary and exists in the calling application's own memory/process.
 - **Appropriate for:** connection strings, API keys for third-party services, any opaque value the application genuinely needs to hold and use directly, where no cryptographic operation on the value itself is meaningful.
 
-### 56.3.2 Keys: Operate Without Exposing
+### 3.2 Keys: Operate Without Exposing
 
 ```
 POST https://myvault.vault.azure.net/keys/data-encryption-key/encrypt
@@ -68,93 +68,93 @@ POST https://myvault.vault.azure.net/keys/data-encryption-key/encrypt
 - 🎯 **Interview Tip:** this precise distinction — "a key's raw material never leaves Key Vault for cryptographic operations; a secret's raw value does leave once retrieved" — is one of the most commonly and precisely interview-tested Key Vault facts, and stating it exactly this way (rather than vaguely describing keys as "more secure secrets") signals genuine understanding.
 - **Common uses:** encryption-at-rest key management for other Azure services (Section 58's customer-managed keys material references this directly — many Azure services support encrypting their data using a customer-managed key stored in Key Vault, rather than only Microsoft-managed encryption keys), application-level field-level encryption, digital signing operations.
 
-### 56.3.3 Certificates: Storage Plus Lifecycle Management
+### 3.3 Certificates: Storage Plus Lifecycle Management
 
 - Key Vault certificates combine a private key (managed with the same non-exportable-by-default protection as a standalone key, 56.3.2) and the associated X.509 certificate, with Key Vault providing **integrated lifecycle management**: automatic certificate renewal (for certificates issued by an integrated certificate authority partner), configurable renewal-threshold alerts, and direct integration with other Azure services (e.g., App Service's custom domain TLS binding, Section 13, can reference a Key Vault-stored certificate directly) that consume certificates without the operator manually handling the private key file at any point.
 
 ---
 
-## 56.4 Access Control: Azure RBAC vs. Access Policies
+## 4. Access Control: Azure RBAC vs. Access Policies
 
-### 56.4.1 The Two Models
+### 4.1 The Two Models
 
 - **Access policies (legacy):** a Key Vault-specific permission model, configured directly on the vault resource, granting specific permission sets (e.g., "Get, List" for secrets) to specific identities — entirely separate from, and not integrated with, the rest of Azure's RBAC system (Section 8).
 - **Azure RBAC (current, generally recommended):** unifies Key Vault authorization with the same role-assignment model used throughout the rest of Azure — built-in roles like `Key Vault Secrets User` (read-only secret retrieval), `Key Vault Secrets Officer` (full secret management), `Key Vault Crypto User` (perform cryptographic operations with keys, without key management rights), and others, assigned via the same `az role assignment create` mechanism and governable via the same Azure Policy (Section 57) tooling as any other Azure resource's RBAC.
 
-### 56.4.2 Why Azure RBAC Is Now Preferred
+### 4.2 Why Azure RBAC Is Now Preferred
 
 💡 **Tip:** the access-policy model's Key-Vault-specific, non-unified permission system meant Key Vault access control couldn't be audited, governed, or reasoned about using the same tooling/mental model as the rest of an organization's Azure RBAC estate — a genuine operational and governance inconsistency. Migrating to Azure RBAC directly resolves this, allowing Key Vault permissions to be reviewed, assigned, and governed (including via Azure Policy enforcement, Section 57, and Privileged Identity Management just-in-time elevation, Section 10) using the exact same processes and tooling as every other Azure resource covered throughout this roadmap — a specific, concrete instance of the general "consistency of governance tooling across the estate" value already established for Kubernetes-RBAC-vs-Azure-RBAC clarity (Section 37.5.1) and management-group-scoped policy enforcement (Sections 46.6.1, 55.8.1).
 
-### 56.4.3 Least-Privilege Role Assignment (Direct Application of Section 8)
+### 4.3 Least-Privilege Role Assignment (Direct Application of Section 8)
 
 - Following the least-privilege principle applied consistently throughout this roadmap: an application's Managed Identity retrieving a connection string at runtime should be granted `Key Vault Secrets User` specifically (read-only retrieval), not `Key Vault Secrets Officer` or broader — mirroring the exact same "narrow the granted role to only what the specific consuming identity actually needs" discipline applied to ACR (Section 35.4.3), AKS Workload Identity (Section 37.5.4), and CI/CD service connections (Section 45.7.2).
 
 ---
 
-## 56.5 Network Security: Private Endpoints and Firewall Rules
+## 5. Network Security: Private Endpoints and Firewall Rules
 
-### 56.5.1 Vault-Level Network Restriction
+### 5.1 Vault-Level Network Restriction
 
 - Key Vault supports both **firewall rules** (IP-address/range allowlisting) and **Private Endpoints** (Section 23's Private Link concepts, applied directly to Key Vault exactly as previously covered for ACR, Section 35.8, and other PaaS services throughout this roadmap) — allowing an organization to restrict Key Vault access to only specific networks/private endpoints, closing off public internet access entirely for genuinely sensitive vaults.
 - 🔑 **Key Takeaway (directly reusing Section 35.8's warning):** exactly as with ACR's Private Link configuration, disabling public network access on a Key Vault before correctly configuring DNS resolution and network connectivity for every legitimate consumer (application Managed Identities running in a VNet-integrated App Service, AKS pods via Workload Identity, CI/CD agents) will break every legitimate access path, not just unauthorized ones — the same sequencing discipline (verify connectivity for all legitimate consumers before disabling public access) applies here identically.
 
 ---
 
-## 56.6 Soft-Delete and Purge Protection
+## 6. Soft-Delete and Purge Protection
 
-### 56.6.1 Why These Exist
+### 6.1 Why These Exist
 
 ⚠️ **Warning:** without soft-delete, a deleted Key Vault (or a deleted secret/key/certificate within one) is immediately, permanently gone — an accidental deletion (a mistaken `az keyvault delete`, a misconfigured Terraform `destroy`, Section 48.5.1's warning about `destroy`'s exhaustive-within-state-file scope applying directly if Key Vault happens to be Terraform-managed) would be entirely unrecoverable, potentially destroying encryption keys or secrets that critical production systems depend on, with catastrophic consequences (e.g., data encrypted with a permanently-lost key becoming permanently unrecoverable).
 
-### 56.6.2 Soft-Delete Behavior
+### 6.2 Soft-Delete Behavior
 
 - A deleted vault or vault object enters a recoverable, soft-deleted state for a configured retention period (commonly 90 days by default — verify current specifics), during which it can be explicitly recovered (`az keyvault recover`) rather than being immediately, permanently gone.
 - **Purge protection** closes a remaining gap: without it, an identity with delete permissions could delete an object and then immediately, explicitly _purge_ it (bypassing the soft-delete recovery window entirely) — purge protection prevents this, ensuring even an explicit purge attempt is blocked until the full soft-delete retention period has genuinely elapsed, providing a real, enforced recovery window against both accidental and malicious permanent deletion.
 
-### 56.6.3 Current Default Status
+### 6.3 Current Default Status
 
 - Soft-delete is enabled by default (and, in current Key Vault configurations, cannot be disabled) for new vaults — verify exact current enforcement status and purge-protection default against documentation, as Microsoft has progressively strengthened these defaults over Key Vault's product history; purge protection specifically has historically required deliberate opt-in but is increasingly recommended/enforced as a mandatory production configuration.
 
 ---
 
-## 56.7 Managed HSM
+## 7. Managed HSM
 
-### 56.7.1 Definition and When It's Needed Beyond Standard/Premium Key Vault
+### 7.1 Definition and When It's Needed Beyond Standard/Premium Key Vault
 
 - **Managed HSM** provides a **single-tenant**, dedicated FIPS 140-2 Level 3-validated HSM cluster, versus the standard/Premium Key Vault tiers' shared, multi-tenant HSM infrastructure (Premium tier still uses HSM-backed keys, but on shared underlying hardware serving multiple customers) — appropriate specifically for organizations with a compliance/regulatory requirement mandating single-tenant HSM isolation (certain financial services and government compliance frameworks specifically require this level of isolation), rather than a default upgrade path for general use.
 - 💡 **Tip:** this is a genuine, specific escalation beyond standard Key Vault's already-strong security model — most organizations' compliance requirements are satisfied by Premium-tier Key Vault's shared-HSM-backed keys, and Managed HSM's added cost/complexity should be adopted specifically in response to a named compliance requirement mandating single-tenant isolation, not as an undifferentiated "more secure is always better" default.
 
 ---
 
-## 56.8 Integration Patterns (Consolidating References Across This Roadmap)
+## 8. Integration Patterns (Consolidating References Across This Roadmap)
 
-### 56.8.1 The Secrets Store CSI Driver (Direct Resolution of Section 37.6.5)
+### 8.1 The Secrets Store CSI Driver (Direct Resolution of Section 37.6.5)
 
 - Fully resolving Section 37.6.5's forward reference: the **Azure Key Vault Provider for Secrets Store CSI Driver** mounts Key Vault secrets/keys/certificates directly into AKS pods as files (or, optionally, syncs them into native Kubernetes Secrets for applications that specifically need the Kubernetes Secret API surface), authenticating via Workload Identity (Section 37.5.4) — meaning the pod's actual runtime never needs its own separately-managed credential to reach Key Vault, and the Kubernetes Secret store (if used at all in the sync mode) never needs to be the long-term source of truth for the sensitive value, only a runtime cache/exposure mechanism reflecting the current Key Vault value.
 
-### 56.8.2 App Service and Function App Key Vault References
+### 8.2 App Service and Function App Key Vault References
 
 - Fully resolving Section 40.7.2's forward reference: App Service and Function App application settings support **Key Vault references** — a special syntax (`@Microsoft.KeyVault(SecretUri=...)`) in an app setting's value that causes the platform to resolve the actual secret value from Key Vault at runtime (using the App Service/Function App's own Managed Identity, Section 9, to authenticate), rather than the app setting itself ever containing the plaintext secret value — directly satisfying the "no secrets in plaintext configuration" principle established throughout Part 3 and Part 8 of this roadmap, with the actual mechanism now fully explained.
 
-### 56.8.3 Customer-Managed Keys for Encryption at Rest (Forward Reference to Section 58)
+### 8.3 Customer-Managed Keys for Encryption at Rest (Forward Reference to Section 58)
 
 - Many Azure services (Storage Accounts, Section 16–17; SQL Database, Section 29; managed disks, Section 18) support encrypting their data at rest using a **customer-managed key** — a key stored in Key Vault (56.3.2) rather than relying solely on Microsoft's own platform-managed default encryption key — giving the customer direct control over key rotation and, critically, the ability to revoke access to the encryption key (rendering the encrypted data inaccessible) as an extreme data-protection/decommissioning control. This capability is introduced here and covered in full depth in Section 58's encryption-at-rest material.
 
 ---
 
-## 56.9 Production and Enterprise Usage
+## 9. Production and Enterprise Usage
 
-### 56.9.1 Vault Organization Strategy
+### 9.1 Vault Organization Strategy
 
 - Directly paralleling the Log Analytics workspace organization discussion from Section 50.8/48.6 and Terraform state organization from Section 48.8: enterprises typically organize Key Vaults by **ownership boundary and sensitivity tier** — a shared platform-team vault for foundational shared secrets (e.g., a shared certificate authority root), and per-application or per-team vaults for application-specific secrets, rather than one monolithic vault serving the entire organization (which would create both an access-control granularity challenge and a single, very high-value target/blast-radius concentration) or one vault per individual secret (excessive management overhead) — a genuine, deliberate middle-ground organizational decision.
 
-### 56.9.2 Rotation Automation
+### 9.2 Rotation Automation
 
 - Key Vault supports configuring **rotation policies** for keys (automatic rotation on a defined schedule) and integrates with Event Grid (Section 43) to publish events on secret/certificate near-expiry or rotation — enabling automated rotation workflows (e.g., an Event Grid-triggered Function or Logic App that rotates a downstream credential and updates the corresponding Key Vault secret) rather than relying on manual, calendar-reminder-driven rotation processes, directly reusing Section 43's Event Grid material and Section 40/39's Functions/Logic Apps automation capability for this specific operational workflow.
 
 ---
 
-## 56.10 Troubleshooting Reference
+## 10. Troubleshooting Reference
 
 | Symptom                                                                                                    | Likely Cause                                                                                                                                                                                                                                    | Diagnostic Step                                                                                                                                                              |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -166,7 +166,7 @@ POST https://myvault.vault.azure.net/keys/data-encryption-key/encrypt
 
 ---
 
-## 56.11 Best Practices Checklist
+## 11. Best Practices Checklist
 
 - [ ] Azure RBAC used for Key Vault authorization rather than the legacy access-policy model, for governance/audit consistency with the rest of the Azure estate.
 - [ ] Least-privilege, object-type-specific roles assigned (`Key Vault Secrets User` for read-only secret retrieval, not broader management roles) to consuming application identities.
@@ -179,7 +179,7 @@ POST https://myvault.vault.azure.net/keys/data-encryption-key/encrypt
 
 ---
 
-## 56.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - "Secrets and keys are just two names for the same thing in Key Vault." _Correction:_ this is the most consequential and common Key Vault misconception (56.3's entire framing exists to correct it) — secrets are retrieved and used directly by the calling application, while keys support cryptographic operations performed _within_ Key Vault without the raw key material ever leaving the vault for a properly configured non-exportable key, a fundamentally different and stronger security property.
 - "Enabling Key Vault automatically means secrets are never exposed to a compromised application." _Correction:_ a _secret_ retrieved by a compromised application exists in that application's own memory and could be captured by an attacker with runtime access to that application — the "never exposed" property specifically applies to _keys_ used for cryptographic operations, not secrets, which are retrieved and used directly by design (56.3.1 vs. 56.3.2's precise distinction).
@@ -187,7 +187,7 @@ POST https://myvault.vault.azure.net/keys/data-encryption-key/encrypt
 
 ---
 
-## 56.13 Interview Questions (Consolidated)
+## 13. Interview Questions (Consolidated)
 
 **Beginner:** "What are the three types of objects Azure Key Vault stores, and how do secrets differ from keys?"
 _Model answer:_ secrets, keys, and certificates. A secret is an opaque value (like a connection string) that an application retrieves directly and uses as-is — the raw value leaves Key Vault's boundary once retrieved. A key is a cryptographic key used for operations (encrypt, decrypt, sign) performed _within_ Key Vault itself — for a properly configured non-exportable key, the raw key material is never retrievable by any caller; only the _result_ of the operation (ciphertext, a signature) is returned, providing a materially stronger security guarantee than a secret.
@@ -205,7 +205,7 @@ _What the interviewer is probing:_ recognition and explicit articulation that th
 
 ---
 
-## 56.14 Key Takeaways Summary
+## 14. Key Takeaways Summary
 
 🔑 Secrets (retrieved and used directly) and keys (operated on within Key Vault, raw material never exposed) are fundamentally different security models — the single most important, most frequently tested Key Vault distinction.
 
@@ -219,7 +219,7 @@ _What the interviewer is probing:_ recognition and explicit articulation that th
 
 ---
 
-## 56.15 Related Concepts and What Comes Next
+## 15. Related Concepts and What Comes Next
 
 - **Section 57 — Azure Policy & Blueprints (next):** the governance-enforcement mechanism this section's "mandate purge protection/RBAC configuration across every team's vault via management-group-scoped policy" guidance depends on directly, covered in full depth next.
 - **Section 58 — Compliance, Encryption at Rest/In Transit:** the full treatment of customer-managed keys (56.8.3) and the Regulatory Compliance Dashboard's relationship to Key Vault-backed encryption configuration.

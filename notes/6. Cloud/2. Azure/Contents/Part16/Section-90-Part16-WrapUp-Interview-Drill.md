@@ -1,16 +1,16 @@
 # Section 90 — Part 16 Wrap-Up + AI/ML Interview Drill
 
-## 90.1 Definition
+## 1. Definition
 
 **Plain language:** This section closes out Part 16 by tying the six preceding sections together into one coherent story — from training a classical model in Azure ML through to governing a generative AI application responsibly — and then drills the whole Part rapid-fire, the way an interviewer might jump between topics in a single conversation rather than staying neatly within one section.
 
 **Precise definition:** This is the **synthesis and interview-drill section** for Part 16 — AI/ML & Generative AI on Azure, consolidating Sections 84-89 into a single end-to-end narrative and providing a rapid-fire question set spanning classical ML (Azure ML), MLOps, Azure OpenAI, Azure AI Foundry, and Responsible AI governance.
 
-## 90.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Every Part in this KB that spans multiple sections ends with exactly this kind of synthesis, because real interviews and real architectural conversations rarely stay confined to one section's boundaries — an interviewer discussing a RAG application (Section 88) will naturally ask about the security implications (Section 89), and a question about MLOps (Section 86) may pivot into asking how it differs from CI/CD for a generative AI application (Sections 87-88). This section exists to rehearse exactly that kind of cross-cutting recall, and to make explicit the throughline connecting Part 16 back to the rest of the KB — Part 15's data engineering stack, Part 11's security patterns, Part 9's DevOps discipline, and Part 2's identity model — rather than leaving Part 16 as a set of six isolated topics.
 
-## 90.3 The Part 16 Narrative, End to End
+## 3. The Part 16 Narrative, End to End
 
 Azure's AI/ML story on Azure begins where Part 15 ends: clean, governed data sitting in ADLS Gen2, Synapse, or Databricks. **Section 84** introduced Azure Machine Learning's organizing model — the workspace as the central resource wiring together compute (Compute Instances for interactive work, Compute Clusters for auto-scaling job execution), datastores/data assets referencing that Part 15 data, and the Managed Identity-based access pattern threading through everything. **Section 85** went deeper into the actual training-and-serving lifecycle — Jobs and Experiments for tracked training runs, Sweep Jobs for automated hyperparameter search, AML Pipelines for chaining steps, the Model Registry for versioned, traceable models, and the choice between Managed Online Endpoints (real-time) and Batch Endpoints (asynchronous, high-volume) for serving. **Section 86** brought operational discipline to that lifecycle — data and concept drift monitoring catching silent model degradation, CI/CD via Azure DevOps or GitHub Actions (Part 9) automating retraining and deployment, the Responsible AI dashboard gating deployments on fairness alongside accuracy, and disciplined model versioning making rollback a traffic-routing decision rather than a retraining exercise.
 
@@ -18,7 +18,7 @@ The Part then pivoted from classical, predictive ML to generative AI. **Section 
 
 The throughline across all six sections is the same identity-first, defense-in-depth philosophy applied throughout this entire KB: Managed Identity by default (Section 9), Key Vault only where identity-based access genuinely can't reach (Section 56), Private Link for network isolation (Section 23.5), least-privilege RBAC (Section 8), and — specific to this Part — the recognition that a language model's own judgment is never a reliable security or authorization boundary on its own.
 
-## 90.4 Architecture Diagram — Part 16 Synthesis
+## 4. Architecture Diagram — Part 16 Synthesis
 
 ```
 Part 15 Data Engineering (ADLS Gen2, Synapse, Data Factory, Databricks)
@@ -51,7 +51,7 @@ Part 15 Data Engineering (ADLS Gen2, Synapse, Data Factory, Databricks)
         Incident Response (Section 91+)
 ```
 
-## 90.5 Part 16 Interview Drill
+## 5. Part 16 Interview Drill
 
 ### 🎯 Drill 1 (Section 84 — AML Fundamentals)
 
@@ -101,13 +101,13 @@ _Model answer:_ A model can have strong aggregate accuracy while performing mean
 
 _Model answer:_ Managed Identity (Section 9) as the default authentication mechanism, with RBAC-scoped least-privilege roles granted to that identity on the specific resources it needs to access, and Key Vault reserved only for secrets that genuinely can't be replaced by identity-based access — the same identity-first philosophy applied consistently across every AI/ML component in this Part, not a special AI-specific access model.
 
-## 90.6 Part 16 Common Misconceptions (Consolidated)
+## 6. Part 16 Common Misconceptions (Consolidated)
 
 - **"AI/ML on Azure is just calling an API — there's no real architecture to it."** False — as this Part demonstrated across six sections, there's a full lifecycle (data, compute, training, tuning, versioning, deployment, monitoring) for classical ML, and a distinct but equally substantial orchestration/security stack (RAG, agents, content filtering, injection defenses) for generative AI.
 - **"Azure OpenAI and Azure AI Foundry are interchangeable names for the same thing."** False — Azure OpenAI Service provides raw model deployment access (Section 87); Azure AI Foundry is the broader platform built on top, providing orchestration, a wider model catalog, RAG tooling, and agents (Section 88).
 - **"Securing a generative AI application is fundamentally different from securing everything else in this KB."** False in the way it's usually meant — the specific risks (prompt injection, RAG data exfiltration) are new, but the underlying access-control substrate (Managed Identity, Key Vault, Private Link, RBAC) is the exact same identity-first model used everywhere else in this KB; what's genuinely new is layered on top, not built from scratch.
 
-## 90.7 Part 16 Key Takeaways (Consolidated)
+## 7. Part 16 Key Takeaways (Consolidated)
 
 - 🔑 Azure ML (Sections 84-85) provides the full classical ML lifecycle — workspace, compute, data, training/tuning, registry, and both real-time and batch inference — on top of the data already staged by Part 15's engineering pipeline.
 - 🔑 MLOps (Section 86) applies Part 9's CI/CD discipline plus ML-specific drift monitoring and Responsible AI fairness gating, making model promotion and rollback a disciplined, versioned process rather than an ad-hoc one.
@@ -116,6 +116,6 @@ _Model answer:_ Managed Identity (Section 9) as the default authentication mecha
 - 🔑 AI/ML security (Section 89) layers content filtering, prompt injection defenses, and retrieval-time authorization on top of the same identity-first substrate (Managed Identity, Key Vault, Private Link, RBAC) used throughout this entire KB — an LLM's own judgment is never a reliable security boundary on its own.
 - 🔑 Microsoft's Responsible AI principles (fairness, reliability and safety, privacy and security, inclusiveness, transparency, accountability) are the organizing framework tying every technical control in this Part back to named organizational accountability.
 
-## 90.8 Related Concepts (Next Up — Part 17)
+## 8. Related Concepts (Next Up — Part 17)
 
 Part 16 closes the AI/ML and generative AI gap this KB previously had none of. The roadmap now moves to **Part 17 — Security Operations & Incident Response**, beginning at **Section 91** with **Microsoft Purview** (data governance and classification at enterprise scale — directly relevant to the RAG data-governance obligations just covered in Section 89.5), followed by **Section 92** (Microsoft Sentinel SIEM Fundamentals), **Section 93** (Sentinel Deep Dive), **Section 94** (Automated Incident Response), **Section 95** (SOC Patterns), and **Section 96** (Part 17 Wrap-Up) — shifting focus from building and governing AI systems to detecting, investigating, and responding to security incidents across the entire Azure estate this KB has covered, including the AI/ML workloads introduced in this Part.

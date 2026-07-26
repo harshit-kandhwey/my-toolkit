@@ -6,7 +6,7 @@
 
 ---
 
-## 73.1 Introduction and Purpose
+## 1. Introduction and Purpose
 
 This section provides progressive, hands-on labs and mini-projects — from beginner-level single-service exercises through production-style, multi-service capstone projects — giving structured practice actually building the services and patterns covered throughout this roadmap, rather than only reading and reasoning about them. Each lab specifies its objective, the specific roadmap sections it exercises, a step-by-step structure, and a "verify your understanding" checkpoint connecting back to the relevant section's material.
 
@@ -14,23 +14,23 @@ This section provides progressive, hands-on labs and mini-projects — from begi
 
 ---
 
-## 73.2 Beginner Labs (Single-Service Fundamentals)
+## 2. Beginner Labs (Single-Service Fundamentals)
 
-### 73.2.1 Lab 1: Deploy and Access a Storage Account
+### 2.1 Lab 1: Deploy and Access a Storage Account
 
 - **Objective:** create a Storage Account, create a Blob container, upload/download a file via both the Portal and Azure CLI, and configure a lifecycle management policy.
 - **Sections exercised:** 16, 17.
 - **Steps:** (1) Create a resource group and Storage Account via `az storage account create`. (2) Create a Blob container. (3) Upload a file via `az storage blob upload` and verify download. (4) Configure a lifecycle management rule moving blobs older than 30 days to Cool tier. (5) Attempt to access the blob anonymously and confirm it fails (verifying `allowBlobPublicAccess` defaults correctly, Section 46.3.4's exact property).
 - **Verify your understanding:** can you explain, without looking it up, the difference between Hot/Cool/Archive tiers and why lifecycle management exists (Section 17)?
 
-### 73.2.2 Lab 2: Build and Push a Docker Image to ACR
+### 2.2 Lab 2: Build and Push a Docker Image to ACR
 
 - **Objective:** write a multi-stage Dockerfile, build it, push to ACR, and pull it back down.
 - **Sections exercised:** 33, 34.
 - **Steps:** (1) Write a simple application (any language) with a multi-stage Dockerfile following Section 34.6.3's pattern. (2) Create an ACR instance. (3) Authenticate via `az acr login`. (4) Build and push using `az acr build` (Section 35.6.3). (5) Inspect the pushed image's layers via `docker history` (Section 34.5.5). (6) Verify the image tag vs. digest distinction by pulling via digest specifically.
 - **Verify your understanding:** can you explain why the multi-stage build's final image is smaller than the build stage, referencing specific instructions in your own Dockerfile?
 
-### 73.2.3 Lab 3: Deploy an AKS Cluster and a Simple Application
+### 2.3 Lab 3: Deploy an AKS Cluster and a Simple Application
 
 - **Objective:** create an AKS cluster, deploy a Deployment and Service, and observe self-healing.
 - **Sections exercised:** 35, 36.
@@ -39,23 +39,23 @@ This section provides progressive, hands-on labs and mini-projects — from begi
 
 ---
 
-## 73.3 Intermediate Labs (Multi-Service Integration)
+## 3. Intermediate Labs (Multi-Service Integration)
 
-### 73.3.1 Lab 4: Serverless API with Key Vault-Sourced Secrets
+### 3.1 Lab 4: Serverless API with Key Vault-Sourced Secrets
 
 - **Objective:** build an HTTP-triggered Azure Function that retrieves a secret from Key Vault via Managed Identity, with no credential stored anywhere in code or configuration.
 - **Sections exercised:** 9, 38, 53.
 - **Steps:** (1) Create a Function App with a system-assigned Managed Identity enabled. (2) Create a Key Vault, store a test secret. (3) Grant the Function App's Managed Identity the `Key Vault Secrets User` role (Section 56.4.3) — not broader. (4) Configure a Key Vault reference (Section 56.8.2) in the Function App's application settings. (5) Write the HTTP-triggered function to read and return (for testing only — never do this with a real secret) the configured setting value, confirming it resolves correctly.
 - **Verify your understanding:** can you explain why this pattern avoids ever storing a plaintext credential, tracing the authentication flow from Function App to Key Vault?
 
-### 73.3.2 Lab 5: CI/CD Pipeline with Environment Promotion
+### 3.2 Lab 5: CI/CD Pipeline with Environment Promotion
 
 - **Objective:** build a pipeline that builds one container image, and deploys the same image, unmodified, through dev and (simulated) production stages with an approval gate.
 - **Sections exercised:** 42, 46.
 - **Steps:** (1) Create a GitHub repository (or Azure Repos) with your Lab 2 application's Dockerfile. (2) Write a multi-stage pipeline (Azure Pipelines or GitHub Actions, Section 45.4.3/46.5.3) that builds and pushes to ACR tagged with the commit SHA. (3) Add a deploy-to-dev stage deploying to a "dev" AKS namespace automatically. (4) Add a deploy-to-production stage targeting a "production" namespace, gated behind an environment approval (Section 45.4.4). (5) Verify the exact same image digest is used in both stages (Section 49.2.1).
 - **Verify your understanding:** can you point to the specific pipeline configuration that guarantees "build once, promote unchanged" rather than rebuilding per environment?
 
-### 73.3.3 Lab 6: Infrastructure as Code — Deploy a Complete Environment via Bicep
+### 3.3 Lab 6: Infrastructure as Code — Deploy a Complete Environment via Bicep
 
 - **Objective:** author a Bicep template (using modules) that deploys a VNet, a Storage Account with diagnostic settings, and a Key Vault with purge protection — then preview and apply it.
 - **Sections exercised:** 43, 44, 47.
@@ -64,23 +64,23 @@ This section provides progressive, hands-on labs and mini-projects — from begi
 
 ---
 
-## 73.4 Advanced Labs (Production-Style Patterns)
+## 4. Advanced Labs (Production-Style Patterns)
 
-### 73.4.1 Lab 7: KQL Investigation Exercise
+### 4.1 Lab 7: KQL Investigation Exercise
 
 - **Objective:** given a Log Analytics workspace with Application Insights data (from Lab 4/5's deployed application, instrumented per Section 52.3), write KQL queries answering specific investigative questions.
 - **Sections exercised:** 48, 49.
 - **Steps:** write and validate KQL queries for: (1) request count per hour over the last 24 hours, using `bin()` (Section 51.4.1). (2) The top 5 slowest requests by duration. (3) A `join` correlating failed requests with their corresponding exception telemetry via `OperationId` (Section 51.4.2/49.4.2). (4) A query using `has` instead of `contains` for a text-matching condition, and explain the performance difference (Section 51.4.5).
 - **Verify your understanding:** can you explain why your time filter should be the first pipeline stage in each query, in terms of actual query performance, not just convention?
 
-### 73.4.2 Lab 8: Autoscaling and Load Testing
+### 4.2 Lab 8: Autoscaling and Load Testing
 
 - **Objective:** configure HPA and Cluster Autoscaler on your Lab 3 AKS deployment, generate load, and observe scaling behavior including the HPA/Cluster-Autoscaler latency gap.
 - **Sections exercised:** 36.4, 59.
 - **Steps:** (1) Configure an HPA targeting 70% CPU utilization with min 2/max 10 replicas (Section 37.4.2), ensuring your Deployment has CPU `requests` set (a prerequisite, per Section 37.4.2's specific warning). (2) Enable Cluster Autoscaler on the node pool with defined min/max bounds. (3) Generate sustained load against the application (any simple load-generation tool) sufficient to trigger both HPA and, if node capacity is exhausted, Cluster Autoscaler. (4) Observe and time the delay between HPA deciding to add replicas and those replicas actually becoming `Running` versus remaining `Pending` — directly reproducing Section 63.6/36.4.1's two-layer latency gap firsthand.
 - **Verify your understanding:** can you explain, from your own observed timestamps, why the HPA-decision timestamp and the pod-actually-running timestamp differ, and what specifically happened in between?
 
-### 73.4.3 Lab 9: Implement a Complete DR Test
+### 4.3 Lab 9: Implement a Complete DR Test
 
 - **Objective:** using Lab 6's Bicep-deployed environment as a starting point, design and execute a simulated DR failover exercise.
 - **Sections exercised:** 57, 58, 61.
@@ -89,13 +89,13 @@ This section provides progressive, hands-on labs and mini-projects — from begi
 
 ---
 
-## 73.5 Capstone Project: End-to-End Production-Style Application
+## 5. Capstone Project: End-to-End Production-Style Application
 
-### 73.5.1 Objective
+### 5.1 Objective
 
 Synthesize the majority of this roadmap's Parts 7–12 material into one complete, deployed, production-style project — deliberately modeled on Section 70.2's Case Study 1 (E-Commerce Platform Migration and Modernization), scaled down to an individually-achievable scope.
 
-### 73.5.2 Capstone Requirements Checklist
+### 5.2 Capstone Requirements Checklist
 
 - [ ] A containerized application (Section 34) deployed to AKS (Sections 36–38), with images stored in ACR (Section 35).
 - [ ] Infrastructure provisioned entirely via Bicep or Terraform (Sections 46–48), version-controlled.
@@ -108,7 +108,7 @@ Synthesize the majority of this roadmap's Parts 7–12 material into one complet
 - [ ] HPA and Cluster Autoscaler configured (Section 37.4), tested per Lab 8's approach.
 - [ ] Cost review — right-sizing check and a documented note on which pricing model (Section 64) would be appropriate at production scale.
 
-### 73.5.3 Self-Assessment Rubric
+### 5.3 Self-Assessment Rubric
 
 | Criterion      | Self-Check Question                                                                                                        |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@ Synthesize the majority of this roadmap's Parts 7–12 material into one complet
 
 ---
 
-## 73.6 Key Takeaways Summary
+## 6. Key Takeaways Summary
 
 🔑 Hands-on execution surfaces the specific, concrete details (exact CLI syntax, real error messages, genuine timing/latency observations) that reading alone cannot provide — Lab 8's HPA/Cluster-Autoscaler latency observation specifically cannot be genuinely internalized without actually watching it happen.
 
@@ -130,7 +130,7 @@ Synthesize the majority of this roadmap's Parts 7–12 material into one complet
 
 ---
 
-## 73.7 Related Concepts and What Comes Next
+## 7. Related Concepts and What Comes Next
 
 - **All of Parts 7–12 (prerequisite, completed):** every lab in this section directly exercises specific sections' material as named explicitly per lab.
 - **Section 70 (prerequisite, completed):** the case-study format this section's capstone project directly scales down from.

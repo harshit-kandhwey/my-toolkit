@@ -6,7 +6,7 @@
 
 ---
 
-## 40.1 Introduction and Scope
+## 1. Introduction and Scope
 
 Section 14 introduced Azure Functions at a general level as one of Azure's core compute options. This section goes substantially deeper: the event-driven programming model (triggers and bindings), the four hosting plan options and their genuinely different operational and cost characteristics, cold start behavior and its mitigations, the Durable Functions extension for stateful orchestration, and production/enterprise operational concerns specific to serverless functions.
 
@@ -14,21 +14,21 @@ Section 14 introduced Azure Functions at a general level as one of Azure's core 
 
 ---
 
-## 40.2 The Serverless / Event-Driven Programming Model
+## 2. The Serverless / Event-Driven Programming Model
 
-### 40.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** an Azure Function is a small piece of code that runs automatically in response to something happening — a new message on a queue, an HTTP request, a timer firing, a new file appearing in Blob Storage — without the developer provisioning or managing any server, and (on consumption-based hosting) paying only for the actual execution time consumed.
 
 **Precise definition:** Azure Functions is a serverless compute service implementing the Functions-as-a-Service (FaaS) model, where individual functions are invoked by a declared **trigger**, may read additional input and write additional output via declared **bindings**, and execute within a managed runtime host that Azure scales automatically based on incoming event volume.
 
-### 40.2.2 Why This Model Exists — The Problem It Solves
+### 2.2 Why This Model Exists — The Problem It Solves
 
 - **Event-driven workloads are naturally intermittent:** many real workloads (processing an uploaded file, reacting to a queue message, running a nightly cleanup job) do not need a continuously running server at all — a continuously running App Service or VM (Sections 11, 13) sits mostly idle, still incurring cost, for workloads that are only actually "doing work" a small fraction of the time.
 - **Reducing integration boilerplate:** without the binding model, a developer would manually write code to connect to a queue, poll or subscribe for new messages, deserialize the payload, and separately write code to connect to and write into a destination (a database, another queue). Bindings externalize this "plumbing" into declarative configuration, and the runtime handles the actual connection/polling/subscription mechanics — the function's own code focuses on the transformation logic for that specific event, not the surrounding integration mechanics.
 - **True consumption-based billing:** on the Consumption hosting plan (40.3.2), billing is based on actual execution count and duration (with a substantial free monthly grant), meaning a function that never fires can genuinely cost nothing beyond negligible storage — a materially different cost model from any always-on compute option.
 
-### 40.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                                                                   | Definition                                                                                                                                                                                                                                                                           |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -44,9 +44,9 @@ Section 14 introduced Azure Functions at a general level as one of Azure's core 
 
 ---
 
-## 40.3 Hosting Plans in Depth
+## 3. Hosting Plans in Depth
 
-### 40.3.1 Overview and Comparison Table
+### 3.1 Overview and Comparison Table
 
 | Plan                                                      | Scaling Model                                                                                                                     | Cold Start                                                                                       | Max Execution Duration                                                                        | Cost Model                                                                                                        | VNet Integration                                                  |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -57,38 +57,38 @@ Section 14 introduced Azure Functions at a general level as one of Azure's core 
 
 ⚠️ **Warning:** exact numeric limits (max execution duration, specific free-grant amounts, exact scaling behavior details) should be verified against current Microsoft documentation before being used in capacity planning or cost estimation, as these figures are subject to change and vary by additional configuration (e.g., a Consumption plan's timeout can sometimes be configured differently than its documented default, within limits).
 
-### 40.3.2 Consumption Plan
+### 3.2 Consumption Plan
 
 - **Definition:** the original, and still most commonly associated, Azure Functions hosting model — fully automatic scaling driven directly by incoming event rate, including scaling down to zero instances (and zero cost, beyond storage) when there is no work to do.
 - **Why it fits certain workloads well:** genuinely bursty or intermittent workloads (e.g., processing occasional file uploads, responding to infrequent webhook calls) benefit maximally from true scale-to-zero billing — no cost is incurred during idle periods, which can be the majority of time for many event-driven integration workloads.
 - **Key limitation — cold starts (40.4):** because instances can scale to zero, the _first_ invocation after an idle period must wait for a new instance to initialize (loading the runtime, the function code, and any dependencies) before it can execute — a latency cost that is entirely absent on an always-warm hosting model, and a critical consideration for latency-sensitive, user-facing workloads (e.g., a synchronous HTTP-triggered API backing a user-facing web request) versus latency-tolerant background/batch workloads.
 
-### 40.3.3 Premium Plan
+### 3.3 Premium Plan
 
 - **Definition:** an automatically scaling plan (like Consumption) that additionally supports maintaining a configurable number of **pre-warmed ("always ready") instances**, eliminating cold start for invocations handled by those instances, while still scaling out further (with cold start only for the _additional_ instances beyond the pre-warmed baseline) under sustained load.
 - **Why it exists:** it directly addresses Consumption's core limitation (cold start unpredictability) for workloads that need Functions' event-driven scaling model but cannot tolerate the latency variability of scale-to-zero — a middle ground between Consumption's cost efficiency and Dedicated's always-on predictability.
 - **Additional capabilities beyond Consumption:** full VNet integration (relevant for functions needing to reach private-networked backend resources, Section 23's Private Link concepts), and no hard execution-duration ceiling in the same way Consumption has (verify current specifics).
 - **Cost trade-off:** billed for the allocated pre-warmed instance capacity continuously (even when idle, unlike Consumption's true zero-cost idle state), plus additional cost for scale-out beyond that baseline — meaning Premium is not simply "better," it is a different point on the cost-vs-latency-predictability trade-off curve, appropriate specifically when cold start latency is a genuine problem for the workload.
 
-### 40.3.4 Dedicated (App Service Plan) Hosting
+### 3.4 Dedicated (App Service Plan) Hosting
 
 - **Definition:** running Functions on a standard App Service Plan (Section 13), the same underlying compute model used for App Service web apps — always-on instances, manually sized and scaled (or scaled per the App Service Plan's own autoscale rules, distinct from Functions' native event-driven autoscaling).
 - **Why it might be chosen:** an organization already running App Service workloads with spare capacity on an existing App Service Plan may co-locate functions there for cost efficiency (sharing already-provisioned, already-paid-for compute) rather than provisioning a separate Consumption/Premium Functions resource — or a workload genuinely needs the always-on, predictable-cost, non-event-driven-scaling characteristics of a standard App Service Plan.
 - 💡 **Tip:** this option effectively surrenders Functions' signature "true serverless" cost/scaling benefits in exchange for App Service Plan cost predictability and co-location — an explicit trade-off, appropriate mainly for specific cost-sharing or architectural-consistency reasons rather than as a default choice.
 
-### 40.3.5 Choosing a Hosting Plan
+### 3.5 Choosing a Hosting Plan
 
 🎯 **Interview Tip:** the strongest hosting-plan question answers connect the choice to a specific characteristic of the workload — latency sensitivity (Consumption's cold start vs. Premium's pre-warmed instances), invocation pattern predictability (bursty/intermittent favors Consumption's true scale-to-zero economics; steady/predictable favors Dedicated's flat-cost model), networking requirements (VNet integration needs rule out plain Consumption), and execution duration (long-running functions may exceed Consumption's ceiling) — rather than a memorized default recommendation.
 
 ---
 
-## 40.4 Cold Start: Causes and Mitigations
+## 4. Cold Start: Causes and Mitigations
 
-### 40.4.1 What Actually Causes Cold Start Latency
+### 4.1 What Actually Causes Cold Start Latency
 
 When a new function host instance is needed (either the very first invocation after scale-to-zero, or an additional instance during scale-out), several things must happen before the function can execute the actual event: the language runtime must initialize (with meaningfully different baseline cold-start characteristics across languages — compiled/AOT-friendly runtimes such as .NET's newer isolated-worker-with-AOT configurations, or Go, tend to cold-start faster than runtimes with heavier interpreter/JIT startup costs), the Function App's dependencies must load, and any static initialization code in the function's own codebase runs.
 
-### 40.4.2 Mitigation Strategies
+### 4.2 Mitigation Strategies
 
 - **Choose Premium hosting (40.3.3)** with pre-warmed instances, directly eliminating cold start for the baseline instance count.
 - **Minimize dependencies and package size:** fewer/lighter dependencies load faster during cold initialization; this is a direct application of the same "minimize the image/package" discipline from Section 34.5.7, now applied to a Functions deployment package rather than a container image.
@@ -98,9 +98,9 @@ When a new function host instance is needed (either the very first invocation af
 
 ---
 
-## 40.5 Triggers and Bindings — Command/Configuration Documentation Template
+## 5. Triggers and Bindings — Command/Configuration Documentation Template
 
-### 40.5.1 HTTP Trigger
+### 5.1 HTTP Trigger
 
 - **Purpose:** invokes a function in response to an incoming HTTP request, making the function directly callable as a web API endpoint.
 - **Configuration (`function.json`, or equivalent attribute in newer language-specific models):**
@@ -122,7 +122,7 @@ When a new function host instance is needed (either the very first invocation af
 - **Security impact:** `anonymous` auth level should be a deliberate, reviewed choice, not a default left over from local development/testing — publicly callable functions without further access control are a common real-world exposure.
 - **Production usage:** frequently placed behind API Management (Section 44) for centralized rate limiting, authentication, and API versioning, rather than relying solely on the function's own built-in key mechanism for a production-facing API surface.
 
-### 40.5.2 Timer Trigger
+### 5.2 Timer Trigger
 
 - **Purpose:** invokes a function on a defined recurring schedule, for scheduled/batch-style workloads (nightly cleanup, periodic report generation, polling an external system that has no push/event mechanism of its own).
 - **Configuration:**
@@ -141,7 +141,7 @@ When a new function host instance is needed (either the very first invocation af
 - **Schedule syntax:** a six-field CRON expression (including seconds, unlike standard five-field CRON) — `0 */5 * * * *` fires every 5 minutes.
 - **Common mistake:** assuming Timer trigger fires with strict real-time precision; on Consumption plan in particular, actual invocation timing can experience some variance/delay, a relevant consideration for schedule-sensitive (as opposed to merely periodic) workloads.
 
-### 40.5.3 Queue Trigger (Azure Storage Queue) and Service Bus Trigger
+### 5.3 Queue Trigger (Azure Storage Queue) and Service Bus Trigger
 
 - **Purpose:** invokes a function when a new message arrives on an Azure Storage Queue or Azure Service Bus queue/topic (Service Bus covered fully in Section 43), the canonical pattern for asynchronous, decoupled processing.
 - **Configuration (Storage Queue example):**
@@ -162,7 +162,7 @@ When a new function host instance is needed (either the very first invocation af
 - **Poison message handling:** a message that repeatedly fails processing (exceeding a configurable dequeue count) is automatically moved to a poison queue (a `-poison` suffixed queue for Storage Queues) rather than being retried indefinitely — an important built-in resilience behavior worth knowing explicitly, since a message stuck endlessly retrying without this mechanism could otherwise block or degrade queue processing.
 - **`connection` setting:** references an app setting containing the connection string/identity configuration, not a literal inline value — reinforcing the same "no secrets baked into code/config directly" principle from Section 34.6.2's `ENV` guidance, now applied to Functions' own configuration model, with Managed Identity-based connections (rather than connection-string secrets) increasingly the preferred pattern where the target service supports it.
 
-### 40.5.4 Blob Trigger
+### 5.4 Blob Trigger
 
 - **Purpose:** invokes a function when a new or updated blob appears in a specified Blob Storage container (Section 17).
 - **Configuration:**
@@ -182,7 +182,7 @@ When a new function host instance is needed (either the very first invocation af
 - **Non-obvious detail — detection mechanism and latency:** the classic Blob trigger implementation historically relies on a storage-log-scanning mechanism that can introduce meaningful detection latency (up to several minutes in some configurations) between a blob actually appearing and the function being invoked — a materially different (and often surprising) latency characteristic compared to the near-immediate invocation of Queue or Event Grid-based triggers. An **Event Grid-based Blob trigger** (leveraging Section 43's Event Grid, which natively supports Blob Storage as an event source) provides near-real-time invocation instead, and is the generally recommended pattern where low-latency blob-triggered processing matters.
 - ⚠️ **Warning:** this latency distinction is a frequent source of real-world "why did my blob-triggered function take several minutes to run" incidents, and verifying the current default trigger implementation and its detection latency characteristics against up-to-date documentation is worthwhile before committing to this pattern for a latency-sensitive workload.
 
-### 40.5.5 Output Bindings (Example: Writing to Cosmos DB)
+### 5.5 Output Bindings (Example: Writing to Cosmos DB)
 
 - **Purpose:** declaratively writes a function's output to a target service without the function code containing explicit connection/write logic.
 - **Configuration:**
@@ -206,17 +206,17 @@ When a new function host instance is needed (either the very first invocation af
 
 ---
 
-## 40.6 Durable Functions (Stateful Orchestration Extension)
+## 6. Durable Functions (Stateful Orchestration Extension)
 
-### 40.6.1 Definition and Why It Exists
+### 6.1 Definition and Why It Exists
 
 **Durable Functions** is an extension to Azure Functions enabling **stateful orchestration** across multiple function calls — coordinating a sequence or graph of function executions, potentially spanning minutes, hours, or longer, while automatically persisting and restoring the orchestration's progress/state, something plain (stateless) Azure Functions cannot natively express, since each individual function invocation is otherwise independent and stateless by design.
 
-### 40.6.2 The Problem It Solves
+### 6.2 The Problem It Solves
 
 Certain workflows genuinely require coordinating multiple steps with dependencies, potentially long delays, or fan-out/fan-in parallelism — for example: "call three downstream services in parallel, wait for all three to complete, then call a fourth service with the combined results, and if any step fails, run a compensating action." Implementing this reliably with plain stateless functions and, e.g., manually tracked state in a database, is significantly more complex and error-prone than expressing it declaratively via Durable Functions' orchestration model, which handles the state persistence, replay-based execution model, and failure/retry semantics for the developer.
 
-### 40.6.3 Core Durable Functions Patterns
+### 6.3 Core Durable Functions Patterns
 
 | Pattern                                 | Description                                                                                                                                                                                                                                                                                                                                                      |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -226,31 +226,31 @@ Certain workflows genuinely require coordinating multiple steps with dependencie
 | **Monitor**                             | A recurring orchestration pattern (distinct from a Timer trigger) that periodically checks a condition until a specified end condition is met or a timeout occurs, useful for polling an external system's status over an extended period.                                                                                                                       |
 | **Human interaction / external events** | An orchestration pauses and waits for an external event (e.g., a human approval action submitted via a separate API call) before proceeding, with the wait itself not consuming compute resources while paused.                                                                                                                                                  |
 
-### 40.6.4 Orchestrator Function Determinism Requirement
+### 6.4 Orchestrator Function Determinism Requirement
 
 ⚠️ **Warning:** Durable Functions' underlying execution model relies on **replaying** an orchestrator function's code from the beginning each time it resumes (using a persisted event history to skip already-completed steps rather than re-executing their side effects) — which means orchestrator function code **must be deterministic**: no direct calls to non-deterministic APIs (current date/time via the platform's normal API, random number generation, direct I/O) inside the orchestrator function itself. Non-deterministic operations must instead be performed inside regular "activity functions" called _from_ the orchestrator (which are not subject to this replay-determinism constraint), or via Durable Functions' own deterministic-safe APIs where provided (e.g., a durable-timer API rather than a native language sleep/delay call). Violating this constraint is a common, subtle source of Durable Functions bugs that can be difficult to diagnose without understanding the underlying replay mechanism.
 
 ---
 
-## 40.7 Production and Enterprise Usage
+## 7. Production and Enterprise Usage
 
-### 40.7.1 Deployment Patterns
+### 7.1 Deployment Patterns
 
 - **Zip deployment / run-from-package:** the standard, recommended deployment mechanism, packaging the function code and dependencies into a zip artifact deployed to the Function App — directly parallel in spirit to the "build once, deploy the same artifact" principle from Section 34.12, now applied to a Functions deployment package rather than a container image.
 - **Custom container deployment:** Function Apps can also be deployed as a custom container image (built and stored following the exact patterns from Sections 34–35), appropriate when a workload has dependencies or runtime requirements not well-suited to the standard managed-language-runtime deployment model, or when an organization wants deployment-artifact consistency across all its compute (containers everywhere) rather than a distinct packaging model just for Functions.
 
-### 40.7.2 Configuration and Secrets
+### 7.2 Configuration and Secrets
 
 - Function App settings (environment-variable-equivalent configuration) should reference Azure Key Vault (Section 56) via Key Vault references rather than storing sensitive connection strings/keys directly as plaintext app settings — directly extending the "no secrets in plain configuration" principle already established in Sections 34.6.2 and 36.6.5.
 - **Managed Identity** (Section 9) should be used for a Function App's own authentication to other Azure services (Storage, Cosmos DB, Service Bus, Key Vault itself) wherever the target binding/SDK supports identity-based connections, rather than connection-string-based secrets — the same preference pattern established for ACR (Section 35.4.2) and AKS Workload Identity (Section 37.5.4), now applied to Functions.
 
-### 40.7.3 Observability
+### 7.3 Observability
 
 - Application Insights (Section 52, full depth later in Part 10) integrates natively with Azure Functions, automatically capturing invocation traces, dependency calls (e.g., the underlying HTTP/database calls a function makes), and exceptions — essential for diagnosing both individual function failures and, for Durable Functions specifically, tracing an orchestration's full execution history across its potentially long-running, replay-based lifecycle.
 
 ---
 
-## 40.8 Troubleshooting Reference
+## 8. Troubleshooting Reference
 
 | Symptom                                                                         | Likely Cause                                                                                                                                                                                                                                                                 | Diagnostic Step                                                                                                                                                                                       |
 | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -262,7 +262,7 @@ Certain workflows genuinely require coordinating multiple steps with dependencie
 
 ---
 
-## 40.9 Best Practices Checklist
+## 9. Best Practices Checklist
 
 - [ ] Hosting plan chosen deliberately based on latency sensitivity, invocation pattern, VNet requirements, and execution duration — not left at a default.
 - [ ] Cold-start mitigations applied (minimized dependencies, avoided expensive static initialization) for Consumption-plan workloads where cold start could matter.
@@ -275,7 +275,7 @@ Certain workflows genuinely require coordinating multiple steps with dependencie
 
 ---
 
-## 40.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - "Consumption plan Functions always have unpredictable cold-start latency, making them unsuitable for any latency-sensitive scenario." _Correction:_ cold start specifically affects the _first_ invocation after an idle period (or scale-out to a new instance); a Consumption-plan function under sustained, steady traffic experiences cold start only occasionally, not on every invocation — the concern is specifically about intermittent/bursty traffic patterns with idle gaps, which is exactly when scale-to-zero's cost benefit is also strongest, making this a genuine trade-off rather than a blanket unsuitability.
 - "Bindings are required — you cannot use the underlying service's SDK directly in a function." _Correction:_ bindings are a convenience layer for common patterns; explicit SDK usage within a function body remains fully valid and often necessary for more complex interactions (40.5.5).
@@ -283,7 +283,7 @@ Certain workflows genuinely require coordinating multiple steps with dependencie
 
 ---
 
-## 40.11 Interview Questions (Consolidated)
+## 11. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between a trigger and a binding in Azure Functions?"
 _Model answer:_ a trigger is the event that causes a function to execute — every function has exactly one. A binding is a declarative connection for reading additional input or writing output to another service, and a function can have zero or more input/output bindings beyond its trigger. For example, a Queue-triggered function might also have an output binding writing a result to Blob Storage — the trigger determines _when_ the function runs, bindings simplify _what it reads/writes_ while running.
@@ -301,7 +301,7 @@ _What the interviewer is probing:_ the ability to map a moderately complex real-
 
 ---
 
-## 40.12 Key Takeaways Summary
+## 12. Key Takeaways Summary
 
 🔑 The trigger-and-binding model is Functions' defining characteristic: exactly one trigger determines _when_ a function runs, while bindings declaratively externalize additional input/output plumbing.
 
@@ -315,7 +315,7 @@ _What the interviewer is probing:_ the ability to map a moderately complex real-
 
 ---
 
-## 40.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 42 — Logic Apps (next):** a complementary, lower-code integration/workflow service, frequently compared against Azure Functions (and specifically Durable Functions) for orchestration scenarios — the comparison and decision criteria between the two are covered fully once Logic Apps' own model has been introduced.
 - **Section 43 — Event Grid, Event Hubs, Service Bus:** the messaging/eventing services referenced throughout this section's trigger material (Queue trigger, Event Grid-based Blob trigger, Service Bus trigger) — covered in full architectural depth next.

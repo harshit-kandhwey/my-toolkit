@@ -1,20 +1,20 @@
 # Section 8 (Part 3): Installation & Configuration
 
-## 8.1 Definition
+## 1. Definition
 
 **Plain language:** Before Git is useful, you install the program itself, then tell it who you are and how you like it to behave — identity, default editor, default branch name, authentication method to reach remote servers, and dozens of optional preferences.
 
 **Precise:** Git installation places the `git` binary (plus supporting tooling — Git Bash, credential helpers, GUI launchers on some platforms) on your system; Git configuration is a layered key-value store, read from three (or four, counting a rarely-used "worktree" scope) increasingly specific files, that governs everything from `user.name` to network transport behavior. Nothing in this section touches the object model (§5) or refs (§6) — it is entirely about the environment Git runs _in_, and the credentials it uses to talk to a remote (deep dive in §20).
 
-## 8.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 1. **Every commit needs an author.** Git refuses (or at least strongly warns) to build commit objects without `user.name` and `user.email` set, because that metadata is baked permanently into every commit object (§5) — it cannot be silently defaulted the way a filename can.
 2. **One tool, many humans, many preferences.** A single `git` binary serves millions of different workflows; rather than hard-code behavior, Git externalizes preferences (editor, line-ending policy, default branch name, aliases) into config files so the same binary adapts per machine and per repository.
 3. **Authentication is not the same problem as version control.** Talking to a remote server (GitHub, GitLab, a self-hosted server) requires proving _who you are_ over a network — a concern orthogonal to Git's local object model, solved by layering standard mechanisms (SSH keys, HTTPS credential helpers) on top rather than inventing a proprietary one.
 
-## 8.3 Installing Git
+## 3. Installing Git
 
-### 8.3.1 Windows
+### 3.1 Windows
 
 The standard distribution is **Git for Windows** (`git-scm.com`), which bundles several distinct things in one installer:
 
@@ -29,7 +29,7 @@ Installer choices worth understanding rather than clicking through blindly:
 - **Default editor** — the installer lets you pick Vim, Notepad, VS Code, or others for `core.editor`; this only matters for operations that open an editor (commit messages without `-m`, interactive rebase in §14, `git config -e`).
 - **PATH environment** — "Git from the command line and also from 3rd-party software" is the recommended option so `git` works from any terminal, not just Git Bash.
 
-### 8.3.2 macOS
+### 3.2 macOS
 
 Three common paths, all equally valid:
 
@@ -37,11 +37,11 @@ Three common paths, all equally valid:
 - **Homebrew** — `brew install git` gives you a more current, easily-updatable build (`brew upgrade git`); this is the common choice among engineers who want the newest features/fixes.
 - **Official installer / MacPorts** — less common but available for cases where Homebrew isn't in use.
 
-### 8.3.3 Linux
+### 3.3 Linux
 
 Installed via the distribution's package manager — `apt install git` (Debian/Ubuntu), `dnf install git` (Fedora/RHEL), `pacman -S git` (Arch). Distro repositories sometimes lag the latest Git release by months; if you need a newer version for a specific feature, add the relevant PPA/repo (e.g. Ubuntu's `ppa:git-core/ppa`) or build from source.
 
-### 8.3.4 Verifying the Install
+### 3.4 Verifying the Install
 
 ```bash
 # Purpose: confirm Git is installed and check which version
@@ -57,7 +57,7 @@ $ which git        # Git Bash / macOS / Linux
 
 > 💡 **Tip:** Version matters more than beginners expect — features referenced throughout this knowledge base (`git switch`/`git restore` from 2.23+, `git range-diff`, improvements to `rebase --update-refs`) simply don't exist on old Git versions still lurking on some corporate machines and CI images. If a command in this series "doesn't exist" for you, checking `git --version` is the first troubleshooting step.
 
-## 8.4 The Three Configuration Scopes
+## 4. The Three Configuration Scopes
 
 Git configuration is layered: more specific scopes override less specific ones.
 
@@ -80,7 +80,7 @@ Global (~/.gitconfig — this user, all repos)
 Local (.git/config — this repo only)
 ```
 
-### 8.4.1 Setting values
+### 4.1 Setting values
 
 ```bash
 # Purpose: set your identity globally — required before your first commit anywhere
@@ -91,7 +91,7 @@ $ git config --global user.email "harshitkandhwey@gmail.com"
 $ git config --local user.email "harshit@client-example.com"
 ```
 
-### 8.4.2 Reading values
+### 4.2 Reading values
 
 ```bash
 # Purpose: read one specific key, respecting precedence (shows the effective value)
@@ -111,7 +111,7 @@ file:.git/config                   user.email=harshit@client-example.com
 
 > ⚠️ **Common confusion to preempt:** `git config --list` shows the _merged, effective_ configuration — it does not tell you which file a value came from unless you add `--show-origin`. Debugging "why is my commit using the wrong email" almost always means reaching for `--show-origin` rather than staring at `--list` output.
 
-### 8.4.3 Editing directly
+### 4.3 Editing directly
 
 All three files are plain INI-style text and can be hand-edited:
 
@@ -133,7 +133,7 @@ $ git config --global -e
 
 Hand-editing is perfectly safe and common — unlike `.git/objects` or `.git/index` (§4), config files are plain text with no binary structure or consistency invariants to break.
 
-## 8.5 First-Time Setup Checklist
+## 5. First-Time Setup Checklist
 
 ```bash
 # Purpose: identity — mandatory before committing
@@ -152,7 +152,7 @@ $ git config --global core.editor "code --wait"   # VS Code
 
 > 💡 **Tip:** `init.defaultBranch` only affects _new_ repositories created after you set it (via `git init` or `git clone` when the remote's default happens to match) — it has no effect on existing repos, which keep whatever branch name they already have. The industry-wide move from `master` to `main` as the conventional default (GitHub changed its own default in 2020) is a naming convention, not a Git feature; nothing internally treats `main` specially.
 
-## 8.6 Useful Aliases
+## 6. Useful Aliases
 
 Aliases are just config entries under `[alias]` that expand a short name into a full Git command (including arbitrary flags):
 
@@ -173,11 +173,11 @@ $ git lg
 
 > 💡 **Tip:** Prefixing an alias body with `!` lets it run an arbitrary shell command rather than just another Git subcommand, e.g. `git config --global alias.root '!pwd'` — this is how power users build small custom workflows without leaving Git's own command surface. Full scripting/hooks territory is §24.
 
-## 8.7 SSH Keys and Remote Authentication
+## 7. SSH Keys and Remote Authentication
 
 Talking to a remote host (GitHub, GitLab, a company Git server) requires proving your identity over the network. Git supports two transport families for this, and understanding both — plus _when_ each authentication step happens — matters from day one, even though full remote mechanics are §20.
 
-### 8.7.1 Generating an SSH key pair
+### 7.1 Generating an SSH key pair
 
 ```bash
 # Purpose: generate a modern Ed25519 key pair (preferred over older RSA keys — smaller, faster, equally secure)
@@ -197,7 +197,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx harsh
 
 You then paste this into the hosting platform's **SSH keys** settings page (GitHub: Settings → SSH and GPG keys → New SSH key).
 
-### 8.7.2 Testing the connection
+### 7.2 Testing the connection
 
 ```bash
 # Purpose: verify the key is recognized by GitHub without performing any Git operation
@@ -208,7 +208,7 @@ provide shell access.
 
 That message — despite looking like an error — is the expected **success** output; GitHub deliberately has no interactive shell to give you over this connection, it only confirms the key.
 
-### 8.7.3 HTTPS vs SSH remote URLs
+### 7.3 HTTPS vs SSH remote URLs
 
 | Aspect                        | HTTPS                                                                                             | SSH                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -221,7 +221,7 @@ That message — despite looking like an error — is the expected **success** o
 
 Neither is objectively "better" — they are two transport/authentication mechanisms Git supports interchangeably for the same underlying operations (fetch/push). A single repository can even have different remotes configured with different URL schemes.
 
-### 8.7.4 Credential helpers (HTTPS)
+### 7.4 Credential helpers (HTTPS)
 
 Since 2021, GitHub (and most major hosts) removed plain password authentication over HTTPS entirely — you authenticate with a **Personal Access Token (PAT)** (or, for organizations, an OAuth app / GitHub App token) used _in place of_ a password. Typing that token on every push would be unbearable, so Git delegates storage to a **credential helper**:
 
@@ -244,7 +244,7 @@ The first time you push over HTTPS, Git prompts for username + token (or opens a
 
 > ⚠️ **Critical clarification:** a Personal Access Token is not the same as your account password — it is a separate, scoped, revocable credential (you choose its permissions and expiry) that you generate from the hosting platform's developer settings. Treat a PAT exactly like a password: never commit it, never paste it into chat, and revoke it immediately if it leaks (full secrets-in-history remediation is §28).
 
-## 8.8 Configuring an External Diff/Merge Tool
+## 8. Configuring an External Diff/Merge Tool
 
 Git's built-in text diff output is adequate for quick review, but a visual diff/merge tool is far superior for genuinely gnarly merge conflicts (full conflict-resolution workflow in §13). Git lets you register any tool via config:
 
@@ -276,7 +276,7 @@ $ git config --global mergetool.keepBackup false
 
 > 💡 **Tip:** `git difftool` and `git mergetool` are _wrappers_ — they don't replace `git diff`/conflict markers, they just launch your chosen external program for each file, then hand control back to Git once you close it. You can always fall back to plain-text `git diff` and manual conflict-marker editing even with a tool configured; nothing is lost by configuring one.
 
-## 8.9 Other Commonly Tuned Settings
+## 9. Other Commonly Tuned Settings
 
 ```bash
 # Purpose: make `git push` default to pushing only the current branch to its tracked upstream (modern default, but worth setting explicitly on older Git)
@@ -290,7 +290,7 @@ $ git config --global core.autocrlf true    # Windows
 $ git config --global core.autocrlf input   # Mac/Linux
 ```
 
-## 8.10 Hands-On: From Zero to First Configured Commit
+## 10. Hands-On: From Zero to First Configured Commit
 
 ```bash
 # Purpose: complete first-time setup sequence on a fresh machine
@@ -304,7 +304,7 @@ $ git config --global credential.helper manager
 $ git config --list --show-origin | grep gitconfig
 ```
 
-## 8.11 Interview Questions
+## 11. Interview Questions
 
 **[Beginner] Q1. What are the three configuration scopes in Git, and which one wins if a setting exists in more than one?**
 **Model answer:** Git configuration exists at system scope (`/etc/gitconfig`, all users on the machine), global scope (`~/.gitconfig`, all repos for the current user), and local scope (`.git/config`, one specific repository). More specific scopes override less specific ones — local beats global, which beats system — which is exactly what allows a common pattern like setting your personal email globally but overriding it locally in a work repository.
@@ -315,14 +315,14 @@ $ git config --list --show-origin | grep gitconfig
 **[Senior] Q3. A new hire's commits are showing up under the wrong name in the company's repos even though they set `user.name` globally. What's your debugging approach?**
 **Model answer:** The most likely cause is a local override — either a stale `.git/config` in that specific repo from a previous clone or template, or an earlier `git config --local user.name` someone ran and forgot about, which silently wins over the global setting per Git's precedence rules. I'd run `git config --list --show-origin` inside the affected repo to see exactly which file each effective value is coming from, rather than guessing. If it's a systemic problem across many repos (e.g., a shared clone template or CI image with a baked-in identity), I'd also check the system scope and any global `includeIf` directives that conditionally apply different config based on the repo's directory path — a common enterprise pattern for "use this identity under `~/work/`, this one under `~/personal/`" that can surprise someone unaware it exists.
 
-## 8.12 Common Misconceptions
+## 12. Common Misconceptions
 
 1. **"Git needs a GitHub account to work."** Git is fully functional entirely locally — commits, branches, merges, history — with zero network access or hosting account. A hosting platform is only needed for remote collaboration (§20, §23).
 2. **"SSH and HTTPS remotes give different Git functionality."** They are purely different authentication/transport mechanisms for the exact same set of operations (fetch, push, clone) — neither unlocks or restricts any Git feature.
 3. **"My GitHub password is my Git credential."** Since the PAT-only transition, your account password is not usable for HTTPS Git operations at all; only a token (or SSH key) works.
 4. **"`git config --list` tells me which file a setting came from."** It shows the merged, effective values only; `--show-origin` is required to see the source file.
 
-## 8.13 🔑 Key Takeaways
+## 13. 🔑 Key Takeaways
 
 - Installation on Windows brings Git Bash and Windows Credential Manager integration alongside the `git` binary itself; macOS/Linux installs are simpler package-manager affairs.
 - Config is layered: system → global → local (→ worktree), each overriding the previous; `--show-origin` is the tool for debugging precedence confusion.
@@ -330,6 +330,6 @@ $ git config --list --show-origin | grep gitconfig
 - SSH keys (`ssh-keygen`, tested with `ssh -T git@github.com`) and HTTPS PATs via credential helpers are the two supported authentication paths to a remote — neither is universally superior, they trade off firewall friendliness against setup mechanics.
 - `diff.tool`/`merge.tool` config wraps an external GUI tool around `git difftool`/`git mergetool` without replacing Git's own plain-text diff/conflict-marker mechanics underneath.
 
-## 8.14 Related Concepts & What's Next
+## 14. Related Concepts & What's Next
 
 Configuration set up here — identity, credential helpers, SSH keys — becomes load-bearing the moment you touch a remote, and §20 (Remotes in Depth) revisits authentication with full push/fetch/pull mechanics, multiple-remote setups, and per-host SSH config for juggling multiple accounts. The merge tool configured in 8.8 becomes practically necessary once §13 (Merging) introduces real conflict resolution. With Git installed and configured, §9 moves to actually creating and cloning your first repositories.

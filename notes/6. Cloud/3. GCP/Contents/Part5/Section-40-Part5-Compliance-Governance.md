@@ -1,22 +1,22 @@
 # Section 40 (Part 5): Compliance & Governance
 
-## 40.1 Definition
+## 1. Definition
 
 **Plain language:** Regulated organizations don't just need their cloud environment to be secure — they need to be able to _prove_ it's secure, in the specific way an auditor, regulator, or contract requires, and they often need to prevent even Google's own support staff from seeing certain data. This section covers the tools GCP provides for exactly that: enforcing compliance boundaries, controlling and observing Google's own access, and keeping an immutable record of what happened.
 
 **Precise:** GCP's compliance and governance tooling spans **Assured Workloads** (policy-enforced compliance regimes for regulated workloads), third-party **compliance certifications** GCP itself holds, **Access Transparency** and **Access Approval** (visibility into and control over Google personnel access to customer data), and **Cloud Audit Logs** (an immutable record of administrative actions, data access, and system events across an organization).
 
-## 40.2 Why It Exists
+## 2. Why It Exists
 
 Compliance requirements come from two different directions that are easy to conflate. First, _your organization's_ controls need to be provably compliant with a framework (HIPAA, FedRAMP, PCI-DSS, ITAR) — this requires both configuring your resources correctly and having auditable evidence that they stay that way. Second, in a shared-responsibility public cloud model, _Google's own operational access_ to the infrastructure underlying your workloads is itself part of the compliance surface — an auditor for a government or defense workload may require proof that no Google engineer without appropriate clearance ever touched the underlying hardware, or a visibility log of every time any Google support engineer did access anything related to your resources. GCP's compliance tooling exists to make both of these provable rather than merely asserted.
 
-## 40.3 Assured Workloads
+## 3. Assured Workloads
 
 **Assured Workloads** is a control plane that lets an organization designate a folder as subject to a specific compliance regime (e.g., FedRAMP Moderate/High, IL4/IL5 for US Department of Defense, CJIS, HIPAA, or EU data boundary requirements), and then automatically enforces the technical controls that regime requires — such as restricting resource creation to specific compliant regions, restricting support access to personnel with appropriate citizenship/clearance, enforcing CMEK (Section 38) on supported services, and blocking creation of services not yet certified for that regime.
 
 > 💡 **Tip:** Assured Workloads is best understood as "compliance-as-a-guardrail," conceptually similar to a highly specialized, pre-packaged Organization Policy (Section 37) bundle — instead of an org handcrafting dozens of individual constraints to approximate a framework's requirements, Assured Workloads applies Google's own maintained mapping of "what technical controls this specific regime requires" directly to a folder.
 
-## 40.4 Compliance Certifications Overview
+## 4. Compliance Certifications Overview
 
 GCP maintains certifications and attestations across a broad set of frameworks, independently audited by third parties. Understanding the _category_ of each matters more than memorizing the full list:
 
@@ -30,7 +30,7 @@ GCP maintains certifications and attestations across a broad set of frameworks, 
 
 > ⚠️ **Interview-relevant nuance:** A certification held by _Google's infrastructure_ does not automatically make _your workload_ compliant — you must still configure and operate your portion of the shared-responsibility model correctly (encryption, access control, logging, data residency) to inherit the benefit of the underlying certification. Auditors evaluate your configuration against the framework; Google's certification is necessary but not sufficient evidence on its own.
 
-## 40.5 Access Transparency and Access Approval
+## 5. Access Transparency and Access Approval
 
 These two features are frequently confused but serve distinct purposes:
 
@@ -56,11 +56,11 @@ These two features are frequently confused but serve distinct purposes:
                                                the fact)
 ```
 
-## 40.6 Cloud Audit Logs
+## 6. Cloud Audit Logs
 
 Cloud Audit Logs record activity across an organization in four distinct log streams, each with different retention and cost characteristics:
 
-### 40.6.1 The Four Log Types
+### 6.1 The Four Log Types
 
 | Log type           | Records                                                                                                                                            | Retention                         | Enabled by default?                                                                                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -71,11 +71,11 @@ Cloud Audit Logs record activity across an organization in four distinct log str
 
 > ⚠️ **Interview-relevant nuance:** Data Access logs are the ones most often _missing_ when an incident investigation needs them, precisely because they're not universally on by default — the volume/cost trade-off means many organizations only discover they never enabled Data Access logging for a critical service after they need it during an investigation. Enabling Data Access logs proactively for sensitive data stores is a standard hardening recommendation, not an afterthought.
 
-### 40.6.2 Where Logs Live and How They're Used
+### 6.2 Where Logs Live and How They're Used
 
 All four log types flow into **Cloud Logging**, from which they can be routed via log sinks to BigQuery (for SQL-based investigation), Cloud Storage (for long-term archival beyond the default retention), or Pub/Sub (for real-time processing, e.g., feeding a SIEM). Audit logs are themselves protected resources — access to _read_ audit logs is a distinct, separately grantable IAM permission from access to the resources the logs describe, so that even a resource owner doesn't automatically get to erase or hide their own audit trail.
 
-## 40.7 Comparison with AWS and Azure
+## 7. Comparison with AWS and Azure
 
 | Concept                                      | GCP                 | AWS                                                                                 | Azure                                                        |
 | -------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -86,7 +86,7 @@ All four log types flow into **Cloud Logging**, from which they can be routed vi
 | Data plane access audit log                  | Data Access logs    | CloudTrail (data events, opt-in per resource)                                       | Diagnostic settings / resource-level logs (opt-in)           |
 | Policy-violation denial log                  | Policy Denied logs  | CloudTrail + Config/SCP denial context                                              | Azure Policy compliance/deny logs                            |
 
-## 40.8 Hands-On Example: Enabling Data Access Logs and Querying Audit Logs
+## 8. Hands-On Example: Enabling Data Access Logs and Querying Audit Logs
 
 **Purpose:** Enable Data Access audit logging for a service via an IAM policy audit config, then query recent Admin Activity logs for a project.
 
@@ -128,19 +128,19 @@ TIMESTAMP                      METHOD_NAME                             PRINCIPAL
 2026-07-24T09:58:03Z            v1.compute.instances.insert              deploy-sa@my-project.iam.gserviceaccount.com
 ```
 
-## 40.9 Production & Enterprise Usage
+## 9. Production & Enterprise Usage
 
 - **Compliance boundary as a folder, not a project-by-project checklist.** Enterprises with regulated workloads place them under an Assured Workloads folder from day one, so every new project created underneath automatically inherits the required controls, rather than relying on every team remembering to configure each new project correctly.
 - **Sink all four audit log types to a security-owned project.** Rather than trusting log retention/access controls in each workload project, mature organizations route audit logs via aggregated sinks to a centralized, security-team-owned project (with stricter IAM and longer retention via Cloud Storage/BigQuery), so a compromised workload project can't be used to tamper with its own audit trail.
 - **Access Approval for the highest-sensitivity tenants only.** Because Access Approval can introduce support latency (Google support must wait for explicit approval before proceeding), it's typically scoped to the specific folders/projects holding the most sensitive data, rather than the entire organization, balancing compliance requirements against operational support speed elsewhere.
 
-## 40.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - **Misconception:** "If Google is FedRAMP/HIPAA certified, my workload is automatically compliant." Google's certifications cover the underlying infrastructure and processes; your workload's compliance also depends on how you configure and operate it — encryption, access control, logging, data residency — under the shared-responsibility model.
 - **Misconception:** "Access Transparency and Access Approval are the same feature at different tiers." They're functionally different: Transparency is passive after-the-fact visibility; Approval is an active, real-time veto required before access proceeds.
 - **Misconception:** "All audit logs are on by default and retained forever." Only Admin Activity, System Event, and (for supported services) Policy Denied logs are on by default; most Data Access logs must be explicitly enabled, and default retention (30 days for Data Access) is shorter than for the always-on log types (400 days).
 
-## 40.11 Interview Questions
+## 11. Interview Questions
 
 **🎯 Beginner:** _What are the four types of Cloud Audit Logs, and which are enabled by default?_
 **Model answer:** Admin Activity (configuration/resource changes), Data Access (reads/writes of actual data), System Event (Google-system-initiated changes), and Policy Denied (requests blocked by a security policy). Admin Activity, System Event, and Policy Denied are enabled by default and cannot be disabled (for Admin Activity/System Event) or are on by default for supported services (Policy Denied); most Data Access logs must be explicitly enabled per service due to their higher volume and cost.

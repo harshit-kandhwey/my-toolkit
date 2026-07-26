@@ -6,7 +6,7 @@
 
 ---
 
-## 43.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Azure's three core messaging/eventing services — Event Grid, Event Hubs, and Service Bus — which are frequently confused with one another because all three "move messages between systems," but which solve genuinely different problems and are optimized for different traffic patterns. A significant fraction of both real-world architecture mistakes and interview questions in this space stem from applying the wrong one of these three services to a given scenario.
 
@@ -14,9 +14,9 @@ This section covers Azure's three core messaging/eventing services — Event Gri
 
 ---
 
-## 43.2 Comparative Overview
+## 2. Comparative Overview
 
-### 43.2.1 The Core Distinction
+### 2.1 The Core Distinction
 
 | Aspect                                | Event Grid                                                                                              | Event Hubs                                                                                                                              | Service Bus                                                                                                                          |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -27,21 +27,21 @@ This section covers Azure's three core messaging/eventing services — Event Gri
 | **Retention model**                   | Not designed for long retention/replay of the event itself — a notification mechanism, not a data store | Time-based retention window during which events can be re-read from any offset (stream replay)                                          | Messages are consumed and removed (or dead-lettered), not designed for replay-based consumption of historical messages               |
 | **Typical Azure-native trigger role** | Blob-created, Resource-changed, custom app events                                                       | IoT Hub-adjacent, big-data pipeline ingestion (often feeding Stream Analytics, Databricks, etc. — outside this roadmap's current scope) | Order processing, decoupled service-to-service business workflows                                                                    |
 
-### 43.2.2 Why Three Services Instead of One
+### 2.2 Why Three Services Instead of One
 
 🎯 **Interview Tip:** a frequent, well-targeted interview question is simply "why does Azure have three separate messaging services instead of one general-purpose one?" The strong answer is that these three problems (reactive notification, high-throughput streaming, reliable business messaging) have genuinely different optimal architectures at the implementation level — a system optimized for Event Hubs' millions-of-events-per-second partitioned streaming throughput makes different internal trade-offs than a system optimized for Service Bus's strict FIFO ordering and transactional guarantees, and forcing one implementation to serve all three well would compromise all three use cases rather than serving any of them optimally. This is a real architectural principle, not merely a product-portfolio artifact.
 
 ---
 
-## 43.3 Azure Event Grid
+## 3. Azure Event Grid
 
-### 43.3.1 Definition
+### 3.1 Definition
 
 **Plain language:** Event Grid is Azure's event-routing backbone — it takes discrete "something happened" notifications from event sources (Azure services or custom applications) and reliably delivers them, in near-real-time, to one or more interested subscribers, without the source and subscriber needing to know about each other directly.
 
 **Precise definition:** Azure Event Grid is a fully managed event routing service implementing a publish-subscribe model, where **event sources** publish events to a **topic**, and **event handlers** subscribe to receive matching events (optionally filtered) via a **push-based** delivery mechanism to one of several supported destination types.
 
-### 43.3.2 Architecture
+### 3.2 Architecture
 
 ```
 Event Source                Event Grid Topic              Event Handlers (Subscribers)
@@ -59,36 +59,36 @@ Custom App      ──publish──►                     ──filter──►
 - **Custom topics** are explicitly created by a customer to publish their own application-defined events, for scenarios where a custom application (not a native Azure event source) needs to publish discrete events into the Event Grid model.
 - **Event subscriptions** define the filter criteria (event type, subject prefix/suffix, advanced field-based filters) and the destination handler for matching events — multiple subscriptions can exist on the same topic, each independently filtering and routing to a different handler, enabling one event source to fan out to many different, independently configured consumers.
 
-### 43.3.3 Why This Matters — Direct Connection to Section 40.5.4
+### 3.3 Why This Matters — Direct Connection to Section 40.5.4
 
 Section 40.5.4 introduced the Event Grid-based Blob trigger as the near-real-time alternative to the classic log-scanning Blob trigger. This is now fully explained: Blob Storage is a native Event Grid system-topic source, publishing a `Microsoft.Storage.BlobCreated` event the moment a blob is created; an Event Grid subscription with an Azure Function as its handler delivers that event via push almost immediately, entirely avoiding the polling/log-scanning latency of the classic trigger mechanism.
 
-### 43.3.4 Delivery Semantics and Retry
+### 3.4 Delivery Semantics and Retry
 
 - Event Grid delivery is **at-least-once**: a handler may receive the same event more than once under certain failure/retry conditions, meaning **handler logic should be idempotent** — the same principle already established for Functions triggers generally in Section 40.8's troubleshooting table, now given its underlying architectural reason.
 - Failed deliveries are retried according to a configurable retry policy (exponential backoff, with a maximum retry duration/count); events that exhaust retries can be routed to a configured **dead-letter destination** (typically a Blob Storage container) for later inspection/reprocessing, rather than being silently dropped.
 
-### 43.3.5 Event Grid vs. a Plain Webhook
+### 3.5 Event Grid vs. a Plain Webhook
 
 💡 **Tip:** a common question is "why not just have the source call the destination's webhook URL directly?" Event Grid adds: centralized, filtered fan-out to multiple independent subscribers without the source needing to know about all of them; built-in retry and dead-lettering; and a consistent event schema (CloudEvents-compatible, or Event Grid's own schema) across many different Azure and custom event sources — capabilities a hand-rolled direct webhook call would need to be built and maintained separately for every source/destination pair.
 
 ---
 
-## 43.4 Azure Event Hubs
+## 4. Azure Event Hubs
 
-### 43.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** Event Hubs is a massively scalable data ingestion pipeline, built for scenarios where huge volumes of small events — telemetry from millions of IoT devices, application log/metric streams, clickstream data — need to be captured and made available for one or more downstream systems to process, often each at a different pace.
 
 **Precise definition:** Azure Event Hubs is a fully managed, real-time data streaming platform implementing the **partitioned log** model, capable of ingesting and processing millions of events per second, where consumers read events via offset-tracked, independent streams rather than push-based delivery.
 
-### 43.4.2 The Partitioned Log Model
+### 4.2 The Partitioned Log Model
 
 - Events published to an Event Hub are distributed across a configured number of **partitions** (each an ordered, append-only sequence of events), based on a partition key (or round-robin if no key is specified) — this partitioning is the mechanism enabling Event Hubs' massive horizontal scalability, since different partitions can be written to and read from in parallel.
 - **Consumer groups:** each consumer group represents an independent "view" of the entire event stream, tracking its own read position (offset) per partition — meaning multiple different downstream systems (e.g., a real-time dashboard and a batch analytics pipeline) can each independently consume the _same_ stream of events at their own pace, from their own current position, without interfering with each other. This is a fundamentally different consumption model from Event Grid's push-to-many-independent-handlers or Service Bus's competing-consumers queue model.
 - **Retention window:** events remain available for a configured retention period (a time-based window, not indefinite storage), during which any consumer group can read from any offset within that window — enabling **replay** (a new consumer group, or a consumer resetting its offset, can reprocess recent historical events), a capability neither Event Grid nor standard Service Bus queue consumption provides in the same way.
 
-### 43.4.3 Architecture Diagram
+### 4.3 Architecture Diagram
 
 ```
 Producers (millions of devices / app instances)
@@ -108,35 +108,35 @@ Consumer Group A                 Consumer Group B
                                    independently paced)
 ```
 
-### 43.4.4 Why Partition Count Matters (Capacity Planning)
+### 4.4 Why Partition Count Matters (Capacity Planning)
 
 ⚠️ **Warning:** partition count is a significant capacity-planning decision, not a minor detail — the number of partitions caps the maximum degree of parallel consumption for a single consumer group (each partition can be actively read by at most one consumer within a given consumer group at a time), and partition count, once set, is either fixed or has limited/costly ability to change depending on the specific Event Hubs tier — verify current tier-specific behavior around partition count changes against official documentation before finalizing a production design, since under-provisioning partition count is a common real-world scaling bottleneck discovered only after the fact.
 
-### 43.4.5 Event Hubs vs. Kafka
+### 4.5 Event Hubs vs. Kafka
 
 💡 **Tip:** Event Hubs' partitioned-log model is deliberately similar to Apache Kafka's core architecture, and Event Hubs offers a **Kafka-compatible endpoint**, allowing existing applications written against the Kafka protocol/client libraries to work against Event Hubs with configuration changes rather than a full rewrite — a relevant migration/interoperability point for organizations with existing Kafka-based tooling or expertise considering a move to a fully managed Azure service.
 
 ---
 
-## 43.5 Azure Service Bus
+## 5. Azure Service Bus
 
-### 43.5.1 Definition
+### 5.1 Definition
 
 **Plain language:** Service Bus is Azure's enterprise messaging service for reliable, ordered business messaging — the kind of message where losing it, processing it twice incorrectly, or processing it out of order would cause a genuine business problem (an order gets fulfilled twice, a financial transaction is processed in the wrong sequence).
 
 **Precise definition:** Azure Service Bus is a fully managed enterprise message broker supporting both **queues** (point-to-point) and **topics/subscriptions** (publish-subscribe), providing advanced messaging capabilities including guaranteed ordering (via sessions), transactions, dead-lettering, scheduled/deferred delivery, and duplicate detection.
 
-### 43.5.2 Queues (Point-to-Point)
+### 5.2 Queues (Point-to-Point)
 
 - **Definition:** a queue holds messages until a single consumer (from among potentially multiple competing consumer instances) receives and processes each one — each message is delivered to and processed by exactly one consumer instance (the "competing consumers" pattern), distinct from Event Grid's fan-out-to-many-independent-handlers model.
 - **Why this fits business messaging:** many business processing scenarios genuinely want each unit of work (an order, a transaction) processed exactly once by exactly one worker instance among a scaled-out pool of workers — the queue naturally load-balances work across however many consumer instances are currently running.
 
-### 43.5.3 Topics and Subscriptions (Publish-Subscribe)
+### 5.3 Topics and Subscriptions (Publish-Subscribe)
 
 - **Definition:** a topic accepts published messages, and one or more **subscriptions** on that topic each receive their own independent copy of matching messages (optionally filtered by subscription-level rules) — architecturally similar in spirit to Event Grid's topic/subscription fan-out model, but within Service Bus's reliable-messaging feature set (ordering, transactions, and so on) rather than Event Grid's lightweight, push-based notification model.
 - **When to choose Topics over a plain Queue:** when the same logical message needs to be independently processed by multiple different downstream systems, each with their own processing semantics and pace — e.g., a new-order message that both an inventory system and a notification system each need to process independently, each maintaining their own subscription and read position.
 
-### 43.5.4 Advanced Features (What Distinguishes Service Bus From the Other Two)
+### 5.4 Advanced Features (What Distinguishes Service Bus From the Other Two)
 
 | Feature                         | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -146,15 +146,15 @@ Consumer Group A                 Consumer Group B
 | **Scheduled/deferred delivery** | A message can be scheduled to become available for consumption at a specific future time, or explicitly deferred by a consumer to be retrieved later by sequence number — useful for delayed-processing or workflow-coordination scenarios.                                                                                                                                                                                                                        |
 | **Duplicate detection**         | An optional feature that recognizes and discards duplicate messages (based on a configurable detection window and a message ID) sent within that window — directly mitigating the operational risk of at-least-once delivery semantics producing duplicate processing, for scenarios where the sender might retry a send operation.                                                                                                                                |
 
-### 43.5.5 Queue vs. Topic Decision and Tier Considerations
+### 5.5 Queue vs. Topic Decision and Tier Considerations
 
 🎯 **Interview Tip:** a strong answer to "queue or topic?" identifies whether the message genuinely needs to be independently processed by _multiple_ different logical consumers (topic/subscriptions) versus processed exactly once by _one_ of a pool of competing workers (queue) — this is the same fan-out-vs-competing-consumers distinction that recurs across all three services in this section, worth being able to articulate precisely and consistently.
 
 ---
 
-## 43.6 Choosing Between the Three: A Decision Framework
+## 6. Choosing Between the Three: A Decision Framework
 
-### 43.6.1 Decision Tree (Text Form)
+### 6.1 Decision Tree (Text Form)
 
 ```
 Is this a discrete "something happened" notification about a resource/system event,
@@ -179,7 +179,7 @@ scheduled delivery, duplicate detection)?
     YES → Service Bus
 ```
 
-### 43.6.2 Scenario-Based Application
+### 6.2 Scenario-Based Application
 
 | Scenario                                                                                                                                           | Correct Choice                                                                                  | Why                                                                                                                                                                                                                                                                         |
 | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -193,7 +193,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.7 Integration With Azure Functions and Logic Apps (Tying Back to Sections 40–42)
+## 7. Integration With Azure Functions and Logic Apps (Tying Back to Sections 40–42)
 
 - All three services can serve as an Azure Functions **trigger** (Event Grid trigger, Event Hub trigger, Service Bus trigger) and as Logic Apps **triggers/actions** via their respective connectors — meaning the choice of messaging service is largely independent of whether the consuming logic is implemented in Functions or Logic Apps; the messaging-service decision (this section) and the compute/orchestration-service decision (Sections 40–42) are two separate axes of the overall architecture.
 - **Event Hub trigger scaling behavior:** an Azure Functions Event Hub trigger scales out consumer instances up to the Event Hub's partition count (43.4.4) — directly connecting Event Hubs' partition-count capacity-planning consideration to a concrete downstream consequence for Functions-based consumers specifically.
@@ -201,7 +201,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.8 Security Considerations
+## 8. Security Considerations
 
 - All three services support both **shared access signature (SAS)-based** authentication (a token/key-based credential scoped to specific permissions and, optionally, a specific entity) and **Microsoft Entra ID/Managed Identity-based** authentication — with Managed Identity being the generally preferred pattern for Azure-hosted publishers/consumers, consistent with the recurring preference established across Sections 35.4.2, 37.5.4, and 38.7.2.
 - **Network isolation:** Premium/higher tiers of these services (verify current tier-specific availability against documentation) support Private Link (Section 23), allowing publish/consume traffic to stay within a private VNet boundary, relevant for the same regulated-network-architecture scenarios discussed for ACR in Section 35.8.
@@ -209,7 +209,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                              | Likely Cause                                                                                                                                                             | Diagnostic Step                                                                                                                         |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -221,7 +221,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Service selected based on the actual problem shape (discrete notification vs. high-throughput streaming vs. reliable business messaging) using the decision framework in 43.6, not by default familiarity with one service.
 - [ ] Event Grid/Event Hubs consumer logic designed to be idempotent, given at-least-once delivery semantics.
@@ -233,7 +233,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Event Grid, Event Hubs, and Service Bus are basically interchangeable — pick whichever one the team already knows." _Correction:_ they are optimized for genuinely different problem shapes (43.2.2), and choosing the wrong one for a given workload's actual requirements (e.g., using Event Grid for high-throughput telemetry ingestion, or Event Hubs for strictly ordered transactional business messages) leads to real architectural friction or missing capabilities, not just a stylistic difference.
 - "Event Hubs guarantees exactly-once processing." _Correction:_ like Event Grid, standard Event Hubs consumption provides at-least-once delivery; achieving effectively-exactly-once processing requires idempotent consumer logic or additional application-level deduplication, not a built-in guarantee of the service itself.
@@ -241,7 +241,7 @@ scheduled delivery, duplicate detection)?
 
 ---
 
-## 43.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "In one sentence each, what is the primary purpose of Event Grid, Event Hubs, and Service Bus?"
 _Model answer:_ Event Grid routes discrete "something happened" event notifications to interested subscribers via push delivery; Event Hubs ingests and streams very high volumes of telemetry/event data for one or more independent downstream consumers to process at their own pace; Service Bus provides reliable, ordered, and optionally transactional business messaging via queues (point-to-point) or topics (publish-subscribe).
@@ -259,7 +259,7 @@ _What the interviewer is probing:_ correct application of the decision framework
 
 ---
 
-## 43.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Event Grid (reactive notification), Event Hubs (high-throughput streaming), and Service Bus (reliable business messaging) solve three genuinely different problems, each with implementation choices optimized for that specific problem — not three interchangeable options.
 
@@ -273,7 +273,7 @@ _What the interviewer is probing:_ correct application of the decision framework
 
 ---
 
-## 43.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 40 (prerequisite, completed):** the Functions trigger model (Event Grid trigger, Event Hub trigger, Service Bus trigger) this section's services plug into directly.
 - **Section 42 (prerequisite, completed):** Logic Apps' connector-based consumption of these same services.

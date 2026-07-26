@@ -1,16 +1,16 @@
 # Section 23 (Part 5): Git Hosting & Enterprise Platforms — GitHub, GitLab, Bitbucket; Protected Branches, CODEOWNERS, Governance
 
-## 23.1 Definition
+## 1. Definition
 
 **Plain language:** A Git hosting platform is a service that runs Git remotes for you and wraps them in a web UI, access control, and collaboration tooling — issues, pull requests, CI, and administration — on top of the plain protocol §20 already covers.
 
 **Precise:** At the protocol level, GitHub, GitLab, Bitbucket, and self-hosted alternatives are all, fundamentally, servers exposing Git repositories over HTTPS and/or SSH — anything §20's `fetch`/`push` can do against a bare repository (§9.3.4, §9.5), these platforms do too. Everything distinguishing them — pull requests, issue trackers, CI runners, permission systems, compliance features — is **platform-layer product**, not Git itself. §1.11's Misconception #1 already flagged this distinction; this section is where it's earned in full.
 
-## 23.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Bare Git, on its own, gives you object storage and refs — nothing about _who_ is allowed to push where, nowhere to discuss a change before merging it, no automated testing on incoming code, and no audit trail beyond commit metadata. Hosting platforms exist to close that gap at team and organization scale: centralized access control instead of manually managing SSH keys and shell accounts on a raw server, a web UI non-Git-experts can use, integrated code review (§21), CI/CD (§25), and governance features (SSO, audit logs, compliance reporting) that a bare `git` install has no concept of.
 
-## 23.3 The Major Hosted Platforms
+## 3. The Major Hosted Platforms
 
 | Platform      | Owner                     | Distinguishing strength                                                                                                                                                                                                                                                                  |
 | ------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,11 +22,11 @@ Bare Git, on its own, gives you object storage and refs — nothing about _who_ 
 
 All three offer broadly comparable core features today — pull/merge requests, issue tracking, wikis, protected branches, some form of built-in or pluggable CI — so platform choice in practice usually comes down to ecosystem fit (open-source visibility favors GitHub), existing tooling (Atlassian shops favor Bitbucket), or a team's preference for an all-in-one DevOps platform (GitLab's pitch).
 
-## 23.4 Self-Hosting a Git Server
+## 4. Self-Hosting a Git Server
 
 Not every organization wants — or is permitted — to store its code on a third party's infrastructure. Git's distributed design (§1.6) means self-hosting requires nothing more exotic than a server that can serve a bare repository over a transport Git understands.
 
-### 23.4.1 Bare Repositories over SSH — the Minimal Server
+### 4.1 Bare Repositories over SSH — the Minimal Server
 
 The simplest possible self-hosted Git server is: a machine with SSH access and a bare repository (§9.3.4) sitting on disk.
 
@@ -49,7 +49,7 @@ $ git push -u origin main
 
 That's a genuinely complete, working multi-developer Git server — every `fetch`/`push` mechanic from §20 works against it unmodified, access control is just standard Unix filesystem/SSH-key permissions on the server, and there's no platform software involved at all. This is precisely how many small teams and long-running open-source projects operated before hosting platforms existed, and it remains a legitimate, minimal option today.
 
-### 23.4.2 `git daemon` — Read-Only Anonymous Access
+### 4.2 `git daemon` — Read-Only Anonymous Access
 
 For scenarios needing simple, read-only, unauthenticated access (mirrors, internal LAN distribution, no push capability), Git ships `git daemon`, a lightweight server for the plain `git://` protocol:
 
@@ -63,7 +63,7 @@ $ git clone git://server.internal/webapp.git
 
 The `git://` protocol has no encryption and no authentication — it is appropriate only for trusted networks or genuinely public read-only mirrors, never for anything requiring access control or transport security. It's mentioned here mainly because it appears in older documentation and exam material as one of Git's native transports (alongside `ssh://`, `https://`, and the local filesystem) — in current practice, SSH or HTTPS-backed platforms have almost entirely displaced it for anything beyond simple mirroring.
 
-### 23.4.3 Self-Hosted Platforms
+### 4.3 Self-Hosted Platforms
 
 Between "bare repo over SSH" and a fully managed SaaS platform sits **self-hosted software that reimplements the platform layer** — PRs, issues, web UI, CI — on infrastructure the organization controls:
 
@@ -74,7 +74,7 @@ Between "bare repo over SSH" and a fully managed SaaS platform sits **self-hoste
 | **Gogs**                         | Gitea's predecessor/sibling project (Gitea forked from Gogs in 2016); similar lightweight goals, smaller ongoing development pace today                              |
 | **GitHub Enterprise Server**     | GitHub's own self-hosted offering, for organizations wanting GitHub's UI/workflow on-premises                                                                        |
 
-### 23.4.4 When Organizations Choose Self-Hosting
+### 4.4 When Organizations Choose Self-Hosting
 
 - **Compliance and regulatory requirements.** Industries like finance, healthcare, and government often have contractual or legal obligations about where source code physically resides and who can access the infrastructure it runs on — a third-party SaaS platform may not satisfy those requirements regardless of its own security posture.
 - **Air-gapped environments.** Defense, classified, or highly sensitive industrial systems sometimes require networks with no internet connectivity at all — a SaaS platform is categorically unusable, and self-hosting is the only option.
@@ -83,7 +83,7 @@ Between "bare repo over SSH" and a fully managed SaaS platform sits **self-hoste
 
 The trade-off, honestly stated: self-hosting trades away the SaaS platform's managed reliability, automatic updates, and vendor-handled scaling for full control — an organization taking this path needs the operational maturity to run what is now their own critical piece of infrastructure.
 
-## 23.5 Git GUI Clients
+## 5. Git GUI Clients
 
 Not every developer, and not every workflow, is best served by the raw CLI this whole knowledge base has been teaching. GUI clients exist specifically to make common operations visually inspectable and less error-prone for their target use cases:
 
@@ -96,7 +96,7 @@ Not every developer, and not every workflow, is best served by the raw CLI this 
 
 **What GUIs trade off against the CLI:** visual diffs, drag-and-drop staging, and a discoverable menu of common operations lower the barrier for less experienced users and make some operations (interactive staging of hunks, visualizing a tangled branch graph) genuinely easier to reason about than reading text output. Against that: GUIs rarely expose Git's full command surface (rebasing with unusual flags, plumbing commands, obscure refspec tricks), scripting/automation is CLI-only, and a developer who never learns the underlying CLI concepts can struggle badly the moment something goes wrong in a way the GUI doesn't have a button for. The professional norm is to know the CLI regardless of which tool you use day to day — every GUI client is, without exception, calling the same `git` binary and producing the same object-model changes underneath (§4–§7), so nothing about using one changes what Git is actually doing.
 
-## 23.6 Protected Branches
+## 6. Protected Branches
 
 A **protected branch** is a hosting-platform rule (not a Git-core feature) that restricts what can happen to a specific branch — typically `main` and any release branches — regardless of who has general write access to the repository.
 
@@ -127,7 +127,7 @@ Common protections:
 
 > 💡 **Tip:** Protected branches are what makes a branching strategy (§22) actually enforced rather than merely agreed-upon in a wiki page — without them, "we don't push directly to `main`" is a policy anyone with write access can accidentally or deliberately violate.
 
-## 23.7 CODEOWNERS
+## 7. CODEOWNERS
 
 A **CODEOWNERS** file declares which individuals or teams are automatically requested as reviewers when a pull request touches specific paths — turning "please remember to loop in the payments team on payment code" from a manual habit into an enforced rule.
 
@@ -152,7 +152,7 @@ A **CODEOWNERS** file declares which individuals or teams are automatically requ
 
 Matching is generally **last-match-wins**, like `.gitignore` (§11) — more specific patterns later in the file override earlier, broader ones, which is why `*` as a catch-all default typically sits at the top. When a PR touches a matched path, the platform automatically adds the corresponding owner(s) as requested reviewers; combined with a protected-branch rule requiring CODEOWNERS approval specifically, this guarantees the right domain experts are pulled into review without relying on anyone remembering to add them manually.
 
-## 23.8 Governance at Scale
+## 8. Governance at Scale
 
 Beyond individual repositories, organizations running dozens or hundreds of repos and many teams need governance tooling operating above the repo level:
 
@@ -164,7 +164,7 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 
 > ⚠️ **Critical clarification:** none of 23.6–23.8 exist in plain Git. A bare repository served over SSH (23.4.1) has no concept of "protected branch," "CODEOWNERS," or "audit log" — these are entirely hosting-platform product features built on top of Git's protocol and object model. Understanding this boundary is exactly what separates "I know Git" from "I know GitHub" — genuinely distinct, if overlapping, bodies of knowledge, and precisely the conflation §1.11 flagged as the most common Git misconception on record.
 
-## 23.9 Interview Questions
+## 9. Interview Questions
 
 **[Beginner] Q1. What's the difference between Git and a platform like GitHub?**
 **Model answer:** Git is the version control program itself — the object model, commands, and protocol for tracking history, which can run entirely locally with no server at all. GitHub is a company's hosting platform that runs Git servers and wraps them in a web UI plus additional product features: pull requests, issue tracking, CI/CD, and access control. GitLab and Bitbucket are competing platforms doing the same job. Git predates GitHub by three years and needs no hosting platform to function; you can self-host a fully working Git server with nothing but a bare repository and SSH access.
@@ -181,7 +181,7 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 **[Senior] Q5. A newly acquired subsidiary needs its GitHub access revoked the day their employment system marks them terminated, with zero manual steps. What's the architecture, and why isn't repository-level permission management sufficient on its own?**
 **Model answer:** The answer is SSO/SAML integration between the hosting platform and the organization's central identity provider, so platform authentication is entirely delegated rather than managed as a separate credential — the moment the identity provider disables the employee's account as part of the normal offboarding process, their ability to authenticate to the platform disappears automatically, with no separate manual revocation step. Repository-level permission management alone isn't sufficient because it only controls _authorization_ within the platform (what a valid, authenticated user can do) — it does nothing about _authentication_ itself; if the employee still has a valid platform login and password (or, worse, a still-valid SSH key or personal access token) independent of the company's central identity system, revoking their repo-level role doesn't actually lock them out, and someone has to remember to do it per-repository or per-organization. I'd also flag SSH keys and personal access tokens specifically as a common gap even with SSO in place — those need their own expiration/rotation policy, since a token issued before SSO enforcement may not automatically die when the identity provider account is disabled, depending on platform specifics.
 
-## 23.10 Common Misconceptions
+## 10. Common Misconceptions
 
 1. **"GitHub Actions and GitLab CI/CD are basically the same thing with different names."** They're separately built systems with different configuration formats and execution models; GitLab's was integrated into the product from early on, GitHub's arrived later as a distinct addition — full CI/CD treatment is §25.
 2. **"You need a platform like GitHub to use Git collaboratively."** A bare repository served over SSH, requiring no platform software whatsoever, is a fully functional multi-developer Git server — platforms add convenience and governance, not the basic capability to collaborate.
@@ -189,7 +189,7 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 4. **"CODEOWNERS assigns commit access."** It only affects automatic reviewer requests; it doesn't grant or restrict who can push or merge on its own — that's the separate job of repository permissions and protected-branch rules (often used together, but mechanically distinct).
 5. **"Self-hosting Git means giving up all modern collaboration features."** Self-hosted platforms like GitLab CE/EE or GitHub Enterprise Server provide essentially the same PR/review/CI feature set as their SaaS counterparts; only the truly minimal "bare repo over SSH" option (23.4.1) lacks that layer, and that's a deliberate choice for teams who don't need it, not a limitation of self-hosting generally.
 
-## 23.11 🔑 Key Takeaways
+## 11. 🔑 Key Takeaways
 
 - Hosting platforms (GitHub, GitLab, Bitbucket) are product layers — PRs, issues, CI, permissions — built on top of plain Git; the underlying `fetch`/`push` protocol is unchanged from §20.
 - GitLab's built-in CI/CD is a first-class, original part of the product, distinct from GitHub Actions, which arrived as a later addition; Bitbucket differentiates on native Jira/Confluence integration.
@@ -197,6 +197,6 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 - GUI clients (GitHub Desktop, GitKraken, Sourcetree, VS Code's Git panel) trade some of the CLI's full command surface and scriptability for visual discoverability; all of them call the same underlying `git` binary.
 - Protected branches, CODEOWNERS, and org-level governance (SSO, audit logs, policy-as-code rulesets) are platform features with no equivalent in plain Git — they're what makes a chosen branching strategy and review process actually enforced rather than merely agreed-upon.
 
-## 23.12 Related Concepts & What's Next
+## 12. Related Concepts & What's Next
 
 This section closes Part 5, which took Git from a single developer's local tool to a fully governed, multi-team collaboration system: remotes and synchronization (§20), the human PR/review workflow (§21), the branching-strategy policies that workflow operates within (§22), and finally the platforms and governance tooling that host and enforce all of it (§23). Part 6 turns to automating and scaling everything built here — hooks that run scripts at Git lifecycle events, CI/CD pipelines that plug into the PR checks referenced throughout this section, techniques for keeping Git usable at very large repository scale, and managing multi-repository projects with submodules and subtrees.

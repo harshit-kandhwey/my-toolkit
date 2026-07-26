@@ -1,12 +1,12 @@
 # Section 4 (Part 2): Git Architecture: The Three Areas & Repo Anatomy
 
-## 4.1 Definition
+## 1. Definition
 
 **Plain language:** Git's architecture is built around three physical locations on your disk that hold three different representations of your project, plus a set of rules for how content moves between them.
 
 **Precise:** A Git repository consists of (1) the **working directory** — ordinary files on disk, (2) the **index** — a single binary file recording the staged snapshot, and (3) the **object database** — a content-addressed store of immutable objects inside `.git/objects`, referenced by **refs** (branches/tags) inside `.git/refs`. Every Git command operates on one or more of these three locations.
 
-## 4.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 A naive VCS could commit directly from the working directory: "commit whatever's different right now." Git deliberately inserts the index as a **buffer** between "what's on disk" and "what goes into history" for concrete reasons:
 
@@ -15,7 +15,7 @@ A naive VCS could commit directly from the working directory: "commit whatever's
 3. **Building commits programmatically.** Tools, hooks, and scripts (§24) can manipulate the index directly (`git update-index`, low-level plumbing) without touching your working files at all — this is how features like "commit a specific historical blob" or automated formatting-on-commit work.
 4. **Merge machinery.** During a merge conflict, the index temporarily holds _multiple_ versions of a conflicted path (base, ours, theirs) simultaneously — a capability that wouldn't be possible without an intermediate structured area between disk and history. Detailed in §13.
 
-## 4.3 Physical Anatomy of `.git`
+## 3. Physical Anatomy of `.git`
 
 Run `git init` and inspect what's created:
 
@@ -46,28 +46,28 @@ your-project/
 
 > 💡 **Tip:** Run `find .git -type f | head -30` after your first commit in a scratch repo. Seeing these files exist physically — not as an abstraction — is one of the fastest ways to de-mystify Git.
 
-## 4.4 The Three Areas in Full Detail
+## 4. The Three Areas in Full Detail
 
-### 4.4.1 Working Directory
+### 4.1 Working Directory
 
 - **What:** the checked-out files you edit with your editor/IDE.
 - **State relative to history:** reflects one commit's content, _plus_ any uncommitted edits you've made on top.
 - **Git's view of it:** Git compares working-directory file content against the index to classify files as unmodified/modified (§3.3), using file modification-time and size as a fast pre-check before falling back to full content hashing — this is why `git status` is fast even on large repos (it usually avoids re-hashing unchanged files).
 
-### 4.4.2 The Index (Staging Area)
+### 4.2 The Index (Staging Area)
 
 - **Physical form:** `.git/index`, a single binary file — not human-readable, not a directory of copies.
 - **Content:** for every staged path, a record containing the file mode, the blob hash it currently points to, the path name, and cached filesystem metadata (size, timestamps) used for fast change detection.
 - **Key mental model:** the index is best understood as **"the tree that the next commit will contain, right now, if you ran `git commit` this instant."** `git add` updates entries in this file; it does not touch the object database's commit history at all — it only writes a new **blob object** for the file's current content (if that exact content doesn't already exist as a blob) and points the index entry at it.
 - **Inspecting it directly:** `git ls-files -s` shows raw index entries (mode, hash, stage number, path) — the plumbing-level view of what `git status` summarizes in friendly language.
 
-### 4.4.3 The Repository (Object Database + Refs)
+### 4.3 The Repository (Object Database + Refs)
 
 - **Physical form:** `.git/objects` (content) + `.git/refs` (names pointing at content) + `.git/HEAD` (what's currently checked out).
 - **Content:** every snapshot ever committed, stored as immutable objects (§5), plus movable pointers (branches) and fixed pointers (tags) into that object graph.
 - **Key property:** nothing in here is ever edited in place. "Changing history" always means creating _new_ objects and moving a ref to point at the new one — the old objects remain in the database, unreferenced, until garbage-collected (§7, §29).
 
-## 4.5 Data Flow — The Complete Picture
+## 5. Data Flow — The Complete Picture
 
 ```
  EDIT a file                    STAGE it                      COMMIT it
@@ -88,11 +88,11 @@ Walking this concretely with a single file, `notes.txt`:
 2. `git add notes.txt`. Git computes the SHA of the new content, writes it as a **blob object** in `.git/objects` (if not already present), and updates the index entry for `notes.txt` to point at that new blob hash. `git status` now reports it **staged**.
 3. `git commit -m "update notes"`. Git takes the entire current index content, builds the **tree objects** representing that directory structure, creates a **commit object** pointing at the root tree and at the previous commit (the new commit's parent), and moves the current branch's ref file to the new commit's hash. `git status` now reports **nothing to commit, working tree clean** — because working directory, index, and the new commit's content are all identical again.
 
-## 4.6 Configuration Touchpoint (Preview)
+## 6. Configuration Touchpoint (Preview)
 
 The `.git/config` file (repo-local) and its two siblings — the global `~/.gitconfig` and the system-wide config — determine defaults like your identity and editor. Full depth, every relevant setting, is §8; noted here only because `.git/config` physically lives in the anatomy just diagrammed.
 
-## 4.7 Commands That Directly Manipulate These Areas
+## 7. Commands That Directly Manipulate These Areas
 
 | Command                    | Working Dir             | Index                                  | Object DB / Refs                                    |
 | -------------------------- | ----------------------- | -------------------------------------- | --------------------------------------------------- |
@@ -107,7 +107,7 @@ The `.git/config` file (repo-local) and its two siblings — the global `~/.gitc
 
 Full command-by-command documentation (syntax, flags, output, errors, security/performance notes) begins in §10 following the §9 template — this table exists purely to cement _which area_ each command touches, before you learn its full syntax.
 
-## 4.8 Hands-On Example — Watching the Three Areas Change
+## 8. Hands-On Example — Watching the Three Areas Change
 
 ```bash
 # Beginner-level walkthrough with expected output at each step
@@ -148,18 +148,18 @@ Changes not staged for commit:
 
 At this exact point: working directory has _two_ lines, the index and the last commit both have _one_ line — a live, visible demonstration of the three areas being in three different states simultaneously.
 
-## 4.9 Production & Enterprise Usage Notes
+## 9. Production & Enterprise Usage Notes
 
 - **Bare repositories** (§3.2, detailed §20) exist _only_ as an object database plus refs — no working directory, no index in the normal sense. This is the correct shape for any repo that lives purely as a shared hub (a self-hosted Git server, or the backing store behind GitHub/GitLab) since nobody edits files directly there.
 - **CI runners** typically perform a shallow or full checkout (materializing working directory from objects) fresh per job — understanding that checkout is "reconstruct working dir from the object DB via a tree walk" explains why large repos with deep history make shallow clones (`--depth`, §26) a meaningful CI speed optimization.
 - **Pre-commit hooks** (§24) operate on the **index**, not the working directory — a hook that lints "what's staged" must read from the index, not just re-scan working-directory files, or it will incorrectly flag/pass content that isn't actually about to be committed (a common real bug in home-grown hook scripts).
 
-## 4.10 Performance Considerations
+## 10. Performance Considerations
 
 - `git status` performance on very large repositories is dominated by **stat-ing every tracked file** to detect modifications; this is why huge monorepos benefit from filesystem watchers (`git config core.fsmonitor true`, using Watchman or Git's built-in FSMonitor) that cache "nothing changed here since last check" instead of re-stat-ing millions of files — covered fully in §26 and §29.
 - The index being a **single file** (not one file per tracked path) is itself a performance decision: one sequential read/write beats filesystem overhead of touching thousands of tiny per-file records.
 
-## 4.11 Troubleshooting
+## 11. Troubleshooting
 
 | Symptom                                        | Likely cause                                                                              | Fix                                                                                                                                          |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,17 +167,17 @@ At this exact point: working directory has _two_ lines, the index and the last c
 | "Changes not staged" persists after `git add`  | You edited the file _again_ after staging (working dir now ahead of the index you staged) | `git add` again to re-stage the latest content                                                                                               |
 | Index corruption (`fatal: index file corrupt`) | Rare disk/interrupt issue                                                                 | `rm .git/index && git reset` (rebuilds index from HEAD; **any staged-but-uncommitted state is lost**, working directory files are untouched) |
 
-## 4.12 Best Practices
+## 12. Best Practices
 
 - Stage deliberately and review with `git diff --staged` before every commit rather than reflexively `git add .`ing everything — this is what the index is _for_.
 - Never hand-edit files inside `.git/` directly; always go through Git's commands, which maintain internal consistency (e.g., updating the index and moving refs together) that manual edits can break.
 
-## 4.13 Anti-Patterns & Common Mistakes
+## 13. Anti-Patterns & Common Mistakes
 
 - **Anti-pattern:** treating `git add .` as a mindless default habit regardless of what changed, which silently stages unrelated or unfinished work into the next commit.
 - **Common mistake:** confusing `git diff` (working dir vs index — "what haven't I staged yet") with `git diff --staged` (index vs last commit — "what have I staged but not committed"). Interviewers frequently probe this exact distinction.
 
-## 4.14 Interview Questions
+## 14. Interview Questions
 
 **[Beginner] Q1. What's the difference between the working directory and the staging area?**
 **Model answer:** The working directory is the actual files you see and edit on disk. The staging area, or index, is a separate record — physically a single file, `.git/index` — that tracks exactly which version of each file will go into the next commit. Editing a file changes the working directory only; `git add` copies that content's hash into the index; only `git commit` makes it a permanent, immutable part of history. They can all three be different at once, which is exactly what lets you stage part of your work while leaving other edits uncommitted.
@@ -188,19 +188,19 @@ At this exact point: working directory has _two_ lines, the index and the last c
 **[Senior] Q3. Why does Git use a single binary index file instead of, say, one metadata file per tracked file?**
 **Model answer:** Performance and simplicity. A single file lets Git read the entire staging state in one sequential I/O operation instead of opening potentially hundreds of thousands of small per-file records, which would be dominated by filesystem overhead (inode lookups, directory traversal) rather than actual data transfer, especially damaging on network filesystems or at large repo scale. It also makes the staging state atomic to update and easy to reason about — one file, one consistent snapshot of "what's queued for the next commit" — versus needing to keep many small files mutually consistent.
 
-## 4.15 Common Misconceptions
+## 15. Common Misconceptions
 
 1. **"Staging area = a folder somewhere with copies of my files."** It's one binary file recording hashes and paths, not a mirrored folder of file copies.
 2. **"`git add` commits my changes."** It only stages them into the index; nothing is permanent history until `git commit`.
 3. **"`.git` is just metadata; my real project data is safe in the working directory."** It's the reverse for anything committed — `.git/objects` _is_ the durable copy; the working directory is a disposable, reconstructable materialization of it.
 
-## 4.16 🔑 Key Takeaways
+## 16. 🔑 Key Takeaways
 
 - Three areas: working directory (editable files), index (`.git/index`, the staged snapshot), object database + refs (`.git/objects` + `.git/refs`, the permanent history).
 - `git add` writes new blobs and updates index entries; `git commit` builds tree/commit objects from the index and moves the branch ref — two distinct operations touching two distinct areas.
 - `.git/objects` alone is sufficient to reconstruct the entire project for any committed state; the working directory is disposable and rebuildable.
 - The index exists specifically to enable partial/reviewable/programmatic commits — not as unnecessary ceremony.
 
-## 4.17 Related Concepts & What's Next
+## 17. Related Concepts & What's Next
 
 Every object type mentioned here in passing — blob, tree, commit — gets its exact byte-level structure, hashing method, and relationships in Section 5, which is where "content-addressable storage" and "Merkle DAG" (both mentioned in §2) become concrete rather than conceptual.

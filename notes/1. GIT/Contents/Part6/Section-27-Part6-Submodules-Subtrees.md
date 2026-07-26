@@ -1,14 +1,14 @@
 # Section 27 (Part 6): Submodules & Subtrees — Composing Multiple Repositories
 
-## 27.1 Definition
+## 1. Definition
 
 **Plain language:** Sometimes a project legitimately needs to include another, independently maintained repository inside it — a shared library, a vendored dependency, a design-system package — while keeping that included project's own history and release cycle genuinely separate. Submodules and subtrees are Git's two different answers to "how do I compose multiple repositories together," and they make very different trade-offs.
 
 **Precise:** A **submodule** is a reference — stored in a `.gitmodules` file plus a special tree entry (a "gitlink") in the parent repository — to a specific commit in another repository, checked out into a subdirectory as its own nested, independent Git repository. A **subtree** instead merges another repository's history directly into a subdirectory of the parent repository's own single, unified history, with no nested `.git` or special reference — from the parent repository's perspective, the imported code is just ordinary tracked files.
 
-## 27.2 Submodules
+## 2. Submodules
 
-### 27.2.1 Mechanism
+### 2.1 Mechanism
 
 ```bash
 # Purpose: add another repository as a submodule at a chosen subdirectory
@@ -36,7 +36,7 @@ Parent repo tree:
 
 > ⚠️ **Critical clarification / the single most-tripped-over fact about submodules:** the parent repository pins a **specific commit**, never a branch. Even if the submodule's own repository has a `main` branch that's moved forward considerably, the parent repository's gitlink stays frozen at whatever commit it was recorded at, until someone explicitly updates it. This is deliberate — reproducibility requires that cloning the parent at any point in its history gives you the _exact_ submodule state that existed then — but it is the single fact almost every beginner submodule confusion traces back to.
 
-### 27.2.2 Cloning a repository that has submodules
+### 2.2 Cloning a repository that has submodules
 
 ```bash
 # A plain clone does NOT automatically fetch submodule content —
@@ -60,7 +60,7 @@ $ git clone --recurse-submodules https://example.com/parent-repo.git
 
 > ⚠️ **Common confusion to preempt: "forgetting `--recursive`."** Plain `git clone` (or a plain `git pull` after someone else adds a submodule) leaves submodule directories empty — new team members routinely report "the build is broken, files are missing" when the actual issue is simply that submodule content was never fetched. `--recurse-submodules` (or `--recursive` on older Git versions) at clone time, or `submodule update --init --recursive` afterward, is the fix — and it's recursive specifically because a submodule can itself contain submodules.
 
-### 27.2.3 Updating a submodule to a newer commit
+### 2.3 Updating a submodule to a newer commit
 
 ```bash
 $ cd libs/shared-lib
@@ -78,7 +78,7 @@ $ git commit -m "chore: bump shared-lib to latest security patch"
 
 **The extra-update-step pain point:** updating a submodule is a deliberate, two-repository act — change the submodule's checked-out commit, then separately commit that new pin in the parent. Forgetting the second step means the working tree looks updated locally but nobody else's clone will see the change; forgetting the first step (only running `git submodule update` without ever advancing it) means the submodule silently stays pinned to an old commit indefinitely, since nothing forces it forward automatically.
 
-### 27.2.4 The detached-HEAD default
+### 2.4 The detached-HEAD default
 
 ```bash
 $ cd libs/shared-lib
@@ -94,7 +94,7 @@ $ cd libs/shared-lib
 $ git switch -c fix/upstream-bug main
 ```
 
-### 27.2.5 Dirty submodule pointers
+### 2.5 Dirty submodule pointers
 
 ```bash
 $ git status
@@ -103,9 +103,9 @@ $ git status
 
 This means the submodule's own working tree has uncommitted changes or untracked files — a state the parent repository can see and warn about (since it inspects the submodule's status) but cannot itself resolve; you must go into the submodule directory and handle it there like any ordinary repository, then decide whether to commit a new pin in the parent.
 
-## 27.3 Subtrees
+## 3. Subtrees
 
-### 27.3.1 Mechanism
+### 3.1 Mechanism
 
 ```bash
 # Purpose: pull another repository's history into a subdirectory of the
@@ -128,7 +128,7 @@ $ git subtree push --prefix=libs/shared-lib https://example.com/shared-lib.git c
 
 **`--squash`:** collapses the incoming repository's many commits into a single commit on merge, keeping the parent repository's own history readable — the trade-off is that the subtree's full, individual commit-by-commit history is not preserved inline (though it remains recoverable from the original source repository itself, just not woven into the parent's log).
 
-### 27.3.2 Trade-offs vs submodules
+### 3.2 Trade-offs vs submodules
 
 |                                        | Submodule                                                                                                                                                                                          | Subtree                                                                                                                                                     |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -141,7 +141,7 @@ $ git subtree push --prefix=libs/shared-lib https://example.com/shared-lib.git c
 | Tooling requirement                    | Every contributor must understand submodule commands; genuinely easy to misuse (27.2.2's forgotten-init, dirty pointers, detached HEAD)                                                            | No special contributor knowledge needed day-to-day; complexity is concentrated in the (less frequent) add/pull/push operations                              |
 | Best fit                               | Cleanly separate projects with independent versioning/release cycles that the parent wants to reference at specific, deliberate versions (e.g., a shared library pinned per compatibility testing) | Vendoring external code you want to treat as "just part of our codebase" without contributors needing to think about it being externally sourced day-to-day |
 
-### 27.3.3 Comparison Table: Submodule vs Subtree vs Monorepo
+### 3.3 Comparison Table: Submodule vs Subtree vs Monorepo
 
 Bringing in the third option covered fully in §26.3:
 
@@ -156,7 +156,7 @@ Bringing in the third option covered fully in §26.3:
 
 > 💡 **Tip:** None of these three is a universally correct choice — the decision hinges on exactly one question, more than any other: does this component need its own independent version history and release cycle that other things might depend on at different versions simultaneously? If yes, submodules (or, at real scale, a proper package registry instead of either technique) fit; if the component is meant to be indistinguishable from "just part of our code," subtree or monorepo fit better, with the choice between those two coming down to whether the rest of the codebase should be unified with it or not.
 
-## 27.4 Hands-On Walkthrough — Submodule Full Lifecycle
+## 4. Hands-On Walkthrough — Submodule Full Lifecycle
 
 ```bash
 $ git submodule add https://example.com/shared-lib.git libs/shared-lib
@@ -179,7 +179,7 @@ $ git add libs/shared-lib
 $ git commit -m "chore: bump shared-lib to latest main"
 ```
 
-## 27.5 Interview Questions
+## 5. Interview Questions
 
 **[Beginner] Q1. What does a Git submodule actually store in the parent repository?**
 **Model answer:** The parent repository doesn't store the submodule's files at all — it stores a special tree entry called a gitlink, recorded in a committed `.gitmodules` file plus that gitlink itself, which together record one specific commit hash from the submodule's own separate repository. When you check out the parent at that commit, Git uses the gitlink to know exactly which commit of the submodule's repository should be checked out into that subdirectory.
@@ -196,7 +196,7 @@ $ git commit -m "chore: bump shared-lib to latest main"
 **[Architect] Q5. Your organization is deciding how to share a common internal library across 12 services. Walk through how you'd choose between submodules, subtrees, a monorepo, and a package registry.**
 **Model answer:** I'd frame this primarily around whether the library genuinely needs independent versioning that different services consume at different versions simultaneously, and how much day-to-day friction the team can tolerate. If different services legitimately need different versions of the library at different times (a common, healthy state during a rolling upgrade), the honest best answer is usually a proper package registry (internal npm/PyPI/Maven-style registry, publishing versioned releases) rather than either Git composition technique — Git submodules and subtrees are both somewhat blunt instruments for what package managers do natively and more ergonomically, including transitive dependency resolution neither Git technique handles at all. If a package registry isn't available or the team specifically wants the library's exact source visible and buildable alongside consuming code (common in tightly coupled internal tooling, or when the library isn't mature/stable enough to formally version yet), submodules are the better fit specifically because each service can pin to a different, explicit commit independently, and the library keeps its own release history separate — accepting the real cost of submodule-aware tooling discipline across the team (27.2's pitfalls). Subtrees I'd reserve for the narrower case of vendoring code the team doesn't expect to update frequently and wants to feel like ordinary first-party code with zero special contributor knowledge required — not a good fit for an actively co-developed internal library 12 services depend on, since squashed history and awkward upstream contribution (27.3.2) work against active collaboration. Folding the library into a full monorepo alongside all 12 services is the strongest option if the organization is prepared to invest in the build-scoping and access-control tooling §26.3 describes, and if atomic cross-service changes to the shared library are common enough to be worth that investment — otherwise it's premature complexity for a 12-service scale that doesn't yet need it.
 
-## 27.6 Common Misconceptions
+## 6. Common Misconceptions
 
 1. **"A submodule tracks a branch of the other repository."** It tracks one specific, frozen commit — updating to follow a branch's latest commit is always a deliberate, explicit action (fetch, checkout, then commit the new pin in the parent), never automatic.
 2. **"`git clone` fetches submodule content automatically."** It does not — submodule directories are empty after a plain clone until `git submodule update --init --recursive` (or `--recurse-submodules` at clone time) is run.
@@ -204,7 +204,7 @@ $ git commit -m "chore: bump shared-lib to latest main"
 4. **"Subtrees preserve the full imported commit history inline by default."** The common `--squash` usage collapses incoming history into one commit for readability in the parent's log; full commit-by-commit history remains in the original source repository, not woven into the parent unless squashing is deliberately skipped.
 5. **"Submodules and subtrees are just two syntaxes for the same underlying feature."** They're structurally different — a gitlink pointer to a separate repository versus a direct history merge into the same repository — with meaningfully different trade-offs, not interchangeable implementations of one idea.
 
-## 27.7 🔑 Key Takeaways
+## 7. 🔑 Key Takeaways
 
 - Submodules store a gitlink pointing at one specific commit of a genuinely separate repository — never a branch — checked out as its own independent nested repository; updating requires an explicit two-step process (advance the submodule, then commit the new pin in the parent).
 - A plain `git clone` does not fetch submodule content; `--recurse-submodules` (at clone) or `git submodule update --init --recursive` (after) is required, and this is the single most common submodule pain point for new contributors.
@@ -212,6 +212,6 @@ $ git commit -m "chore: bump shared-lib to latest main"
 - The choice between submodules, subtrees, and a monorepo (§26.3) fundamentally hinges on whether the component needs independent versioning multiple consumers might use differently, or whether it should behave as indistinguishable first-party code.
 - At genuine multi-consumer, actively-versioned scale, a proper package registry frequently outperforms both Git composition techniques, which are comparatively blunt instruments for dependency management proper.
 
-## 27.8 Related Concepts & What's Next
+## 8. Related Concepts & What's Next
 
 This closes Part 6 — Automation & Scale, which covered local automation (hooks, §24), pipeline-level automation (CI/CD and GitOps, §25), and the two structural pressures of growing past a single, simply-cloned repository: sheer size (§26) and composing genuinely separate repositories together (this section). Part 7 turns from scale and automation to **trust and safety**: commit signing and provenance, ongoing repository maintenance and troubleshooting discipline, and disaster recovery when something has gone seriously wrong — the operational safety net underneath everything built so far.

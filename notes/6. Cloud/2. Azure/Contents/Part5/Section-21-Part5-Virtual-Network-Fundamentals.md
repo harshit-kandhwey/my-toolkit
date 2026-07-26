@@ -1,18 +1,18 @@
 # Section 21 — Virtual Network (VNet) Fundamentals
 
-## 21.1 Definition
+## 1. Definition
 
 **Plain language:** A Virtual Network (VNet) is your own private, isolated network inside Azure — a logically separate space where you place resources like VMs so they can communicate with each other securely, and where you control exactly what traffic is allowed in and out.
 
 **Precise definition:** An Azure Virtual Network is a regional, software-defined networking construct providing an isolated, customer-controlled IP address space within which Azure resources can be deployed and communicate privately, supporting segmentation into subnets, connectivity to other VNets and on-premises networks, and integration with traffic filtering and routing controls.
 
-## 21.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Resources deployed in a public cloud share physical infrastructure with other customers (Section 11.3's multi-tenancy discussion) — without a networking abstraction providing genuine isolation, there would be no way to guarantee that one customer's network traffic couldn't be seen or reached by another's, and no way for a customer to control which of their own resources can talk to which others, or what can reach them from the outside. VNets solve this by giving each customer a logically isolated, software-defined network space, entirely separate from other customers' VNets even when resources happen to run on the same underlying physical infrastructure, while also giving the customer fine-grained control over internal segmentation, external connectivity, and traffic filtering within their own network.
 
-## 21.3 Core Concepts
+## 3. Core Concepts
 
-### 21.3.1 Address Space (CIDR)
+### 3.1 Address Space (CIDR)
 
 **Definition:** A VNet is assigned an IP address range, expressed in **CIDR notation** (e.g., `10.0.0.0/16`), defining the total pool of private IP addresses available for resources deployed within it.
 
@@ -20,7 +20,7 @@ Resources deployed in a public cloud share physical infrastructure with other cu
 
 ⚠️ VNet address spaces should be planned deliberately in advance across an organization to avoid overlapping ranges between VNets that will eventually need to connect to each other (via peering, Section 23, or hybrid connectivity, Section 26) — overlapping address spaces between two networks that need to communicate is a genuinely difficult problem to fix after the fact, making upfront IP address planning a critical, easy-to-overlook enterprise networking design step.
 
-### 21.3.2 Subnets
+### 3.2 Subnets
 
 **Definition:** A **Subnet** is a subdivision of a VNet's address space, used to logically segment resources within the VNet — for example, separating a "front-end" subnet (holding web-facing resources) from a "back-end" subnet (holding database resources), allowing different network security rules to be applied to each segment independently.
 
@@ -28,15 +28,15 @@ Resources deployed in a public cloud share physical infrastructure with other cu
 
 ⚠️ Azure reserves a small number of IP addresses within every subnet for its own internal use (for the subnet's default gateway, DNS, and broadcast-equivalent purposes) — the usable address count within a subnet is therefore slightly less than the raw CIDR range would suggest; verify the current exact number of reserved addresses per subnet against official documentation when precisely planning subnet sizing.
 
-### 21.3.3 Private IP Addressing
+### 3.3 Private IP Addressing
 
 Resources deployed within a VNet (like a VM's network interface) receive a **private IP address** from the subnet's address range, used for communication within the VNet and with connected networks (peered VNets, on-premises via VPN/ExpressRoute) — this is distinct from a **public IP address** (an internet-routable address, optionally assigned to specific resources needing direct internet reachability), a distinction elaborated further as networking topics continue through this Part.
 
-### 21.3.4 DNS Within a VNet
+### 3.4 DNS Within a VNet
 
 By default, Azure provides basic internal name resolution among resources within the same VNet; for more advanced scenarios (custom DNS servers, resolution across peered VNets or hybrid on-premises connections), **Azure DNS** (Section 28) or **Azure Private DNS Zones** provide additional, more sophisticated name-resolution capabilities, covered in depth later in this Part.
 
-## 21.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
 Virtual Network "vnet-prod" — Address Space: 10.0.0.0/16
@@ -57,7 +57,7 @@ Network Security Groups (Section 22) applied per-subnet:
   snet-backend:  allow inbound only from snet-frontend, deny direct internet access
 ```
 
-## 21.5 Configuration & Hands-On Example
+## 5. Configuration & Hands-On Example
 
 **Creating a VNet with two subnets:**
 
@@ -97,24 +97,24 @@ az vm create \
 
 - **Purpose:** Demonstrates that VM creation (first introduced in Section 11.6) requires specifying a target VNet and subnet — every VM's network interface is placed within a specific subnet, tying the compute concepts from Part 3 directly to the networking concepts introduced in this Part.
 
-## 21.6 Production & Enterprise Usage
+## 6. Production & Enterprise Usage
 
 Enterprises design VNet and subnet address spaces as a formal, centrally-governed exercise, often as part of the landing zone architecture (Part 13) — allocating non-overlapping address ranges across the entire organization's Azure estate in advance, anticipating future peering and hybrid connectivity needs, rather than allowing individual teams to choose arbitrary ranges independently and risking painful overlap conflicts later. A common enterprise pattern is a **hub-and-spoke** topology (elaborated further once VNet Peering, Section 23, and hybrid connectivity, Section 26, are covered), where a central "hub" VNet holds shared networking services (VPN/ExpressRoute gateways, firewalls) and multiple "spoke" VNets (one per application or business unit) connect to the hub, rather than each application team managing its own independent internet/on-premises connectivity.
 
-## 21.7 Security Considerations
+## 7. Security Considerations
 
 - Subnet-level segmentation (Section 21.3.2) combined with Network Security Groups (Section 22) is the primary mechanism for enforcing network-level defense in depth — sensitive resources (databases, backend services) should generally sit in subnets with restrictive inbound rules, reachable only from specific other subnets rather than directly from the internet.
 - Address space planning (Section 21.3.1) has security implications beyond pure connectivity — overlapping ranges discovered only during an urgent connectivity requirement can force rushed, potentially less-secure remediation under time pressure, making proactive planning itself a security-relevant practice.
 
-## 21.8 Performance Considerations
+## 8. Performance Considerations
 
 VNets themselves don't inherently add meaningful latency to intra-VNet communication, since traffic between resources in the same VNet (or even peered VNets, Section 23) travels over Microsoft's own high-speed backbone network rather than the public internet — but subnet design (how resources are grouped and how traffic must traverse security appliances or gateways) can affect the practical network path length and any inspection/filtering overhead traffic incurs, a design consideration elaborated further once Network Security Groups and Application Gateway are covered.
 
-## 21.9 Monitoring
+## 9. Monitoring
 
 VNet-level traffic visibility is provided via **NSG Flow Logs** (recording allowed/denied traffic through Network Security Group rules) and broader network monitoring tools covered in depth in Part 10 and Part 11's security monitoring discussion — essential for both troubleshooting connectivity issues and detecting anomalous traffic patterns that might indicate a security concern.
 
-## 21.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                                     | Likely Cause                                                                                                                                | Fix                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -122,7 +122,7 @@ VNet-level traffic visibility is provided via **NSG Flow Logs** (recording allow
 | VNet peering attempt fails (concept previewed here, detailed in Section 23)                 | The two VNets' address spaces overlap                                                                                                       | Address space overlap generally cannot be resolved without recreating one VNet with a non-overlapping range — reinforcing the importance of upfront planning |
 | VM deployed into a subnet can't reach another VM in a different subnet within the same VNet | An NSG rule (Section 22) is blocking the traffic — by default, VNet-internal traffic across subnets is allowed unless explicitly restricted | Review NSG rules applied to both the source and destination subnets/network interfaces                                                                       |
 
-## 21.11 Interview Questions — Section 21
+## 11. Interview Questions — Section 21
 
 ### 🎯 Beginner
 
@@ -140,29 +140,29 @@ _Model answer:_ I'd establish a centrally-governed IP address allocation plan be
 
 _What the interviewer is probing:_ whether the candidate recognizes IP address planning as a genuine enterprise governance concern requiring proactive, centralized discipline, not just a per-VNet technical detail — a strong signal of real large-scale networking experience.
 
-## 21.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - **"VNets provide internet-level routing between all Azure customers by default."** False — VNets are isolated by default; resources in different customers' VNets (or even different VNets within the same customer's environment) cannot communicate unless explicit connectivity (like peering, Section 23) is configured.
 - **"A larger address space (like /16) is always the right default choice."** Not necessarily — while generous address space provides room for growth, it must be balanced against overall organizational address planning to avoid overlap with other VNets or on-premises networks; blindly defaulting to the largest possible range without considering the broader allocation plan can itself contribute to future conflicts.
 
-## 21.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 A VNet provides an isolated, customer-controlled private IP address space (defined via CIDR notation) within a region, forming the networking foundation for Azure resource communication.
 - 🔑 Subnets subdivide a VNet for logical segmentation, forming the primary boundary at which Network Security Groups and routing rules are applied.
 - 🔑 Overlapping address spaces between VNets that need to eventually connect (via peering or hybrid connectivity) is a serious, difficult-to-fix problem — proactive, centrally-governed IP address planning is essential at enterprise scale.
 - 🔑 VNet-internal and peered-VNet traffic travels over Microsoft's backbone network rather than the public internet, but subnet/security design still affects the practical traffic path and any inspection overhead.
 
-## 21.14 Outbound Connectivity & NAT Gateway
+## 14. Outbound Connectivity & NAT Gateway
 
-### 21.14.1 Why Outbound Connectivity Needs Deliberate Design
+### 14.1 Why Outbound Connectivity Needs Deliberate Design
 
 Every prior section in this Part has focused primarily on _inbound_ traffic control (NSGs, Load Balancer, Application Gateway) — but resources inside a VNet also need to make _outbound_ connections (calling external APIs, downloading OS/package updates, reaching services outside Azure), and Azure's default outbound behavior, while functional for small-scale scenarios, has real limitations at production scale that require deliberate architectural choices.
 
-### 21.14.2 Default Outbound Access and Its Limitations
+### 14.2 Default Outbound Access and Its Limitations
 
 By default, a VM without any explicit public IP or outbound configuration can still reach the internet via an implicit, platform-provided default outbound access mechanism — however, this default path is explicitly **not recommended for production use**: it provides no control over the outbound source IP (making allow-listing by external services difficult or impossible), offers limited and unpredictable SNAT (Source Network Address Translation) port availability (Section 21.14.3), and is a mechanism Microsoft has signaled may not remain suitable as a long-term default for production workloads. Production architectures should always deploy an explicit outbound connectivity method rather than relying on this implicit default.
 
-### 21.14.3 SNAT and Port Exhaustion
+### 14.3 SNAT and Port Exhaustion
 
 **Definition:** When a VM without its own public IP makes an outbound connection, Azure performs **Source Network Address Translation (SNAT)** — rewriting the VM's private source IP to a public IP (either the default outbound IP or an explicitly configured one) so the response can route back correctly. Each outbound connection consumes one **SNAT port** from a finite pool allocated to that outbound IP.
 
@@ -170,7 +170,7 @@ By default, a VM without any explicit public IP or outbound configuration can st
 
 ⚠️ Specific default SNAT port allocations per instance, and how they scale with the number of instances sharing an outbound IP, should be verified against current official documentation, since these allocation defaults and their scaling behavior are precise, platform-managed details subject to revision.
 
-### 21.14.4 NAT Gateway
+### 14.4 NAT Gateway
 
 **Definition:** **Azure NAT Gateway** is a managed resource providing outbound-only internet connectivity for one or more subnets, offering a dramatically larger, more predictable, and more configurable pool of SNAT ports than the default or Load-Balancer-based outbound mechanisms, specifically designed to solve the SNAT exhaustion problem at scale.
 
@@ -183,7 +183,7 @@ By default, a VM without any explicit public IP or outbound configuration can st
 
 💡 **Tip:** NAT Gateway is the current Microsoft-recommended approach for production outbound internet connectivity from a VNet, specifically superseding reliance on default outbound access or Load Balancer outbound rules for this purpose — verify this recommendation remains current, but as of recent guidance this is the clear, purpose-built solution for the outbound-scale problem.
 
-### 21.14.5 Choosing an Egress Architecture
+### 14.5 Choosing an Egress Architecture
 
 | Approach                                          | Outbound Source IP Control            | SNAT Port Capacity                             | Centralized Inspection                                     | Typical Fit                                                                                                                              |
 | ------------------------------------------------- | ------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -194,11 +194,11 @@ By default, a VM without any explicit public IP or outbound configuration can st
 
 **Combining NAT Gateway with a centralized firewall:** These approaches are not mutually exclusive — an enterprise hub-and-spoke design (Section 21.6, 22.4.2) can route traffic through a central firewall/NVA specifically for inspection and policy enforcement, while the firewall's own outbound connectivity (or a NAT Gateway deployed in the hub) handles the actual SNAT/port-capacity problem at scale — the two mechanisms solve different aspects of the outbound-connectivity problem (inspection vs. raw connectivity/SNAT scale) and are commonly layered together in mature enterprise designs.
 
-### 21.14.6 Private vs. Public Outbound Connectivity
+### 14.6 Private vs. Public Outbound Connectivity
 
 Not all "outbound" traffic needs to reach the public internet — traffic destined for Azure PaaS services should, wherever possible, use Private Link (Section 23.5) or Service Endpoints (Section 23.4) rather than routing out through a NAT Gateway or firewall to reach a public endpoint, since private connectivity avoids consuming SNAT ports entirely for that traffic and provides the stronger isolation guarantees already established in Section 23. A well-designed egress architecture is therefore layered: private connectivity (Private Link/Service Endpoints) for traffic to Azure services that support it, and NAT Gateway (optionally behind a centralized firewall) specifically for traffic that genuinely must reach the public internet.
 
-### 21.14.7 Configuration Example
+### 14.7 Configuration Example
 
 ```bash
 az network public-ip create \
@@ -225,7 +225,7 @@ az network vnet subnet update \
   - `--idle-timeout` — controls how long an idle outbound connection's SNAT port allocation is held before being released back to the pool; tuning this affects how quickly ports become available for reuse versus how gracefully longer-lived idle connections are handled.
 - **Common error:** Associating a NAT Gateway with a subnet that also has other conflicting outbound configurations (such as certain Load Balancer outbound rule configurations) can produce unexpected routing precedence behavior — verify current documentation on how NAT Gateway interacts with other outbound mechanisms if a subnet has pre-existing outbound configuration.
 
-### 21.14.8 Troubleshooting
+### 14.8 Troubleshooting
 
 | Symptom                                                                                        | Likely Cause                                                                                                       | Fix                                                                                                                                                   |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -233,7 +233,7 @@ az network vnet subnet update \
 | External service can't reliably allow-list traffic from the application                        | Outbound source IP isn't stable/predictable (default outbound access)                                              | Deploy a NAT Gateway (or route through a firewall/NVA) with a static public IP for predictable outbound source addressing                             |
 | High volume of outbound traffic to an Azure PaaS service is consuming SNAT ports unnecessarily | Traffic to the PaaS service is routing out to its public endpoint rather than using Private Link/Service Endpoints | Implement Private Link or a Service Endpoint (Section 23) for that specific service, removing the traffic from the public-outbound SNAT path entirely |
 
-### 21.14.9 Interview Questions — Section 21.14
+### 14.9 Interview Questions — Section 21.14
 
 **🎯 Intermediate**
 **Q: What is SNAT port exhaustion, and how does NAT Gateway address it?**
@@ -249,13 +249,13 @@ _Model answer:_ I'd deploy a centralized firewall/NVA in the hub VNet, with Rout
 
 _What the interviewer is probing:_ whether the candidate can integrate centralized inspection (Route Tables/firewall), SNAT-scale solutions (NAT Gateway), and private-connectivity optimization (Private Link) together into one coherent egress design, rather than treating each as an isolated, unrelated feature.
 
-### 21.14.10 Key Takeaways — Section 21.14
+### 14.10 Key Takeaways — Section 21.14
 
 - 🔑 Default outbound access is not recommended for production — it provides no source-IP control and limited, unpredictable SNAT port capacity.
 - 🔑 SNAT port exhaustion is a genuine, common production failure mode when many outbound connections share a limited port pool, often initially misdiagnosed as an application or external-service problem.
 - 🔑 NAT Gateway is the current recommended, purpose-built solution for production subnet-level outbound connectivity, providing a static IP and substantially larger SNAT port capacity.
 - 🔑 A complete egress architecture layers private connectivity (Private Link/Service Endpoints) for Azure PaaS traffic with NAT Gateway (optionally behind a centralized firewall) for traffic that genuinely must reach the public internet, rather than routing everything through one undifferentiated outbound path.
 
-## 21.15 Related Concepts (Next Up)
+## 15. Related Concepts (Next Up)
 
 Section 22 covers **Network Security Groups (NSGs) and Route Tables** in depth — the specific mechanisms (referenced repeatedly throughout this section) for controlling what traffic is allowed between and within the subnets just introduced, and for controlling the paths that traffic actually takes through a VNet.

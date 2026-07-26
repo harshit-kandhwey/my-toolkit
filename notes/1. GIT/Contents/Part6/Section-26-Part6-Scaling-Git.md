@@ -1,12 +1,12 @@
 # Section 26 (Part 6): Scaling Git — Large Repositories, Monorepos, Shallow & Partial Clones, Sparse-Checkout, Git LFS
 
-## 26.1 Definition
+## 1. Definition
 
 **Plain language:** Git's core design assumption — "every clone gets a complete, full-fidelity copy of everything" — is exactly what makes it fast and resilient at normal scale, and exactly what starts to hurt once a repository grows into millions of files, huge binary assets, or decades of accumulated history. This section covers the toolbox Git and its ecosystem provide for keeping the DVCS model usable well past the point where a naive full clone stops being practical.
 
 **Precise:** Several distinct, composable techniques address different dimensions of scale: **shallow clone** (limit _history depth_), **partial clone** (limit _object completeness_, fetching content lazily), **sparse-checkout** (limit _working-tree breadth_, materializing only chosen paths), and **Git LFS** (move large binary content out of Git's own object store entirely, replacing it with lightweight pointers). None of these change Git's fundamental object model (§5) — they change what subset of it a given clone or checkout actually contains.
 
-## 26.2 Why Very Large Repositories Become Slow
+## 2. Why Very Large Repositories Become Slow
 
 Recall §1.8's closing note: at extreme scale, "everyone has all history" has real costs. Specifically:
 
@@ -15,7 +15,7 @@ Recall §1.8's closing note: at extreme scale, "everyone has all history" has re
 3. **Large binary files compress and diff poorly.** Git's delta compression (§7) works well on text-like content that changes incrementally; large binaries (images, videos, compiled artifacts, datasets) often don't compress well against prior versions, so each revision effectively adds its full size to the repository permanently.
 4. **Local disk usage.** Every developer's machine, and every CI runner performing a full clone, pays the storage cost of the entire history — multiplied across every clone that ever happens.
 
-### 26.2.1 General mitigation strategies (before reaching for specific tools)
+### 2.1 General mitigation strategies (before reaching for specific tools)
 
 - **Keep binaries out of Git core** where practical (Git LFS, or an entirely separate artifact store).
 - **Limit history depth for consumers who don't need it** (CI runners, onboarding a new hire who just needs to start coding today) via shallow or partial clone.
@@ -23,7 +23,7 @@ Recall §1.8's closing note: at extreme scale, "everyone has all history" has re
 - **Periodic repository maintenance** (§7's `git gc`, repacking) keeps the packed representation itself efficient, independent of any of the techniques below.
 - **Reconsider repository boundaries** — not every problem is solved by tooling; sometimes splitting an overly broad repository, or consciously choosing monorepo vs polyrepo (26.3) with eyes open, is the right call.
 
-## 26.3 Monorepo vs Polyrepo
+## 3. Monorepo vs Polyrepo
 
 | Dimension                                  | Monorepo (all projects, one repository)                                                                                                                                                                                               | Polyrepo (one repository per project/service)                                       |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@ Recall §1.8's closing note: at extreme scale, "everyone has all history" has re
 
 > 💡 **Tip:** The monorepo-vs-polyrepo decision is a genuine trade-off, not a solved question with one right answer — it appears constantly in system-design interviews specifically because reasonable engineers land in different places depending on team size, release coupling needs, and existing tooling investment.
 
-## 26.4 Shallow Clones
+## 4. Shallow Clones
 
 Already introduced from the CI angle in §25.4; here in full depth as one of four scaling techniques.
 
@@ -65,7 +65,7 @@ $ git fetch --depth 100
 - Pushing from a shallow clone is restricted/discouraged in many workflows, since a shallow clone's history is not a faithful complete graph.
 - Merge-base computation against commits older than the shallow boundary can fail or give wrong answers — a real hazard for long-lived feature branches (echoing §25.4's CI caveat).
 
-## 26.5 Partial Clone
+## 5. Partial Clone
 
 **Plain language:** where a shallow clone truncates _how far back_ history goes, a partial clone keeps the _entire commit history_ but defers downloading the actual _file content_ (blobs) until something specifically needs it.
 
@@ -81,7 +81,7 @@ $ git clone --filter=tree:0 https://example.com/repo.git
 
 **Mechanism:** the clone fetches all commit and tree objects (so `git log`, `git blame`, and full history traversal all work correctly and completely) but a filtered set of blobs. When a command actually needs a blob's content that wasn't fetched — checking out a file, running `git show` on it — Git transparently fetches it on demand from the remote (called a **promisor remote**), then caches it locally like any normal object.
 
-### 26.5.1 Partial clone vs shallow clone — the key contrast
+### 5.1 Partial clone vs shallow clone — the key contrast
 
 |                                             | Shallow clone                                                         | Partial clone                                                                                                                                      |
 | ------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -93,7 +93,7 @@ $ git clone --filter=tree:0 https://example.com/repo.git
 
 > ⚠️ **Critical clarification to preempt:** these solve genuinely different problems and are frequently combined, not substitutes for each other. A CI pipeline that only needs current content and no history at all is better served by shallow clone's simplicity; a developer's primary working clone of a genuinely huge repository, who needs correct `blame`/`log` but not every historical blob taking disk space upfront, is better served by partial clone.
 
-## 26.6 Sparse-Checkout
+## 6. Sparse-Checkout
 
 Where shallow and partial clone limit _history_, sparse-checkout limits **working-tree breadth** — relevant specifically to monorepos where any one engineer typically only touches a small fraction of the total directory tree.
 
@@ -125,13 +125,13 @@ $ git sparse-checkout disable    # return to a full, ordinary working tree
 
 > 💡 **Tip:** Sparse-checkout and partial clone are commonly combined precisely because they attack different dimensions of the same monorepo-scale problem: partial clone keeps you from downloading blobs you'll never touch; sparse-checkout keeps you from materializing files on disk (and paying working-tree-scan cost) for directories you'll never touch. This pairing is the practical, plain-Git-native approximation of the virtualized-checkout systems named in §1.8 and 26.3.
 
-## 26.7 Git LFS (Large File Storage)
+## 7. Git LFS (Large File Storage)
 
-### 26.7.1 The problem it solves
+### 7.1 The problem it solves
 
 Git's object model (§5) stores every version of every file forever, and its delta compression (§7) assumes content that diffs well. Large binaries — video, high-resolution images, datasets, compiled packages, design files — routinely fail both assumptions: they're large individually, don't compress well against prior versions, and accumulate permanently in history even after being superseded, bloating every future clone regardless of whether anyone needs old versions of that binary.
 
-### 26.7.2 Mechanism — pointer files and `.gitattributes`
+### 7.2 Mechanism — pointer files and `.gitattributes`
 
 Git LFS replaces the actual binary content in Git's own history with a small, plain-text **pointer file**; the real content is stored in a separate LFS storage backend and fetched on demand, conceptually similar in spirit to partial clone's lazy blob fetch but implemented entirely outside core Git as a filter/extension mechanism.
 
@@ -159,7 +159,7 @@ size 48213944
 
 **Expected outcome:** what Git itself actually stores and transfers as part of ordinary history is this small pointer text (a few hundred bytes), not the 48 MB file — the real content lives in the LFS store, and Git's smudge/clean filters transparently swap the pointer for real content on checkout and back on commit, so from a working-tree perspective nothing looks different day to day.
 
-### 26.7.3 Trade-offs
+### 7.3 Trade-offs
 
 | Benefit                                                                                                        | Cost                                                                                                                                             |
 | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -170,7 +170,7 @@ size 48213944
 
 > ⚠️ **Critical clarification:** Git LFS does not make Git natively good at diffing or merging binaries — it sidesteps the problem by not asking Git to diff/merge them at all, replacing that content with an opaque pointer. Two people editing the same binary concurrently still produce an unmergeable conflict at the LFS layer; LFS solves storage bloat, not the fundamental unmergeability of most binary formats (§1.8's original Perforce-locking discussion remains the honest answer for high-churn binary collaboration).
 
-## 26.8 Choosing the Right Tool — Decision Guide
+## 8. Choosing the Right Tool — Decision Guide
 
 ```
 Is the pain mostly about HISTORY DEPTH (too many old commits to fetch)?
@@ -194,7 +194,7 @@ Genuinely all of the above, at extreme (Google/Meta/Microsoft-tier) scale?
        custom/virtualized tooling named in §1.8 and 26.3
 ```
 
-## 26.9 Interview Questions
+## 9. Interview Questions
 
 **[Beginner] Q1. What's the difference between a shallow clone and a normal clone?**
 **Model answer:** A normal clone fetches the complete commit history of a repository. A shallow clone, created with `git clone --depth N`, fetches only the most recent N commits' worth of history — the working tree at HEAD is completely normal and correct, but commands that need to look backward through history, like `git log` or `git blame`, are limited or broken past that boundary. It's commonly used in CI (§25) where a pipeline only needs current file content, not history, and full history would waste time and bandwidth on every run.
@@ -211,7 +211,7 @@ Genuinely all of the above, at extreme (Google/Meta/Microsoft-tier) scale?
 **[Architect] Q5. Your organization is debating monorepo versus polyrepo for a new platform with 40 planned microservices. What factors would actually drive your recommendation, beyond general preference?**
 **Model answer:** I'd resist a one-size-fits-all answer and instead map the decision to concrete organizational facts. Arguments for monorepo: if services share a lot of common library code that changes frequently, a monorepo makes atomic cross-service refactors trivial and avoids the versioned-package-and-bump-everywhere churn polyrepo requires; if the org wants unified tooling, linting, and CI standards enforced structurally rather than by convention across 40 separate repos, monorepo centralizes that. Arguments for polyrepo: if services are owned by genuinely separate teams with different release cadences and need hard access-control boundaries (a contractor team should see only their service, not the other 39), polyrepo gives that for free where monorepo requires deliberate extra engineering (sparse-checkout plus platform permission layering, and even then coarser than a repo boundary, per §1.7); if CI needs to stay simple without investing in change-scoped build tooling, polyrepo's natural scoping avoids that investment entirely. The scale threshold matters too — 40 services is nowhere near the regime that forced Google/Meta/Microsoft into custom tooling, so I wouldn't pre-optimize for problems at that scale; plain Git with sensible CI scoping handles a monorepo of this size comfortably today. My actual recommendation would hinge on answering: how much genuinely shared, frequently co-changing code exists across these services, and how strict does access separation between teams need to be — those two answers point toward monorepo or polyrepo far more reliably than industry fashion.
 
-## 26.10 Common Misconceptions
+## 10. Common Misconceptions
 
 1. **"Shallow clone and partial clone are the same thing, or interchangeable."** They limit different dimensions — history depth versus content completeness — and are frequently used together rather than as alternatives.
 2. **"Sparse-checkout means the rest of the repository's history is deleted or inaccessible."** The full object database (or a partial-clone-lazy version of it) remains available; sparse-checkout only controls what's materialized into the working tree at a given moment, reversible any time via `git sparse-checkout add`/`disable`.
@@ -219,7 +219,7 @@ Genuinely all of the above, at extreme (Google/Meta/Microsoft-tier) scale?
 4. **"Monorepos are objectively better/worse than polyrepos."** Both are legitimate architectural choices with real trade-offs (26.3); the right answer depends on organizational facts (shared-code churn, access-control needs, tooling investment appetite), not fashion.
 5. **"These techniques mean Git can handle literally any scale without extra infrastructure."** They meaningfully raise the ceiling using plain Git, but genuinely extreme scale (Google/Meta/Microsoft-tier) still required dedicated custom or heavily extended tooling, as conceded honestly back in §1.8.
 
-## 26.11 🔑 Key Takeaways
+## 11. 🔑 Key Takeaways
 
 - Large-repository pain has several distinct causes — history depth, blob content volume, working-tree breadth, and large binary churn — each with its own targeted Git-native fix rather than one universal solution.
 - Shallow clone (`--depth`) truncates history depth; partial clone (`--filter=blob:none`/`tree:0`) keeps complete history but defers blob content, fetched lazily; the two solve different problems and combine well.
@@ -227,6 +227,6 @@ Genuinely all of the above, at extreme (Google/Meta/Microsoft-tier) scale?
 - Git LFS moves large binary content out of Git's own object history entirely, replacing it with lightweight pointer files tracked via `.gitattributes`, at the cost of requiring the LFS extension and separately metered storage/bandwidth on most hosting platforms.
 - Monorepo vs polyrepo is a genuine trade-off (atomic cross-project changes and shared tooling vs natural access-control and CI-scoping boundaries), not a solved question — extreme-scale monorepos generally require dedicated tooling investment beyond plain Git.
 
-## 26.12 Related Concepts & What's Next
+## 12. Related Concepts & What's Next
 
 These scaling techniques address a repository that's grown too large in one dimension or another; §27 addresses the opposite structural problem — composing _multiple separate repositories_ together, via submodules and subtrees, when a single monorepo (this section's largest-scale answer) isn't the chosen architecture and project boundaries need to stay as genuinely separate Git histories that still need to interoperate.

@@ -1,6 +1,6 @@
 # Section 35 (Part 8): Hands-On Labs & Mini-Projects (Beginner → Production-Style)
 
-## 35.1 Purpose of This Section
+## 1. Purpose of This Section
 
 **Plain language:** Reading about Git builds recognition; running Git builds fluency. This section is a sequence of self-contained labs, each isolated in its own scratch directory, that turn the concepts from earlier sections into muscle memory — exactly the kind of lived experience §34.2 says interviewers can detect the presence or absence of.
 
@@ -8,7 +8,7 @@
 
 > 💡 **Tip:** Do these in an actual terminal, not by reading the commands and imagining the output. The value is entirely in watching real state change and occasionally hitting an unexpected result you have to reason about.
 
-## 35.2 Lab Environment Setup
+## 2. Lab Environment Setup
 
 ```bash
 # Purpose: create one parent scratch directory to hold every lab, isolated
@@ -22,7 +22,7 @@ $ git config --global user.email
 
 If either is empty, set them (§8) before continuing — every lab below assumes commits succeed without prompting for identity.
 
-## 35.3 Lab 1 (Beginner) — The Object Model, Made Concrete
+## 3. Lab 1 (Beginner) — The Object Model, Made Concrete
 
 **Goal:** See blobs, trees, and commits as literal objects on disk, connecting §5's theory to physical files.
 **Prerequisites:** §4 (three areas), §5 (object model).
@@ -67,7 +67,7 @@ $ git cat-file -p HEAD^{tree}
 
 **What you should observe:** `git cat-file -p <commit-hash>` prints exactly the structure §5 describes — a `tree` line, no `parent` line (root commit), then `author`/`committer` lines and the message. The tree listing for the second commit shows **two file entries pointing at the same blob hash** — `file.txt` and `file-copy.txt` share one blob object, because Git addresses content, not paths; identical content is stored exactly once regardless of filename. If you don't see the same hash for both entries, re-check that the file contents are byte-identical (no trailing newline difference).
 
-## 35.4 Lab 2 (Beginner/Intermediate) — Branching and a Deliberate Merge Conflict
+## 4. Lab 2 (Beginner/Intermediate) — Branching and a Deliberate Merge Conflict
 
 **Goal:** Create a real conflict, read the markers, resolve it correctly.
 **Prerequisites:** §12 (branching), §13 (merging).
@@ -110,7 +110,7 @@ $ git commit
 
 **What you should observe:** `git status` before committing lists `notes.txt` under "Unmerged paths" until you `git add` it; after `git add`, status shows it as ready to commit. The completed commit is a merge commit with **two parents** — verify with `git log --graph --oneline -3`, which should show the graph fork and rejoin exactly as diagrammed in §13.
 
-## 35.5 Lab 3 (Intermediate) — Interactive Rebase to Clean Up History
+## 5. Lab 3 (Intermediate) — Interactive Rebase to Clean Up History
 
 **Goal:** Turn a messy sequence of WIP commits into clean, atomic ones before an imagined pull request.
 **Prerequisites:** §14 (rebasing), especially 14.5.
@@ -150,7 +150,7 @@ $ git log --oneline
 
 **What you should observe:** the branch now has three commits total (initial + two clean feature commits) instead of five, and every commit after the rebase point has a **new hash** — including "wip login," even though its content-diff never changed, exactly per §14.3's explanation of why parent-hash chaining cascades new hashes through an entire replayed sequence.
 
-## 35.6 Lab 4 (Intermediate) — Break Something, Recover via Reflog
+## 6. Lab 4 (Intermediate) — Break Something, Recover via Reflog
 
 **Goal:** Deliberately lose commits with `reset --hard`, then recover them — the single most valuable recovery sequence to have reflexive.
 **Prerequisites:** §6.6 (reflog), §15 (reset), §30 (disaster recovery, if written).
@@ -198,7 +198,7 @@ $ cat important.txt
 
 **What you should observe:** after the recovery `reset --hard`, "commit 3 - the important one" is back at the tip, and `important.txt` again shows "v3." This confirms §15.4's claim directly: `reset` never deletes the commits it moves away from — it only relabels which one the branch pointer names — and the reflog is what lets you find them again. Note this only works because garbage collection hasn't run; in production, act quickly.
 
-## 35.7 Lab 5 (Advanced) — Two "Developers," One Bare Repo, a Conflicting Push
+## 7. Lab 5 (Advanced) — Two "Developers," One Bare Repo, a Conflicting Push
 
 **Goal:** Simulate real multi-developer remote collaboration, including a rejected push, entirely on one machine.
 **Prerequisites:** §20 (remotes), §9 (bare vs non-bare repos).
@@ -262,7 +262,7 @@ $ git push origin main
 
 **What you should observe:** the first push attempt is rejected because `origin/main` moved since dev-b's last fetch — Git refuses to silently overwrite dev-a's second commit. `git pull` (fetch + merge) brings both histories together locally, possibly opening an editor for a merge commit message if the changes don't cleanly auto-merge; only after that does the second push succeed. This is the everyday, non-catastrophic version of the coordination problem §34.6's force-push scenario escalates.
 
-## 35.8 Lab 6 (Advanced) — A Working Pre-Commit Hook That Blocks a Forbidden Word
+## 8. Lab 6 (Advanced) — A Working Pre-Commit Hook That Blocks a Forbidden Word
 
 **Goal:** Write a functioning hook that simulates basic secret detection, tying §24's hooks to §28's security material.
 **Prerequisites:** §24 (hooks), §28 (security), if written.
@@ -315,7 +315,7 @@ $ git log --oneline    # commit now exists
 
 **What you should observe:** the first commit attempt is refused entirely (exit code 1 from the hook aborts `git commit` before it creates anything), while identical content minus the forbidden pattern commits normally. Note per §4.9's clarification that the hook reads `git diff --cached` — the **index**, not just working-directory files — which matters for correctness (a hook that scanned working-directory files instead could pass content that isn't actually what's about to be committed). This is a local safety net only; real secret-detection setups (§28) pair this with server-side scanning too, since hooks in `.git/hooks` are not version-controlled or transferred by clone, and a developer can bypass them with `--no-verify` — the `pre-commit` framework or Husky (§24) solve the distribution problem, but not the bypass problem, which is why CI-side scanning remains necessary.
 
-## 35.9 Lab 7 (Capstone) — A Small Project With Branching Discipline and a CI-Like Pre-Push Check
+## 9. Lab 7 (Capstone) — A Small Project With Branching Discipline and a CI-Like Pre-Push Check
 
 **Goal:** Combine a branching strategy, protected-branch-style discipline, and an automated check into one coherent small workflow — the closest this lab sequence gets to a real team setup.
 **Prerequisites:** §22 (branching strategies), §23 (hosting/protected branches), §24 (hooks), §25 (CI/CD), all ideally read first.
@@ -410,7 +410,7 @@ $ git log --graph --oneline --all
 
 **What you should observe:** the push carrying the unresolved `TODO` is blocked client-side before it ever reaches `origin.git`, exactly mirroring what a required CI status check enforces server-side in a real platform (§23, §25) — the difference is that a real pre-push hook is easy to bypass locally (`--no-verify`), which is precisely why production setups enforce the equivalent check as a **required status check on the server**, not merely as a local hook; this lab's version is for building the mental model, not as a substitute for real branch protection. The final graph shows a short-lived feature branch merging cleanly into `main` with `--no-ff`, preserving the fact that it was a distinct unit of work (§13, §22).
 
-## 35.10 Troubleshooting Across Labs
+## 10. Troubleshooting Across Labs
 
 | Symptom                                                    | Likely cause                                                                    | Fix                                                                                                                                                                   |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -419,7 +419,7 @@ $ git log --graph --oneline --all
 | Reflog entry from Lab 4 not found                          | Reflog expired, or a different repo/branch than expected                        | Reflog is per-repo and per-ref; confirm you're in the right directory and check `git reflog show <branch>` explicitly, not just `git reflog` (which defaults to HEAD) |
 | Push in Lab 5/7 succeeds when it should have been rejected | Steps run out of order, or an intermediate `pull` already synced state          | Re-run from a fresh `origin.git` and clones; ordering matters for reproducing the rejection                                                                           |
 
-## 35.11 Interview Questions
+## 11. Interview Questions
 
 **[Beginner] Q1. Why is it valuable to inspect objects with `git cat-file` instead of only using `git log`/`git show`?**
 **Model answer:** `git log` and `git show` are user-facing views built on top of the object model, formatted for readability. `git cat-file -p` shows the actual raw content of blob, tree, and commit objects — seeing that a commit object literally contains a `tree` line and `parent` line as plain text, or that two differently-named files with identical content share one blob hash, converts the object model from an abstract diagram (§5) into something directly observed, which is far stickier knowledge than reading a description.
@@ -430,19 +430,19 @@ $ git log --graph --oneline --all
 **[Senior] Q3. Lab 7's pre-push hook can be bypassed with `--no-verify`. Given that, what's actually the point of writing it, versus relying purely on server-side CI?**
 **Model answer:** A local pre-push (or pre-commit) hook gives fast, offline feedback before a network round trip and a CI queue — catching an obvious mistake in seconds rather than minutes, and without consuming CI capacity for something trivially detectable locally. But because it's bypassable and, crucially, not distributed automatically to every clone (hooks live in `.git/hooks`, which clone does not populate from a remote), it cannot be the sole enforcement mechanism for anything that matters — that has to be a server-side required status check tied to branch protection (§23, §25), which no individual developer can opt out of. The correct mental model is defense in depth: local hooks for fast feedback and developer convenience, server-side checks for actual enforcement.
 
-## 35.12 Common Misconceptions
+## 12. Common Misconceptions
 
 1. **"Running through these labs once means I understand Git."** Fluency comes from repetition and from occasionally deviating from the script and reasoning through an unexpected result — treat these as a starting template, not a one-time checkbox.
 2. **"A pre-push hook is a real substitute for CI."** As Lab 7 and Q3 above cover, hooks are bypassable and not distributed by clone; they complement server-side enforcement, they don't replace it.
 3. **"Reflog recovery always works."** It works only until garbage collection prunes unreachable objects past their grace period (default two weeks for unreachable objects) — it's a safety net with a time limit, not a permanent undo history.
 
-## 35.13 🔑 Key Takeaways
+## 13. 🔑 Key Takeaways
 
 - Object-model labs (35.3) convert §5's abstract diagrams into observed fact — do this one first if you skip everything else.
 - The reflog recovery sequence in Lab 4 (35.6) is the single most valuable reflex from this entire lab set; rehearse it until it's automatic.
 - Lab 5's rejected push and Lab 7's blocked push both demonstrate the same underlying principle — automated checks (server-enforced sync state, or a local/CI test gate) exist to catch problems before they reach shared history, not after.
 - Hooks (Lab 6, Lab 7) are genuinely useful for fast local feedback but are not a substitute for server-side, non-bypassable enforcement — that distinction is a recurring senior-level interview probe (§35.11 Q3).
 
-## 35.14 Related Concepts
+## 14. Related Concepts
 
 Each lab names its prerequisite sections inline. For the theory these labs made concrete, revisit: §4-5 (objects), §13-14 (merge/rebase), §6.6/§15 (reflog/reset), §20 (remotes), §24 (hooks), §22-23 (branching strategy and hosting platform enforcement), §25 (CI/CD). For interview framing of the same material, see §34. For the corpus-wide synthesis, see §36.

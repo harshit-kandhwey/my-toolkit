@@ -1,6 +1,6 @@
 # Section 1 (Part 1): Version Control Fundamentals & The World Before Git
 
-## 1.1 Definition
+## 1. Definition
 
 **Plain language:** A version control system (VCS) is software that remembers every meaningful version of your files, who changed them, when, and why — so you can look back, undo mistakes, work in parallel with others, and prove exactly what existed at any point in time.
 
@@ -8,7 +8,7 @@
 
 Two synonyms you'll meet in job descriptions and older literature: **SCM** (Source Code Management / Software Configuration Management) and **revision control**. In practice all three terms refer to the same category of tool.
 
-## 1.2 Why It Exists — The Problems It Solves
+## 2. Why It Exists — The Problems It Solves
 
 Each of these is a concrete failure mode that teams suffered before (and without) version control. Interviewers love asking "why do we even need Git?" — a strong answer names several of these explicitly.
 
@@ -23,7 +23,7 @@ Each of these is a concrete failure mode that teams suffered before (and without
 
 > 💡 **Tip:** Notice that only some of these problems are about _code_. Version control is equally valuable for documentation, configuration files, infrastructure-as-code (Terraform, Ansible — both future topics), and any evolving plain-text asset. This is why "GitOps" (§25) treats Git as the source of truth for entire infrastructures.
 
-## 1.3 Life Before Version Control — Manual "Systems"
+## 3. Life Before Version Control — Manual "Systems"
 
 To appreciate the tooling, understand what teams actually did:
 
@@ -34,7 +34,7 @@ To appreciate the tooling, understand what teams actually did:
 
 Every generation of VCS below mechanizes and enforces what these manual conventions attempted.
 
-## 1.4 Generation 1 — Local Version Control (single machine, single file)
+## 4. Generation 1 — Local Version Control (single machine, single file)
 
 The first generation tracked versions of **individual files on one machine**. No collaboration, no networking — just history and undo for yourself.
 
@@ -49,11 +49,11 @@ The first generation tracked versions of **individual files on one machine**. No
 
 **Limitations of Generation 1:** one file at a time (no concept of a coherent multi-file project state), one machine, one editor at a time per file. Fine for a lone sysadmin versioning `/etc` configs; useless for a software team.
 
-## 1.5 Generation 2 — Centralized Version Control (CVCS)
+## 5. Generation 2 — Centralized Version Control (CVCS)
 
 The second generation added the missing ingredient: **collaboration through a central server**.
 
-### 1.5.1 Architecture
+### 5.1 Architecture
 
 ```
                     ┌────────────────────────┐
@@ -74,12 +74,12 @@ The second generation added the missing ingredient: **collaboration through a ce
 
 The server holds the repository — the complete history. Each developer **checks out** a **working copy**: the files of one version, plus a little bookkeeping. Nearly every meaningful operation (commit, view history, diff against an old version, branch) is a network round trip to the server.
 
-### 1.5.2 The concurrency question: two philosophies
+### 5.2 The concurrency question: two philosophies
 
 - **Lock-Modify-Unlock:** only one person may edit a file at a time (RCS heritage; optional in SVN and Perforce). Safe but serializing — developer B waits while developer A holds the lock. Still genuinely the _right_ model for unmergeable binary assets like game textures, a point we return to in 1.8 and §26.
 - **Copy-Modify-Merge:** everyone edits freely; the system merges concurrent changes and asks a human to resolve genuine **conflicts** (overlapping edits to the same lines). CVS pioneered this at scale, and it is the model Git inherits.
 
-### 1.5.3 The major centralized systems
+### 5.3 The major centralized systems
 
 | System                               | Year                                                             | Key contribution                                                                                                                                                                     | Key weaknesses                                                                                                                                                                                                                                    |
 | ------------------------------------ | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -89,7 +89,7 @@ The server holds the repository — the complete history. Each developer **check
 | **IBM Rational ClearCase**           | 1992 (Atria)                                                     | Virtual filesystem (MVFS) presenting versions dynamically; powerful but heavyweight "config spec" selection rules                                                                    | Enormous administrative burden; slow; expensive; today almost exclusively legacy-enterprise                                                                                                                                                       |
 | **Visual SourceSafe (VSS)**          | 1994 (Microsoft)                                                 | Brought VCS to the mass Windows market                                                                                                                                               | Notorious for silent database corruption; no atomicity; retired — its enterprise successor was **TFVC** inside Team Foundation Server (2005), itself now legacy as Microsoft moved to Git                                                         |
 
-### 1.5.4 Strengths and fatal limitations of the centralized model
+### 5.4 Strengths and fatal limitations of the centralized model
 
 **Strengths (be fair — interviewers respect nuance):** a single authoritative source of truth; straightforward mental model; **fine-grained access control per directory** (easier than in Git, where you generally clone all-or-nothing); ability to check out only a subtree of a giant repo; effective handling of huge binaries (Perforce especially).
 
@@ -100,11 +100,11 @@ The server holds the repository — the complete history. Each developer **check
 3. **Slow operations.** Every history query is a round trip. This shaped behavior: because commits were "expensive" events that immediately hit the shared server (and could break the build for everyone), developers committed rarely, in huge batches — the opposite of good practice.
 4. **Expensive or awkward branching** (system-dependent), which discouraged the safe-experimentation workflow branching is supposed to enable.
 
-## 1.6 Generation 3 — Distributed Version Control (DVCS)
+## 6. Generation 3 — Distributed Version Control (DVCS)
 
 The third generation's core move: **every developer's clone is a complete, first-class repository containing the full history.** There is no _technically_ privileged copy.
 
-### 1.6.1 Architecture
+### 6.1 Architecture
 
 ```
                  ┌──────────────────────────────┐
@@ -134,7 +134,7 @@ Consequences of "everyone has everything":
 4. **Cheap, fast branching** changed developer culture: branches went from a ceremonial event to something you create ten times a day.
 5. **Flexible topologies.** Teams can work hub-and-spoke (the near-universal choice), hierarchically (the Linux kernel's "web of trust" of maintainer trees), or fully peer-to-peer.
 
-### 1.6.2 The distributed systems
+### 6.2 The distributed systems
 
 | System             | Year       | Notes                                                                                                                                                                                                                                                                 |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -145,11 +145,11 @@ Consequences of "everyone has everything":
 | **Mercurial (hg)** | April 2005 | Created by Matt Mackall for the same reason in the same month; conceptually very close to Git with a friendlier CLI. Git's only serious long-term rival; Meta (Facebook) famously chose and extended it — more in §26 and §32.                                        |
 | **Bazaar (bzr)**   | 2005       | Canonical/Ubuntu's DVCS; lost the ecosystem war, now essentially dormant.                                                                                                                                                                                             |
 
-### 1.6.3 Killing a misconception early: "distributed" ≠ "no central repository"
+### 6.3 Killing a misconception early: "distributed" ≠ "no central repository"
 
 In practice, virtually every Git team designates one hosted repository (on GitHub, GitLab, Bitbucket, or a self-hosted server) as the shared hub — conventionally named **origin**. The difference from CVCS is that this centrality is a **social convention, not a technical constraint**: the hub is just another clone, it can be moved or replaced trivially, and losing it does not lose history because every developer holds a full copy. Distributed refers to where _repositories and capabilities_ live, not to the absence of coordination.
 
-## 1.7 Centralized vs Distributed — Comparison Matrix
+## 7. Centralized vs Distributed — Comparison Matrix
 
 | Dimension                        | Centralized (SVN, Perforce, TFVC)                            | Distributed (Git, Mercurial)                                                                           |
 | -------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
@@ -167,7 +167,7 @@ In practice, virtually every Git team designates one hosted repository (on GitHu
 
 > 🎯 **Interview tip:** The two rows where centralized systems genuinely _win_ — partial checkouts/permissions and large binaries — are exactly what separates a senior answer from a memorized one. "Git is better at everything" is a junior answer.
 
-## 1.8 Where Each Model Survives Today
+## 8. Where Each Model Survives Today
 
 - **Git** is the overwhelming default: developer surveys (e.g., Stack Overflow's annual survey) have consistently put Git usage above 90% of respondents in recent years (roughly 93–96% — treat exact figures as approximate and year-dependent). It is the assumed baseline skill in effectively every DevOps, SRE, cloud, and software engineering interview.
 - **Perforce Helix Core** remains the standard in **game development** and some hardware/embedded shops: repositories with terabytes of binary art assets, and file locking so two artists never waste hours producing unmergeable edits to the same texture.
@@ -175,7 +175,7 @@ In practice, virtually every Git team designates one hosted repository (on GitHu
 - **ClearCase / TFVC** are pure legacy-maintenance encounters.
 - **At extreme monorepo scale**, even Git's model strains: Google runs its own centralized system (**Piper**) with local caching layers, and Meta evolved Mercurial into **Sapling** with a virtual filesystem; Microsoft pushed Git itself to handle the Windows repository via innovations (partial clone, sparse-checkout, FSMonitor, background maintenance) that have since landed in mainline Git. Full treatment with decision criteria in §26 and §32 — for now, the takeaway is that "everyone has all history" has real costs at hundreds-of-gigabytes scale, and the industry's answers involve re-centralizing storage while keeping Git's _interface_.
 
-## 1.9 Terminology Established in This Section
+## 9. Terminology Established in This Section
 
 These definitions are VCS-generic; Section 3 layers on Git's precise, sometimes idiosyncratic, versions of them.
 
@@ -194,7 +194,7 @@ These definitions are VCS-generic; Section 3 layers on Git's precise, sometimes 
 | **Lock-modify-unlock vs copy-modify-merge** | The two concurrency philosophies: serialize edits via locks, or allow parallel edits and merge them. |
 | **CVCS / DVCS**                             | Centralized vs Distributed VCS, per the architectures in 1.5/1.6.                                    |
 
-## 1.10 Interview Questions — This Section's Material
+## 10. Interview Questions — This Section's Material
 
 **[Beginner] Q1. What is version control, and why does a team need it?**
 **Model answer:** Version control is software that records every version of a project's files along with who changed what, when, and why. Teams need it for five core reasons: (1) history and the ability to undo — any past state is retrievable; (2) safe parallel work — it prevents the lost-update problem where one person's save silently overwrites another's; (3) branching — risky work happens on an isolated line and merges back only when ready; (4) accountability — every change carries an author, timestamp, and message, which is essential for debugging and for audits; and (5) release reproducibility — you can rebuild exactly what shipped to a customer. Without it, teams fall back on copied folders and shared drives, which provide none of these guarantees.
@@ -216,7 +216,7 @@ _Probing for:_ trade-off reasoning, knowing Git's actual weaknesses, and the pro
 **Model answer:** Three things strain: (1) _clone size_ — "every clone has all history" means checkouts measured in terabytes and hours; (2) _object and file counts_ — millions of files make status/checkout operations that scan the working tree painfully slow; (3) _write coordination_ — thousands of engineers committing to one repo daily need serialization, permissions, and CI infrastructure a plain Git remote doesn't provide. Responses fall into two families. Google kept a centralized architecture: Piper stores the monorepo centrally, developers work through lightweight views/workspaces (historically CitC), so nobody materializes the whole repo. Meta took the DVCS interface but re-engineered the guts: Mercurial extended into Sapling, backed by a virtual filesystem (EdenFS) that fetches file contents lazily on access. Microsoft proved Git itself can stretch: the Windows repo drove VFS for Git and then Scalar, whose techniques — partial clone (fetch objects lazily), sparse-checkout (materialize only needed paths), filesystem monitors for fast status, and background maintenance — were upstreamed into core Git. The common thread: keep a distributed _interface_ for developers while re-centralizing or virtualizing _storage_ so no one pays for the whole repo. I'd flag that vendor specifics evolve, but the failure modes and the lazy-fetch/virtualization response are stable.
 _Probing for:_ systems thinking about where the DVCS model's costs concentrate, and familiarity with how the industry actually operates at the extreme. (Deep dive with the concrete Git features: §26.)
 
-## 1.11 Common Misconceptions
+## 11. Common Misconceptions
 
 1. **"Git and GitHub are the same thing."** Git is the version control _program_ running on your machine; GitHub is one _company's hosting platform_ for Git repositories (as are GitLab and Bitbucket). Git predates GitHub (2005 vs 2008) and needs no platform at all. Fully unpacked in §2 and §23.
 2. **"Distributed means there's no main repository."** There almost always is one — by team convention, not technical necessity (see 1.6.3).
@@ -224,7 +224,7 @@ _Probing for:_ systems thinking about where the DVCS model's costs concentrate, 
 4. **"Version control is only for source code."** Docs, runbooks, database migration scripts, Kubernetes manifests, Terraform — anything plain-text and evolving belongs in VCS; entire operating models (GitOps) depend on this.
 5. **"SVN/Perforce are dead technologies."** Legacy SVN estates and thriving Perforce game-dev deployments say otherwise; a DevOps engineer may well be paid to run or migrate them.
 
-## 1.12 🔑 Key Takeaways
+## 12. 🔑 Key Takeaways
 
 - A VCS records immutable revisions with metadata, solving history/undo, lost updates, parallel work, attribution, release reproducibility, and auditability.
 - Three generations: **local** (SCCS/RCS — one file, one machine, locking), **centralized** (CVS/SVN/Perforce — collaboration via a single server holding the only full history), **distributed** (Git/Mercurial — every clone is a complete repository).
@@ -233,6 +233,6 @@ _Probing for:_ systems thinking about where the DVCS model's costs concentrate, 
 - Centralized systems retain honest advantages: partial checkouts, per-path permissions, giant binaries. Knowing them is a seniority signal.
 - "Central" in Git-land (origin, GitHub) is convention, not architecture.
 
-## 1.13 Related Concepts & What's Next
+## 13. Related Concepts & What's Next
 
 This section deliberately ended in 2005 with the stage set: the Linux kernel project is the world's most demanding distributed development effort, it has just lost its VCS (BitKeeper), and nothing existing is fast enough. Section 2 covers what happened next — the ten days in which Git was written, the design goals Linus set (speed, integrity, distribution, and a data model borrowed from filesystems), the philosophy that still explains every odd corner of Git's UX, and how Git went from kernel tool to ~95% market share.

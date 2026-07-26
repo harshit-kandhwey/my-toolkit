@@ -6,7 +6,7 @@
 
 ---
 
-## 35.1 Introduction and Scope
+## 1. Introduction and Scope
 
 Section 34 established that every Azure container-hosting option needs to pull an image from _somewhere_, and that Docker Hub is generally unsuitable as the source of truth for proprietary enterprise images. This section covers **Azure Container Registry (ACR)** — Azure's private, managed OCI-compliant registry — in full depth: architecture, authentication models, replication, build automation (ACR Tasks), security, and production operational patterns.
 
@@ -14,22 +14,22 @@ Section 34 established that every Azure container-hosting option needs to pull a
 
 ---
 
-## 35.2 What Is Azure Container Registry
+## 2. What Is Azure Container Registry
 
-### 35.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** ACR is a private Docker Hub that lives inside your Azure subscription — a place to store, version, and distribute the container images your Azure services run, with Azure's identity and networking controls built in.
 
 **Precise definition:** Azure Container Registry is a managed, private registry service based on the open-source Docker Registry 2.0 (and OCI Distribution Specification) implementation, providing storage and distribution of container images and other OCI artifacts (Helm charts, OPA policies, and other supply-chain artifacts), integrated with Microsoft Entra ID for authentication and Azure RBAC for authorization.
 
-### 35.2.2 Why It Exists / The Problem It Solves
+### 2.2 Why It Exists / The Problem It Solves
 
 - **Trust and control:** public registries place the availability, integrity, and access control of production images outside the organization's direct control. An outage or a compromised public repository directly threatens production deployments.
 - **Network locality and performance:** pulling images from a registry inside the same Azure region (or replicated to multiple regions) is dramatically faster and more reliable than pulling from a public internet endpoint, especially at the scale of hundreds of AKS nodes pulling simultaneously during a scale-out event.
 - **Identity-integrated access control:** ACR integrates directly with Microsoft Entra ID and Managed Identities, so image push/pull permissions can be granted and revoked using the same RBAC model as the rest of the Azure estate (Section 8), instead of separately managed registry credentials.
 - **Private networking:** ACR supports Private Link, allowing image pulls to occur entirely within a private VNet without traversing the public internet — a hard requirement in many regulated enterprise network architectures (Section 23 concepts apply directly).
 
-### 35.2.3 Terminology
+### 2.3 Terminology
 
 | Term                             | Definition                                                                                                                                                                                              |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -46,9 +46,9 @@ Section 34 established that every Azure container-hosting option needs to pull a
 
 ---
 
-## 35.3 Architecture and How ACR Fits the Ecosystem
+## 3. Architecture and How ACR Fits the Ecosystem
 
-### 35.3.1 Position in the Azure Container Ecosystem
+### 3.1 Position in the Azure Container Ecosystem
 
 ```
 Developer / CI Pipeline
@@ -70,7 +70,7 @@ Developer / CI Pipeline
 - ACR itself is built on the same OCI Distribution Specification implemented by Docker Hub and other registries; from a pure protocol perspective, `docker push`/`docker pull` behave identically against ACR as against any other OCI-compliant registry — the differentiation is entirely in the surrounding Azure integration (identity, networking, automation), not the wire protocol.
 - Internally, Azure operates ACR as a multi-tenant, highly available service; the customer-visible unit is the **registry resource** (an ARM resource, Section 4), which has its own resource ID, location, SKU, and access policies, independent of any single underlying storage node.
 
-### 35.3.2 SKU Comparison
+### 3.2 SKU Comparison
 
 | Feature                          | Basic                 | Standard                      | Premium                                                                |
 | -------------------------------- | --------------------- | ----------------------------- | ---------------------------------------------------------------------- |
@@ -89,13 +89,13 @@ Developer / CI Pipeline
 
 ---
 
-## 35.4 Authentication and Authorization
+## 4. Authentication and Authorization
 
-### 35.4.1 Why This Is the Most Interview-Relevant Part of ACR
+### 4.1 Why This Is the Most Interview-Relevant Part of ACR
 
 Because ACR sits on the critical path of every deployment, how identities authenticate to it is a frequent architecture and security discussion point, and a common source of production incidents when done incorrectly (e.g., embedded long-lived credentials, expired service principal secrets breaking deployments).
 
-### 35.4.2 Authentication Methods (Ranked by Enterprise Preference)
+### 4.2 Authentication Methods (Ranked by Enterprise Preference)
 
 1. **Microsoft Entra ID identity with RBAC role assignment (preferred, especially via Managed Identity):**
    - A **Managed Identity** (Section 9) — system-assigned to an AKS cluster, an App Service, or a VM, for example — is granted the `AcrPull` (or `AcrPush`, `AcrDelete`) role directly on the registry resource via Azure RBAC (Section 8).
@@ -112,7 +112,7 @@ Because ACR sits on the critical path of every deployment, how identities authen
    - Each ACR registry has an optional built-in "admin" account with a static username/password, disabled by default.
    - ⚠️ **Warning:** the admin account is a single shared credential with full push/pull/delete access and no per-identity audit trail; Microsoft's own guidance, and consistent enterprise practice, is to leave it disabled and use Entra ID-based authentication instead. It exists mainly for quick testing/demo scenarios, not production use.
 
-### 35.4.3 RBAC Roles for ACR (Applying Section 8 Concepts)
+### 4.3 RBAC Roles for ACR (Applying Section 8 Concepts)
 
 | Role                                     | Grants                                                                                                                                             |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -124,7 +124,7 @@ Because ACR sits on the critical path of every deployment, how identities authen
 
 💡 **Tip:** Following least-privilege (a recurring theme from Section 8), CI build agents should typically receive only `AcrPush`, and production compute (AKS kubelet identity, App Service's Managed Identity) should receive only `AcrPull` — neither needs registry management permissions, and neither push identity needs delete rights unless a specific cleanup automation role requires it.
 
-### 35.4.4 Commands — Authentication (Command Documentation Template)
+### 4.4 Commands — Authentication (Command Documentation Template)
 
 #### `az acr login`
 
@@ -147,13 +147,13 @@ Because ACR sits on the critical path of every deployment, how identities authen
 
 ---
 
-## 35.5 Repositories, Tags, and Image Lifecycle in ACR
+## 5. Repositories, Tags, and Image Lifecycle in ACR
 
-### 35.5.1 Repository and Tag Structure
+### 5.1 Repository and Tag Structure
 
 Image references in ACR follow the same structure introduced in Section 34.5.4: `<registry-login-server>/<repository>:<tag>`. ACR supports **nested repository namespaces** using `/` as a path-like separator purely for organizational convention (e.g., `myregistry.azurecr.io/team-a/webapp:1.0`), which is not a true filesystem hierarchy but a naming convention that ACR's tooling and RBAC scoping (via repository-scoped tokens, 35.5.4) can key off.
 
-### 35.5.2 Commands — Repository/Image Management
+### 5.2 Commands — Repository/Image Management
 
 #### `az acr repository list`
 
@@ -172,30 +172,30 @@ Image references in ACR follow the same structure introduced in Section 34.5.4: 
 - **Syntax:** `az acr repository delete --name <registry-name> --image <repo>:<tag>`
 - **Common mistake:** deleting a tag does not necessarily delete the underlying manifest/layers if other tags still reference the same digest (content-addressed storage, Section 34.5.3) — genuine storage reclamation requires deleting the manifest itself, and untagged/orphaned manifests are the actual target of most cleanup automation (35.5.3).
 
-### 35.5.3 Retention and Cleanup Policies
+### 5.3 Retention and Cleanup Policies
 
 - **Untagged manifest retention policy (Premium tier):** ACR can be configured to automatically purge untagged manifests after a configurable number of days, addressing the storage growth problem caused by repeated pushes to a mutable tag such as `latest` or a CI-generated tag that gets overwritten, leaving the old digest's layers orphaned but still stored.
 - **`az acr run` with the built-in `acr-purge` command:** a scriptable, scheduled way (often run via an ACR Task on a cron trigger) to delete tags/manifests matching an age or count-based filter, giving fine-grained control beyond the simple untagged-manifest policy.
 - 💡 **Tip:** production registries should have an explicit retention policy from day one; unmanaged registries accumulate storage cost and clutter linearly with every CI build, which becomes a nontrivial operational cost at high build frequency.
 
-### 35.5.4 Repository-Scoped Tokens (Fine-Grained Access)
+### 5.4 Repository-Scoped Tokens (Fine-Grained Access)
 
 Beyond registry-wide RBAC roles (35.4.3), ACR supports **tokens** scoped to specific repositories (or repository name patterns) with specific actions (`content/read`, `content/write`, `content/delete`), created against a **scope map**. This enables, for example, granting a specific external partner or a specific team pull-only access to just their own repository namespace, without granting any visibility into the rest of the registry — a capability that plain Azure RBAC role assignment (registry-wide) cannot express on its own.
 
 ---
 
-## 35.6 ACR Tasks (Cloud-Native Image Building)
+## 6. ACR Tasks (Cloud-Native Image Building)
 
-### 35.6.1 Definition
+### 6.1 Definition
 
 **ACR Tasks** is a suite of features that build and manage container images directly within Azure, triggered by source code changes, base image updates, or a schedule, without requiring a separately managed build agent (VM or CI runner) to execute `docker build`.
 
-### 35.6.2 Why It Exists
+### 6.2 Why It Exists
 
 - Running `docker build` requires a Docker daemon somewhere; ACR Tasks provides that build environment as a managed Azure service, eliminating the operational burden of maintaining build agents solely for image builds.
 - **Base image update triggers** solve a problem plain CI pipelines typically cannot: rebuilding and redeploying an application image automatically when its **base image** receives a security patch upstream, even though the application's own source code has not changed — closing a common security gap where patched base images exist but dependent application images silently remain on the old, vulnerable base until the next unrelated code change triggers a rebuild.
 
-### 35.6.3 Commands — ACR Tasks
+### 6.3 Commands — ACR Tasks
 
 #### `az acr build` (Quick Task — one-off build)
 
@@ -223,25 +223,25 @@ Beyond registry-wide RBAC roles (35.4.3), ACR supports **tokens** scoped to spec
 - **Common errors:** authentication failures against the source Git repository (expired token/credential); Dockerfile path mismatches relative to the specified build context.
 - **Production/enterprise usage:** enterprises with strict patch-SLA requirements (e.g., "critical CVEs patched within 48 hours") rely on base-image-triggered ACR Tasks as an automated control satisfying that SLA without manual tracking of every downstream image.
 
-### 35.6.4 Multi-Step Tasks
+### 6.4 Multi-Step Tasks
 
 ACR Tasks also supports **multi-step task YAML** definitions describing a sequence of build, push, and test steps (e.g., build the image, run a container from it to execute integration tests, then push only if tests pass) — extending beyond a single `docker build` command into a lightweight CI pipeline running natively within ACR's managed compute.
 
 ---
 
-## 35.7 Geo-Replication
+## 7. Geo-Replication
 
-### 35.7.1 Definition
+### 7.1 Definition
 
 **Geo-replication** (Premium SKU) allows a single ACR registry resource to maintain synchronized copies of its content across multiple Azure regions, all reachable through the same login server name, with Azure automatically routing each pull request to the nearest replica.
 
-### 35.7.2 Why It Exists and Production Relevance
+### 7.2 Why It Exists and Production Relevance
 
 - **Latency and reliability:** an AKS cluster in East US pulling from a registry only located in West Europe incurs unnecessary latency and depends on cross-region network reliability for every image pull, including during node scale-out events where many nodes pull simultaneously.
 - **Single registry name, no client-side complexity:** applications and orchestrators reference the same `myregistry.azurecr.io` regardless of which replica actually serves the request — geo-replication is transparent to the pulling client; Azure's networking layer handles routing to the nearest healthy replica.
 - **Regional resilience:** if one replica's region experiences an outage, pulls can continue being served from other replicas (subject to Azure's specific failover behavior at the time, which should be verified against current documentation for exact guarantees).
 
-### 35.7.3 Architecture Diagram
+### 7.3 Architecture Diagram
 
 ```
                     myregistry.azurecr.io (single logical registry)
@@ -261,13 +261,13 @@ ACR Tasks also supports **multi-step task YAML** definitions describing a sequen
 
 ---
 
-## 35.8 Private Networking (Private Link / Private Endpoints)
+## 8. Private Networking (Private Link / Private Endpoints)
 
-### 35.8.1 Definition
+### 8.1 Definition
 
 ACR Premium supports **Private Endpoints** (applying VNet/Private Link concepts from Section 23), allowing the registry's data-plane traffic (push/pull) to occur entirely over a private IP address within a customer VNet, with no traversal of the public internet.
 
-### 35.8.2 Why It Matters
+### 8.2 Why It Matters
 
 - Many enterprise network security policies mandate that no PaaS dependency be reachable over the public internet, even with authentication controls in place — Private Link satisfies this by giving the registry a private IP inside the organization's own VNet address space.
 - Combined with **disabling public network access** on the registry entirely (a registry-level setting), this ensures the only network path to the registry is through the approved private connection.
@@ -275,19 +275,19 @@ ACR Premium supports **Private Endpoints** (applying VNet/Private Link concepts 
 
 ---
 
-## 35.9 Security Considerations
+## 9. Security Considerations
 
-### 35.9.1 Vulnerability Scanning
+### 9.1 Vulnerability Scanning
 
 - ACR integrates with **Microsoft Defender for Cloud** (Section 55) to automatically scan pushed images for known vulnerabilities (CVEs), surfacing findings in the Defender for Cloud dashboard and, depending on configuration, blocking deployment of images with critical findings via admission control policies at the AKS layer (Section 37/54).
 - 💡 **Tip:** scanning should be treated as a required CI/CD gate for production image promotion, not merely a dashboard to review after the fact.
 
-### 35.9.2 Content Trust (Image Signing)
+### 9.2 Content Trust (Image Signing)
 
 - Premium-tier **content trust** allows publishers to cryptographically sign images on push, and configures the registry to reject pulls of unsigned images for repositories with trust enabled — mitigating the risk of a compromised push credential or a supply-chain injection introducing an unauthorized image under a trusted repository name.
 - This is a defense-in-depth control layered on top of RBAC (35.4.3): RBAC controls _who_ can push, while content trust provides cryptographic proof of _what_ was actually published by an authorized signer, protecting against scenarios where a push credential itself is compromised.
 
-### 35.9.3 Network and Access Hardening Checklist
+### 9.3 Network and Access Hardening Checklist
 
 - Disable the registry admin account (35.4.2) in all non-trivial environments.
 - Use Managed Identities with least-privilege roles (`AcrPull` for consumers, `AcrPush` for CI) rather than shared credentials.
@@ -296,7 +296,7 @@ ACR Premium supports **Private Endpoints** (applying VNet/Private Link concepts 
 - Enable retention/cleanup policies to reduce the accumulated attack surface of stale, unpatched historical images (35.5.3).
 - Consider content trust for registries holding production-critical images (35.9.2).
 
-### 35.9.4 Interview Questions — ACR Security
+### 9.4 Interview Questions — ACR Security
 
 **Intermediate:** "How does an AKS cluster typically authenticate to pull images from ACR, and why is this preferred over storing credentials in a Kubernetes Secret?"
 _Model answer:_ The recommended pattern attaches the AKS cluster's kubelet Managed Identity directly to the ACR registry with the `AcrPull` role (via `az aks create --attach-acr` or equivalent IaC configuration). This avoids ever creating, storing, or rotating a long-lived credential — Entra ID issues short-lived tokens transparently. Storing a static registry credential in a Kubernetes Secret (an older, now-discouraged pattern using `imagePullSecrets`) introduces a long-lived credential that must be manually rotated and is a persistent secret at rest in the cluster, increasing the blast radius if the cluster's secret store is compromised.
@@ -308,7 +308,7 @@ _What the interviewer is probing:_ whether the candidate understands the full de
 
 ---
 
-## 35.10 Production and Enterprise Usage Patterns
+## 10. Production and Enterprise Usage Patterns
 
 - **One registry per environment tier vs. one shared registry with promotion:** two common enterprise patterns exist — (a) separate registries per environment (dev/test/prod) with images rebuilt or explicitly copied between them, or (b) a single registry with images built once and _promoted_ between environments purely via tag/labeling changes (no rebuild), aligning with the "build once, deploy many" principle from Section 34.12. Pattern (b) is generally the stronger practice where feasible, since it guarantees the exact same tested artifact reaches production; pattern (a) is sometimes chosen for stricter environment network isolation requirements. This is a trade-off decision, not a universal rule, and should be stated as such when discussed.
 - **`az acr import`:** copies an image from one registry (including a public registry like Docker Hub or another ACR instance) directly into a target ACR registry, server-side, without needing to pull and push through a local Docker daemon — commonly used to mirror approved public base images into a controlled private registry (35.9) or to promote an image between separate per-environment registries under pattern (a) above.
@@ -317,14 +317,14 @@ _What the interviewer is probing:_ whether the candidate understands the full de
 
 ---
 
-## 35.11 Monitoring and Troubleshooting
+## 11. Monitoring and Troubleshooting
 
-### 35.11.1 Monitoring
+### 11.1 Monitoring
 
 - ACR integrates with **Azure Monitor** (Section 50) for metrics such as storage usage, pull/push counts, and successful/failed authentication events, and with **Log Analytics** (Section 51) for diagnostic logs of registry operations (useful for auditing who pulled/pushed which image and when).
 - 💡 **Tip:** enabling diagnostic settings on the registry to forward logs to Log Analytics is a common compliance requirement for auditability of image provenance and access.
 
-### 35.11.2 Troubleshooting Reference
+### 11.2 Troubleshooting Reference
 
 | Symptom                                                      | Likely Cause                                                                                                            | Diagnostic Step                                                                                                                                                                              |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -337,7 +337,7 @@ _What the interviewer is probing:_ whether the candidate understands the full de
 
 ---
 
-## 35.12 Best Practices Checklist
+## 12. Best Practices Checklist
 
 - [ ] Registry admin account disabled.
 - [ ] Managed Identity + least-privilege RBAC (`AcrPull`/`AcrPush`) used for all automated consumers and CI agents.
@@ -350,14 +350,14 @@ _What the interviewer is probing:_ whether the candidate understands the full de
 
 ---
 
-## 35.13 Common Misconceptions
+## 13. Common Misconceptions
 
 - "ACR is just Docker Hub hosted by Microsoft." _Correction:_ ACR implements the same open Distribution Specification, but its differentiated value is entirely in Azure-native integration — Entra ID/Managed Identity authentication, Azure RBAC, geo-replication tied to Azure regions, Private Link into customer VNets, and ACR Tasks' cloud-native build automation — none of which are properties of the underlying registry protocol itself.
 - "Enabling geo-replication automatically makes pulls faster everywhere." _Correction:_ it only helps for consumers actually located near an added replica region; it provides no benefit for a single-region deployment and adds cost without justification in that case.
 
 ---
 
-## 35.14 Interview Questions (Consolidated)
+## 14. Interview Questions (Consolidated)
 
 **Beginner:** "What is Azure Container Registry, and how does an image reference to it differ from a Docker Hub image reference?"
 _Model answer:_ ACR is Azure's private, managed container registry. An image reference to ACR includes the registry's login server as the host portion, e.g., `myregistry.azurecr.io/webapp:1.0`, versus an implicit Docker Hub reference like `nginx:1.27`, which has no explicit registry host because Docker Hub is the default when none is specified.
@@ -371,7 +371,7 @@ _What the interviewer is probing:_ connecting a specific ACR capability to a rea
 
 ---
 
-## 35.15 Key Takeaways Summary
+## 15. Key Takeaways Summary
 
 🔑 ACR implements the standard OCI Distribution Specification — the differentiation is entirely in Azure-native identity, networking, replication, and build-automation integration.
 
@@ -385,7 +385,7 @@ _What the interviewer is probing:_ connecting a specific ACR capability to a rea
 
 ---
 
-## 35.16 Related Concepts and What Comes Next
+## 16. Related Concepts and What Comes Next
 
 - **Section 34 (prerequisite, completed):** image/layer/tag fundamentals this section builds on directly.
 - **Sections 36–38 — Azure Kubernetes Service:** the primary large-scale consumer of ACR in most enterprise architectures; AKS-ACR integration (`--attach-acr`, kubelet Managed Identity) is introduced conceptually here and covered operationally in Section 36's architecture material.

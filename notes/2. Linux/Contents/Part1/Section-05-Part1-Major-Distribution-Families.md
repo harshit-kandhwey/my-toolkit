@@ -1,13 +1,6 @@
 # Section 5 (Part 1): Major Distribution Families (Debian/Ubuntu, RHEL/Fedora, SUSE, Arch, Alpine) and How to Choose
 
-**Roadmap Reference:** 1.5
-**Phase:** Phase 1 — Foundations
-
----
-
-## 1.5.1 The Main Families
-
-§1 established that a distribution is "the kernel plus everything packaged around it." This section makes that concrete: the handful of family trees almost every production Linux host you'll ever touch descends from, and the practical criteria for choosing between them.
+## 1. The Main Families
 
 | Family                         | Representative Distributions                        | Package Format                   | Package Manager                 | Typical Use Case                                                        |
 | ------------------------------ | --------------------------------------------------- | -------------------------------- | ------------------------------- | ----------------------------------------------------------------------- |
@@ -19,7 +12,7 @@
 
 A useful mental model: most families share a package _format_ (`.rpm` is used by both Red Hat and SUSE lineages) but not necessarily a package _manager_ or repository ecosystem — a `.rpm` built for RHEL is not automatically installable on SLES without compatibility work, because dependency naming, library versions, and repository conventions diverge even when the on-disk format matches. Family relationships are about shared ancestry and tooling philosophy, not universal binary interchangeability.
 
-## 1.5.2 How to Choose in Practice
+## 2. How to Choose in Practice
 
 Distro selection in a professional setting is rarely "which one is technically best" — it's a multi-factor decision where the deciding factors are usually organizational, not technical:
 
@@ -35,7 +28,7 @@ Distro selection in a professional setting is rarely "which one is technically b
 
 🔑 **Key Takeaway:** The choice of distribution in enterprise settings is driven less by technical superiority and more by **support lifecycle, compliance certification availability, ecosystem/tooling compatibility, and existing organizational expertise.**
 
-## 1.5.3 Hands-On: Identifying a Distribution and Its Package Ecosystem
+## 3. Hands-On: Identifying a Distribution and Its Package Ecosystem
 
 When you land on an unfamiliar host — during onboarding, an incident, or auditing a fleet you didn't build — the first question is "what am I actually working with," and the second is "what tooling does it expect me to use." These commands answer both.
 
@@ -175,9 +168,9 @@ $ which apt dnf yum zypper pacman apk 2>/dev/null
 
 **Production usage example:** bootstrap scripts for configuration management agents (e.g., a shell script that installs Ansible or a monitoring agent before the "real" provisioning tooling takes over) commonly use exactly this pattern — probe for which package manager exists, then branch installation logic — because it works correctly even against a host whose distro identity file is missing, malformed, or from an unanticipated derivative distro.
 
-## 1.5.4 Package Format Internals — Conceptual Comparison Only
+## 4. Package Format Internals — Conceptual Comparison Only
 
-This section deliberately stays at the philosophy level; the mechanics of dependency resolution, repository metadata, and transaction handling are covered in full in Part 8 (§59–§64). At a conceptual level, though, the families differ in a way worth understanding now because it explains _why_ certain operational behaviors (like Arch requiring manual intervention on some upgrades, or apt/dnf mostly "just working") exist:
+The mechanics of dependency resolution, repository metadata, and transaction handling are covered in full in Part 8 (§59–§64). At a conceptual level, though, the families differ in a way worth understanding now because it explains _why_ certain operational behaviors (like Arch requiring manual intervention on some upgrades, or apt/dnf mostly "just working") exist:
 
 - **Debian/apt and Red Hat/dnf** both use a **declarative, repository-metadata-driven dependency resolver**: you declare what you want installed, and the tool computes a full dependency graph against pre-published repository metadata, resolving conflicts largely automatically. This is why both feel similar in daily use despite different underlying formats.
 - **Arch/pacman** uses a simpler, more direct dependency model with less resolver sophistication historically, paired with a strong cultural expectation that the administrator reads release announcements before major updates — rolling-release distros trade automated safety for currency and transparency.
@@ -185,13 +178,13 @@ This section deliberately stays at the philosophy level; the mechanics of depend
 
 🔑 **Key Takeaway:** These philosophy differences are _why_ certain distros feel more or less "hands-off" in daily operations — but the actual command syntax, repository configuration, and transaction mechanics live in §59–§64, not here.
 
-## 1.5.5 Production Usage Notes: Fleet Automation and Mixed-Distro Overhead
+## 5. Production Usage Notes: Fleet Automation and Mixed-Distro Overhead
 
 - **Golden images diverge by family.** Golden-image pipelines (§102) typically build one base image per distro family, since the provisioning steps, hardening baselines, and package sets are not portable as-is across `apt`/`dnf`/`zypper`/`apk` ecosystems. A fleet standardized on a single family needs one golden-image pipeline; a fleet spanning two families effectively needs two full pipelines maintained in parallel.
 - **Ansible/Terraform provisioning differences.** Infrastructure-as-code tooling (§97) has to branch per distro family in real, concrete ways — Ansible's `package` module abstracts _some_ of this, but package names themselves are rarely identical across families (e.g., a library package might be named differently on Debian vs. RHEL vs. SUSE), so playbooks maintained across a mixed fleet accumulate per-family conditionals (`when: ansible_os_family == "Debian"`) that are a real, ongoing maintenance cost, not a one-time setup cost.
 - **Mixed-distro fleets create real operational overhead**, not just inconvenience: duplicated hardening baselines, duplicated vulnerability-scanning tool configuration (a scanner needs distro-aware package-to-CVE mapping, per §96), duplicated on-call runbooks, and a wider hiring/training surface for staff who need to be comfortable across ecosystems. Organizations sometimes accumulate a mixed fleet organically (an acquisition, a team going rogue, a specific vendor requiring one family) rather than by deliberate design — recognizing this as _debt_ rather than neutral diversity is a useful senior-level framing.
 
-## 1.5.6 Security Considerations: Default Posture Differences
+## 6. Security Considerations: Default Posture Differences
 
 Distro families differ meaningfully in their **default** security posture out of the box — this matters because "default" is what a host actually runs unless someone deliberately configures otherwise:
 
@@ -202,28 +195,28 @@ Distro families differ meaningfully in their **default** security posture out of
 
 The practical consequence: an application that behaves correctly on Ubuntu (AppArmor's default policies) can be unexpectedly blocked by SELinux on a RHEL-family host with no code change involved — a very common real-world troubleshooting scenario, and one reason "it worked on my dev box" bugs sometimes trace back to distro-family security defaults rather than application logic. Full coverage of SELinux and AppArmor mechanics, policy authoring, and troubleshooting (`audit2allow`, `aa-complain`, etc.) is in Part 12, §89–§96.
 
-## 1.5.7 Best Practices
+## 7. Best Practices
 
 - Standardize on as few distro families as the organization's actual compliance and technical requirements demand — treat every additional family as a recurring multiplier on pipeline, tooling, and runbook maintenance cost, not a one-time decision.
 - Pin distro _and_ version explicitly in golden images and IaC definitions — "latest Ubuntu" is not a reproducible specification any more than "Linux" alone is (§1 makes the same point about kernel vs. distro).
 - Verify compliance certification requirements (FedRAMP, Common Criteria, industry-specific mandates) _before_ a technical bake-off, since they can eliminate entire families up front and make later technical comparison moot.
 - Treat container base-image distro choice (often Alpine, for size) as a decision independent from host OS distro choice — they don't need to match, and conflating "our servers run RHEL so our containers should too" is a common, low-value assumption.
 
-## 1.5.8 Common Anti-Patterns / Mistakes
+## 8. Common Anti-Patterns / Mistakes
 
 - **Standardizing on Alpine for production application servers without verifying musl compatibility.** Alpine's small size makes it an attractive default for container base images, but software with compiled dependencies on `glibc`-specific behavior (some Python/Node native modules, some JVM-adjacent tooling, some proprietary binaries) can fail subtly or outright under `musl` — sometimes only under specific edge-case inputs, making the bug hard to reproduce outside the exact container. ⚠️ **Warning:** always test the actual application under musl in a representative environment before standardizing on Alpine, rather than assuming "it's just Linux" compatibility.
-- **Mixing distro families without a deliberate reason and cost/benefit assessment.** Accumulating a second family "because a team wanted it" without accounting for the doubled pipeline, tooling, and runbook maintenance cost described in 1.5.5.
+- **Mixing distro families without a deliberate reason and cost/benefit assessment.** Accumulating a second family "because a team wanted it" without accounting for the doubled pipeline, tooling, and runbook maintenance cost described in 5.
 - **Letting configuration management scripts assume one distro family** (hardcoding `apt` calls, for instance) without guarding for a different family being present — this breaks silently and confusingly when the script runs against an unexpected host, rather than failing with a clear error.
 - **Choosing a distro primarily on personal familiarity** rather than organizational support-lifecycle, compliance, and ecosystem-lock-in criteria — a reasonable individual preference is not, by itself, an adequate justification for a fleet-wide decision.
 
-## 1.5.9 Common Misconceptions
+## 9. Common Misconceptions
 
 1. **"A newer distro version is always better/safer to run."** Newer isn't automatically more stable or more secure in isolation — a well-supported older LTS/enterprise release still receiving backported security patches can be a _better_ production choice than a newer release nearing its own end-of-life, or one that hasn't yet accumulated the same operational track record. "Current within its support window" matters more than "newest available."
 2. **"All distros in the same family behave identically."** Fedora and RHEL share lineage and package format but have very different release cadences, stability guarantees, and intended use cases (Fedora is a fast-moving community release; RHEL is a slow, certified, paid-support product) — family membership tells you about shared tooling and ancestry, not identical behavior or identical suitability for production.
 3. **"Package format compatibility means cross-distro binary compatibility."** SUSE and RHEL both use `.rpm`, but a package built for one is not reliably installable on the other without rebuilding or compatibility work — shared format is not the same as a shared repository ecosystem or shared library versions.
 4. **"Rolling-release means unstable/unsuitable for any production use."** Rolling-release distros like Arch are a poor fit for most _enterprise_ production fleets for support-lifecycle reasons, but "rolling" and "broken" aren't synonyms — it's a different stability/currency trade-off, appropriate for some specialized use cases (e.g., some ML/research environments wanting the newest driver or library support), not a universal disqualifier.
 
-## 1.5.10 Tiered Interview Questions
+## 10. Tiered Interview Questions
 
 **🎯 Beginner:** _"What's the practical difference between Ubuntu and Debian, given that Ubuntu is built on Debian?"_
 **Model answer:** Ubuntu is derived from Debian and shares its `.deb` package format and much of its userland tooling, but the two differ in release philosophy and target use case. Debian prioritizes strict free-software principles and a very conservative, thoroughly-tested stable release cycle. Ubuntu adds a more predictable, marketed LTS release cadence, broader default hardware/driver support, and a larger ecosystem of commercial and cloud-vendor support — which is a big part of why Ubuntu LTS became the default base image on major cloud providers. Practically, an engineer moving between the two can reuse almost all `apt`-based knowledge, but should expect differences in default package versions and release timing.
@@ -253,7 +246,7 @@ _What the interviewer is probing for:_ whether the candidate can turn a broad "w
 
 ## Related Concepts & What's Next
 
-§1 established the kernel-vs-distribution layering and the standardized identification files (`/etc/os-release`, `uname`) this section builds directly on. §6 (next) takes the distribution concept a step further — where Linux actually runs today across servers, cloud, embedded, mobile, and containers, which is where family choice (especially the Alpine/container question raised here) gets applied concretely. Part 8 (§59–§64) is the deep dive into the package-management internals only summarized conceptually in 1.5.4 — dependency resolution, repository metadata, and transaction mechanics for `apt`, `dnf`/`yum`, and beyond. Part 12 (§89–§96) returns to the SELinux-vs-AppArmor default-posture point from 1.5.6 with full mandatory-access-control policy authoring and troubleshooting coverage. Part 13 (§97–§102) covers golden images and IaC provisioning patterns referenced in 1.5.5's fleet-automation discussion. Part 14 (§103–§110) covers enterprise support models and subscription economics for the vendor-backed families (RHEL, SLES, Ubuntu Pro) discussed in 1.5.2.
+§1 established the kernel-vs-distribution layering and the standardized identification files (`/etc/os-release`, `uname`) this section builds directly on. §6 (next) takes the distribution concept a step further — where Linux actually runs today across servers, cloud, embedded, mobile, and containers, which is where family choice (especially the Alpine/container question raised here) gets applied concretely. Part 8 (§59–§64) is the deep dive into the package-management internals only summarized conceptually in 4 — dependency resolution, repository metadata, and transaction mechanics for `apt`, `dnf`/`yum`, and beyond. Part 12 (§89–§96) returns to the SELinux-vs-AppArmor default-posture point from 6 with full mandatory-access-control policy authoring and troubleshooting coverage. Part 13 (§97–§102) covers golden images and IaC provisioning patterns referenced in 5's fleet-automation discussion. Part 14 (§103–§110) covers enterprise support models and subscription economics for the vendor-backed families (RHEL, SLES, Ubuntu Pro) discussed in 2.
 
 ---
 

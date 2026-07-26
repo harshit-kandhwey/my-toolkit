@@ -1,21 +1,21 @@
 # Section 70 (Part 10): AI/ML Security & Responsible AI
 
-## 70.1 Definition
+## 1. Definition
 
 **Plain language:** Machine learning systems introduce security and ethical risks that traditional application security doesn't fully cover — training data can leak sensitive information, a model's predictions can be systematically unfair to certain groups, and "how did the model decide that" is often a much harder question to answer than "what did this line of code do." This section covers how to secure who can touch Vertex AI resources, keep sensitive data contained, understand why a model made a given prediction, and align ML systems with Google's published Responsible AI principles.
 
 **Precise:** AI/ML security and governance on GCP combines standard **IAM** (Section 35) scoped to Vertex AI resources, **VPC Service Controls** (Section 41) perimeters wrapping Vertex AI to prevent data exfiltration, **data governance** controls over training data provenance and access, **Vertex AI Explainable AI** for feature-attribution-based model interpretability, and adherence to **Google's Responsible AI principles**, which guide fairness, safety, and accountability requirements for AI systems built on the platform.
 
-## 70.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 - **ML resources carry unusually broad blast radius if compromised.** A compromised service account with access to a Feature Store or training dataset can exfiltrate sensitive customer data at scale in a single operation — the same care given to database and storage access must extend to ML data and model resources.
 - **Training data can leak through the model itself, not just through direct data access.** Models can memorize and, under certain conditions, reveal fragments of their training data through their outputs — data governance for ML must consider this risk, not just who has read access to the raw dataset.
 - **"The model said so" is not an acceptable answer in regulated decisions.** Credit approval, hiring, insurance pricing, and similar high-stakes decisions increasingly face legal and regulatory requirements to explain why a model produced a given output — explainability tooling exists to answer that question with actual evidence, not post-hoc guesswork.
 - **Unmanaged AI systems can cause real harm at scale.** A model that is systematically less accurate for one demographic group, or that generates unsafe content, can cause harm far faster and at far greater scale than a single human decision-maker acting badly — responsible AI principles and processes exist to catch this before deployment, not after.
 
-## 70.3 Core Concepts
+## 3. Core Concepts
 
-### 70.3.1 IAM for Vertex AI Resources
+### 3.1 IAM for Vertex AI Resources
 
 Vertex AI resources (Datasets, Models, Endpoints, Pipelines, Feature Store) are governed by the same IAM model (Section 35) as the rest of GCP, with Vertex AI-specific predefined roles such as:
 
@@ -28,7 +28,7 @@ Vertex AI resources (Datasets, Models, Endpoints, Pipelines, Feature Store) are 
 
 Following least privilege (Section 35), production serving service accounts should hold only the narrow permission needed to call an endpoint's prediction API — never broad `aiplatform.user`/`admin` roles, which would allow modifying or deleting production models and pipelines from a context that only needs to serve predictions.
 
-### 70.3.2 VPC Service Controls Perimeter Around Vertex AI
+### 3.2 VPC Service Controls Perimeter Around Vertex AI
 
 As introduced in Section 41, **VPC Service Controls (VPC-SC)** creates a service perimeter that blocks data exfiltration even by a principal with valid IAM permissions, by restricting API-level data movement across the perimeter boundary. Applied to Vertex AI specifically:
 
@@ -36,7 +36,7 @@ As introduced in Section 41, **VPC Service Controls (VPC-SC)** creates a service
 - This directly mitigates the scenario where a compromised or malicious insider credential has valid IAM permissions but should still be prevented from exfiltrating an entire training dataset to a personal GCP project outside the organization's security boundary.
 - Generative AI grounding data (Vertex AI Search indexes, Section 68) and Model Garden endpoint traffic should sit inside the same perimeter as other sensitive Vertex AI resources, since grounding retrieval often surfaces the same sensitive enterprise data the perimeter is meant to protect.
 
-### 70.3.3 Data Governance for Training Data
+### 3.3 Data Governance for Training Data
 
 Beyond access control, ML-specific data governance covers:
 
@@ -44,7 +44,7 @@ Beyond access control, ML-specific data governance covers:
 - **PII handling in training data**: sensitive fields should be de-identified (e.g., via Cloud DLP tokenization/redaction) before being used for training where the model does not genuinely need the raw sensitive value to perform its task.
 - **Data retention and deletion**: the ability to remove a specific individual's data from training pipelines and, where required, understand what a deployed model may have already learned from it — a nontrivial requirement when legal frameworks require honoring data deletion requests.
 
-### 70.3.4 Vertex AI Explainable AI
+### 3.4 Vertex AI Explainable AI
 
 **Vertex AI Explainable AI** provides **feature attribution** — a quantified breakdown of how much each input feature contributed to a specific prediction. For a rejected loan application, for example, Explainable AI can show that "debt-to-income ratio" contributed most heavily to the negative prediction, followed by "credit history length" — turning "the model said no" into a specific, auditable, feature-level explanation. It supports both:
 
@@ -53,11 +53,11 @@ Beyond access control, ML-specific data governance covers:
 
 Explainable AI integrates directly with Online Endpoints (Section 66), so an explanation can be requested alongside — or instead of — a plain prediction, without a separate model or pipeline.
 
-### 70.3.5 Google's Responsible AI Principles
+### 3.5 Google's Responsible AI Principles
 
 Google publishes a set of **AI Principles** that guide the design and deployment of AI systems, broadly covering: being socially beneficial, avoiding creating or reinforcing unfair bias, being built and tested for safety, being accountable to people, incorporating privacy design principles, upholding high standards of scientific excellence, and being made available only for uses consistent with these principles. On GCP, this translates operationally into practices such as bias/fairness evaluation of model predictions across subgroups before deployment, human-review checkpoints for high-stakes automated decisions, and content-safety filtering configured on generative AI outputs (Section 68) to reduce harmful or inappropriate content.
 
-## 70.4 Comparison: GCP AI/ML Security & Governance vs. AWS vs. Azure
+## 4. Comparison: GCP AI/ML Security & Governance vs. AWS vs. Azure
 
 | Capability                         | GCP                                                           | AWS                                   | Azure                                                |
 | ---------------------------------- | ------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------- |
@@ -70,7 +70,7 @@ Google publishes a set of **AI Principles** that guide the design and deployment
 
 > ⚠️ **Interview-relevant nuance:** All three major clouds now ship a first-party explainability/fairness tool (Explainable AI, SageMaker Clarify, Azure ML Responsible AI dashboard) directly integrated with their ML platform, reflecting that model interpretability has moved from a research nicety to a standard production/compliance requirement — this convergence itself is a useful interview talking point when asked to compare platforms.
 
-## 70.5 Architecture Diagram: Secured, Explainable Vertex AI Deployment
+## 5. Architecture Diagram: Secured, Explainable Vertex AI Deployment
 
 ```
       Organization VPC Service Controls Perimeter (Section 41)
@@ -101,7 +101,7 @@ Google publishes a set of **AI Principles** that guide the design and deployment
  └───────────────────────────────────────────────────────────────────┘
 ```
 
-## 70.6 Hands-On Example
+## 6. Hands-On Example
 
 **Beginner example — grant a narrowly scoped, predict-only custom role instead of broad access:**
 
@@ -169,7 +169,7 @@ for explanation in response.explanations:
  {feature: "monthly_charges", attribution: 0.19}]
 ```
 
-## 70.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - Enterprises apply the same least-privilege discipline to Vertex AI as to any other sensitive resource: data scientists get `aiplatform.user` in development projects; production serving identities get narrow, custom, predict-only roles; and no human identity retains standing broad access to production ML resources.
 - **VPC Service Controls around Vertex AI** is a near-default requirement in regulated industries (finance, healthcare) precisely because training data for models in these industries is often the most sensitive data the organization holds.
@@ -177,13 +177,13 @@ for explanation in response.explanations:
 - Enterprises formalize **bias/fairness evaluation** as a required pre-deployment gate for models influencing consequential decisions about people — evaluating prediction accuracy and error rates across relevant subgroups before a model is approved for production, not as an afterthought.
 - Generative AI deployments (Section 68) apply content-safety filtering and human-review escalation paths for flagged outputs as a standard production control, aligned with Responsible AI principles around safety and accountability.
 
-## 70.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "VPC Service Controls and IAM do the same job, so you only need one." IAM controls _who_ can call an API; VPC-SC controls whether data can _move across a perimeter boundary_ regardless of valid IAM permissions. A principal can have perfectly correct IAM permissions and still be blocked from exfiltrating data by VPC-SC — they solve different problems and are meant to be layered together, not chosen between.
 - **Misconception:** "Explainable AI tells you whether a model is correct." Explainable AI shows which features most influenced a given prediction — it explains the model's own reasoning, not whether that reasoning reflects ground truth or the real world. A model can be confidently wrong and still produce a coherent-looking feature attribution for its wrong answer.
 - **Misconception:** "Responsible AI is a compliance checkbox handled once before launch." Fairness and safety characteristics can shift as a model retrains on new data or as real-world usage patterns change, so responsible AI evaluation needs to be an ongoing practice tied into MLOps monitoring (Section 69), not a one-time pre-launch review.
 
-## 70.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _Why would you grant a production serving service account a narrow custom IAM role instead of `roles/aiplatform.user`?_
 **Model answer:** `roles/aiplatform.user` grants broad read/write access across most Vertex AI resources — enough to modify models, delete pipelines, or change endpoint configuration. A production serving identity only needs to call the prediction API on one specific endpoint; granting it broad `aiplatform.user` access violates least privilege and means a compromised serving credential could be used to tamper with production models or pipelines, not just make predictions. A narrow custom role limited to `aiplatform.endpoints.predict` on the specific endpoint keeps the blast radius of a compromised credential to "can request predictions," nothing more.
@@ -194,7 +194,7 @@ for explanation in response.explanations:
 **🎯 Senior/Architect:** _A healthcare company is deploying a Vertex AI model that predicts patient readmission risk, feeding into clinical staffing decisions. Design the security and responsible AI controls you'd put around this system before it goes to production._
 **Model answer:** I'd start with data governance: training data would be de-identified via Cloud DLP wherever the model doesn't genuinely require raw PII, with clear provenance tracking through ML Metadata (Section 66) so I can show exactly which patient-data version, with what consent basis, trained the deployed model. I'd wrap the full pipeline — Cloud Storage/BigQuery source data, Vertex AI Datasets and Feature Store, the training pipeline, and the deployed endpoint — inside a single VPC Service Controls perimeter (Section 41), since this is about as sensitive as training data gets, and I want data exfiltration blocked even against a compromised credential with otherwise-valid IAM access. IAM itself would be scoped narrowly: data scientists get `aiplatform.user` only in a development project working with de-identified data, and the production serving identity gets a custom predict-only role on the single deployed endpoint. Before launch, I'd run a formal bias/fairness evaluation comparing the model's accuracy and error rates across relevant patient subgroups, since a readmission-risk model that's systematically less accurate for one demographic could directly bias clinical staffing decisions against that group — this evaluation would be a hard pre-deployment gate, not a formality. I'd enable Vertex AI Explainable AI on the endpoint so every prediction used in a staffing decision comes with a feature attribution record, retained alongside prediction logs, so if a clinical decision is later reviewed or challenged, there's a specific, auditable explanation of what drove the model's output rather than an unexplainable "the model said so." Finally, I'd tie fairness and drift monitoring into the ongoing MLOps loop (Section 69) rather than treating the pre-launch fairness evaluation as a one-time event, since the patient population and clinical patterns this model sees will shift over time.
 
-## 70.10 Key Takeaways
+## 10. Key Takeaways
 
 - 🔑 IAM and VPC Service Controls solve different problems and must be layered together: IAM governs who can call an API; VPC-SC governs whether data can move across a perimeter boundary even for authorized callers.
 - 🔑 Production serving identities should hold narrow, predict-only custom roles — never broad `aiplatform.user`/`admin` — following least privilege.
@@ -202,6 +202,6 @@ for explanation in response.explanations:
 - 🔑 Training data governance for ML must consider both direct data access and the risk that a model can memorize and leak training data through its outputs.
 - 🔑 Responsible AI (fairness, safety, accountability) is an ongoing practice tied to MLOps monitoring, not a one-time pre-launch compliance checkbox.
 
-## 70.11 Related Concepts
+## 11. Related Concepts
 
 IAM Fundamentals (Section 35) and Organization Policies (Section 37) for the underlying access-control model, VPC Service Controls (Section 41) for the data-exfiltration perimeter applied here to Vertex AI, Vertex AI Deep Dive Training/Pipelines/Endpoints (Section 66) for the resources being secured, MLOps on GCP (Section 69) for tying fairness/drift monitoring into an ongoing operational loop, and Compliance & Governance (Section 40) for the broader regulatory context these controls support.

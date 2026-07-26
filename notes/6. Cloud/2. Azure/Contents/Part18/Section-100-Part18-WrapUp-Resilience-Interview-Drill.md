@@ -6,15 +6,15 @@
 
 ---
 
-## 100.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This final section closes Part 18 and the entire 100-section Azure knowledge base. It first synthesizes Part 18's own three sections into a single coherent practice, then provides a rapid-fire interview drill covering resilience testing and chaos engineering specifically, and finally closes with a brief **Full Roadmap Synthesis** reflecting back across all 18 Parts — in the same spirit as Section 74's closing of the original 70-section roadmap, extended here to cover the full, expanded 100-section scope.
 
 🔑 **Key Takeaway:** Part 18 exists because a resilience design (Part 12) that has never been tested is a hypothesis, not a fact. The single idea underlying all three of Part 18's sections — Chaos Studio's mechanics (Section 97), disciplined experiment design (Section 98), and continuous, recurring validation (Section 99) — is that resilience must be **proven, repeatedly, under controlled conditions**, or it should not be trusted, no matter how sound the underlying architecture looks on paper.
 
-## 100.2 Part 18 Synthesis: From Mechanics to Discipline to Practice
+## 2. Part 18 Synthesis: From Mechanics to Discipline to Practice
 
-### 100.2.1 The Three-Section Arc
+### 2.1 The Three-Section Arc
 
 | Section                                               | Core Question Answered                                                                                                                                                                                         |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,11 +24,11 @@ This final section closes Part 18 and the entire 100-section Azure knowledge bas
 
 This progression — tool mechanics, then disciplined methodology, then recurring organizational practice — mirrors a pattern this roadmap has used before: Section 45-48 covered specific IaC/DevOps tool mechanics before Section 49 synthesized them into pipeline _patterns_; Part 18 applies the same "mechanics → discipline → recurring practice" arc specifically to resilience validation.
 
-### 100.2.2 Part 18's Relationship to Part 12 — the Single Most Important Cross-Reference
+### 2.2 Part 18's Relationship to Part 12 — the Single Most Important Cross-Reference
 
 🔑 **Key Takeaway:** every one of Part 18's sections cross-references Part 12 for a reason — Part 18 does not introduce a new resilience _design_ vocabulary; it is entirely in service of validating the design vocabulary Part 12 already established (Availability Sets/Zones and RTO/RPO in Section 61, Azure Site Recovery/Backup in Section 62). A candidate who can articulate this relationship precisely — "Part 12 tells you what resilience your architecture is supposed to have; Part 18 tells you how to actually prove it has that resilience" — is demonstrating exactly the kind of cross-section synthesis this roadmap has emphasized as the strongest possible interview signal since Section 74.1's original framing.
 
-## 100.3 Resilience Testing & Chaos Engineering — Rapid-Fire Interview Drill
+## 3. Resilience Testing & Chaos Engineering — Rapid-Fire Interview Drill
 
 ### Q1. What's the single most important distinction between Part 12's HA/DR material and Part 18's chaos engineering material?
 
@@ -64,9 +64,9 @@ _Model answer:_ two reasons — first, treating them as code (alongside Bicep/Te
 
 ---
 
-## 100.4 Full Roadmap Synthesis
+## 4. Full Roadmap Synthesis
 
-### 100.4.1 The Complete Arc, Reflected Back
+### 4.1 The Complete Arc, Reflected Back
 
 This knowledge base began with Part 1's foundational question — what Azure actually is, structurally (Resource Manager, the scope hierarchy) — and closes, 100 sections and 18 Parts later, with the discipline of proving that everything built on top of that foundation actually survives real-world failure. Reflecting back across the full arc:
 
@@ -83,7 +83,7 @@ This knowledge base began with Part 1's foundational question — what Azure act
 
 🔑 **Key Takeaway:** if Section 74.3's eight cross-cutting themes were the single most valuable takeaway from the original 70-section roadmap, this expanded 100-section roadmap adds a ninth, implicit theme running through Parts 15-18 specifically: **maturity in modern Azure practice increasingly means treating validation itself as continuous and automated** — continuous compliance (Part 11), continuous delivery (Part 9), continuous security monitoring (Part 17), and now, with Part 18, continuous resilience validation. Static, point-in-time assurance — a design document, a one-time drill, a single audit — is progressively being replaced across every one of these domains by recurring, automated, evidenced practice.
 
-### 100.4.2 Suggested Further Reading Beyond This Roadmap's Current Scope
+### 4.2 Suggested Further Reading Beyond This Roadmap's Current Scope
 
 Consistent with how Section 74.4 closed the original 70-section roadmap, the following are offered purely as optional, genuinely plausible next topics — not a promise of future content, and not a "Part 19" of this knowledge base:
 
@@ -94,7 +94,7 @@ Consistent with how Section 74.4 closed the original 70-section roadmap, the fol
 | **Industry-vertical Azure reference architectures**              | Part 13's real-world case studies (Section 70) covered general enterprise patterns; a dedicated treatment of specific regulated-industry architectures (financial services workload isolation and compliance patterns, healthcare data handling under sector-specific regulation, public-sector/government cloud requirements) would go deeper than this roadmap's general-purpose treatment. |
 | **Chaos engineering maturity models and organizational scaling** | Part 18 covered the technical and immediate-team-practice layers of chaos engineering; a dedicated topic on scaling the practice across a large multi-team organization (chaos-engineering-as-a-platform, self-service experiment authoring, cross-team game-day coordination at scale) would extend beyond this roadmap's single-team-practice framing.                                      |
 
-### 100.4.3 Closing Note
+### 4.3 Closing Note
 
 This knowledge base comprised 100 sections across 18 Parts, extending from Azure's structural foundations through enterprise-scale architecture, data/AI platforms, security operations, and — finally — the discipline of proving that everything built along the way actually withstands real failure. Every section maintained the same teaching structure and accuracy discipline established from Section 1 onward: flagging version-specific and rapidly-evolving details for independent verification, favoring precise architectural trade-off reasoning over marketing-style feature description, and consistently cross-referencing earlier material so that each new topic was understood as an extension of what came before rather than an isolated fact.
 

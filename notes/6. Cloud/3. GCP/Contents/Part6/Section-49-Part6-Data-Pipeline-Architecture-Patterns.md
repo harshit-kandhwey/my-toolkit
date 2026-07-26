@@ -1,22 +1,22 @@
 # Section 49 (Part 6): Data Pipeline Architecture Patterns — Part 6 Wrap-Up & Interview Drill
 
-## 49.1 Definition
+## 1. Definition
 
 **Plain language:** Sections 44–48 each covered one piece of GCP's data and analytics stack — a warehouse, a set of processing engines, an orchestrator, a governance layer, and a pair of BI tools. This closing section is about how those pieces actually get assembled into one coherent, production-grade pipeline: what "lakehouse" means concretely on GCP, when to transform data before loading it (ETL) versus after (ELT), and how the widely used **medallion architecture** (bronze/silver/gold) maps onto the specific GCP services already covered.
 
 **Precise:** This section synthesizes Part 6's individual services into end-to-end architectural patterns — the **BigLake-based lakehouse pattern** unifying BigQuery, Cloud Storage, and Dataplex under one governed, engine-agnostic table layer; the **ELT vs. ETL** decision framework as it applies to Dataflow, Dataproc, and BigQuery SQL; and the **medallion (bronze/silver/gold) architecture**, commonly implemented on GCP using Dataflow/Dataproc for transformation and Cloud Composer for orchestration — closing with a tiered interview drill spanning Sections 44–48.
 
-## 49.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 None of Sections 44–48 individually answers "how do I actually build a production data platform" — each is one capability. Teams that pick services one at a time, without an overall pattern in mind, commonly end up with: BigQuery tables and GCS files that drift out of sync with each other, ETL logic duplicated across Dataflow jobs and BigQuery scheduled queries with no consistent rule for which does what, and a "lake" that is really just an ungoverned pile of files with no meaningful maturity tiers. The lakehouse pattern, the ELT/ETL framework, and the medallion architecture each exist to give teams a proven, repeatable shape to build toward, rather than re-deriving pipeline architecture from scratch on every project.
 
-## 49.3 The Lakehouse Pattern on GCP — BigLake
+## 3. The Lakehouse Pattern on GCP — BigLake
 
-### 49.3.1 The Problem BigLake Solves
+### 3.1 The Problem BigLake Solves
 
 Historically, "data lake" (cheap, flexible, engine-agnostic files in object storage) and "data warehouse" (fast, governed, SQL-optimized structured storage) were separate architectural choices with a real tradeoff: BigQuery-native tables are fast and fully governed by BigQuery's own access controls, but reading them from Dataproc/Spark or other engines is awkward; GCS files are cheap and open to any engine, but lack BigQuery-grade governance and performance without extra tooling.
 
-### 49.3.2 How BigLake Ties BigQuery, GCS, and Dataplex Together
+### 3.2 How BigLake Ties BigQuery, GCS, and Dataplex Together
 
 **BigLake** is GCP's answer: it lets you define **BigLake tables** over data still physically sitting in Cloud Storage (in open formats like Parquet, ORC, or Iceberg), while applying BigQuery's fine-grained row/column-level security and performance optimizations to that data as if it were a native BigQuery table — and critically, that same governed access applies whether the table is queried from BigQuery SQL, Dataproc/Spark, or other supported engines, rather than each engine needing its own separate access-control setup. Dataplex (Section 47) is the governance and cataloging layer that sits above this: lakes/zones/assets register and tag both native BigQuery datasets and BigLake-backed GCS data uniformly, so discovery, tagging, quality rules, and lineage apply consistently regardless of where a given table's bytes physically live.
 
@@ -39,13 +39,13 @@ BigQuery native tables    BigLake tables                   Dataproc/Spark
 
 > ⚠️ **Interview-relevant nuance:** BigLake is not a new storage system — it is an access/governance layer over existing GCS data, conceptually similar to how Dataplex (Section 47) is a governance layer, not a storage system. The distinction matters: BigLake specifically solves _cross-engine governed access_ to the same physical data, whereas Dataplex solves _discovery, cataloging, quality, and lineage_ across both BigQuery-native and BigLake-backed data. They are complementary layers, not the same thing.
 
-## 49.4 ELT vs. ETL Trends on GCP
+## 4. ELT vs. ETL Trends on GCP
 
 - **ETL (Extract, Transform, Load):** Data is transformed _before_ it lands in its final destination — typically using Dataflow (Section 45) for streaming/batch transformation or Dataproc (Section 45) for Spark-based processing — with only cleaned, modeled data actually loaded into BigQuery. This suits complex transformations (custom code, ML feature engineering, joins against non-BigQuery sources) or cases where raw data should never be exposed to end consumers at all.
 - **ELT (Extract, Load, Transform):** Raw data is loaded into BigQuery first (often with minimal processing), and transformation happens _afterward_, directly in BigQuery using SQL (scheduled queries, `dbt`-style modeling, or materialized views). This has become the dominant modern pattern specifically because BigQuery's serverless, highly scalable SQL engine (Section 44) makes SQL-based transformation fast and cheap enough that a separate processing cluster often isn't needed for transformations that are fundamentally expressible in SQL.
 - **The practical decision rule:** if the transformation is SQL-expressible (joins, aggregations, filtering, window functions) and the data is already loaded or cheaply loadable into BigQuery, ELT via SQL is usually simpler to build and maintain than a dedicated Dataflow/Dataproc job. Reach for ETL (Dataflow/Dataproc) specifically when transformation logic needs custom code, non-SQL processing (streaming windowing, complex ML feature pipelines), or must complete _before_ data is allowed to land in a governed, queryable location at all.
 
-## 49.5 Medallion Architecture on GCP
+## 5. Medallion Architecture on GCP
 
 The **medallion architecture** organizes data into three progressively refined tiers — a pattern that maps directly onto Dataplex's raw/curated zone concept (Section 47.3.1), extended into three explicit tiers:
 
@@ -77,7 +77,7 @@ The **medallion architecture** organizes data into three progressively refined t
 
 Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→gold promotion together as an explicit DAG — each tier's transformation is a task with defined dependencies, retries, and failure alerting, rather than a set of independently scheduled cron jobs with no visibility into whether an upstream tier actually succeeded before a downstream tier ran.
 
-## 49.6 Part 6 Recap — What Was Covered
+## 6. Part 6 Recap — What Was Covered
 
 | §   | Section                             | Core Idea                                                                                                                                                                                     |
 | --- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,7 +88,7 @@ Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→g
 | 48  | Looker & Looker Studio              | Looker Studio (free, self-service, no shared semantic layer) vs. Looker (LookML-governed enterprise BI) as the "last mile" from curated data to business consumption.                         |
 | 49  | Data Pipeline Architecture Patterns | BigLake-based lakehouse pattern, ELT vs. ETL, and the medallion (bronze/silver/gold) architecture as the synthesis tying Sections 44–48 into one coherent platform.                           |
 
-## 49.7 Cross-Service Decision Framework
+## 7. Cross-Service Decision Framework
 
 | Question                                                                                                        | Answer                                                 |
 | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -101,7 +101,7 @@ Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→g
 | Need one governed metric definition reused across many dashboards/teams?                                        | Looker + LookML (§48)                                  |
 | Structuring raw-to-consumption data maturity?                                                                   | Medallion architecture: bronze → silver → gold (§49.5) |
 
-## 49.8 Common Mistakes Spanning Part 6
+## 8. Common Mistakes Spanning Part 6
 
 - Loading raw, ungoverned data directly into BigQuery gold-tier tables with no bronze/silver staging, making it impossible to safely reprocess or audit how a final number was derived (§49.5).
 - Defaulting to Dataflow/Dataproc for every transformation regardless of whether the logic is genuinely SQL-inexpressible, when a BigQuery ELT step (§49.4) would be simpler to build and maintain.
@@ -109,7 +109,7 @@ Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→g
 - Skipping Dataplex data quality gating between tiers, allowing bad data to silently propagate from bronze all the way to gold and into a Looker/Looker Studio dashboard (§47.3.3, §49.5).
 - Assuming Looker Studio and Looker are interchangeable, and discovering only at scale that ungoverned per-report metric definitions have produced inconsistent numbers across teams (§48).
 
-## 49.9 Part 6 Interview Drill (Sections 44–48)
+## 9. Part 6 Interview Drill (Sections 44–48)
 
 ### 🎯 Beginner Tier
 
@@ -152,7 +152,7 @@ Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→g
 **Q11:** Your organization's data platform has grown to include dozens of BigQuery datasets, GCS buckets, several Dataflow and Dataproc pipelines, and ad hoc Looker Studio reports across 15 teams, with no consistent maturity-tiering and frequent "which number is correct" disputes. Propose a remediation plan and its sequencing.
 **A:** Sequence this to minimize disruption, front-loading low-risk, high-visibility wins. First, register the existing (unmoved) BigQuery datasets and GCS buckets as Dataplex lakes/zones/assets (§47) — pure governance registration with zero data movement, immediately giving every team a unified catalog to search and establishing a measurable baseline of what actually exists. Second, formally define bronze/silver/gold tiers (§49.5) mapped onto Dataplex's raw/curated zone concept, and for the highest-impact pipelines specifically (prioritized by which feed the most disputed numbers), introduce Dataplex data quality gates between tiers, orchestrated via Cloud Composer (§46) rather than each team's independently scheduled jobs — again prioritized rather than attempted across all 15 teams simultaneously. Third, and specifically targeting the "which number is correct" disputes, identify the small set of metrics genuinely causing cross-team disagreement and move only those into governed Looker/LookML definitions (§48), leaving lower-stakes Looker Studio reporting in place elsewhere. This sequencing — catalog and register first (safest, immediate value), then tier and quality-gate the highest-impact pipelines (moderate risk, prioritized), then govern only the specific disputed metrics in Looker (targeted, not wholesale) — directly addresses the reported symptom (inconsistent numbers) without the disruption and cost of forcing full governance onto all 15 teams' entire data estate at once.
 
-## 49.10 Key Takeaways — Part 6 Overall 🔑
+## 10. Key Takeaways — Part 6 Overall 🔑
 
 - 🔑 BigLake is the lakehouse-enabling layer on GCP — governed, cross-engine (BigQuery + Dataproc/Spark) access to data that physically remains in GCS, complementing rather than duplicating Dataplex's cataloging/quality/lineage role.
 - 🔑 ELT (via BigQuery SQL) has become the default modern pattern for SQL-expressible transformations, with ETL (Dataflow/Dataproc) reserved for custom-code or pre-load transformation needs.
@@ -160,7 +160,7 @@ Cloud Composer (Section 46) is the orchestration layer tying bronze→silver→g
 - 🔑 Looker Studio and Looker solve different problems at different organizational scales — self-service speed versus governed, version-controlled metric consistency — and are commonly run together rather than as competing choices.
 - 🔑 Every service in Part 6 (BigQuery, Dataflow/Dataproc/Pub-Sub, Composer, Dataplex, Looker/Looker Studio) is one piece of a single coherent pipeline shape, not a menu of unrelated tools — Section 49's patterns are how those pieces are meant to be assembled together in production.
 
-## 49.11 Related Concepts and What's Next
+## 11. Related Concepts and What's Next
 
 Part 6 (Sections 44–49) covered GCP's full data and analytics stack: warehousing (BigQuery, §44), processing and messaging (Dataflow/Dataproc/Pub-Sub, §45), orchestration (Cloud Composer, §46), governance (Dataplex, §47), BI/visualization (Looker & Looker Studio, §48), and this section's architectural synthesis (§49). BigQuery and GCS also connect directly to Part 2's storage and database foundations (Sections 11–18), and IAM/Org Policy (Part 5, Sections 35–43) underpins every access-control layer referenced throughout — from BigQuery's own permissions to Dataplex tags to BigLake's row/column security.
 

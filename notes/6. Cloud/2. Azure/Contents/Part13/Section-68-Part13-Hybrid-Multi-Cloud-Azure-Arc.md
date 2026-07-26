@@ -6,7 +6,7 @@
 
 ---
 
-## 68.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Azure Arc — the service extending Azure's management plane (Resource Manager, Azure Policy, RBAC, monitoring) to resources running **outside** Azure entirely: on-premises servers, other-cloud VMs, and Kubernetes clusters running anywhere. This section resolves several forward-references made throughout this roadmap (Section 50.2.3's Azure Arc mention for hybrid resource monitoring, Section 55.2.1's Azure Arc reference for multi-cloud Defender for Cloud coverage, Section 62.2.1's ASR on-premises-to-Azure replication) and covers the specific hybrid/multi-cloud architectural patterns Arc enables.
 
@@ -14,20 +14,20 @@ This section covers Azure Arc — the service extending Azure's management plane
 
 ---
 
-## 68.2 What Is Azure Arc and Why It Exists
+## 2. What Is Azure Arc and Why It Exists
 
-### 68.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Azure Arc extends Azure Resource Manager's management capabilities — the same resource model, RBAC, Azure Policy, and monitoring tooling covered throughout this entire roadmap — to servers, Kubernetes clusters, and other infrastructure running anywhere: on-premises datacenters, other cloud providers, or edge locations, without requiring that infrastructure to actually move into Azure.
 
 **Precise definition:** Azure Arc is a bridge service that projects non-Azure resources (servers, Kubernetes clusters, data services, and more) as first-class Azure Resource Manager resources, enabling them to be governed via Azure Policy (Section 57), secured via Microsoft Defender for Cloud (Section 55), monitored via Azure Monitor (Section 50), and managed via consistent Azure RBAC (Section 8) — all without physically migrating the underlying workload to Azure infrastructure.
 
-### 68.2.2 Why It Exists — The Problem It Solves
+### 2.2 Why It Exists — The Problem It Solves
 
 - **Hybrid reality is the norm, not the exception:** very few large enterprises operate 100% in any single cloud (or 100% on-premises) — genuine hybrid environments (some workloads on-premises for latency, data-residency, legacy, or cost reasons; some in Azure; occasionally some in other clouds) are the realistic, common state for most large organizations, and this reality persists for a meaningful transition period even for organizations actively migrating toward full cloud adoption (directly connecting to Section 66.2.2's CAF "Migrate" methodology — migration is a _process_, not an instantaneous event, and Arc addresses the genuinely long transitional/permanent-hybrid period this process spans).
 - **Without Arc, hybrid resources are invisible to Azure's governance tooling:** every governance capability covered throughout Parts 9–12 of this roadmap — Azure Policy enforcement (Section 57), Defender for Cloud posture assessment (Section 55), Azure Monitor observability (Section 50), consistent Azure RBAC (Section 8) — is fundamentally built around ARM-managed resources. A physical on-premises server or a VM running in a different cloud provider is, by default, entirely invisible to and unmanageable by any of this tooling. Arc closes this gap by "projecting" that non-Azure resource into ARM as a manageable, governable object.
 
-### 68.2.3 Terminology
+### 2.3 Terminology
 
 | Term                              | Definition                                                                                                                                                                                                                                                                                                                                                   |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -39,9 +39,9 @@ This section covers Azure Arc — the service extending Azure's management plane
 
 ---
 
-## 68.3 Arc-Enabled Servers
+## 3. Arc-Enabled Servers
 
-### 68.3.1 What Capabilities This Actually Unlocks
+### 3.1 What Capabilities This Actually Unlocks
 
 Once an on-premises or other-cloud server has the Azure Connected Machine agent installed and is Arc-enabled, it gains:
 
@@ -50,62 +50,62 @@ Once an on-premises or other-cloud server has the Azure Connected Machine agent 
 - **Microsoft Defender for Cloud coverage (Section 55):** Defender for Servers (Section 55.4.1) explicitly supports Arc-enabled servers, extending the same CSPM/CWPP security coverage already established for native Azure VMs to on-premises/other-cloud servers.
 - **Consistent RBAC:** access to manage an Arc-enabled server (within Arc's specific management scope — not full remote-control of the physical machine, but management of its Arc-projected configuration/policy/monitoring surface) follows the same Azure RBAC model (Section 8) as any other Azure resource.
 
-### 68.3.2 What Arc-Enabling a Server Does NOT Do
+### 3.2 What Arc-Enabling a Server Does NOT Do
 
 ⚠️ **Warning, directly reinforcing 68.1's key takeaway:** Arc-enabling a server does not migrate it to Azure, does not change where it physically runs, and does not make it an Azure VM in any infrastructure sense — it remains exactly where it was, running on whatever underlying hardware/hypervisor it already used, with an agent providing a _management-plane_ connection to Azure. This is a specific, easily-misunderstood distinction worth stating precisely: Arc extends _governance and observability reach_, not compute location.
 
 ---
 
-## 68.4 Arc-Enabled Kubernetes
+## 4. Arc-Enabled Kubernetes
 
-### 68.4.1 Why This Matters Beyond AKS
+### 4.1 Why This Matters Beyond AKS
 
 Section 36–38's entire AKS treatment covered Azure's _managed_ Kubernetes offering specifically. Many organizations also run Kubernetes clusters **outside** AKS entirely — on-premises (using various on-premises Kubernetes distributions), in other clouds (EKS on AWS, GKE on GCP), or at edge locations — and Arc-enabled Kubernetes extends the same GitOps, Azure Policy, and Azure Monitor capabilities already established for AKS specifically (Sections 36–38, 49.4) to **any** Kubernetes cluster, regardless of where it runs or which distribution it uses.
 
-### 68.4.2 GitOps via Arc (Direct Extension of Section 49.4)
+### 4.2 GitOps via Arc (Direct Extension of Section 49.4)
 
 - Arc-enabled Kubernetes directly supports the exact same Flux-based GitOps configuration model already covered in Section 49.4.3 for AKS specifically — meaning an organization with a mixed fleet of AKS clusters and non-AKS (on-premises/other-cloud) Kubernetes clusters can apply **one consistent GitOps deployment model** across the entire heterogeneous fleet, rather than needing separate tooling/processes for AKS versus non-AKS clusters — a genuinely valuable consistency benefit for organizations with mixed Kubernetes infrastructure.
 
-### 68.4.3 Azure Policy for Kubernetes (Direct Extension of Sections 37.6.3 and 54)
+### 4.3 Azure Policy for Kubernetes (Direct Extension of Sections 37.6.3 and 54)
 
 - Azure Policy's **Gatekeeper-based** Kubernetes admission-control integration (extending Section 37.6.3's Pod Security Admission material with Azure-Policy-driven, centrally-managed equivalent enforcement) applies identically to Arc-enabled Kubernetes clusters as to AKS — meaning the exact same centrally-defined, management-group-scoped policy baseline (Section 57.5.1) covering AKS pod security configuration can extend to non-AKS clusters in the same fleet, directly unifying governance across a heterogeneous multi-cluster, multi-platform Kubernetes estate.
 
 ---
 
-## 68.5 Arc-Enabled Data Services
+## 5. Arc-Enabled Data Services
 
-### 68.5.1 Definition and Value Proposition
+### 5.1 Definition and Value Proposition
 
 - **Arc-enabled data services** (e.g., Azure Arc-enabled SQL Managed Instance) bring Azure's PaaS-like database management experience — automated patching, built-in high availability, familiar Azure-native management tooling — to infrastructure the customer physically controls (on-premises, or another cloud), running atop Arc-enabled Kubernetes (68.4) as the underlying platform.
 - **Why this matters for specific compliance/data-residency scenarios:** directly connecting to Section 58.7's data residency material — an organization with a hard requirement that specific data physically remain on-premises (a data-residency constraint stronger than even choosing a specific Azure region, Section 58.7.1, could satisfy) can still gain Azure's PaaS-style database management experience for that on-premises data, rather than facing a binary choice between "move to Azure PaaS" and "manage a traditional, fully self-administered on-premises database with none of PaaS's operational conveniences."
 
 ---
 
-## 68.6 Multi-Cloud Considerations (Direct Connection to Section 48)
+## 6. Multi-Cloud Considerations (Direct Connection to Section 48)
 
-### 68.6.1 Arc's Role in a Genuine Multi-Cloud Strategy
+### 6.1 Arc's Role in a Genuine Multi-Cloud Strategy
 
 - For organizations genuinely operating across multiple cloud providers (directly connecting to Section 48.2.2's Terraform multi-cloud motivation), Arc provides the **governance/observability unification layer** specifically for the Azure-management-plane side of that multi-cloud reality — while Terraform (Section 48) provides the **provisioning/IaC unification layer** across the same multi-cloud estate. These are complementary, not competing: Terraform can provision resources across AWS/GCP/Azure using one consistent IaC workflow, while Arc can then bring those same non-Azure resources (specifically servers and Kubernetes clusters, per Arc's current specific scope) under Azure's governance/monitoring/security tooling — two different unification layers (provisioning vs. management) addressing the same underlying multi-cloud complexity from different angles.
 
-### 68.6.2 Arc Does Not Make Azure the Universal Multi-Cloud Control Plane for Everything
+### 6.2 Arc Does Not Make Azure the Universal Multi-Cloud Control Plane for Everything
 
 ⚠️ **Warning:** Arc's specific scope (servers, Kubernetes, and select data services) does not extend to every possible resource type in another cloud provider — an AWS-native service with no Arc equivalent (e.g., a fully-managed AWS-specific PaaS offering with no Kubernetes/server-based underlying infrastructure) has no path to Arc-based Azure governance, since there's no Arc-manageable "server" or "Kubernetes cluster" for it to project. Arc unifies governance specifically for the _infrastructure types_ it explicitly supports, not as a universal, all-encompassing multi-cloud control plane for every conceivable resource type across every provider.
 
 ---
 
-## 68.7 Production and Enterprise Usage
+## 7. Production and Enterprise Usage
 
-### 68.7.1 Arc as Part of a Landing Zone (Direct Connection to Section 66)
+### 7.1 Arc as Part of a Landing Zone (Direct Connection to Section 66)
 
 - Directly extending Section 66.3.3's Platform Landing Zone material: an organization with genuine hybrid infrastructure may include an **Arc-specific management subscription/scope** within their Landing Zone architecture, extending the same baseline Azure Policy assignments, Log Analytics workspace targeting, and Defender for Cloud enablement already established for native Azure resources (Section 66.4.1's design-area table) to encompass Arc-enabled on-premises/other-cloud resources as well — the Landing Zone pattern's governance-unification value proposition extending naturally to genuinely hybrid estates, not limited to pure-Azure environments.
 
-### 68.7.2 Migration Enablement (Direct Connection to Section 66.2.2's CAF Adopt/Migrate Methodology)
+### 7.2 Migration Enablement (Direct Connection to Section 66.2.2's CAF Adopt/Migrate Methodology)
 
 - Arc's visibility into on-premises infrastructure (inventory, performance data via Azure Monitor) directly supports CAF's Plan methodology's digital estate assessment (Section 66.2.2) — providing concrete, Azure-tooling-based visibility into on-premises resource utilization/dependencies as an input to migration planning and prioritization, connecting this section's material back to Part 13's opening CAF framework explicitly.
 
 ---
 
-## 68.8 Troubleshooting Reference
+## 8. Troubleshooting Reference
 
 | Symptom                                                                                     | Likely Cause                                                                                                                                                              | Diagnostic Step                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,7 +116,7 @@ Section 36–38's entire AKS treatment covered Azure's _managed_ Kubernetes offe
 
 ---
 
-## 68.9 Best Practices Checklist
+## 9. Best Practices Checklist
 
 - [ ] Azure Arc's actual scope (management-plane extension, not compute migration) correctly understood and communicated within the organization, avoiding the "Arc-enabling means moving to Azure" misconception.
 - [ ] Arc-enabled servers brought under the same Azure Policy, Defender for Cloud, and Azure Monitor coverage already established for native Azure resources, rather than left as a separate, ungoverned category.
@@ -127,7 +127,7 @@ Section 36–38's entire AKS treatment covered Azure's _managed_ Kubernetes offe
 
 ---
 
-## 68.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - "Azure Arc migrates on-premises servers to Azure." _Correction:_ Arc extends Azure's management plane (Policy, RBAC, Monitor, Defender for Cloud) to servers wherever they physically run — it does not move or change where the underlying compute actually executes (68.3.2's specific, important warning).
 - "Azure Arc is a universal multi-cloud control plane covering every possible resource type across any cloud provider." _Correction:_ Arc's scope is specifically servers, Kubernetes clusters, and select data services — it does not extend Azure governance to arbitrary other-cloud-native services with no Arc-supported underlying infrastructure type (68.6.2).
@@ -135,7 +135,7 @@ Section 36–38's entire AKS treatment covered Azure's _managed_ Kubernetes offe
 
 ---
 
-## 68.11 Interview Questions (Consolidated)
+## 11. Interview Questions (Consolidated)
 
 **Beginner:** "What does Azure Arc actually do, and what is a common misconception about it?"
 _Model answer:_ Azure Arc extends Azure's management-plane capabilities — Azure Policy governance, Azure Monitor observability, Microsoft Defender for Cloud security coverage, and Azure RBAC — to servers and Kubernetes clusters running outside Azure entirely, whether on-premises or in another cloud provider. A common misconception is that Arc-enabling a server migrates it to Azure or changes where it physically runs — it does not; the resource stays exactly where it is, with an agent providing a management-plane connection back to Azure, unifying governance and observability without moving any actual compute.
@@ -153,7 +153,7 @@ _What the interviewer is probing:_ the ability to design a complete, coherent hy
 
 ---
 
-## 68.12 Key Takeaways Summary
+## 12. Key Takeaways Summary
 
 🔑 Azure Arc extends Azure's management plane (Policy, RBAC, Monitor, Defender for Cloud) to non-Azure resources without migrating or moving the underlying compute — a management-unification tool, not a migration tool.
 
@@ -167,7 +167,7 @@ _What the interviewer is probing:_ the ability to design a complete, coherent hy
 
 ---
 
-## 68.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 66 (prerequisite, completed):** the CAF/Landing Zone framework this section's Arc material extends into genuinely hybrid environments.
 - **Section 55/54/47 (prerequisite, completed):** Defender for Cloud, Azure Policy, and Azure Monitor — the specific governance/observability capabilities Arc extends to non-Azure resources.

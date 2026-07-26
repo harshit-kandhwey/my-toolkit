@@ -1,16 +1,16 @@
 # Section 21 (Part 5): Collaboration Models — Shared Repository vs Fork & Pull Request; Code Review Workflow
 
-## 21.1 Definition
+## 1. Definition
 
 **Plain language:** A collaboration model is the agreed shape of how a team's contributors get their changes from a personal branch into the project's shared history — who can push where, and what has to happen (review, checks, approval) before that's allowed.
 
 **Precise:** Git itself is agnostic about collaboration structure — §20 gave you `fetch`/`pull`/`push` and nothing more. Everything in this section is a **social and platform-level convention** layered on top of those primitives: which remotes exist, who has write access to which repository, and what gate (a pull/merge request plus review) sits between a contributor's branch and the shared history. The two dominant conventions are the **shared repository model** and the **fork-and-pull-request model**.
 
-## 21.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 §20's commands let anyone with write access push directly to any branch, including `main`, with zero review. That's fine for a single developer or a tiny trusted team, and actively dangerous at any larger scale: broken code lands in the shared line of truth, nobody sees the change before it ships, and there's no recorded conversation about _why_ a change was made beyond the commit message. Collaboration models exist to insert a deliberate checkpoint — the **pull request** (GitHub/Bitbucket terminology) or **merge request** (GitLab terminology) — between "I wrote this" and "this is part of the project," giving the team a place to review, discuss, run automated checks (§25), and require explicit approval before history changes.
 
-## 21.3 Shared Repository Model
+## 3. Shared Repository Model
 
 Every contributor has push access to one single repository. Nobody forks; everyone clones the same remote and works on branches within it.
 
@@ -34,7 +34,7 @@ Every contributor has push access to one single repository. Nobody forks; everyo
 - **Mechanics:** each contributor pushes a feature branch directly to `origin`, opens a pull request from `feature/a` into `main` _within the same repository_, gets it reviewed, and merges. There is no second repository involved at any point.
 - **Access control:** enforced through branch protection rules (§23) on the shared repo — contributors can push to their own branches freely, but `main` (and other protected branches) requires a PR with approval, not raw push access.
 
-## 21.4 Fork-and-Pull-Request Model
+## 4. Fork-and-Pull-Request Model
 
 Contributors do **not** have write access to the canonical (**upstream**) repository. Each contributor **forks** it — the hosting platform creates a full server-side copy under the contributor's own account — pushes freely to their fork, and opens a pull request asking the upstream maintainers to pull specific commits from the fork into upstream.
 
@@ -70,7 +70,7 @@ Contributors do **not** have write access to the canonical (**upstream**) reposi
 - **Mechanics:** contributor forks, clones their fork locally, adds the canonical repo as a second remote (conventionally named `upstream`), works on a branch, pushes to their own fork (`origin`), and opens a PR targeting `upstream`'s default branch.
 - **Access control:** trivially strict — write access to upstream simply isn't granted to external contributors at all; the PR is the _only_ channel by which their code can ever reach upstream, and a maintainer must explicitly merge it.
 
-### 21.4.1 Comparison
+### 4.1 Comparison
 
 | Dimension                       | Shared Repository Model                                       | Fork-and-Pull-Request Model                        |
 | ------------------------------- | ------------------------------------------------------------- | -------------------------------------------------- |
@@ -81,7 +81,7 @@ Contributors do **not** have write access to the canonical (**upstream**) reposi
 | Setup overhead per contributor  | Low (just clone)                                              | Slightly higher (fork, clone, add upstream remote) |
 | Typical PR direction            | branch → main, same repo                                      | fork:branch → upstream:main                        |
 
-## 21.5 The Full Pull Request Lifecycle
+## 5. The Full Pull Request Lifecycle
 
 Both models converge on essentially the same review workflow once a PR is open; the difference is only which repository the branch physically lives in.
 
@@ -99,7 +99,7 @@ Both models converge on essentially the same review workflow once a PR is open; 
 
 > 💡 **Tip:** Re-requesting review after pushing fixes, rather than assuming a reviewer will notice new commits, is basic PR hygiene that keeps review cycles fast on busy teams.
 
-## 21.6 Merge Strategies at PR-Merge Time
+## 6. Merge Strategies at PR-Merge Time
 
 | Strategy             | What happens                                                                                                   | History shape                                                                     | Trade-off                                                                                                                                              |
 | -------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -115,7 +115,7 @@ There's no universally correct choice — it's a team convention, and most hosti
 
 > ⚠️ **Critical clarification / Common confusion to preempt:** "Squash and merge" operates only on the PR's branch commits at merge time — it is a platform-level convenience equivalent to `git merge --squash`, not the same operation as an interactive rebase you'd run yourself beforehand (§14). Both compress multiple commits into one, but squash-merge does it automatically as part of the merge button and never touches your local branch's actual commits.
 
-## 21.7 Code Review Practices
+## 7. Code Review Practices
 
 - **Small, focused PRs.** A PR that changes one thing is reviewable in minutes; a PR touching forty files across three concerns gets rubber-stamped out of reviewer fatigue, defeating the point of review.
 - **Descriptive PR title and body.** State _what_ changed and _why_, link the relevant issue/ticket, and note anything a reviewer should specifically scrutinize (e.g., "changed the retry backoff — please check the timing math").
@@ -124,7 +124,7 @@ There's no universally correct choice — it's a team convention, and most hosti
 - **Respond to every comment**, even just to say "done" or explain why you disagree — an unanswered review comment is a stalled PR.
 - **Don't take review personally; don't review personally.** Comment on the code, not the person; a good review culture treats feedback as protecting the codebase, not judging the author.
 
-## 21.8 Keeping a Fork in Sync with Upstream
+## 8. Keeping a Fork in Sync with Upstream
 
 A fork does not automatically stay current with the canonical repository — it's a snapshot at fork time plus whatever you've pushed to it since. Left alone, it drifts, and PRs opened from a stale fork accumulate unrelated merge conflicts.
 
@@ -152,7 +152,7 @@ $ git push origin main
 
 Doing this before starting new work (or periodically on a long-lived branch) keeps your PRs mergeable with minimal conflicts, and is standard practice on any active open-source project.
 
-## 21.9 Hands-On Walkthrough — Fork Model End to End
+## 9. Hands-On Walkthrough — Fork Model End to End
 
 ```bash
 # 1. Fork upstream/webapp on the hosting platform (web UI action, not a git command)
@@ -180,7 +180,7 @@ $ git push --force-with-lease
 # 8. Maintainer merges; you sync your fork's main afterward (21.8)
 ```
 
-## 21.10 Interview Questions
+## 10. Interview Questions
 
 **[Beginner] Q1. What's the core difference between the shared repository model and the fork-and-pull-request model?**
 **Model answer:** In the shared repository model, every contributor has direct write access to one repository and pushes branches into it, opening PRs within that same repo. In the fork model, contributors don't have write access to the canonical repository at all — they create their own server-side copy (a fork), push their work there, and open a PR asking maintainers to pull specific commits from the fork into the canonical repo. The shared model suits trusted internal teams; the fork model suits open-source or any situation where you want to accept contributions without granting write access.
@@ -197,7 +197,7 @@ $ git push --force-with-lease
 **[Senior] Q5. A team wants a clean, linear `main` for readability, but also wants to preserve individual commit history for detailed blame/bisect work. Which merge strategy fits, and what's the cost?**
 **Model answer:** Rebase and merge is the fit — it replays each of the PR's commits individually onto the tip of the base branch with no merge commit, so `main` stays fully linear while every original commit (and its message, author, and content) survives intact, which keeps `git blame` and `git bisect` (§19) precise down to the individual change rather than one large squashed blob. The cost is that rebasing rewrites commit hashes, so if the same branch had been pulled or built upon anywhere else before the merge, those copies now diverge from the merged history and need reconciling — this is why rebase-and-merge works best when PR branches are genuinely personal and short-lived, which pairs naturally with a trunk-based or GitHub-Flow-style workflow (§22).
 
-## 21.11 Common Misconceptions
+## 11. Common Misconceptions
 
 1. **"Forking and cloning are the same thing."** Cloning copies a repository to your local machine; forking creates a new, independent _server-side_ copy under your own account on the hosting platform. A typical fork-model workflow does both: fork on the platform, then clone your fork locally.
 2. **"Squash and merge is the same as running an interactive rebase yourself."** It achieves a similar visual result (fewer commits) but is a distinct, platform-triggered operation at merge time; it doesn't touch your local branch's actual commit history the way `git rebase -i` does.
@@ -205,7 +205,7 @@ $ git push --force-with-lease
 4. **"Force-pushing to a PR branch is always risky."** It's risky on branches other people also push to; on a personal PR branch it's routine practice for keeping history clean, especially combined with `--force-with-lease`.
 5. **"A merged PR's source branch and history live forever exactly as pushed."** Depending on the chosen merge strategy, the branch's individual commits may be squashed into one or rewritten via rebase — what lands on the base branch is not always a byte-for-byte preservation of what was pushed.
 
-## 21.12 🔑 Key Takeaways
+## 12. 🔑 Key Takeaways
 
 - Collaboration models are conventions built on top of §20's primitives, not new Git mechanics — Git itself doesn't know what a "pull request" is; that lives entirely at the hosting-platform layer.
 - Shared repository model: everyone has write access to one repo. Fork model: contributors work in their own server-side copy and propose changes via PR into an upstream they can't write to directly.
@@ -213,6 +213,6 @@ $ git push --force-with-lease
 - Three merge strategies — merge commit, squash and merge, rebase and merge — trade off history granularity against linearity; there's no universally right answer, only team convention.
 - Keeping a fork current requires an explicit `upstream` remote and periodic fetch+merge/rebase; it does not happen automatically.
 
-## 21.13 Related Concepts & What's Next
+## 13. Related Concepts & What's Next
 
 This section assumed §20's remote vocabulary and layered the human workflow — forks, PRs, review, merge strategy — on top of it. §22 zooms out further, to the branching _strategies_ (Git Flow, GitHub Flow, GitLab Flow, trunk-based development) that determine which branches exist in the first place and how long they live before the PR process covered here brings them back together.

@@ -6,49 +6,49 @@
 
 ---
 
-## 93.1 Definition
+## 1. Definition
 
 **Plain language:** Section 92 established that Sentinel ingests security signal from everywhere into one Log Analytics workspace. This section covers what actually turns that raw, ingested log data into something a security analyst acts on: rules that continuously watch the data for known-bad patterns and generate prioritized incidents, dashboards and hunting tools for an analyst to proactively go looking for something a rule hasn't been written for yet, and the automated playbooks that can respond the moment something is found.
 
 **Precise definition:** Microsoft Sentinel's detection and response layer consists of **analytics rules** (scheduled, near-real-time, and Fusion correlation logic that generates **incidents** from matching log data), **hunting queries** and **workbooks** (interactive tools for proactive, analyst-driven investigation), **entity behavior analytics** (baseline-deviation detection for users and other entities), and **SOAR playbooks** (Logic Apps workflows, Section 42, triggered automatically or manually in response to alerts/incidents).
 
-## 93.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 A Log Analytics workspace full of correlated data (Section 92.4) is necessary but not sufficient — without something actively watching that data and turning matches into actionable, prioritized work items, a SOC analyst would need to manually run ad hoc KQL queries around the clock to notice anything, which doesn't scale past a trivially small environment. Analytics rules solve the "continuously and automatically watch for known-bad patterns" problem. But not every threat is a pattern someone has already written a rule for — genuinely novel or slow, low-and-slow attacks are often only found by an experienced analyst proactively exploring the data with hypotheses of their own, which is what hunting queries, workbooks, and entity behavior analytics exist to support. And detection alone — even excellent detection — leaves the actual response (containing the threat, gathering more context, notifying the right people) as manual work unless it's automated via SOAR playbooks, built on the exact same Logic Apps engine already covered in Section 42 for general workflow automation, now applied specifically to security response.
 
 ---
 
-## 93.3 Analytics Rules
+## 3. Analytics Rules
 
-### 93.3.1 Scheduled Analytics Rules
+### 3.1 Scheduled Analytics Rules
 
 **Definition:** the most common analytics rule type — a KQL query run on a defined schedule (e.g., every 5 minutes, looking back over a defined lookback period) against the Sentinel workspace's data; any results returned by the query generate an **incident** (or are grouped into an existing one, 93.3.5).
 
 **How it works conceptually:** the rule author writes a KQL query expressing the specific detection logic (e.g., "more than N failed sign-ins from a single IP in the lookback window," directly extending the illustrative query from Section 92.8), sets a query frequency and lookback period, and configures how matching results should be grouped into incidents, their severity, and which entities (accounts, IP addresses, hosts) should be extracted from the results for downstream investigation and correlation.
 
-### 93.3.2 Near-Real-Time (NRT) Analytics Rules
+### 3.2 Near-Real-Time (NRT) Analytics Rules
 
 **Definition:** a rule variant evaluated continuously (effectively per-event, rather than on a fixed polling schedule) against a constrained set of supported data sources — trading some of the flexibility of a full scheduled-rule KQL query for materially lower detection latency, appropriate for scenarios where even a five-minute scheduled-rule delay is unacceptable.
 
 ⚠️ NRT rules support a narrower, evolving subset of KQL operators and data sources than full scheduled rules — verify current NRT capability and supported source coverage against documentation before assuming any scheduled-rule query can be trivially converted to an NRT rule.
 
-### 93.3.3 Fusion Rules
+### 3.3 Fusion Rules
 
 **Definition:** a built-in, Microsoft-maintained correlation capability using machine learning to combine multiple, individually low-fidelity signals (each potentially unremarkable in isolation) across different data sources into a single, higher-confidence incident representing a probable multi-stage attack — directly addressing the scenario introduced in Section 92.2 (individually low-signal events that only become meaningful when correlated together).
 
 **Why it matters:** Fusion rules are not something an analyst authors — they're pre-built correlation logic Microsoft maintains and updates, providing out-of-the-box detection for known multi-stage attack patterns (e.g., a specific sequence of reconnaissance-then-lateral-movement-then-exfiltration behavior) without requiring every organization to independently discover and author that correlation logic themselves.
 
-### 93.3.4 Microsoft Security Rule Templates
+### 3.4 Microsoft Security Rule Templates
 
 Sentinel ships with a large, continuously updated library of **rule templates** — pre-authored analytics rules for common attack patterns against specific connected data sources (e.g., a template detecting a specific Entra ID sign-in risk pattern, or a template for a specific known attack technique against a connected firewall's logs) — that can be enabled directly or customized, substantially reducing the effort of building detection coverage from a blank slate. ⚠️ The specific template catalog and its coverage evolves continuously — periodically reviewing newly available templates against connected data sources is a genuine, recurring SOC maintenance task, not a one-time setup step.
 
-### 93.3.5 Incidents — Grouping Alerts Into Actionable Work Items
+### 3.5 Incidents — Grouping Alerts Into Actionable Work Items
 
 **Definition:** an **incident** is Sentinel's unit of analyst work — one or more related **alerts** (individual rule matches) grouped together (by shared entities, time proximity, or explicit rule configuration) into a single item with a status (New/Active/Closed), severity, and assigned owner, so an analyst investigates one coherent incident rather than a disconnected pile of individual alerts that may actually represent the same underlying attack.
 
 ---
 
-## 93.4 KQL-Based Detection Queries — Worked Example
+## 4. KQL-Based Detection Queries — Worked Example
 
 ```kql
 let riskyIPs = SigninLogs
@@ -63,27 +63,27 @@ SigninLogs
 | project TimeGenerated, UserPrincipalName, IPAddress, FailedCount
 ```
 
-**Purpose:** a two-stage detection — first identifying IP addresses responsible for a high volume of failed sign-ins (a likely brute-force source, `riskyIPs`), then finding any *successful* sign-in from one of those same IP addresses within the same window — a materially higher-confidence "possible successful brute-force compromise" pattern than either failed-attempt volume or a single successful sign-in would indicate alone. This kind of two-stage, entity-joined query is a common, realistic shape for a genuinely useful analytics rule, well beyond a single flat `where` filter.
+**Purpose:** a two-stage detection — first identifying IP addresses responsible for a high volume of failed sign-ins (a likely brute-force source, `riskyIPs`), then finding any _successful_ sign-in from one of those same IP addresses within the same window — a materially higher-confidence "possible successful brute-force compromise" pattern than either failed-attempt volume or a single successful sign-in would indicate alone. This kind of two-stage, entity-joined query is a common, realistic shape for a genuinely useful analytics rule, well beyond a single flat `where` filter.
 
-## 93.5 Threat Hunting
+## 5. Threat Hunting
 
-### 93.5.1 Hunting Queries
+### 5.1 Hunting Queries
 
 **Definition:** KQL queries authored (by Microsoft, as templates, or by an organization's own analysts) specifically for **proactive, hypothesis-driven investigation** rather than continuous automated alerting — an analyst runs a hunting query manually when investigating a specific hypothesis ("did anyone in the last 30 days access this specific sensitive dataset from an unusual location") that isn't (yet) codified as a standing analytics rule.
 
-### 93.5.2 Bookmarks
+### 5.2 Bookmarks
 
 **Definition:** a saved reference to a specific, interesting result found during hunting — allowing an analyst to mark and return to a specific finding, and to promote a bookmark directly into a new incident if the finding turns out to be genuinely actionable, connecting ad hoc hunting work back into the same incident-management workflow as automated rule detections.
 
-### 93.5.3 Notebooks
+### 5.3 Notebooks
 
 Sentinel supports Jupyter notebook-based hunting for more complex, code-driven investigation (using Python libraries for data analysis directly against workspace data) — appropriate for genuinely sophisticated investigative work (e.g., statistical anomaly detection an analyst is building themselves) beyond what a single KQL query comfortably expresses.
 
-### 93.5.4 Workbooks
+### 5.4 Workbooks
 
 **Definition:** interactive, dashboard-style visualizations built on the same underlying visualization capability referenced in Section 92.12 — Sentinel ships built-in workbooks for common scenarios (e.g., an overview of sign-in activity, or a MITRE ATT&CK coverage workbook referenced further in Section 95.5) and supports fully custom workbooks tailored to an organization's specific monitoring needs.
 
-## 93.6 Entity Behavior Analytics (UEBA)
+## 6. Entity Behavior Analytics (UEBA)
 
 **Definition:** User and Entity Behavior Analytics establishes a learned behavioral baseline for entities (primarily user accounts, but also hosts and IP addresses) — typical sign-in times, typical locations, typical resource-access patterns — and flags activity deviating meaningfully from that baseline, surfacing an **anomaly** that may not match any specific authored analytics rule pattern but is nonetheless behaviorally unusual for that specific entity.
 
@@ -91,32 +91,32 @@ Sentinel supports Jupyter notebook-based hunting for more complex, code-driven i
 
 ---
 
-## 93.7 SOAR Playbooks — Built on Logic Apps (Section 42)
+## 7. SOAR Playbooks — Built on Logic Apps (Section 42)
 
-### 93.7.1 Definition
+### 7.1 Definition
 
 **Definition:** a Sentinel **playbook** is a Logic App (Section 42) with a Sentinel-specific trigger (an alert being created, an incident being created or updated) that can be invoked automatically (via an automation rule, Section 94.3) or manually by an analyst, performing enrichment, containment, or notification actions using the same Logic Apps connector ecosystem and workflow-designer concepts already established in Section 42.
 
-### 93.7.2 Why Logic Apps, Specifically
+### 7.2 Why Logic Apps, Specifically
 
 🔑 **Key Takeaway:** Sentinel deliberately reuses Logic Apps as its SOAR automation engine rather than providing a separate, security-specific workflow builder — meaning everything already covered in Section 42 (the visual designer, the connector ecosystem spanning hundreds of services, managed identity-based authentication for connector actions) applies directly to authoring a security playbook; a team already comfortable building general business-process Logic Apps has almost all the skill needed to author a Sentinel playbook, with the only genuinely new concept being the Sentinel-specific trigger types and the alert/incident schema those triggers expose.
 
 ---
 
-## 93.8 Comparison — Analytics Rule Types
+## 8. Comparison — Analytics Rule Types
 
-| Rule Type | Latency | Flexibility | Typical Use |
-| --- | --- | --- | --- |
-| Scheduled | Minutes (per configured frequency) | Full KQL expressiveness | The general-purpose default for most custom detection logic |
-| Near-Real-Time (NRT) | Near-immediate | Constrained KQL subset, limited source coverage | High-urgency detections where scheduled-rule latency is unacceptable |
-| Fusion | Near-immediate, ML-driven | Not author-configurable — Microsoft-maintained correlation logic | Multi-stage attack patterns spanning several individually low-fidelity signals |
-| Microsoft Security templates | Varies by template | Enable-as-is or customize | Fast, low-effort baseline detection coverage for well-known attack patterns |
+| Rule Type                    | Latency                            | Flexibility                                                      | Typical Use                                                                    |
+| ---------------------------- | ---------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Scheduled                    | Minutes (per configured frequency) | Full KQL expressiveness                                          | The general-purpose default for most custom detection logic                    |
+| Near-Real-Time (NRT)         | Near-immediate                     | Constrained KQL subset, limited source coverage                  | High-urgency detections where scheduled-rule latency is unacceptable           |
+| Fusion                       | Near-immediate, ML-driven          | Not author-configurable — Microsoft-maintained correlation logic | Multi-stage attack patterns spanning several individually low-fidelity signals |
+| Microsoft Security templates | Varies by template                 | Enable-as-is or customize                                        | Fast, low-effort baseline detection coverage for well-known attack patterns    |
 
 🎯 **Interview Tip:** a frequently tested nuance is that **Fusion rules are not something you author** — candidates who describe Fusion as "a rule type you write like any other" are missing the point; its value is specifically that Microsoft has pre-built the multi-signal correlation logic for known attack chains, something individual organizations would otherwise have to discover and encode themselves, one at a time, through hard-won incident experience.
 
 ---
 
-## 93.9 Architecture Diagram
+## 9. Architecture Diagram
 
 ```
 Log Analytics Workspace (Sentinel-enabled, Section 92.4)
@@ -137,7 +137,7 @@ Log Analytics Workspace (Sentinel-enabled, Section 92.4)
                                                           containment, notification
 ```
 
-## 93.10 Configuration & Hands-On Example
+## 10. Configuration & Hands-On Example
 
 **Creating a scheduled analytics rule via Azure CLI:**
 
@@ -164,33 +164,33 @@ az sentinel alert-rule scheduled create \
   - `--trigger-threshold 0` combined with `GreaterThan` — creates an incident on any non-empty query result; a higher threshold could instead require, e.g., multiple matching rows before triggering, appropriate for noisier detection logic prone to occasional benign matches.
 - **Common error:** setting `--query-frequency` and `--query-period` to the same or nearly-identical values without accounting for query execution and ingestion latency — data arriving slightly late relative to the rule's run time can fall just outside the lookback window and be silently missed on that run (though often still caught on the next), a subtle timing gap worth explicitly accounting for rather than assuming perfectly synchronized real-time evaluation.
 
-## 93.11 Production & Enterprise Usage
+## 11. Production & Enterprise Usage
 
 Mature Sentinel deployments maintain analytics rule coverage deliberately mapped against the MITRE ATT&CK framework (Section 95.5), reviewed periodically against the evolving Microsoft Security rule template catalog (93.3.4) rather than treating initial rule deployment as a one-time setup task — new templates and Fusion correlation coverage are added by Microsoft on an ongoing basis, and a SOC that never revisits its enabled-rule set drifts toward stale coverage relative to current known attack techniques.
 
-## 93.12 Security Considerations
+## 12. Security Considerations
 
 - Analytics rules and hunting queries themselves can reveal sensitive operational detail about how an organization detects threats — access to rule logic and hunting-query history should be scoped via the same workspace RBAC principles established in Section 92.10, since an attacker with visibility into detection logic could deliberately evade it.
 - UEBA baselines take time to establish meaningfully (an entity's "normal" behavior needs a representative observation period) — newly onboarded entities or recently changed roles/responsibilities can produce a period of elevated false-positive anomaly flags until the baseline catches up; this is expected behavior, not a UEBA malfunction, and should be accounted for when triaging anomaly alerts for genuinely new users or systems.
 
-## 93.13 Performance Considerations
+## 13. Performance Considerations
 
 Scheduled rules with a short query frequency against a very high-volume, unfiltered table can themselves become a meaningful driver of workspace query cost/load at scale — rule authors should apply the same KQL performance discipline from Section 51 (filtering early, avoiding unnecessarily broad time ranges) when writing detection logic, not only when writing ad hoc investigative queries.
 
-## 93.14 Monitoring
+## 14. Monitoring
 
 Sentinel's own analytics-rule health and incident-volume workbooks (93.5.4) should themselves be monitored — a rule silently failing to run (due to a query syntax issue introduced by an edit, or an underlying data-connector outage upstream, Section 92.13) produces a dangerous, invisible detection gap that looks identical to "everything is fine, nothing bad is happening" from an analyst's perspective, unless rule execution health is itself actively tracked.
 
-## 93.15 Troubleshooting
+## 15. Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-| --- | --- | --- |
-| A scheduled rule that previously fired regularly stops generating incidents | Underlying data connector or source stopped forwarding data (Section 92.13), or a rule edit introduced a query logic error | Verify source data is still arriving in the workspace via a direct KQL query against the underlying table; review recent rule edit history |
-| Analysts report alert fatigue from an excessive volume of low-value incidents | Rule threshold set too low/sensitive, or incident-grouping logic not consolidating related alerts effectively | Tune rule threshold and grouping/entity-mapping configuration; consider suppressing or tuning down rules with a poor true-positive rate |
-| UEBA flags a large volume of anomalies for a specific team shortly after a reorganization | Baseline behavior genuinely changed (new roles, new resource access patterns) faster than UEBA's learned baseline has adapted | Expected transient behavior; allow the baseline observation period to re-establish, and communicate the expected temporary noise to analysts triaging these alerts |
-| A playbook configured on an analytics rule never actually runs | Playbook not correctly linked via an automation rule (Section 94.3), or the playbook's managed identity lacks required permissions for its actions | Verify the automation rule linking the analytics rule/incident trigger to the specific playbook; verify playbook managed identity permissions |
+| Symptom                                                                                   | Likely Cause                                                                                                                                       | Fix                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A scheduled rule that previously fired regularly stops generating incidents               | Underlying data connector or source stopped forwarding data (Section 92.13), or a rule edit introduced a query logic error                         | Verify source data is still arriving in the workspace via a direct KQL query against the underlying table; review recent rule edit history                         |
+| Analysts report alert fatigue from an excessive volume of low-value incidents             | Rule threshold set too low/sensitive, or incident-grouping logic not consolidating related alerts effectively                                      | Tune rule threshold and grouping/entity-mapping configuration; consider suppressing or tuning down rules with a poor true-positive rate                            |
+| UEBA flags a large volume of anomalies for a specific team shortly after a reorganization | Baseline behavior genuinely changed (new roles, new resource access patterns) faster than UEBA's learned baseline has adapted                      | Expected transient behavior; allow the baseline observation period to re-establish, and communicate the expected temporary noise to analysts triaging these alerts |
+| A playbook configured on an analytics rule never actually runs                            | Playbook not correctly linked via an automation rule (Section 94.3), or the playbook's managed identity lacks required permissions for its actions | Verify the automation rule linking the analytics rule/incident trigger to the specific playbook; verify playbook managed identity permissions                      |
 
-## 93.16 Interview Questions — Section 93
+## 16. Interview Questions — Section 93
 
 ### 🎯 Intermediate
 
@@ -208,13 +208,13 @@ _Model answer:_ First, I'd quantify the actual true-positive rate of the rule ov
 
 _What the interviewer is probing:_ a data-driven, non-reckless approach to alert tuning — measuring before changing, preferring logic refinement over blunt threshold changes where possible, checking for better-maintained alternatives, and validating against historical ground truth rather than guessing.
 
-## 93.17 Common Misconceptions
+## 17. Common Misconceptions
 
 - **"Fusion rules are just another rule type you write yourself, like a scheduled rule."** False — Fusion is Microsoft-maintained, ML-driven multi-signal correlation logic that isn't author-configurable in the same way as a scheduled or NRT rule; its value is specifically that this correlation logic doesn't need to be independently built by each organization.
 - **"UEBA anomaly flags are always meaningful security findings."** False — UEBA baselines take time to establish, and legitimate changes (a reorganization, a role change, a new work pattern) can produce a temporary burst of anomaly flags that reflect a genuinely changed baseline, not an actual threat; this is expected, not a system malfunction.
 - **"A Sentinel playbook is a fundamentally different technology from a general-purpose Logic App."** False — a Sentinel playbook is precisely a Logic App (Section 42) with a Sentinel-specific trigger; the underlying designer, connector ecosystem, and authoring skill are identical to any other Logic App.
 
-## 93.18 Key Takeaways
+## 18. Key Takeaways
 
 - 🔑 Scheduled analytics rules (author-written KQL on a timer), NRT rules (lower-latency, constrained), and Fusion rules (Microsoft-maintained ML correlation of multiple low-fidelity signals) are three structurally distinct detection mechanisms, each with different trade-offs in latency, flexibility, and authoring effort.
 - 🔑 Alerts are grouped into incidents — the actual unit of analyst work — so related detections are investigated together rather than as a disconnected pile of individual alerts.
@@ -222,6 +222,6 @@ _What the interviewer is probing:_ a data-driven, non-reckless approach to alert
 - 🔑 Entity Behavior Analytics detects baseline deviation for legitimately-authenticated entities, catching a class of threat (misuse of valid credentials) that pattern-based rules structurally cannot.
 - 🔑 SOAR playbooks are Logic Apps (Section 42) with a Sentinel-specific trigger — the entire Logic Apps connector ecosystem and authoring skillset transfers directly, with only the trigger type and alert/incident schema being genuinely new.
 
-## 93.19 Related Concepts (Next Up)
+## 19. Related Concepts (Next Up)
 
 Section 94 completes the SOAR story by covering exactly how playbooks are wired to actually run automatically — **automation rules**, the specific containment/enrichment/notification playbook design patterns a mature SOC relies on, and how this automated-response layer integrates with the Defender for Cloud alert-routing material already covered in Section 55.7.

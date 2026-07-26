@@ -6,7 +6,7 @@
 
 ---
 
-## 48.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Terraform as an Azure IaC option — a genuinely different tool from ARM/Bicep in origin, architecture, and operating model, not merely a different syntax over the same engine (the relationship Bicep has to ARM, Section 47.2.1). This section covers Terraform's core concepts (providers, resources, state), the state-management model that most sharply distinguishes it from ARM/Bicep, module structure, and a rigorous decision framework for choosing Terraform versus Bicep/ARM for Azure-specific work.
 
@@ -14,20 +14,20 @@ This section covers Terraform as an Azure IaC option — a genuinely different t
 
 ---
 
-## 48.2 What Is Terraform and Why It's Relevant to Azure
+## 2. What Is Terraform and Why It's Relevant to Azure
 
-### 48.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Terraform is an open-source, cloud-agnostic Infrastructure as Code tool (created by HashiCorp) that uses its own declarative configuration language (HCL — HashiCorp Configuration Language) to define infrastructure across any cloud or service that has a Terraform "provider" — including a comprehensive, actively maintained Azure provider — while maintaining its own record of managed resource state independent of any single cloud's native tooling.
 
 **Precise definition:** Terraform is a declarative Infrastructure as Code tool that uses a provider plugin architecture to manage resources across heterogeneous platforms (cloud providers, SaaS services, on-premises systems) through a unified workflow (`plan` and `apply`), tracking managed resource state in a separate, explicitly persisted state file.
 
-### 48.2.2 Why Terraform Exists as a Distinct Category From ARM/Bicep
+### 2.2 Why Terraform Exists as a Distinct Category From ARM/Bicep
 
 - **Multi-cloud and multi-provider capability:** unlike ARM/Bicep, which are Azure-native and can only manage Azure resources (plus, to a limited extent, resources reachable via ARM's own extensibility), Terraform's provider model allows a single tool and workflow to manage Azure resources, AWS resources, GCP resources, Kubernetes objects, DNS records, SaaS platform configuration, and more — all within the same configuration language and state-tracking model. This directly matters for organizations with genuine multi-cloud or hybrid-tooling requirements, where standardizing on one IaC tool and workflow across heterogeneous infrastructure has real organizational value that an Azure-only tool (ARM/Bicep) cannot provide.
 - **Predates and is independent of Azure's own tooling evolution:** Terraform originated as a general-purpose, vendor-neutral tool; its Azure support (the `azurerm` provider) is one of many providers, actively maintained but developed somewhat independently of Microsoft's own ARM/Bicep release cadence — meaning brand-new Azure resource types or properties sometimes become available in ARM/Bicep before the Terraform `azurerm` provider adds corresponding support, a genuine, occasionally relevant practical lag worth being aware of.
 
-### 48.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                       | Definition                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -44,33 +44,33 @@ This section covers Terraform as an Azure IaC option — a genuinely different t
 
 ---
 
-## 48.3 The State File: Terraform's Defining Architectural Difference
+## 3. The State File: Terraform's Defining Architectural Difference
 
-### 48.3.1 Why State Exists
+### 3.1 Why State Exists
 
 Terraform's providers interact with platform APIs that, in the general case (across the many heterogeneous platforms Terraform supports), do not all provide a rich, queryable, ARM-Resource-Manager-style live inventory of "everything currently managed with this configuration's identifying markers." To reliably determine what has changed and needs reconciling on each `plan`/`apply` cycle across arbitrary providers, Terraform maintains its own explicit record — the state file — mapping each declared resource in configuration to the actual object Terraform believes it created/is managing, along with that object's last-known attribute values.
 
-### 48.3.2 Practical Consequence: Terraform-Managed vs. Azure-Native-Managed Resources
+### 3.2 Practical Consequence: Terraform-Managed vs. Azure-Native-Managed Resources
 
 🔑 **Key Takeaway:** a resource that exists in Azure but was **not** created through Terraform (e.g., created via the Portal, `az cli`, ARM/Bicep, or by a different Terraform state) is entirely invisible to a given Terraform configuration/state — Terraform has no awareness of it and will not manage, modify, or report on it, in sharp contrast to ARM/Bicep's Incremental deployment mode (Section 46.2.3), which reads live Azure state directly and naturally coexists with resources outside its own template's declared scope, or Complete mode, which explicitly reconciles against everything actually present in a target scope. Bringing an existing, non-Terraform-created Azure resource under Terraform management requires an explicit **import** operation (`terraform import`, or the newer declarative `import` block) associating it with a specific resource address in configuration and state — it does not happen automatically simply because the resource exists in Azure and matches the configuration.
 
-### 48.3.3 State File Storage and Remote Backends
+### 3.3 State File Storage and Remote Backends
 
 ⚠️ **Warning:** Terraform's default behavior (a local state file on the machine running Terraform) is entirely unsuitable for any team or production usage — the state file often contains sensitive data (resource attribute values, sometimes including secrets depending on the resource type) and is a single point of failure/coordination for any collaborative use; losing it, or two people independently applying changes against separate local copies, are both realistic and seriously damaging failure modes.
 
 - **Remote backend (strongly recommended):** state stored centrally — commonly an Azure Storage Account blob container (using the `azurerm` backend type specifically) — with **state locking** (implemented via blob leasing in the Azure backend) preventing concurrent `apply` operations from corrupting shared state.
 - 💡 **Tip:** the Azure Storage Account hosting Terraform's own remote state is itself a piece of infrastructure requiring careful handling — commonly provisioned once, manually or via a minimal separate bootstrap process, specifically _because_ Terraform cannot easily manage the very backend it depends on for its own state storage (a genuine chicken-and-egg consideration worth understanding, distinct from any equivalent concern in ARM/Bicep, which has no comparable bootstrap requirement since it has no separate state store at all).
 
-### 48.3.4 Drift Detection
+### 3.4 Drift Detection
 
 - Running `terraform plan` compares the state file's recorded values against the _actual current_ live values Terraform's providers query from the real platform (Azure, in this case) — meaning `plan` does perform a live comparison against real Azure state, not merely a comparison against the state file's stale recorded values alone; drift (a manual change made outside Terraform since the last `apply`) is detected and surfaced in the plan output as a proposed change to reconcile the resource back toward the declared configuration (or, depending on configuration, Terraform can be told to accept the drifted value into state without changing the resource, via specific commands).
 - ⚠️ **Warning:** this drift-reconciliation behavior means a resource manually modified outside Terraform (e.g., an emergency manual fix applied directly in the Portal during an incident) will, on the next `terraform apply`, typically have that manual change reverted back to whatever the Terraform configuration declares — a real, recurring operational surprise for teams unfamiliar with this behavior, and a specific instance of the general "avoid manual changes outside your IaC tool" principle (echoing Section 36.7.2's AKS node resource group warning and Section 34.12's immutable-infrastructure principle) with particularly sharp, easily-triggered consequences in Terraform's specific model.
 
 ---
 
-## 48.4 Terraform Configuration Syntax (HCL)
+## 4. Terraform Configuration Syntax (HCL)
 
-### 48.4.1 The Same Example, in Terraform
+### 4.1 The Same Example, in Terraform
 
 ```hcl
 terraform {
@@ -126,7 +126,7 @@ output "storage_account_id" {
 - **`random_string` resource:** demonstrates Terraform's provider ecosystem extending beyond Azure itself — the `random` provider is a general-purpose utility provider unrelated to any specific cloud, illustrating the broader, heterogeneous provider model (48.2.2) in a small, concrete way.
 - **Implicit dependency via reference (`azurerm_resource_group.main.name`):** exactly like Bicep's symbolic references (Section 47.3.3), Terraform infers dependency ordering automatically from direct attribute references between resources, without requiring an explicit dependency declaration in the common case — a genuine similarity between Terraform and Bicep, both improving on ARM JSON's more manual `dependsOn` burden (Section 46.3.5) in this specific respect.
 
-### 48.4.2 Modules
+### 4.2 Modules
 
 ```hcl
 module "networking" {
@@ -140,9 +140,9 @@ module "networking" {
 
 ---
 
-## 48.5 The Terraform Workflow: `init`, `plan`, `apply`, `destroy`
+## 5. The Terraform Workflow: `init`, `plan`, `apply`, `destroy`
 
-### 48.5.1 Commands — Documentation Template
+### 5.1 Commands — Documentation Template
 
 #### `terraform init`
 
@@ -170,9 +170,9 @@ module "networking" {
 
 ---
 
-## 48.6 Terraform vs. Bicep/ARM: Decision Framework
+## 6. Terraform vs. Bicep/ARM: Decision Framework
 
-### 48.6.1 Comparison Table
+### 6.1 Comparison Table
 
 | Aspect                                       | ARM/Bicep                                                                                | Terraform                                                                                                                      |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -185,7 +185,7 @@ module "networking" {
 | Governance/policy interaction                | Subject to Azure Policy identically regardless of authoring tool (Section 46.8)          | Also subject to Azure Policy identically — Policy operates beneath any IaC tool at the Resource Manager layer                  |
 | Organizational fit                           | Azure-committed organizations without a strong existing multi-cloud/Terraform investment | Organizations with genuine multi-cloud requirements, or existing Terraform expertise/tooling investment across other platforms |
 
-### 48.6.2 Decision Guidance (Explicit Trade-offs, Not a Universal Answer)
+### 6.2 Decision Guidance (Explicit Trade-offs, Not a Universal Answer)
 
 🎯 **Interview Tip:** the strongest answer to "Terraform or Bicep?" identifies the organization's actual multi-cloud footprint and existing tooling investment as the primary decision driver, rather than asserting either tool is universally superior:
 
@@ -195,7 +195,7 @@ module "networking" {
 
 ---
 
-## 48.7 Security Considerations
+## 7. Security Considerations
 
 - **State file sensitivity:** because the state file can contain resource attribute values, including in some cases secrets exposed through a resource's own properties (e.g., a generated password/connection string an `azurerm` resource's schema returns as an attribute), the remote backend storing it (48.3.3) must itself be appropriately access-controlled (RBAC-restricted Storage Account, Section 8/16) and, ideally, encrypted at rest (Azure Storage's default encryption applies, Section 17) — treating the state file with the same sensitivity-handling care as any other artifact potentially containing secrets.
 - **Provider authentication:** the `azurerm` provider authenticates to Azure via one of several methods — Azure CLI session (interactive/local use), a Service Principal with a client secret or certificate, or Managed Identity/Workload Identity Federation (for pipeline-based execution, directly consistent with the Managed-Identity-and-federation preference established throughout this roadmap, Sections 35.4.2, 37.5.4, 40.7.2, 48.7.2) — with the federated/Managed-Identity approach again being the generally preferred pattern for unattended CI/CD execution over a stored Service Principal secret.
@@ -203,14 +203,14 @@ module "networking" {
 
 ---
 
-## 48.8 Production and Enterprise Usage
+## 8. Production and Enterprise Usage
 
 - **CI/CD integration:** exactly as with ARM/Bicep (Section 46.7.2/44.7), mature pipelines run `terraform init` → `terraform plan` (surfaced for PR review) → an approval-gated `terraform apply` for production, integrating directly into the Azure Pipelines (Section 45) stage/environment/approval-gate pattern already established, with `terraform` substituted as the specific tool invoked within otherwise structurally identical pipeline stages.
 - **Workspace and state-file organization strategy:** larger organizations typically split Terraform state across multiple separate state files (by environment, by application/team, by logical infrastructure layer such as "networking" vs. "application resources") rather than one monolithic state file for an entire estate — reducing blast radius (a corrupted or mistakenly-`destroy`-ed state file affects only its own scope) and reducing lock contention among multiple teams/pipelines needing to run Terraform concurrently against unrelated infrastructure, directly paralleling the modularity/scoping principles already established for ARM/Bicep (Section 46.5/44.4) and AKS multi-cluster/namespace boundaries (Section 36.8/35.5.5).
 
 ---
 
-## 48.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                                                                | Likely Cause                                                                                                                      | Diagnostic Step                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -222,7 +222,7 @@ module "networking" {
 
 ---
 
-## 48.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Remote backend (e.g., `azurerm` backend with an Azure Storage Account) configured for any team/production use — never relying on local state.
 - [ ] State locking confirmed functional for the chosen backend, preventing concurrent-apply corruption.
@@ -235,7 +235,7 @@ module "networking" {
 
 ---
 
-## 48.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Terraform and Bicep are just two different syntaxes for the same underlying deployment behavior." _Correction:_ unlike Bicep's direct compile-to-ARM-JSON relationship (Section 47.2.1), Terraform has a genuinely different architecture centered on its own separately maintained state file — this drives real behavioral differences (drift reconciliation reverting manual changes, the need for explicit `import`, `destroy`'s state-scoped rather than target-scope-scoped deletion) that a "just different syntax" framing misses entirely.
 - "Since Terraform's `plan` shows exactly what will happen, drift can never cause a surprise in production." _Correction:_ drift is _detected_ and surfaced by `plan`, but the specific consequence — a manual emergency fix being silently proposed for reversion on the next `apply` — is a real, recurring operational surprise for teams unfamiliar with this specific behavior, even though the tool is technically "showing exactly what will happen" in the plan output itself (48.3.4).
@@ -243,7 +243,7 @@ module "networking" {
 
 ---
 
-## 48.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is the main architectural difference between Terraform and Bicep/ARM Templates?"
 _Model answer:_ Terraform maintains its own separate, explicitly persisted state file recording what it manages and those resources' last-known values, and uses that state file (compared against live-queried actual values) to compute proposed changes on each `plan`/`apply`. ARM Templates and Bicep have no separate state file at all — they rely entirely on Azure Resource Manager's own live view of actual resource state for the same purpose. This is a fundamentally different architecture, not just a different syntax, and it drives most of the other practical differences between the two approaches (drift-reconciliation behavior, the need for explicit resource import, remote backend configuration requirements).
@@ -261,7 +261,7 @@ _What the interviewer is probing:_ the ability to design a genuinely scalable, m
 
 ---
 
-## 48.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Terraform's separately maintained state file is the defining architectural difference from ARM/Bicep, driving drift-reconciliation behavior (manual changes get reverted), the need for explicit resource `import`, and `destroy`'s state-scoped (not target-scope-scoped) deletion behavior.
 
@@ -275,7 +275,7 @@ _What the interviewer is probing:_ the ability to design a genuinely scalable, m
 
 ---
 
-## 48.14 Part 9 Progress and Related Concepts
+## 14. Part 9 Progress and Related Concepts
 
 - **Section 46 (prerequisite, completed) / Section 47 (prerequisite, completed):** the ARM/Bicep foundation this entire section was built in direct, explicit contrast against.
 - **Section 49 — CI/CD Pipeline Patterns, GitHub Actions with Azure (next, final section of Part 9):** completes the Part 9 picture by covering broader CI/CD pattern coverage (applicable across ARM, Bicep, and Terraform equally) and GitHub Actions specifically as an alternative/complementary CI/CD platform to Azure Pipelines (Section 45), including how Terraform/Bicep deployment stages integrate into either platform.

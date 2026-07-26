@@ -1,16 +1,16 @@
 # Section 20 (Part 5): Remotes in Depth — Fetch, Pull, Push, Tracking Branches & Refspecs
 
-## 20.1 Definition
+## 1. Definition
 
 **Plain language:** A remote is a bookmark your local repository keeps for another copy of the same project — usually one living on a server — along with the commands (`fetch`, `pull`, `push`) that synchronize history between the two.
 
 **Precise:** A **remote** is a named entry in `.git/config` pairing a short label (conventionally `origin`) with a URL. Git uses that URL plus a **refspec** to know which remote refs map to which local remote-tracking refs. `fetch` downloads objects and updates remote-tracking branches; `push` uploads objects and asks the remote to move its refs; `pull` is fetch followed by an integration step (merge or rebase). Everything here builds on the local-vs-remote-tracking-vs-remote distinction already established in §12.9.
 
-## 20.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 §1.6 established that every Git clone is a complete, independent repository — there's no technical requirement that any two clones ever talk to each other again. Remotes are the mechanism that makes talking to each other _possible and efficient_ without merging the repositories into one: each side keeps its own full history, and remotes let you selectively exchange just the new objects since the last sync, plus move a small number of ref pointers to record where things stand. Without this layer you'd be manually copying `.git/objects` directories around and hand-editing ref files — remotes give you named, repeatable, incremental synchronization.
 
-## 20.3 Managing Remotes: `git remote`
+## 3. Managing Remotes: `git remote`
 
 ```bash
 # List configured remotes (names only)
@@ -43,7 +43,7 @@ A repository is not limited to one remote. `origin` is purely a naming conventio
 
 > 💡 **Tip:** `git remote` only manages the _bookmark_ — name, URL, and the refspec rules for it. It never itself transfers any objects. `fetch`/`push`/`pull` are the commands that actually move data; `remote` just tells them where to point.
 
-## 20.4 `git fetch` — Download Without Touching Your Work
+## 4. `git fetch` — Download Without Touching Your Work
 
 `git fetch <remote>` downloads any commits, trees, blobs, and refs from the remote that you don't already have, then updates your remote-tracking branches (e.g. `refs/remotes/origin/main`) to match. Critically:
 
@@ -75,7 +75,7 @@ $ git fetch --prune
 
 > 💡 **Tip:** `git fetch --prune` is what makes `git branch -d` reliably safe after a teammate's branch is merged and deleted on the server — without pruning, your stale `origin/old-feature` remote-tracking ref lingers and can confuse merge-status checks (§12.11).
 
-## 20.5 `git pull` — Fetch Plus Integration
+## 5. `git pull` — Fetch Plus Integration
 
 `git pull` is not a separate primitive; it is defined as **`git fetch` followed by an integration step** against your current branch's upstream. Which integration step depends on configuration and flags:
 
@@ -104,7 +104,7 @@ $ git config --global pull.rebase true # every repo
 
 > ⚠️ **Common confusion to preempt:** `git pull` with no arguments silently does two logically separate things — network sync and history integration — in one command. If the integration step produces a conflict, many beginners don't realize a fetch already succeeded and try to "pull again," which does nothing new since there's nothing left to fetch. Understanding pull as fetch+integrate, not as one atomic magic action, resolves this confusion instantly.
 
-## 20.6 `git push` — Uploading Your History
+## 6. `git push` — Uploading Your History
 
 `git push <remote> <branch>` uploads any commits reachable from your local branch that the remote doesn't have, then asks the remote to move its branch ref to your new tip — a request the remote server can reject.
 
@@ -126,11 +126,11 @@ $ git push origin --delete feature-payments
 $ git push origin :feature-payments
 ```
 
-### 20.6.1 Why Push Can Be Rejected: Non-Fast-Forward
+### 6.1 Why Push Can Be Rejected: Non-Fast-Forward
 
 By default the remote refuses a push if your branch's history doesn't build directly on top of what the remote currently has — i.e., the update would not be a **fast-forward**. This happens whenever someone else pushed to the same branch since your last fetch, or whenever you've rewritten history locally (amend, rebase, reset). The fix in the ordinary case is to fetch and integrate first (`git pull`), then push again.
 
-### 20.6.2 Force-Pushing: `--force` vs `--force-with-lease`
+### 6.2 Force-Pushing: `--force` vs `--force-with-lease`
 
 Sometimes a non-fast-forward push is _intentional_ — you rebased a feature branch, or amended a commit, and you genuinely want the remote's branch to be replaced with your rewritten history (§14 covers when this is legitimate: your own not-yet-shared branches, never `main`).
 
@@ -147,7 +147,7 @@ $ git push --force-with-lease origin feature-x
 
 > ⚠️ **Critical clarification:** Force-pushing to a branch other people are also working from rewrites history they've already based work on, breaking their local branches' relationship to the remote. The professional convention is: force-push is fine on your own personal feature branches (rebased before opening or updating a PR, §21), and essentially never acceptable on `main` or other shared integration branches — most hosting platforms let you enforce this with protected branches (§23).
 
-### 20.6.3 Pushing a New Branch
+### 6.3 Pushing a New Branch
 
 ```bash
 $ git switch -c feature-search
@@ -156,7 +156,7 @@ $ git push -u origin feature-search
 
 `-u`/`--set-upstream` does two things in one step: creates the branch on the remote if it doesn't exist, and records the tracking relationship locally (the same relationship §12.8 covered from the branch-creation side) so future bare `git push`/`git pull` on this branch know exactly where to go.
 
-## 20.7 Tracking Branches Recap
+## 7. Tracking Branches Recap
 
 §12.8–12.9 already established the mechanics; here's the practical view from the remote-operations side. `git branch -vv` is the single command that answers "what's my tracking situation, and am I ahead or behind?" across every local branch at once:
 
@@ -169,7 +169,7 @@ $ git branch -vv
 
 Reading this: `main` has 2 local commits not yet pushed and is missing 1 commit that exists on `origin/main` (a fetch happened, an integration step hasn't) — the exact state that triggers a non-fast-forward push rejection (20.6.1) if you tried to push right now. `scratch` has no `[...]` bracket at all, meaning it has no upstream configured — `git push`/`git pull` on it will fail with an explicit "no upstream branch" error until you set one.
 
-## 20.8 Refspecs Explained Precisely
+## 8. Refspecs Explained Precisely
 
 A **refspec** is the string that tells Git exactly which remote ref(s) map to which local ref(s) during a fetch or push. Its general form:
 
@@ -181,7 +181,7 @@ A **refspec** is the string that tells Git exactly which remote ref(s) map to wh
 - **`<dst>`** is the ref pattern on the _destination_ side (for fetch: your local remote-tracking refs; for push: the remote's refs).
 - **`+`** (optional prefix) tells Git to update `<dst>` even if it isn't a fast-forward — allow non-fast-forward updates for this specific mapping, overriding the default fast-forward-only safety check at the refspec level.
 
-### 20.8.1 The default fetch refspec
+### 8.1 The default fetch refspec
 
 Every remote you `git remote add` gets this refspec written into `.git/config` automatically:
 
@@ -193,7 +193,7 @@ Every remote you `git remote add` gets this refspec written into `.git/config` a
 
 Read literally: "take every ref under `refs/heads/` on the remote (i.e., every branch) and map it to the corresponding path under `refs/remotes/origin/` locally, updating even non-fast-forward (`+`)." This single line is the entire mechanism behind `origin/main`, `origin/feature-x`, and every other remote-tracking branch you've ever seen — they are not special-cased by Git internals, they're just where this refspec's wildcard expansion happens to land.
 
-### 20.8.2 Explicit refspecs on the command line
+### 8.2 Explicit refspecs on the command line
 
 ```bash
 # Fetch only main from origin, into a specific local ref (not the usual
@@ -212,7 +212,7 @@ $ git push origin :feature-old
 
 > 💡 **Tip:** Once refspecs click, `git push origin :feature-old` for branch deletion stops looking like a magic incantation — it's just an empty `<src>` mapped to the branch you want gone, exactly the same `<src>:<dst>` grammar as everything else.
 
-## 20.9 SSH vs HTTPS Remote URLs in Practice
+## 9. SSH vs HTTPS Remote URLs in Practice
 
 Git remotes accept either protocol form for the same repository; both fetch and push the identical history, they differ only in transport and authentication:
 
@@ -233,7 +233,7 @@ git@github.com:acme/webapp.git
 
 Full SSH key generation, agent setup, and credential-helper configuration were covered in §8.7 — this section assumes that setup exists and focuses only on the remote-URL consequence of it.
 
-### 20.9.1 Switching a Remote's URL Scheme
+### 9.1 Switching a Remote's URL Scheme
 
 Changing between SSH and HTTPS for an existing remote is a one-line operation and doesn't require re-cloning:
 
@@ -249,7 +249,7 @@ origin  git@github.com:acme/webapp.git (push)
 
 A common real-world trigger: a team enforces SSH-only pushes for auditability, or a developer's HTTPS token expired and they'd rather switch to an already-configured SSH key than manage token rotation.
 
-## 20.10 Hands-On Walkthrough — Full Remote Lifecycle
+## 10. Hands-On Walkthrough — Full Remote Lifecycle
 
 ```bash
 $ git clone https://github.com/acme/webapp.git
@@ -278,7 +278,7 @@ $ git switch main
 $ git pull --rebase origin main
 ```
 
-## 20.11 Interview Questions
+## 11. Interview Questions
 
 **[Beginner] Q1. What's the difference between `git fetch` and `git pull`?**
 **Model answer:** `git fetch` downloads new commits and refs from the remote and updates your remote-tracking branches, like `origin/main` — it never touches your working directory or any local branch. `git pull` is fetch plus an integration step: by default it merges the fetched remote-tracking branch into your current local branch, or rebases onto it with `git pull --rebase`. Fetch is the safe, look-before-you-leap operation; pull immediately acts on what it downloads.
@@ -295,7 +295,7 @@ $ git pull --rebase origin main
 **[Senior] Q5. Why is `git push --force-with-lease` considered safer than `git push --force`, and does it eliminate all risk?**
 **Model answer:** `--force` overwrites the remote branch unconditionally, regardless of what's currently there — if a teammate pushed a commit moments ago that you haven't fetched, `--force` silently destroys it with no warning. `--force-with-lease` first verifies that the remote branch's tip still matches what your local remote-tracking ref recorded at your last fetch; if it's moved since then, the push is refused instead of overwriting unknown work. It doesn't eliminate every race — there's still a small window between the lease check and the actual push where another push could land, and it only protects against changes you genuinely haven't seen, not against a specific known-good commit you'd have to specify explicitly with `--force-with-lease=<branch>:<expected-commit>` for the strictest guarantee. But as a default habit it converts "blind overwrite" into "overwrite only if my view was current," which is the correct default for any shared branch.
 
-## 20.12 Common Misconceptions
+## 12. Common Misconceptions
 
 1. **"`git pull` is a single atomic Git operation."** It's a composite of fetch plus merge or rebase — two logically separate steps that happen to be one command by default.
 2. **"`git fetch` changes my files or my branch."** It never does either; it only updates remote-tracking refs. Nothing about your working directory or local branches moves until you explicitly merge, rebase, or check out something.
@@ -303,7 +303,7 @@ $ git pull --rebase origin main
 4. **"Force-pushing is always dangerous and should never be used."** It's dangerous on shared branches other people are actively basing work on; it's routine and expected on your own not-yet-shared feature branches after a local rebase or amend, and `--force-with-lease` meaningfully reduces the risk even there.
 5. **"Deleting a remote branch with `git push origin --delete` also deletes it from every teammate's local remote-tracking cache immediately."** It deletes it on the server; teammates' local `origin/<branch>` remote-tracking refs only disappear after they run `git fetch --prune` (or an equivalent fetch that prunes).
 
-## 20.13 🔑 Key Takeaways
+## 13. 🔑 Key Takeaways
 
 - Remotes are named URL bookmarks (`git remote add/rename/remove/set-url`); a repo can have any number of them, `origin` is just convention.
 - `fetch` downloads and updates remote-tracking refs only — never your working directory or local branches; `pull` = fetch + merge or fetch + rebase (`--rebase`).
@@ -312,6 +312,6 @@ $ git pull --rebase origin main
 - Refspecs (`<src>:<dst>`, optional `+` for allowing non-fast-forward) are the precise mechanism behind remote-tracking branches and behind branch deletion's empty-`<src>` syntax.
 - SSH and HTTPS remote URLs fetch/push identical history; they differ only in auth and transport, and switching between them is a one-line `git remote set-url`.
 
-## 20.14 Related Concepts & What's Next
+## 14. Related Concepts & What's Next
 
 This section assumed the auth setup from §8.7 and the local/remote-tracking/remote distinction from §12.9, and built the full synchronization vocabulary — fetch, pull, push, refspecs — on top of them. §21 puts these commands into their real collaborative context: the shared-repository and fork-and-pull-request models, and the full lifecycle of a code review from first push to merge.

@@ -6,25 +6,25 @@
 
 ---
 
-## 99.1 Introduction and Scope
+## 1. Introduction and Scope
 
 Section 98 established how to design a single, well-formed chaos experiment. This section addresses the organizational and operational practice of making that experiment **recurring rather than one-off** — scheduling chaos experiments as part of routine CI/CD delivery, organizing broader **game-day** exercises that exercise people and process alongside technology, and using both to continuously validate that Azure Site Recovery failover (Section 62) and alerting/detection (Section 53) actually work, on an ongoing basis, as the underlying system inevitably changes over time.
 
 🔑 **Key Takeaway:** a resilience claim validated once, months ago, against a system that has since changed (new services deployed, dependencies added, alert rules modified, team members turned over) is not a currently-true claim — it's a historical fact about a system that no longer fully exists. Continuous DR validation treats resilience testing the same way this roadmap has repeatedly treated testing and validation elsewhere (Section 49's CI/CD pipeline gates, Section 55's continuous vulnerability scanning) — as an ongoing, automated practice integrated into the delivery lifecycle, not a periodic, manually-scheduled special event alone.
 
-## 99.2 Why Continuous, Not Just Periodic
+## 2. Why Continuous, Not Just Periodic
 
-### 99.2.1 The Problem With Infrequent Manual DR Drills
+### 2.1 The Problem With Infrequent Manual DR Drills
 
 Section 61.7.2 already warned that untested DR procedures are a recurring, well-documented cause of failed real-world recovery attempts. A traditional, infrequent (annual or semi-annual) manual DR drill — while valuable and better than nothing — has a structural weakness: it validates the system's resilience _as it existed at drill time_, and the gap between drills is exactly when configuration drift, dependency changes, and undocumented modifications accumulate unnoticed. A team might correctly execute a DR drill in January, then deploy a dozen changes to the application and its infrastructure over the following months, any one of which could silently invalidate the previously-confirmed resilience posture — with the next opportunity to discover that only arriving at the next scheduled drill, or worse, during a genuine incident.
 
-### 99.2.2 Continuous Validation as the Structural Fix
+### 2.2 Continuous Validation as the Structural Fix
 
 Integrating chaos experiments into the regular CI/CD delivery cadence (Section 49) — running a defined, narrow-blast-radius experiment automatically after every production deployment, or on a frequent recurring schedule independent of deployment activity — closes this gap by shrinking the window between "the system changed" and "resilience was re-validated" from months down to days or even minutes, applying exactly the same "shift validation left and make it continuous" principle this roadmap has applied throughout Part 9 (CI/CD gates) and Part 11 (continuous compliance/policy enforcement, Section 54).
 
-## 99.3 Scheduling Recurring Chaos Experiments in CI/CD
+## 3. Scheduling Recurring Chaos Experiments in CI/CD
 
-### 99.3.1 Integration Points
+### 3.1 Integration Points
 
 | Integration Point                     | What It Validates                                                                                                                                                                       | Cross-Reference                                                                                                                                            |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +32,7 @@ Integrating chaos experiments into the regular CI/CD delivery cadence (Section 4
 | **Scheduled/cron-triggered pipeline** | Ongoing resilience independent of any specific deployment — catching configuration drift, dependency changes, or environmental changes unrelated to application code                    | Section 49's broader CI/CD platform capabilities (Azure Pipelines schedules, GitHub Actions `schedule` triggers)                                           |
 | **Pre-production gate**               | A candidate release is blocked from promoting further (Section 49.2.1's "build once, promote unchanged" pattern) until it passes a defined chaos-experiment gate in a lower environment | Section 49.3's deployment-strategy material, applying the same "validate before promoting" principle to resilience rather than only functional correctness |
 
-### 99.3.2 Example: A GitHub Actions Workflow Triggering a Chaos Experiment
+### 3.2 Example: A GitHub Actions Workflow Triggering a Chaos Experiment
 
 ```yaml
 name: scheduled-chaos-validation
@@ -67,19 +67,19 @@ jobs:
 
 ⚠️ **Warning:** a scheduled chaos experiment running against production carries real risk if left completely unattended — even with a well-calibrated blast radius (Section 98.3), an automated recurring experiment should still route its result (pass or fail) to an on-call channel via an Action Group (Section 53.3) so a human is aware a chaos run occurred and can intervene if the automated polling itself fails to catch an unexpected outcome, rather than assuming full unattended automation is safe simply because the experiment worked correctly the last several times it ran.
 
-## 99.4 Organizing Game Days
+## 4. Organizing Game Days
 
-### 99.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** a game day is a scheduled, deliberately simulated incident exercise where an entire team (not just automated tooling) practices detecting, diagnosing, and responding to an injected failure — testing whether the _people and process_ around a system are resilient, not just the infrastructure itself.
 
 **Precise definition:** a game day is a structured, time-boxed exercise in which a chaos experiment (or a coordinated sequence of experiments) is executed against a target system while the responsible operations/on-call team responds as though it were a genuine incident, with the explicit goal of validating detection, escalation, communication, and remediation processes under realistic, injected failure conditions.
 
-### 99.4.2 What a Game Day Adds Beyond an Automated Chaos Experiment
+### 4.2 What a Game Day Adds Beyond an Automated Chaos Experiment
 
 🔑 **Key Takeaway:** the CI/CD-integrated experiments of Section 99.3 are excellent at continuously validating _technical_ resilience (does the system detect and recover from the fault), but they don't, by themselves, validate the _human_ side of incident response — whether the correct on-call engineer actually gets paged, whether the runbook they'd reach for is accurate and current, whether cross-team communication during an incident actually flows the way it's assumed to. A game day deliberately keeps a human response in the loop specifically to test this layer, which purely automated, continuously-scheduled experiments are not designed to exercise.
 
-### 99.4.3 Running a Game Day — Structure
+### 4.3 Running a Game Day — Structure
 
 ```
 1. Define the scenario and steady-state hypothesis in advance (Section 98.2)
@@ -111,13 +111,13 @@ jobs:
 
 ⚠️ **Warning:** whether to notify the on-call responder in advance (a "known" game day) versus running it as a genuine surprise (an "unannounced" game day) is a deliberate, contextual choice, not a universal best practice in either direction — an unannounced exercise more realistically tests genuine detection and response, but carries higher risk of unnecessary stress, confusion, or a well-intentioned but incorrect escalation (e.g., paging additional teams unnecessarily) if not carefully scoped; many mature organizations start with known, scheduled game days to build process and confidence, graduating to occasional unannounced exercises only once the practice is well-established.
 
-## 99.5 Integrating With Azure Monitor/Alerts to Validate Detection
+## 5. Integrating With Azure Monitor/Alerts to Validate Detection
 
-### 99.5.1 The Core Validation Question
+### 5.1 The Core Validation Question
 
 Section 53 covered alert rule architecture and action groups in depth; this section's game-day/continuous-validation practice is precisely how a team confirms those alert rules and action groups _actually work end-to-end_ — not merely that they're configured, but that they fire, route, and page the correct person within an acceptable time, under a realistic simulated failure. This closes exactly the same category of gap Section 53.3.3 and Section 74.3's seventh cross-cutting theme ("detection alone is insufficient without paired remediation") flagged generally — a chaos experiment is the concrete mechanism for proving the detection-to-remediation chain genuinely holds together for a specific failure scenario.
 
-### 99.5.2 What to Measure During an Experiment or Game Day
+### 5.2 What to Measure During an Experiment or Game Day
 
 | Metric                                                                                   | What a Gap Here Reveals                                                                                                                  |
 | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -126,7 +126,7 @@ Section 53 covered alert rule architecture and action groups in depth; this sect
 | Time from notification to acknowledged human response                                    | On-call rotation/escalation-policy gaps, unrelated to Azure configuration at all — a genuine process gap the exercise correctly surfaces |
 | Whether the runbook/Recovery Plan referenced during response matched actual system state | Stale documentation — a Recovery Plan (Section 62.2.4) referencing a decommissioned resource or an outdated script path                  |
 
-## 99.6 Tying Back to Azure Site Recovery Failover Testing (Section 62)
+## 6. Tying Back to Azure Site Recovery Failover Testing (Section 62)
 
 🔑 **Key Takeaway, directly synthesizing Section 62 and Part 18:** Section 62.2.2 already introduced ASR's built-in **test failover** capability as a non-disruptive way to validate that a Recovery Plan actually works, in an isolated network, without affecting production. Continuous DR validation extends that same principle from "occasionally run a manual test failover" to "regularly, automatically run test failovers as part of a scheduled validation practice, and periodically escalate to genuine game-day exercises that also validate the human response around a real (not just test-isolated) failover." A mature Azure resilience program treats these as complementary layers on the same continuum:
 
@@ -136,7 +136,7 @@ Section 53 covered alert rule architecture and action groups in depth; this sect
 
 None of the three layers alone is a complete DR validation practice; together, they provide continuous, multi-layered confidence that spans from "does the replication mechanism work" through "does the team correctly detect and respond to a real degraded-service condition."
 
-## 99.7 Comparison: Validation Layers
+## 7. Comparison: Validation Layers
 
 | Layer                                     | Frequency                             | Blast Radius                                    | Validates                                                                |
 | ----------------------------------------- | ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------ |
@@ -146,7 +146,7 @@ None of the three layers alone is a complete DR validation practice; together, t
 
 🎯 **Interview Tip:** a strong answer to "how do you validate DR/resilience on Azure" names all three layers and explains why none substitutes for the others — a common weaker answer names only one (usually ASR test failover, being the most established, longest-standing Azure capability) and misses that genuine confidence requires the technical-granularity layer (Chaos Studio) and the human-process layer (game days) as well.
 
-## 99.8 Architecture Diagram
+## 8. Architecture Diagram
 
 ```
                 Continuous DR Validation Program
@@ -172,7 +172,7 @@ None of the three layers alone is a complete DR validation practice; together, t
                                         next scheduled run
 ```
 
-## 99.9 Configuration & Hands-On Example
+## 9. Configuration & Hands-On Example
 
 **Adding a chaos-validation gate as a required check before production promotion, using Azure Pipelines (extending Section 49's environment-promotion pattern):**
 
@@ -213,23 +213,23 @@ stages:
   - `azureSubscription: 'sc-staging-oidc'` — an Azure DevOps service connection using OIDC/workload-identity federation (Section 49.7.2), keeping this pipeline free of stored long-lived credentials, consistent with the roadmap's most-repeated security theme (Section 74.3, item 1).
 - **Common error:** running the chaos-validation gate against the same shared staging environment multiple concurrent pipeline runs might be deploying to simultaneously causes false failures (one run's injected fault affecting another run's steady-state measurement) — chaos-validation gates need either a dedicated, single-tenant validation environment or explicit pipeline concurrency limits to avoid this cross-contamination.
 
-## 99.10 Production & Enterprise Usage
+## 10. Production & Enterprise Usage
 
 Enterprises with a mature practice maintain a **resilience validation calendar** spanning all three layers from Section 99.7 — automated Chaos Studio experiments running on a near-continuous CI/CD-integrated cadence for well-understood, narrow-blast-radius claims, combined with quarterly or semi-annual game days for the broader, human-inclusive scenarios (a full regional failover, a multi-service cascading failure) that are too disruptive or complex to run continuously. Results and follow-up actions from both are tracked in the same operational-excellence tooling used for genuine incident postmortems (extending Section 53.7.2's "runbooks as living operational documentation" framing), ensuring resilience validation findings feed back into actual runbook and configuration updates rather than being filed away as a one-time report.
 
-## 99.11 Security Considerations
+## 11. Security Considerations
 
 Recurring, automated chaos experiments embedded in CI/CD inherit all of Section 98.10's experiment-definition sensitivity concerns, plus an additional one specific to automation: the CI/CD pipeline's identity (Section 99.3.2's OIDC-federated credential) now has standing, repeatable permission to trigger production fault injection — this permission should be scoped as narrowly as the specific experiments require and reviewed on the same cadence as other pipeline-identity permissions (Section 49.7's security material), since a compromised pipeline with this capability could deliberately trigger disruptive faults as an attack vector, not merely as an intended validation practice.
 
-## 99.12 Performance Considerations
+## 12. Performance Considerations
 
 Scheduling chaos experiments in a genuinely low-traffic window (Section 99.3.2's cron example deliberately picks an early-morning weekly slot) balances validation realism against unnecessary risk during peak load — but as Section 98.11 already noted, exclusively testing during low-traffic windows risks never exercising concurrency- or load-related failure modes; a mature program periodically, deliberately runs a subset of validated, well-understood experiments during representative traffic conditions as well, once confidence in the experiment's safety has been established through repeated low-traffic runs first.
 
-## 99.13 Monitoring
+## 13. Monitoring
 
 The continuous-validation program's own health should itself be monitored — an experiment that silently stops running (a broken pipeline schedule, a decommissioned Chaos Studio experiment resource nobody updated) provides a false sense of ongoing validation while actually validating nothing. Dashboards or alerts confirming the expected cadence of experiment executions is actually being met (directly reusing Section 53's alerting material, now applied to the validation program's own operational health rather than only to application health) close this meta-level gap.
 
-## 99.14 Troubleshooting
+## 14. Troubleshooting
 
 | Symptom                                                                                             | Likely Cause                                                                                                                  | Fix                                                                                                                                                             |
 | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -238,7 +238,7 @@ The continuous-validation program's own health should itself be monitored — an
 | CI/CD chaos-validation gate produces inconsistent pass/fail results across otherwise-identical runs | Shared, non-isolated environment experiencing cross-contamination from concurrent pipeline runs (Section 99.9's common error) | Isolate the validation environment per run, or enforce pipeline concurrency limits on the chaos-validation stage                                                |
 | Game day retrospective produces the same findings repeatedly across successive exercises            | Follow-up remediation items from prior retrospectives were not actually tracked to closure                                    | Treat game-day follow-ups with the same rigor as incident postmortem action items — assigned owners, tracked deadlines, verified via a follow-up validation run |
 
-## 99.15 Interview Questions — Section 99
+## 15. Interview Questions — Section 99
 
 ### 🎯 Intermediate
 
@@ -256,13 +256,13 @@ _Model answer:_ I'd start incrementally rather than replacing the annual drill o
 
 _What the interviewer is probing:_ the ability to design a realistic, staged maturity roadmap rather than proposing a big-bang replacement of an existing (if limited) practice, explicit risk-awareness at each stage, and genuine synthesis of the full validation-layer stack (ASR test failover, chaos experiments, game days) introduced across Part 18 — architect-level, cumulative reasoning rather than a checklist recitation.
 
-## 99.16 Common Misconceptions
+## 16. Common Misconceptions
 
 - **"Running one successful chaos experiment means the resilience claim is permanently validated."** False — systems change continuously; validation needs to be recurring (Section 99.2.2), not a one-time milestone.
 - **"Game days and automated chaos experiments are the same practice at different scales."** False — they validate genuinely different things: automated experiments validate technical resilience, game days additionally validate human detection, escalation, and response process.
 - **"Unannounced game days are always the superior, more rigorous approach."** False — the announced-vs-unannounced choice is a deliberate trade-off between realism and managed risk/team stress; many mature programs deliberately start announced and only later, carefully, graduate to occasional unannounced exercises.
 
-## 99.17 Key Takeaways
+## 17. Key Takeaways
 
 - 🔑 Continuous DR validation shrinks the gap between "the system changed" and "resilience was re-verified" from months (a traditional annual drill) down to days or minutes, by embedding chaos experiments into CI/CD (Section 49).
 - 🔑 A complete resilience validation program layers three complementary practices — ASR test failover (mechanics), scheduled Chaos Studio experiments (specific technical claims), and game days (human/process response) — none of which substitutes for the others.
@@ -271,6 +271,6 @@ _What the interviewer is probing:_ the ability to design a realistic, staged mat
 - 🔑 The validation program's own operational health (is the scheduled experiment actually still running) needs its own monitoring — a silently-broken validation pipeline provides false confidence.
 - 🔑 Findings from every validation layer must be tracked to closure like genuine incident postmortem action items, or the same gaps recur across successive exercises without ever being fixed.
 
-## 99.18 Related Concepts (Next Up)
+## 18. Related Concepts (Next Up)
 
 Section 100 closes out Part 18 — and the entire 100-section knowledge base — synthesizing the full resilience-testing narrative from Chaos Studio fundamentals (Section 97) through experiment design (Section 98) and continuous validation practice (this section), with a rapid-fire interview drill and a final reflection across all 18 Parts of this roadmap.

@@ -1,40 +1,40 @@
 # Section 75 — Data Lake Fundamentals & Azure Data Lake Storage Gen2
 
-## 75.1 Definition
+## 1. Definition
 
 **Plain language:** a data lake is a single, centralized storage repository that holds raw data of any shape — structured tables, semi-structured JSON/CSV files, unstructured images or logs — at effectively unlimited scale and at low cost, deferring the decision about how the data will eventually be structured or used until it's actually read, rather than forcing that decision at write time. Azure Data Lake Storage Gen2 (ADLS Gen2) is Microsoft's implementation of this idea: it isn't a separate storage product, but a **capability layered on top of Azure Blob Storage** (Section 17) that adds a real file-system hierarchy and POSIX-style permissions, making Blob Storage suitable as the foundation for big-data analytics engines.
 
 **Precise definition:** Azure Data Lake Storage Gen2 is Blob Storage with the **hierarchical namespace (HNS)** feature enabled on the storage account, which organizes objects into an actual directory tree (rather than Blob Storage's default flat namespace with `/`-delimited prefixes simulating folders) and layers **POSIX-compliant Access Control Lists (ACLs)** on top of directories and files, in addition to Azure RBAC. This combination — Blob Storage's massive scale/durability/tiering economics plus a real hierarchical file system and fine-grained permission model — is what makes ADLS Gen2 the standard landing and processing layer for virtually every big-data and analytics service in Azure: Synapse (Section 76), Data Factory (Section 77), Databricks (Section 78), and Microsoft Fabric's OneLake (Section 81) all read and write against it.
 
-## 75.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Part 4 covered Blob Storage (Section 17) as Azure's general-purpose object store — durable, cheap, tiered, but fundamentally a flat key-value namespace where "folders" are just a naming convention (a `/` character embedded in a blob's name) with no real directory as an addressable, renameable, permission-bearing entity. That's fine for storing application assets or backups, but big-data analytics engines (Spark, Hive-style query engines, the Hadoop ecosystem generally) were built assuming a genuine hierarchical file system: they rename directories as atomic operations when finalizing a write (a technique many distributed write patterns rely on for correctness), they expect to set permissions at the folder level for a team or process rather than per-object, and they benefit enormously from being able to list and prune whole subtrees efficiently rather than filtering a flat key namespace by prefix.
 
 ADLS Gen2 exists to close that gap without inventing an entirely separate storage system (which was, in fact, the earlier approach — the original Azure Data Lake Store, "Gen1," was its own standalone service, since retired in favor of this Blob-Storage-based Gen2 model). By adding the hierarchical namespace and POSIX ACLs as a feature flag on ordinary Blob Storage, ADLS Gen2 inherits everything Section 17 already established about Blob Storage — redundancy options (LRS/ZRS/GRS), access tiers (hot/cool/cold/archive) for cost management as data ages, lifecycle management policies, and the Blob REST API — while adding exactly the file-system semantics analytics engines require. This is also why virtually every analytics service introduced in this Part treats ADLS Gen2 as its default or exclusive storage layer: it lets Microsoft build one storage foundation rather than a separate one per analytics product.
 
-## 75.3 Hierarchical Namespace (HNS)
+## 3. Hierarchical Namespace (HNS)
 
-### 75.3.1 What HNS Actually Changes
+### 3.1 What HNS Actually Changes
 
 **Definition:** the hierarchical namespace is a storage-account-level setting (enabled at account creation and not reversible afterward) that changes how the account internally tracks and exposes its data: directories become first-class objects with their own metadata, rather than being inferred from `/` characters in blob names.
 
 **Practical consequences:** with HNS enabled, renaming or deleting a directory is a single atomic metadata operation regardless of how many files it contains, instead of requiring the client to enumerate and individually rename/delete every blob matching a prefix — this is the specific mechanic that makes Spark's and Hive's "write to a temp directory, then atomically rename to the final path" commit pattern both correct and fast on ADLS Gen2, whereas the same pattern against flat-namespace Blob Storage is neither atomic nor efficient at scale.
 
-### 75.3.2 Enabling HNS
+### 3.2 Enabling HNS
 
 HNS is set at storage account creation via `--hierarchical-namespace true` (or the equivalent Portal toggle, "Enable hierarchical namespace," under the Advanced tab) and cannot be toggled on an existing flat-namespace account after the fact — an account destined to serve as a data lake must be created with HNS enabled from the start, or the data must be migrated into a new HNS-enabled account.
 
 ⚠️ Microsoft has, over time, enabled more Blob Storage features (lifecycle management, most redundancy options, most access tiers) to work correctly on HNS-enabled accounts, but a subset of Blob-specific features and third-party tooling has historically had gaps or caveats against HNS accounts — verify current feature parity against official documentation before assuming every Blob Storage capability from Section 17 works identically once HNS is enabled.
 
-## 75.4 POSIX ACLs and Access Control
+## 4. POSIX ACLs and Access Control
 
-### 75.4.1 RBAC vs. ACLs — Two Layered Permission Models
+### 4.1 RBAC vs. ACLs — Two Layered Permission Models
 
 **Definition:** ADLS Gen2 supports **two independent, layered** authorization mechanisms: Azure RBAC (Section 8) at the storage account or container scope, and **POSIX ACLs** at the individual directory/file level, mirroring the read/write/execute permission model familiar from Linux file systems, with entries for an owning user, an owning group, and named additional users/groups/security-principals.
 
 **How they interact:** RBAC is checked first — a role like **Storage Blob Data Contributor** assigned at the storage account or container scope grants broad access without needing any ACL entries at all. ACLs become relevant when finer-grained control is needed — for example, giving one Entra ID group read access to only a `finance/` subdirectory of a shared data lake container, while another group can read/write to `marketing/`, without granting either group account-wide RBAC permissions. This two-layer model directly extends the RBAC concepts from Section 8, applied at a much finer (per-directory) granularity than RBAC alone typically achieves in Azure.
 
-### 75.4.2 Setting ACLs
+### 4.2 Setting ACLs
 
 ```bash
 az storage fs access set \
@@ -50,13 +50,13 @@ az storage fs access set \
   - `--acl` — a comma-separated POSIX ACL string; entries follow the `[default:]type:[id]:permissions` format, where `type` is `user`, `group`, `mask`, or `other`.
 - **Common error:** setting ACLs only on the specific directory rather than also configuring a **default ACL** (prefixed `default:`) means newly-created files/subdirectories under that path won't automatically inherit the intended permissions — a frequent point of confusion for teams expecting POSIX-style ACL inheritance to "just work" the way it does with `default:` entries specifically configured for it.
 
-### 75.4.3 Access Control at Scale — Prefer RBAC + Groups Over Per-User ACLs
+### 4.3 Access Control at Scale — Prefer RBAC + Groups Over Per-User ACLs
 
 🎯 **Interview Tip:** a frequently tested distinction: fine-grained POSIX ACLs are powerful but operationally expensive to maintain directly against individual users at scale — the recommended practice, consistent with the least-privilege-via-groups pattern established for RBAC generally (Section 8.4), is to assign ACL entries to **Entra ID groups** rather than individual user objects, and to prefer RBAC role assignment at the container/directory level wherever access requirements are broad enough that ACL-level granularity isn't actually needed. Interviewers often probe whether a candidate defaults to "just add everyone individually to the ACL" instead of recognizing the group-based, least-maintenance-overhead pattern.
 
-## 75.5 Data Lake Zone Architecture
+## 5. Data Lake Zone Architecture
 
-### 75.5.1 Raw / Enriched / Curated Zones
+### 5.1 Raw / Enriched / Curated Zones
 
 **Definition:** a common convention for organizing an ADLS Gen2 data lake is to define distinct top-level containers or directories representing sequential stages of data processing, most commonly named **raw** (or "landing"), **enriched** (or "staging"/"cleansed"), and **curated** (or "presentation"/"serving") — data flows through these zones in order as it's progressively cleaned, validated, joined, and modeled for consumption.
 
@@ -66,11 +66,11 @@ az storage fs access set \
 
 This zone convention is a naming and organizational pattern only — ADLS Gen2 has no built-in "zone" construct — but it's near-universal across real-world Azure data lake implementations and is what Section 82's medallion architecture material formalizes further.
 
-### 75.5.2 Medallion (Bronze/Silver/Gold) Naming
+### 5.2 Medallion (Bronze/Silver/Gold) Naming
 
 The same raw/enriched/curated pattern is very commonly named **bronze/silver/gold** instead — a convention popularized by Databricks (Section 78) and now used broadly across the Azure data engineering ecosystem regardless of which specific compute engine processes the data. Section 82 covers this medallion architecture pattern in full architectural depth, once Synapse, Data Factory, and Databricks — the compute engines that actually move data between these zones — have been introduced.
 
-## 75.6 ADLS Gen2 vs. Plain Blob Storage — Comparison
+## 6. ADLS Gen2 vs. Plain Blob Storage — Comparison
 
 | Aspect                  | Plain Blob Storage (flat namespace)                                 | ADLS Gen2 (HNS enabled)                                                   |
 | ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -81,7 +81,7 @@ The same raw/enriched/curated pattern is very commonly named **bronze/silver/gol
 | Underlying service      | Azure Blob Storage                                                  | Azure Blob Storage (same service, HNS feature enabled)                    |
 | Reversibility           | N/A                                                                 | HNS cannot be disabled once enabled on an account                         |
 
-## 75.7 Architecture Diagram
+## 7. Architecture Diagram
 
 ```
 Source Systems (databases, SaaS APIs, files, streaming events)
@@ -102,7 +102,7 @@ Source Systems (databases, SaaS APIs, files, streaming events)
   (Section 76/78)           (Section 76.4)           / Azure AI Search (Section 80)
 ```
 
-## 75.8 Configuration & Hands-On Example
+## 8. Configuration & Hands-On Example
 
 **Creating an ADLS Gen2 storage account with HNS enabled and a file system:**
 
@@ -127,25 +127,25 @@ az storage fs create \
   - `--sku Standard_LRS` — an illustrative redundancy choice; production data lakes holding business-critical curated data commonly use ZRS or GRS instead, per the redundancy trade-offs already established in Section 17.
 - **Common error:** attempting to enable HNS on an existing, already-populated Blob Storage account — this is not supported as a simple settings change; the only paths are creating a new HNS-enabled account and migrating data into it, or using Microsoft's dedicated (and narrowly-scoped) HNS-upgrade tooling where eligible, which itself has account-type and feature restrictions that must be verified against current documentation.
 
-## 75.9 Production & Enterprise Usage
+## 9. Production & Enterprise Usage
 
 Enterprise data platforms typically provision one or a small number of ADLS Gen2 accounts as a shared foundation — often within a dedicated "data" or "analytics" Landing Zone subscription (Section 66.3.3), with the raw/enriched/curated (or bronze/silver/gold) container structure established as an organizational standard before any pipeline is built against it. Access to each zone/directory is governed by Entra ID groups mapped to the relevant business or data-engineering team, using the RBAC-plus-ACL layered model from Section 75.4, so that access review and onboarding/offboarding follow the same group-membership-driven process already established for RBAC generally (Section 8.4) rather than requiring bespoke per-lake permission management.
 
-## 75.10 Security Considerations
+## 10. Security Considerations
 
 - Enable **soft delete** for both blobs and containers (inherited directly from Blob Storage, Section 17.6) so an accidental or malicious deletion of a data lake directory can be recovered within the configured retention window, rather than being permanently lost.
 - Restrict network access using **firewall and virtual network rules** or **Private Endpoints** (Section 23.4) on the storage account, so that analytics engines reach the data lake over private connectivity rather than the public endpoint — directly extending the Private Link material from Part 5 to the data platform specifically.
 - Use **Managed Identities** (Section 9) for every service that reads or writes to the data lake — Synapse, Data Factory, and Databricks compute all support authenticating to ADLS Gen2 via their managed identity rather than storage account keys, eliminating another instance of the stored-credential risk this roadmap has repeatedly flagged as its most common security anti-pattern.
 
-## 75.11 Performance Considerations
+## 11. Performance Considerations
 
 Analytics engines reading from ADLS Gen2 perform dramatically better against columnar file formats (Parquet, ORC) than row-oriented formats (CSV, JSON), because columnar formats let the query engine skip reading columns it doesn't need and apply predicate pushdown to skip irrelevant row groups entirely — this is a primary reason the enriched/silver zone typically converts data to Parquet even when the raw/bronze zone retains the original source format. File size also matters: a data lake accumulating a very large number of small files (a common outcome of frequent, small streaming writes) forces query engines to pay per-file overhead across many more files than necessary — periodic **compaction** jobs merging small files into larger ones is a standard operational practice for lakes fed by high-frequency ingestion.
 
-## 75.12 Monitoring
+## 12. Monitoring
 
 ADLS Gen2 accounts integrate with Azure Monitor (Part 10) exactly as any Storage Account does — Storage Insights metrics (capacity, transaction counts, latency) and, where enabled, diagnostic logs sent to a Log Analytics workspace (Section 51) for detailed access auditing, including which identity read or wrote to which specific path — valuable both for cost/capacity planning and for security investigation of who accessed a sensitive directory.
 
-## 75.13 Troubleshooting
+## 13. Troubleshooting
 
 | Symptom                                                                                                | Likely Cause                                                                                                                                                               | Fix                                                                                                                                     |
 | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -153,7 +153,7 @@ ADLS Gen2 accounts integrate with Azure Monitor (Part 10) exactly as any Storage
 | Spark/Synapse jobs writing to the lake are slow and produce huge numbers of small output files         | No compaction step in the pipeline; high-frequency small writes accumulating unmerged                                                                                      | Add a periodic compaction/optimize step (or, on Delta Lake per Section 78.4, run `OPTIMIZE`) to merge small files                       |
 | Attempting to enable hierarchical namespace on an existing account fails or isn't offered as an option | HNS can only be set at account creation (or via Microsoft's narrowly-scoped upgrade tooling where eligible)                                                                | Create a new HNS-enabled account and migrate data, or verify current upgrade-tool eligibility for the specific account                  |
 
-## 75.14 Interview Questions — Section 75
+## 14. Interview Questions — Section 75
 
 ### 🎯 Intermediate
 
@@ -171,13 +171,13 @@ _Model answer:_ I'd organize the raw/enriched/curated zones (Section 75.5) with 
 
 _What the interviewer is probing:_ genuine understanding of the two-layer RBAC-plus-ACL model and when to reach for each — using ACLs for fine-grained per-team boundaries and RBAC for a broad cross-cutting grant — rather than trying to solve everything with one mechanism, plus baseline security hygiene (managed identity, private connectivity) applied to a realistic multi-tenant data platform scenario.
 
-## 75.15 Common Misconceptions
+## 15. Common Misconceptions
 
 - **"ADLS Gen2 is a separate storage service from Blob Storage."** False — it's the same underlying Blob Storage service with the hierarchical namespace feature enabled at account creation; this is a common point of confusion given the distinct product name.
 - **"POSIX ACLs replace the need for Azure RBAC on a data lake."** False — RBAC and ACLs are independent, layered mechanisms evaluated together; broad access is typically granted via RBAC, with ACLs reserved for finer-grained, per-directory exceptions.
 - **"You can enable hierarchical namespace on any existing Blob Storage account whenever needed."** False — HNS must generally be set at account creation; enabling it later requires either creating a new account and migrating data or using Microsoft's narrowly-scoped, eligibility-restricted upgrade tooling.
 
-## 75.16 Key Takeaways
+## 16. Key Takeaways
 
 - 🔑 ADLS Gen2 is Blob Storage (Section 17) with the hierarchical namespace feature enabled — a real directory tree with atomic directory operations, plus POSIX ACLs — not a separate storage product.
 - 🔑 HNS is what makes atomic directory rename/delete possible, which is specifically why Spark- and Hive-style commit patterns require it for both correctness and performance at scale.
@@ -185,6 +185,6 @@ _What the interviewer is probing:_ genuine understanding of the two-layer RBAC-p
 - 🔑 The raw/enriched/curated (or bronze/silver/gold) zone convention is an organizational pattern, not a built-in ADLS Gen2 construct, but it is the near-universal way real-world Azure data lakes are structured.
 - 🔑 HNS cannot be enabled on an existing, already-populated account after the fact in the general case — it must be planned at account creation.
 
-## 75.17 Related Concepts (Next Up)
+## 17. Related Concepts (Next Up)
 
 Section 76 builds directly on this foundation with **Azure Synapse Analytics**, the converged data-warehouse/big-data platform whose dedicated SQL pools, serverless SQL pools, and Spark pools all read and write against the ADLS Gen2 data lake structure just established here — turning this section's storage foundation into a queryable, processable analytics platform.

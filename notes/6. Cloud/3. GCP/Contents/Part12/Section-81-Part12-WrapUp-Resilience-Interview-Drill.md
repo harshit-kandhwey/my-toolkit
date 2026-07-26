@@ -1,10 +1,10 @@
 # Section 81 (Part 12): Part 12 Wrap-Up — Resilience Synthesis & Interview Drill
 
-## 81.1 Purpose of This Section
+## 1. Purpose of This Section
 
 Part 12 covered how GCP proves that the resilience designs from Section 57–58 actually work: the concepts and vocabulary of chaos engineering along with GCP's genuine lack of a first-party managed chaos service (Section 78), the concrete open-source and commercial tooling that fills that gap (Section 79), and the recurring, measured operating cadence — automated micro-experiments, scheduled drills, full game days — that turns a single successful test into an actual improving practice (Section 80). This closing section consolidates that material into one narrative, drills it with tiered interview questions spanning all three sections, and transitions into Part 13 — the final part of this knowledge base.
 
-## 81.2 Part 12 Recap — What Was Covered
+## 2. Part 12 Recap — What Was Covered
 
 | §   | Section                                 | Core Idea                                                                                                                                                                                                                                   |
 | --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 | 79  | Chaos Engineering Tooling               | Chaos Mesh and Litmus Chaos are self-hosted, Kubernetes-native platforms on GKE defining faults as CRDs; Gremlin is a managed, cross-cloud SaaS agent reaching both VMs and GKE.                                                            |
 | 80  | Continuous DR Validation & Game Days    | A drill run once is a snapshot, not proof — layering automated micro-experiments, scheduled failover drills, and full game days, with RTO/RPO tracked across successive runs, is what actually validates and improves resilience over time. |
 
-## 81.3 The Unifying Architecture: Design → Validate → Operationalize
+## 3. The Unifying Architecture: Design → Validate → Operationalize
 
 ```
    Section 57-58                Section 78                    Section 79                    Section 80
@@ -30,7 +30,7 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 
 > 🔑 **The single repeated principle across Part 12:** a resilience claim is only as credible as the last time it was actually exercised. Section 78 supplies the vocabulary and honestly names GCP's tooling gap; Section 79 supplies the concrete tools that fill it; Section 80 supplies the discipline that turns a tool into a trend line of measurably improving RTO/RPO. None of the three sections stands alone — a hypothesis without tooling can't be tested, tooling run once produces a snapshot not a trend, and a cadence with the wrong tooling has nothing to actually execute.
 
-## 81.4 Cross-Section Decision Framework
+## 4. Cross-Section Decision Framework
 
 | Question                                                                                            | Answer                                                                                                                    |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -42,7 +42,7 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 | Need to test whether the on-call team, not just the infrastructure, responds correctly?             | A full game day — announced window, undisclosed exact scenario, incident-commander/scribe/observer roles (Section 80)     |
 | How do you know if the resilience program is actually working, not just running?                    | Track measured RTO/RPO per drill on a trend line across successive runs, not a single pass/fail (Section 80.3.4)          |
 
-## 81.5 Common Mistakes Spanning This Part
+## 5. Common Mistakes Spanning This Part
 
 - Assuming GCP must have a native chaos-engineering product somewhere and spending time searching for it, rather than accepting the documented gap and moving to Chaos Mesh/Litmus/Gremlin (Section 78.8).
 - Treating a passed chaos experiment as proof the _design_ is correct, when it only proves the _specific tested mechanism_ behaved as expected under that specific fault (Section 78.8).
@@ -53,7 +53,7 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 - Believing automated micro-experiments make game days redundant — they validate different things: infrastructure self-healing versus human detection and response under pressure (Section 80.8).
 - Treating an unbroken streak of "passing" drills as a sign of a mature program, when it more often indicates experiments that are too narrowly scoped or too well-rehearsed to find anything (Section 80.8, 81.4 senior tier below).
 
-## 81.6 Part 12 Interview Drill
+## 6. Part 12 Interview Drill
 
 ### 🎯 Beginner Tier
 
@@ -88,7 +88,7 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 **Q9:** What's the strongest signal that a chaos-engineering/DR-validation program has degraded into a compliance checkbox rather than a genuine practice, and how would you investigate it?
 **A:** An unbroken streak of "passing" drills with no findings, sustained over many cycles, is the strongest signal — real systems accumulate drift and genuine failure modes are subtle enough that a healthy program should regularly surface something, especially in its early cycles. I'd investigate by pulling the actual scenario definitions used across the last several drills: if the blast radius, fault type, and target service have barely varied, the program is likely re-running the same easy scenario rather than expanding coverage. I'd also check whether the RTO/RPO trend line (Section 80.3.4) shows real numbers converging toward target from an initial miss, versus simply reporting "pass" with no measured detail at all — the presence of measured, improving numbers is evidence of a genuine practice, while a binary pass/fail log with no supporting metrics is itself a red flag.
 
-## 81.7 Key Takeaways — Part 12 Overall
+## 7. Key Takeaways — Part 12 Overall
 
 - 🔑 GCP has no first-party managed chaos-engineering service, unlike AWS FIS and Azure Chaos Studio — this single fact shapes every tooling and process decision in this Part (Section 78).
 - 🔑 Chaos Mesh and Litmus Chaos (self-hosted, Kubernetes-native, free) and Gremlin (managed, commercial, reaches both VMs and Kubernetes across clouds) are the two practical paths that fill GCP's gap, trading setup effort against operational cost and reach differently (Section 79).
@@ -96,12 +96,12 @@ Part 12 covered how GCP proves that the resilience designs from Section 57–58 
 - 🔑 A drill run once is a point-in-time snapshot; continuous validation across automated micro-experiments, scheduled drills, and full game days, with RTO/RPO tracked across successive runs, is what actually proves and improves resilience over time (Section 80).
 - 🔑 The most valuable early outcome is finding a real gap, not a clean pass — a program with no findings should be scrutinized as under-scoped, not celebrated as flawless.
 
-## 81.8 Transition to Part 13
+## 8. Transition to Part 13
 
 Part 12 closes the last _technical domain_ covered in this knowledge base: design a resilience architecture (Section 57–58), understand what it takes to prove that design actually works given GCP's specific tooling landscape (Section 78), choose the tooling to do it (Section 79), and operationalize that tooling as a continuously improving practice (Section 80).
 
 **Part 13 (Sections 82–85) is the final part of the entire knowledge base**, shifting from individual technical domains to synthesis and interview readiness. It begins with **Section 82: GCP vs. AWS vs. Azure Comparison**, building a direct, side-by-side comparison across every domain covered so far — compute, storage, networking, Kubernetes, IAM, data and analytics, DevOps, enterprise landing zones, AI/ML, security operations, and the resilience practice this Part just closed. From there, **Section 83** consolidates interview preparation across the whole knowledge base, **Section 84** provides hands-on lab exercises, and **Section 85** closes with the knowledge base's final key takeaways.
 
-## 81.9 Related Concepts
+## 9. Related Concepts
 
 Resilience & Chaos Engineering Concepts (Section 78), Chaos Engineering Tooling (Section 79), Continuous DR Validation & Game Days (Section 80) — the full set this section synthesizes — along with Enterprise Architecture Patterns (Section 57), Disaster Recovery & Multi-Region Architecture (Section 58), Cloud Monitoring/Alerting (Section 54), GKE Architecture (Section 30), and the GCP vs. AWS vs. Azure comparison opening Part 13 (Section 82, next).

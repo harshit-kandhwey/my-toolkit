@@ -1,16 +1,16 @@
 # Section 2 — Cloud Computing Models (IaaS/PaaS/SaaS) and Deployment Models
 
-## 2.1 Definition
+## 1. Definition
 
 **Plain language:** A "cloud service model" describes how much of the technology stack Microsoft manages for you versus how much you manage yourself. A "deployment model" describes _where_ that infrastructure physically lives and who else shares it.
 
 **Precise definition:** Cloud service models (IaaS, PaaS, SaaS, and the less common FaaS/CaaS) form a spectrum defined by the division of management responsibility between provider and customer across the technology stack (physical hardware → virtualization → OS → runtime → application → data). Deployment models (public, private, hybrid, multi-cloud) describe the ownership, location, and tenancy boundary of the infrastructure itself.
 
-## 2.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Different workloads have different needs. A legacy application that requires full OS-level control (custom kernel modules, specific patch levels) needs IaaS. A team that just wants to deploy code without thinking about servers at all wants PaaS or serverless. A company that cannot legally store data outside its own physical premises needs a private or hybrid deployment. This spectrum of models exists so that **you only manage what you actually need to manage** — every layer you don't have to manage is a layer you don't have to secure, patch, monitor, or scale yourself.
 
-## 2.3 The Responsibility Spectrum
+## 3. The Responsibility Spectrum
 
 The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" table. Read it as: everything **below** the line "You manage" is handled by Microsoft; everything **above** it is your responsibility.
 
@@ -28,7 +28,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 > 🎯 **Interview tip:** This exact table (sometimes called the "shared responsibility model" for service tiers, distinct from the security-specific shared responsibility model covered in Part 11) is one of the most commonly drawn diagrams in cloud interviews. Being able to reproduce it from memory, and explain _why_ each row sits where it does, signals genuine understanding rather than memorization.
 
-## 2.4 IaaS (Infrastructure-as-a-Service) — Deep Dive
+## 4. IaaS (Infrastructure-as-a-Service) — Deep Dive
 
 **Definition:** IaaS provides the fundamental building blocks — virtual machines, virtual networks, and storage — with Microsoft managing only the physical hardware and the hypervisor layer. You are responsible for the guest operating system, all patching above it, and everything you install and run.
 
@@ -42,7 +42,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 **Trade-off:** Maximum control, but maximum operational burden — you own OS patching, security hardening, scaling configuration, and availability configuration.
 
-## 2.5 PaaS (Platform-as-a-Service) — Deep Dive
+## 5. PaaS (Platform-as-a-Service) — Deep Dive
 
 **Definition:** PaaS provides a managed runtime environment — Microsoft manages the OS, patching, and underlying scaling infrastructure, and you deploy only your application code and configuration.
 
@@ -58,7 +58,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 > ⚠️ **A common point of confusion:** AKS (Azure Kubernetes Service) is often mis-categorized. Microsoft manages the Kubernetes _control plane_ (the API server, etcd, scheduler — PaaS-like), but you still manage the _worker nodes_ as VMs, including their OS patching in many configurations (IaaS-like), and you fully manage what runs inside your containers. This makes AKS a hybrid model — expect this nuance to come up in senior interviews. AKS is covered fully in Part 7.
 
-## 2.6 SaaS (Software-as-a-Service) — Deep Dive
+## 6. SaaS (Software-as-a-Service) — Deep Dive
 
 **Definition:** SaaS delivers a complete, ready-to-use application. Microsoft manages everything from physical hardware up through the application itself; you only manage your data and user-level configuration.
 
@@ -66,7 +66,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 **When to use it:** When the business need is a finished capability (email, CRM, office productivity) rather than a platform to build on.
 
-## 2.7 Serverless / FaaS and Containers-as-a-Service — Where They Fit
+## 7. Serverless / FaaS and Containers-as-a-Service — Where They Fit
 
 Two additional models are commonly discussed alongside the classic three:
 
@@ -75,7 +75,7 @@ Two additional models are commonly discussed alongside the classic three:
 
 These aren't separate rows on the responsibility table so much as they are refinements within the IaaS→PaaS spectrum, trading further customer responsibility for further convenience.
 
-## 2.8 Deployment Models
+## 8. Deployment Models
 
 Separately from _how much_ Microsoft manages, you must decide _where_ infrastructure lives and who shares it:
 
@@ -84,11 +84,11 @@ Separately from _how much_ Microsoft manages, you must decide _where_ infrastruc
 - **Hybrid cloud** — a combination of on-premises/private infrastructure and public cloud, connected and often managed together. Azure Arc (Part 13) extends Azure's management plane (including Azure Policy, RBAC, and monitoring) to resources running outside Azure entirely, including on-premises servers, other clouds, and edge devices.
 - **Multi-cloud** — using more than one public cloud provider (e.g., Azure plus AWS) simultaneously, either for redundancy, to avoid vendor lock-in, or because different providers excel at different services. This introduces significant complexity in identity, networking, and tooling standardization, discussed further in Part 13.
 
-## 2.9 Production & Enterprise Usage
+## 9. Production & Enterprise Usage
 
 In practice, large enterprises rarely commit to a single service model. A typical enterprise Azure estate mixes: legacy applications on IaaS VMs (because rewriting them for PaaS isn't cost-justified), new applications built on PaaS/serverless (App Service, Functions) to minimize operational overhead, and SaaS for productivity tooling (Microsoft 365). Deployment-model-wise, regulated enterprises frequently run **hybrid**, keeping sensitive data on-premises or in a private cloud while bursting compute or running less-sensitive workloads in the Azure public cloud — this pattern is formalized later in the Cloud Adoption Framework and landing zone architecture (Part 13).
 
-## 2.10 Interview Questions — Section 2
+## 10. Interview Questions — Section 2
 
 ### 🎯 Beginner
 
@@ -106,18 +106,18 @@ _Model answer:_ I'd start by classifying the application's components by data se
 
 _What the interviewer is probing:_ whether the candidate can navigate real-world constraints (compliance, legacy systems) rather than defaulting to a purely theoretical "always use the most modern service" answer — this is a strong differentiator at the architect level.
 
-## 2.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - **"PaaS is always better than IaaS."** Not true — PaaS trades control for convenience, and workloads requiring OS-level customization, specific compliance agents, or unsupported legacy dependencies genuinely need IaaS.
 - **"Serverless means there are no servers."** False — servers still exist; "serverless" means _you_ don't provision or manage them directly, and billing is typically based on execution rather than reserved capacity.
 
-## 2.12 Key Takeaways
+## 12. Key Takeaways
 
 - 🔑 The service model spectrum (IaaS→PaaS→SaaS) is about _who manages which layer of the stack_ — more managed by Microsoft means less operational burden but less customization control.
 - 🔑 AKS is a hybrid model: managed control plane (PaaS-like) but customer-managed worker nodes (IaaS-like) — a frequent interview nuance.
 - 🔑 Deployment models (public/private/hybrid/multi-cloud) are an orthogonal decision from service models — about _where_ infrastructure lives and who it's shared with, not how much of the stack is managed.
 - 🔑 Real enterprise architectures mix all of these models simultaneously rather than standardizing on just one.
 
-## 2.13 Related Concepts (Next Up)
+## 13. Related Concepts (Next Up)
 
 Section 3 will cover Azure's **physical global infrastructure** — Regions, Availability Zones, Region Pairs — which is the literal physical substrate that every IaaS, PaaS, and SaaS resource discussed in this section is ultimately deployed onto.

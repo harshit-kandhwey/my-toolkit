@@ -6,7 +6,7 @@
 
 ---
 
-## 52.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Application Insights: Azure Monitor's application-performance-monitoring (APM) layer, providing the request/dependency/exception-level telemetry referenced throughout Sections 40.7.3, 51's KQL examples, and implicitly needed by every application-hosting service covered in Parts 3, 7, and 8 of this roadmap. This section covers the telemetry types Application Insights collects, distributed tracing and the correlation model, instrumentation approaches (auto-instrumentation vs. manual SDK usage), sampling, and the Application Map visualization.
 
@@ -14,21 +14,21 @@ This section covers Application Insights: Azure Monitor's application-performanc
 
 ---
 
-## 52.2 What Is Application Insights and Why It Exists
+## 2. What Is Application Insights and Why It Exists
 
-### 52.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Application Insights is Azure's application-performance-monitoring service — it instruments your application code (automatically or with minimal manual code) to capture every incoming request, every outgoing call to a dependency (a database, an external API, another microservice), every exception, and custom application events, then correlates all of this into a coherent picture of exactly what happened during any individual request, end to end.
 
 **Precise definition:** Application Insights is Azure Monitor's application-performance-monitoring (APM) feature, collecting request, dependency, exception, trace, and custom telemetry from instrumented application code, storing it in a Log Analytics workspace (in the modern workspace-based configuration) queried via KQL (Section 51), with distributed tracing correlation linking related telemetry across a request's full execution path, including across service boundaries.
 
-### 52.2.2 Why It Exists — The Gap It Fills Beyond Section 50's Infrastructure Monitoring
+### 2.2 Why It Exists — The Gap It Fills Beyond Section 50's Infrastructure Monitoring
 
 - **Infrastructure health does not equal application health:** a VM or AKS pod (Section 50's metrics) can show perfectly healthy CPU/memory while the application running on it is nonetheless failing a significant fraction of user requests due to a bug, a slow downstream dependency, or an unhandled exception — infrastructure-level metrics simply don't have visibility into this application-code-level behavior at all.
 - **Distributed systems need distributed tracing:** a single user-facing request in a microservices architecture (Section 36's AKS-hosted services, or a mix of App Service/Functions/AKS) may traverse multiple independent services before completing — understanding why that request was slow or failed requires correlating telemetry _across_ those service boundaries, something no single service's own isolated logs can provide in isolation; this is specifically what Application Insights' correlation model (52.4) solves.
 - **Directly closing the gap flagged in Section 50.6's Container Insights discussion:** Container Insights (Section 50.6.2) provides node/pod/container-level infrastructure telemetry for AKS; Application Insights provides the complementary application-code-level telemetry for whatever is actually running _inside_ those containers — the two are complementary layers, not overlapping or redundant, directly reinforcing the "infrastructure health ≠ application health" distinction from the point above.
 
-### 52.2.3 Terminology
+### 2.3 Terminology
 
 | Term                      | Definition                                                                                                                                                                                                                                                                               |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,15 +45,15 @@ This section covers Application Insights: Azure Monitor's application-performanc
 
 ---
 
-## 52.3 Instrumentation Approaches
+## 3. Instrumentation Approaches
 
-### 52.3.1 Auto-Instrumentation
+### 3.1 Auto-Instrumentation
 
 - **Definition:** Application Insights telemetry collection enabled at the platform/hosting level (an App Service configuration setting, an AKS auto-instrumentation add-on/annotation) without requiring the application's own source code to reference the Application Insights SDK directly.
 - **What it captures automatically:** incoming request telemetry, and — for many common frameworks/languages — automatically-detected dependency calls to well-known target types (SQL, HTTP, common Azure SDKs) without any manual code changes.
 - **Trade-off:** minimal effort to enable, but limited to what the auto-instrumentation agent can automatically detect and correlate — custom business events, custom metrics, and fine-grained control over what gets tracked as a "dependency" for less common/custom integration types generally still require manual SDK usage (52.3.2).
 
-### 52.3.2 Manual SDK Instrumentation
+### 3.2 Manual SDK Instrumentation
 
 - **Definition:** explicit use of the Application Insights SDK within application code to track custom telemetry — custom events, custom metrics, explicit dependency tracking for integrations auto-instrumentation doesn't recognize, and fine-grained control over what gets captured.
 - **Example (conceptual, language-agnostic pattern):**
@@ -63,7 +63,7 @@ This section covers Application Insights: Azure Monitor's application-performanc
   ```
 - **When manual instrumentation is necessary:** business-relevant custom events (which auto-instrumentation has no way to know are meaningful without being told), custom metrics beyond standard request/dependency timing, and any integration/protocol auto-instrumentation doesn't natively recognize.
 
-### 52.3.3 Which Approach for Which Azure Service (Direct Application of Prior Roadmap Sections)
+### 3.3 Which Approach for Which Azure Service (Direct Application of Prior Roadmap Sections)
 
 | Hosting Service                              | Instrumentation Pattern                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -73,44 +73,44 @@ This section covers Application Insights: Azure Monitor's application-performanc
 
 ---
 
-## 52.4 Distributed Tracing and Correlation
+## 4. Distributed Tracing and Correlation
 
-### 52.4.1 The Correlation Problem
+### 4.1 The Correlation Problem
 
 In a request spanning multiple services (a user request hits an App Service front-end, which calls an AKS-hosted API, which calls a Function, which queries Cosmos DB), each individual component's own telemetry, viewed in isolation, tells only part of the story — understanding the _end-to-end_ path, and specifically identifying which single component in that chain caused an observed slowdown or failure, requires linking all of these individually-generated telemetry records together as belonging to one logical operation.
 
-### 52.4.2 Operation ID and the W3C Trace Context Standard
+### 4.2 Operation ID and the W3C Trace Context Standard
 
 - **Operation ID (52.2.3):** a unique identifier generated for the initial incoming request, propagated forward through every subsequent dependency call the handling of that request makes — including across service boundaries, via HTTP headers automatically added and read by Application Insights' instrumentation.
 - **W3C Trace Context:** the modern, standardized HTTP header format (`traceparent`, `tracestate`) Application Insights uses for this propagation, ensuring interoperability with other, non-Application-Insights-instrumented services that also implement the same open W3C standard (relevant for genuinely heterogeneous, multi-vendor-tooling architectures) — a meaningful improvement over Application Insights' own earlier, proprietary correlation header format, now aligned with a broader industry-standard distributed-tracing convention.
 - **Practical consequence:** as long as every component in a request's path is Application-Insights-instrumented (or otherwise W3C-Trace-Context-compliant), the Operation ID correlates telemetry across every one of those components automatically, enabling the exact `join ... on OperationId` KQL pattern demonstrated in Section 51.4.2 to reconstruct a full end-to-end request trace from otherwise separately-generated telemetry records.
 
-### 52.4.3 The Application Map
+### 4.3 The Application Map
 
 - **Definition:** an automatically-generated, visual topology diagram derived from correlated dependency telemetry across every instrumented component sharing the same underlying Application Insights resource (or a resource group of related resources) — showing discovered services as nodes and their observed call relationships as edges, annotated with aggregate health/performance data per edge (call volume, average duration, failure rate).
 - **Why it matters operationally:** provides an immediately actionable, visual "where is the problem" starting point during an incident — a node/edge showing an elevated failure rate or latency spike visually highlights which specific service-to-service call path warrants deeper investigation, before any KQL query is even written, directly complementing the deep KQL investigative capability from Section 51 with a faster, visual first-pass triage tool.
 
 ---
 
-## 52.5 Availability Tests
+## 5. Availability Tests
 
-### 52.5.1 Definition
+### 5.1 Definition
 
 **Availability tests** (also called web tests) are synthetic, externally-originated HTTP requests Application Insights periodically sends to a specified URL (from multiple global points of presence) to verify the endpoint is reachable and responding correctly — distinct from all the telemetry types covered so far, which are generated by _real_ traffic passing through instrumented application code.
 
-### 52.5.2 Why Synthetic Testing Matters Beyond Real-Traffic Telemetry
+### 5.2 Why Synthetic Testing Matters Beyond Real-Traffic Telemetry
 
 🔑 **Key Takeaway:** request/dependency telemetry (52.2.3) can only report on traffic that actually occurred — if an application has genuinely gone completely unreachable (a DNS failure, a networking misconfiguration, the application crashed entirely with no requests reaching it at all), there is no real traffic to generate telemetry about the outage in the first place. Availability tests solve this specific gap by originating requests _independently_ of real user traffic, providing an outside-in health signal that remains functional even when the application itself is completely down — directly enabling the alerting scenario "notify us the moment the site becomes unreachable" (Section 53), which real-traffic-dependent telemetry alone structurally cannot provide.
 
 ---
 
-## 52.6 Sampling
+## 6. Sampling
 
-### 52.6.1 Why Sampling Exists
+### 6.1 Why Sampling Exists
 
 At high request volume, capturing and storing _every single_ telemetry item (every request, every dependency call, every trace line) becomes both extremely costly (Log Analytics ingestion cost scales with data volume, Section 50.8) and, in many cases, unnecessary for the actual analytical/alerting need — most of the statistically meaningful insight (aggregate request rates, average/percentile durations, overall failure rates) can be preserved with only a representative sample of the full telemetry volume.
 
-### 52.6.2 Sampling Types
+### 6.2 Sampling Types
 
 | Type                                                                                                 | Mechanism                                                                                                                                                                                                                                | Trade-off                                                                                                                                                                                                                                                                             |
 | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -122,23 +122,23 @@ At high request volume, capturing and storing _every single_ telemetry item (eve
 
 ---
 
-## 52.7 Production and Enterprise Usage
+## 7. Production and Enterprise Usage
 
-### 52.7.1 Workspace-Based vs. Classic Application Insights
+### 7.1 Workspace-Based vs. Classic Application Insights
 
 - Modern Application Insights resources are **workspace-based** — storing their telemetry directly within a Log Analytics workspace (Section 50–51), rather than the legacy "classic" model's separate, dedicated storage — directly unifying Application Insights data with the rest of an organization's Azure Monitor log data for combined querying (e.g., correlating application-level exception telemetry with infrastructure-level resource logs from the same workspace, in a single KQL query) and consistent RBAC/retention management, superseding the older classic model (verify exact current migration/deprecation status of classic Application Insights against documentation, as Microsoft has been actively transitioning customers toward the workspace-based model).
 
-### 52.7.2 Live Metrics
+### 7.2 Live Metrics
 
 - **Live Metrics** provides a near-real-time (sub-second latency, in contrast to the several-minutes-typical ingestion latency of standard telemetry queried via KQL) streaming view of key metrics (request rate, failure rate, CPU/memory) — specifically valuable during an active deployment (validating a canary/blue-green rollout's immediate health, Section 49.3) or an active incident, where even a few minutes of standard telemetry latency is operationally significant.
 
-### 52.7.3 Cost Management
+### 7.3 Cost Management
 
 - Directly extending Section 50.8's Log Analytics cost discussion: Application Insights telemetry volume, especially trace-level logging at high verbosity across a high-traffic application, can become a very substantial fraction of an organization's total Log Analytics ingestion cost — sampling (52.6) is the primary lever for managing this, and a deliberate, reviewed sampling configuration (rather than an unconsidered default) is a genuine, recurring cost-optimization practice specific to APM telemetry.
 
 ---
 
-## 52.8 Troubleshooting Reference
+## 8. Troubleshooting Reference
 
 | Symptom                                                                                                                  | Likely Cause                                                                                                                                                                                                                                                           | Diagnostic Step                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -150,7 +150,7 @@ At high request volume, capturing and storing _every single_ telemetry item (eve
 
 ---
 
-## 52.9 Best Practices Checklist
+## 9. Best Practices Checklist
 
 - [ ] Auto-instrumentation enabled as a baseline for every supported hosting service (App Service, Functions), with manual SDK instrumentation added specifically for custom business events/metrics.
 - [ ] Distributed tracing correlation verified end-to-end across every service in a multi-service request path, confirmed via the Application Map showing the expected full topology.
@@ -162,7 +162,7 @@ At high request volume, capturing and storing _every single_ telemetry item (eve
 
 ---
 
-## 52.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - "Healthy infrastructure metrics (Section 50) mean the application is healthy." _Correction:_ this is the core distinction motivating Application Insights' existence (52.2.2) — infrastructure health and application-code-level health are genuinely separate concerns, and an application can be failing user requests while its underlying infrastructure metrics look entirely normal.
 - "Sampling means some requests are silently, inconsistently missing pieces of their telemetry (a request captured but its exception dropped, or vice versa)." _Correction:_ Application Insights' sampling is specifically designed to sample entire correlated operations together, preserving correlation integrity — a request and its associated exception/dependency telemetry are sampled in or out together as a unit, not independently (52.6's warning).
@@ -170,7 +170,7 @@ At high request volume, capturing and storing _every single_ telemetry item (eve
 
 ---
 
-## 52.11 Interview Questions (Consolidated)
+## 11. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between request telemetry and dependency telemetry in Application Insights?"
 _Model answer:_ request telemetry records incoming requests _to_ the instrumented application (e.g., an HTTP request a web API receives), including its duration and success/failure. Dependency telemetry records outgoing calls the application makes _to_ other systems while handling that request (a database query, an HTTP call to another service) — the two together provide both sides of the picture: what came in, and what the application did in response while processing it.
@@ -188,7 +188,7 @@ _What the interviewer is probing:_ the ability to design a coherent, multi-servi
 
 ---
 
-## 52.12 Key Takeaways Summary
+## 12. Key Takeaways Summary
 
 🔑 Application Insights closes the specific gap infrastructure-level Azure Monitor metrics/logs (Section 50) cannot: application-code-level, request-scoped visibility into what actually happened during individual requests, including across distributed service boundaries.
 
@@ -202,7 +202,7 @@ _What the interviewer is probing:_ the ability to design a coherent, multi-servi
 
 ---
 
-## 52.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 50–51 (prerequisite, completed):** the Azure Monitor data model and KQL query capability this section's telemetry types and correlation model are stored in and queried through directly.
 - **Section 53 — Alerts, Action Groups, Dashboards (next):** where this section's telemetry (and Section 51's KQL queries against it) becomes the actual trigger condition for automated alerting, and where the Application Map and Live Metrics (52.4.3, 52.7.2) connect to persistent Dashboards.

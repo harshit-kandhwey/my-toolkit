@@ -1,12 +1,12 @@
 # Section 74 (Part 11): Cloud Armor & Edge Security Deep Dive
 
-## 74.1 Definition
+## 1. Definition
 
 **Plain language:** Before traffic from the internet ever reaches your application, it has to pass through your load balancer. Cloud Armor sits at that entry point and acts as a bouncer: it blocks known attack patterns (like SQL injection attempts hidden in a request), stops floods of junk traffic trying to overwhelm your service, and can throttle or challenge suspicious visitors — all before a single request touches your actual application servers.
 
 **Precise:** **Cloud Armor** is Google Cloud's web application firewall (WAF) and distributed denial-of-service (DDoS) protection service, attached to Google Cloud's global external Application Load Balancers and, for network-tier protection, to external passthrough Network Load Balancers (Section 22). It evaluates incoming requests against **preconfigured WAF rules** (based on the OWASP Core Rule Set), **custom rules** (written in Cloud Armor's rule language against request attributes), **rate-based rules**, and **adaptive protection** (machine-learning-based anomaly detection), enforcing allow/deny/rate-limit/redirect actions at Google's network edge.
 
-## 74.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Cloud Load Balancing (Section 22) already distributes and routes traffic efficiently, but efficient routing and security filtering are different problems — a load balancer will happily and efficiently route a SQL injection payload or a volumetric flood straight to your backend unless something inspects and filters it first. Two distinct classes of threat drove Cloud Armor's design:
 
@@ -15,20 +15,20 @@ Cloud Load Balancing (Section 22) already distributes and routes traffic efficie
 
 Because Cloud Armor operates at Google's global edge — the same points of presence Cloud Load Balancing's anycast IPs terminate at (Section 22) — malicious traffic can be filtered or absorbed before it ever consumes backend compute capacity or occupies backend network capacity, rather than being filtered only after arriving at the application.
 
-## 74.3 Core Concepts
+## 3. Core Concepts
 
-### 74.3.1 Attachment Point: Cloud Armor and Load Balancing
+### 3.1 Attachment Point: Cloud Armor and Load Balancing
 
 Cloud Armor is not a standalone service you point traffic at directly — it is configured as a **security policy** attached to a **backend service** or **backend bucket** behind a Google Cloud external Application Load Balancer (the HTTP(S) load balancer covered in Section 22), and separately offers network-tier DDoS protection for external passthrough Network Load Balancers and instances with external IPs. This attachment model means Cloud Armor's effectiveness is directly tied to correctly understanding your load balancing topology from Section 22 — a security policy attached to the wrong backend service, or a workload exposed through a path that bypasses the load balancer entirely (e.g., a VM with a public IP outside the LB), receives no Cloud Armor protection regardless of how well the policy itself is written.
 
-### 74.3.2 Preconfigured WAF Rules (OWASP Core Rule Set)
+### 3.2 Preconfigured WAF Rules (OWASP Core Rule Set)
 
 **Definition:** preconfigured WAF rules are Google-maintained rule sets, based on the industry-standard **OWASP Core Rule Set (CRS)**, that detect common web application attack signatures — SQL injection (`sqli`), cross-site scripting (`xss`), remote code execution (`rce`), local file inclusion (`lfi`), and similar — without the customer writing any rule logic themselves.
 
 - Each preconfigured rule group (`sqli-v33-stable`, `xss-v33-stable`, etc.) can be enabled independently, and within a group, individual **sensitivity levels** control how aggressively ambiguous patterns are flagged — higher sensitivity catches more attacks but raises false-positive risk against legitimate but unusually-shaped requests.
 - Preconfigured rules are the direct Cloud Armor analog to curated detections in Chronicle (Section 73.3.2) — Google-maintained baseline content that should be enabled first, with custom rules reserved for organization-specific logic.
 
-### 74.3.3 Custom Rules
+### 3.3 Custom Rules
 
 **Definition:** custom rules are Cloud Armor policy rules written by the customer, using Cloud Armor's rule language (CEL-like expressions) against request attributes — source IP/geography, request headers, path, query parameters — to allow, deny, rate-limit, or redirect matching traffic.
 
@@ -41,21 +41,21 @@ origin.region_code == "XX" && request.path.matches("/admin/.*")
 - Common custom rule use cases: geo-blocking regions with no legitimate business need to access a service, allow-listing a known partner IP range to bypass rate limiting, or blocking requests missing an expected internal header (used to detect and block traffic attempting to bypass an intended internal-only path).
 - Custom rules are evaluated in **priority order**; the first matching rule's action applies, so rule ordering (e.g., a specific allow-list rule with lower priority number than a broader deny rule) is a frequent source of misconfiguration when not carefully managed.
 
-### 74.3.4 Rate-Based Rules and Bot Management
+### 3.4 Rate-Based Rules and Bot Management
 
 **Definition:** rate-based rules throttle or block clients that exceed a configured request-rate threshold within a time window, identified by a configurable key (source IP, or a combination of attributes).
 
 - Distinct from a hard block: a rate-based rule's action is commonly "throttle" (allow up to the threshold, deny beyond it) rather than an outright deny, letting legitimate bursty clients continue at a reduced rate rather than being cut off entirely.
 - **reCAPTCHA Enterprise integration** extends rate-based protection into active **bot management** — instead of only rate-limiting by request volume, suspicious traffic can be challenged with a reCAPTCHA assessment, and Cloud Armor rules can act on the resulting bot/human score, distinguishing scripted abuse from legitimate high-volume human traffic.
 
-### 74.3.5 Adaptive Protection
+### 3.5 Adaptive Protection
 
 **Definition:** Adaptive Protection is Cloud Armor's machine-learning-based Layer 7 DDoS detection feature, which builds a baseline of normal traffic patterns per backend service and automatically flags and suggests protective rules when it detects an anomalous, attack-like deviation from that baseline.
 
 - Unlike preconfigured and custom rules, which are static until manually changed, Adaptive Protection is continuously adaptive — it generates an **alert with a suggested Cloud Armor rule** when it detects a likely Layer 7 DDoS pattern, which a security team can review and deploy (or, in more automated postures, apply programmatically, connecting directly to the automated incident response patterns in Section 75).
 - Adaptive Protection specifically targets Layer 7 volumetric anomalies — a flood of legitimate-looking application requests overwhelming a specific endpoint — which signature-based preconfigured rules are not designed to catch, since no individual request in the flood necessarily matches a known attack pattern.
 
-### 74.3.6 DDoS Protection Tiers: Standard vs. Managed Protection Plus
+### 3.6 DDoS Protection Tiers: Standard vs. Managed Protection Plus
 
 | Aspect                     | Standard (default, included)                                                                       | Managed Protection Plus (paid tier)                                                                                   |
 | -------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -67,7 +67,7 @@ origin.region_code == "XX" && request.path.matches("/admin/.*")
 
 > ⚠️ **Interview-relevant nuance:** "Standard" is not "no protection" — Google's global network-layer DDoS defenses are always-on for every project regardless of tier. Managed Protection Plus specifically adds Adaptive Protection, richer threat intelligence feeds, and financial/incident-response guarantees during a declared DDoS event — the distinction is about _additional_ Layer 7 intelligence and guarantees, not the presence or absence of baseline protection.
 
-## 74.4 Edge Filtering Architecture Diagram
+## 4. Edge Filtering Architecture Diagram
 
 ```
                          Internet Traffic
@@ -97,7 +97,7 @@ origin.region_code == "XX" && request.path.matches("/admin/.*")
                        Backend Services / GKE / VMs
 ```
 
-## 74.5 Comparison: Cloud Armor vs. AWS WAF/Shield vs. Azure WAF/DDoS Protection
+## 5. Comparison: Cloud Armor vs. AWS WAF/Shield vs. Azure WAF/DDoS Protection
 
 | Aspect                      | Cloud Armor (GCP)                                                                                                                 | AWS WAF + Shield                                                                                          | Azure WAF + DDoS Protection                                                                  |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -110,7 +110,7 @@ origin.region_code == "XX" && request.path.matches("/admin/.*")
 
 > 💡 **Interview-relevant nuance:** All three major clouds converge on the same structural pattern — a free, always-on network-layer DDoS baseline; a paid tier adding Layer 7 ML-based anomaly detection and financial/response guarantees; and a WAF component (rule-based, signature-driven) that is conceptually separate from DDoS protection even though it is commonly configured together. When comparing these services, naming this three-part structure (baseline DDoS / paid adaptive DDoS / WAF) demonstrates a precise understanding rather than treating "WAF" and "DDoS protection" as one undifferentiated feature.
 
-## 74.6 Hands-On Example: Creating a Cloud Armor Security Policy with a Rate-Based Rule
+## 6. Hands-On Example: Creating a Cloud Armor Security Policy with a Rate-Based Rule
 
 **Purpose:** Create a Cloud Armor security policy that enables a preconfigured SQL injection rule and adds a rate-based rule throttling any single client IP exceeding 100 requests per minute, then attach it to a backend service.
 
@@ -148,19 +148,19 @@ Updated [https://www.googleapis.com/compute/v1/projects/prod-1/global/backendSer
 
 > 💡 **Tip:** `--enforce-on-key=IP` is the simplest rate-limiting key, but production APIs behind a shared NAT gateway or corporate proxy often need a more granular key (e.g., a combination including a request header carrying an authenticated client/API-key identifier) to avoid throttling many legitimate distinct users who happen to share one egress IP.
 
-## 74.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Preview mode before enforcement.** New rules, especially custom rules and newly enabled preconfigured rule groups, are commonly deployed with `--preview` first — logging what _would_ have been blocked without actually blocking it — to validate against real production traffic before switching to active enforcement, avoiding an outage caused by an overly aggressive new rule.
 - **Layered with Cloud CDN and regional backend architecture.** Cloud Armor is typically one layer in a broader edge stack including Cloud CDN for caching (reducing the volume of traffic that reaches origin at all) and Cloud Load Balancing's multi-region backend distribution (Section 22) for resilience.
 - **Adaptive Protection alerts routed into SOC workflows.** Organizations running Managed Protection Plus commonly route Adaptive Protection's suggested-rule alerts into the same SOC triage and automated response pipeline (Sections 75–76) used for other security detections, rather than treating them as a separate, siloed notification channel.
 
-## 74.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "Cloud Armor protects any GCP resource with a public IP automatically." Cloud Armor security policies apply only to traffic passing through a load balancer backend service/bucket they are explicitly attached to (74.3.1); a VM with a directly assigned public IP bypassing the load balancer receives no Cloud Armor protection regardless of policy configuration.
 - **Misconception:** "The Standard DDoS tier means you are unprotected without paying for Managed Protection Plus." Google's network-layer DDoS defenses are always-on for every project by default; Managed Protection Plus specifically adds Layer 7 Adaptive Protection and cost/incident-response guarantees, not baseline protection itself (74.3.6).
 - **Misconception:** "Enabling every preconfigured WAF rule group at maximum sensitivity is always the safest choice." Higher sensitivity increases false-positive risk against legitimate traffic with unusual-but-valid request shapes; production deployments tune sensitivity per rule group and validate in preview mode rather than maximizing every setting by default.
 
-## 74.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What is the difference between a preconfigured WAF rule and a custom rule in Cloud Armor?_
 **Model answer:** Preconfigured rules are Google-maintained, based on the OWASP Core Rule Set, detecting common attack signatures like SQL injection and cross-site scripting without requiring the customer to write any rule logic. Custom rules are written by the customer using Cloud Armor's rule expression language against request attributes like source IP, geography, or headers, to encode organization-specific logic that generic signature-based rules cannot anticipate, such as geo-blocking or allow-listing a known partner range.
@@ -171,7 +171,7 @@ Updated [https://www.googleapis.com/compute/v1/projects/prod-1/global/backendSer
 **🎯 Senior/Architect:** _A production API behind Cloud Armor is intermittently blocking legitimate customer traffic, and the team suspects an overly aggressive WAF rule. How would you diagnose and fix this without reopening the service to the attack the rule was meant to stop?_
 **Model answer:** I would first confirm which specific rule is responsible by checking Cloud Armor's logging output (routed through Cloud Logging) for the denied requests, which identifies the matching rule and preconfigured signature group per blocked request rather than guessing. If it's a preconfigured rule group, I'd check whether the false positives cluster around a specific sensitivity level or a specific sub-signature within that group, and consider lowering sensitivity for that group specifically rather than disabling the whole group, preserving protection against the broader attack class. Critically, I would not simply disable the rule in production — I'd first re-deploy the adjusted rule configuration in preview mode against live traffic to confirm the false positives are resolved and that genuine attack traffic (if reproducible from logs of past real attempts) would still be caught, before promoting the change to active enforcement. If the false positives stem from a legitimate but unusually shaped request pattern specific to this API (e.g., a customer's client library sending an atypical but valid payload structure), I'd consider a narrowly scoped custom allow-list rule with higher priority than the preconfigured deny, rather than weakening the preconfigured rule's sensitivity globally across all backends sharing that policy.
 
-## 74.10 Key Takeaways
+## 10. Key Takeaways
 
 - 🔑 Cloud Armor is attached to Cloud Load Balancing backend services/buckets (Section 22), not to individual VMs directly — protection only applies to traffic that actually passes through a protected load balancer.
 - 🔑 Preconfigured WAF rules (OWASP CRS-based) provide Google-maintained baseline signature detection; custom rules encode organization-specific logic, mirroring the curated-first/custom-second pattern seen in Chronicle detections (Section 73).
@@ -180,6 +180,6 @@ Updated [https://www.googleapis.com/compute/v1/projects/prod-1/global/backendSer
 - 🔑 All three major clouds converge on the same structural pattern: free baseline network DDoS defense, a paid tier adding L7 ML detection and guarantees, and a separately configured WAF layer.
 - 🔑 Preview mode is the standard production pattern for validating new or adjusted rules against real traffic before enforcing them, avoiding self-inflicted outages from overly aggressive rules.
 
-## 74.11 Related Concepts
+## 11. Related Concepts
 
 Cloud Load Balancing (Section 22, the attachment point for all Cloud Armor policies), Security Command Center (Section 39, which can surface Cloud Armor-relevant findings), Chronicle's curated detections (Section 73, the closest conceptual analog to preconfigured WAF rules), and automated incident response acting on Adaptive Protection alerts (Section 75) all connect directly to the edge security model covered here.

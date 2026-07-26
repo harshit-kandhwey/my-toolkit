@@ -6,7 +6,7 @@
 
 ---
 
-## 49.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This final section of Part 9 covers two things: (1) CI/CD pipeline **patterns** that generalize across whichever specific tool implements them (Azure Pipelines, GitHub Actions, or others) — environment promotion strategies, deployment strategies (blue-green, canary, rolling), and GitOps; and (2) **GitHub Actions** specifically as Azure's other first-class-supported CI/CD platform, with a direct, concrete comparison against Azure Pipelines (Section 45) and coverage of its Azure-specific authentication and deployment integration.
 
@@ -14,17 +14,17 @@ This final section of Part 9 covers two things: (1) CI/CD pipeline **patterns** 
 
 ---
 
-## 49.2 Environment Promotion Strategies
+## 2. Environment Promotion Strategies
 
-### 49.2.1 The Core Pattern: Build Once, Promote Unchanged
+### 2.1 The Core Pattern: Build Once, Promote Unchanged
 
 Directly extending the "build once, deploy the same artifact to every environment" principle established repeatedly across this roadmap (Section 34.12, Section 35.10, Section 46.3.2's parameter-file pattern), a mature CI/CD pipeline builds exactly one artifact (a container image with a specific digest, a compiled package, a Bicep-compiled ARM deployment) and **promotes that same, unmodified artifact** through a sequence of environments (dev → staging → production), rather than rebuilding for each environment.
 
-### 49.2.2 Why Rebuilding Per Environment Is an Anti-Pattern
+### 2.2 Why Rebuilding Per Environment Is an Anti-Pattern
 
 ⚠️ **Warning:** rebuilding the deployment artifact separately for each environment — even from the identical source commit — reintroduces exactly the "it works in the environment it was built for" risk containers and immutable artifacts exist to eliminate (Section 34.2.2): a different base image patch version pulled at a different build time, a different dependency resolution outcome, or any other build-time non-determinism means the artifact actually tested in staging is not guaranteed to be byte-identical to the artifact deployed to production, undermining the entire premise of "what we tested is what we're shipping." Environment-specific _configuration_ (connection strings, feature flags, scaling parameters) should vary between environments — the artifact itself should not.
 
-### 49.2.3 Promotion Pipeline Structure
+### 2.3 Promotion Pipeline Structure
 
 ```
 [Build Stage]
@@ -51,30 +51,30 @@ Directly extending the "build once, deploy the same artifact to every environmen
 
 ---
 
-## 49.3 Deployment Strategies
+## 3. Deployment Strategies
 
-### 49.3.1 Why Deployment Strategy Is a Distinct Concern From Environment Promotion
+### 3.1 Why Deployment Strategy Is a Distinct Concern From Environment Promotion
 
 Environment promotion (49.2) answers "in what order do environments receive a new version"; **deployment strategy** answers a different question: "within a single environment, how does traffic transition from the old version to the new version" — a genuinely separate axis of the overall release process, both of which a mature pipeline must address.
 
-### 49.3.2 Rolling Deployment
+### 3.2 Rolling Deployment
 
 - **Definition:** gradually replaces instances of the old version with the new version, a subset at a time, until the new version fully replaces the old — this is the default behavior of a Kubernetes Deployment's `RollingUpdate` strategy (Section 36.5.2), and conceptually applies equally to App Service deployment slots swapping gradually, or VM Scale Set instance-by-instance upgrades.
 - **Trade-off:** simple, requires no additional infrastructure beyond what's already running the application, but both old and new versions serve live traffic simultaneously during the rollout window — requiring the application to tolerate this (e.g., a database schema change must remain compatible with both the old and new application version for the duration of the rollout, a real constraint worth naming explicitly rather than assuming rolling deployments are always trivially safe).
 
-### 49.3.3 Blue-Green Deployment
+### 3.3 Blue-Green Deployment
 
 - **Definition:** two complete, independent environments ("blue" = currently live, "green" = the new version) run simultaneously; the new version is fully deployed and validated in the green environment while blue continues serving all live traffic, and cutover happens by switching traffic (e.g., via a load balancer, Application Gateway, or DNS change) from blue to green essentially instantaneously, rather than gradually.
 - **Why it exists:** eliminates the "old and new versions serving simultaneously" concern from rolling deployment (49.3.2) — the cutover is a single, near-instantaneous switch, and if a problem is discovered post-cutover, traffic can be switched back to blue immediately, providing a very fast, low-risk rollback mechanism (as long as blue remains available/un-decommissioned for a period after cutover).
 - **Trade-off:** requires running two complete environments simultaneously (at least briefly, during the validation-and-cutover window), a real cost/infrastructure consideration compared to rolling deployment's incremental-replacement approach — Azure App Service's deployment slots feature (Section 13) is a direct, built-in implementation of this pattern at the PaaS level, and AKS can implement it via two parallel Deployments/Services with a traffic-switching mechanism (an Ingress or Service selector change, Section 37.3).
 
-### 49.3.4 Canary Deployment
+### 3.4 Canary Deployment
 
 - **Definition:** the new version is deployed to a small subset of production infrastructure/traffic first (e.g., 5% of requests), monitored closely for errors/performance regressions, and — only if that canary subset performs acceptably — gradually expanded to serve an increasing percentage of traffic until it fully replaces the old version; if a problem is detected at any stage, the rollout halts and the canary traffic is reverted.
 - **Why it exists:** provides real production traffic validation (something staging environments, however well-configured, cannot perfectly replicate) while limiting the blast radius of a genuinely bad release to a small, bounded fraction of actual users — a materially different risk profile from both rolling deployment (100% eventual exposure with no explicit small-scale validation gate) and blue-green (100% exposure immediately upon cutover, validated pre-cutover but not against live production traffic specifically).
 - **Implementation mechanisms on Azure:** Azure Front Door and Application Gateway (Section 24–25) support weighted traffic splitting across backend pools, directly enabling percentage-based canary routing; in AKS specifically, a service mesh (not yet covered in this roadmap, a candidate future topic) or Ingress-level traffic-splitting annotations provide finer-grained canary control than a plain Kubernetes Service alone offers.
 
-### 49.3.5 Comparison Table
+### 3.5 Comparison Table
 
 | Strategy   | Traffic Cutover                                   | Rollback Speed                         | Infrastructure Cost                     | Production-Traffic Validation                                                 |
 | ---------- | ------------------------------------------------- | -------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -86,39 +86,39 @@ Environment promotion (49.2) answers "in what order do environments receive a ne
 
 ---
 
-## 49.4 GitOps
+## 4. GitOps
 
-### 49.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** GitOps is a pattern where a Git repository is the single source of truth for a system's desired state (application manifests, infrastructure configuration), and an automated agent continuously reconciles the actual running system to match what's declared in that repository — rather than a pipeline pushing changes imperatively to the target environment.
 
 **Precise definition:** GitOps is an operational model applying Git as the single source of truth for declarative infrastructure and application configuration, combined with an automated, continuously reconciling agent (running inside or with access to the target environment) that pulls and applies the desired state from the repository, rather than a CI/CD pipeline directly pushing changes to the target.
 
-### 49.4.2 Push-Based vs. Pull-Based Deployment: The Key Distinction
+### 4.2 Push-Based vs. Pull-Based Deployment: The Key Distinction
 
 - **Traditional (push-based) pipeline deployment:** a CI/CD pipeline (Section 45.4, or GitHub Actions, 49.6) authenticates directly to the target environment (AKS, Azure resources) and pushes the change — the pipeline holds credentials with write access to production, and the deployment happens as a discrete pipeline-run event.
 - **GitOps (pull-based) deployment:** an agent running _inside_ the target environment (e.g., Flux or Argo CD running as a controller inside an AKS cluster, Section 36–38) continuously polls or watches the Git repository, and pulls/applies any detected changes itself — no external pipeline holds direct write credentials to the cluster; the only "credential" flowing outward is the repository being readable by the in-cluster agent, and deployment happens via continuous reconciliation rather than a discrete push event.
 - 🔑 **Key Takeaway — the security implication:** GitOps' pull-based model means the production environment's write credentials never need to leave the environment itself (no external CI/CD system holds a credential capable of directly modifying production) — a meaningfully different, and for many organizations preferable, security posture compared to a traditional pipeline that must be granted (and carefully scoped/secured, per Section 45.7.2's least-privilege guidance) direct write access to production from outside the cluster.
 
-### 49.4.3 GitOps and Kubernetes/AKS Specifically
+### 4.3 GitOps and Kubernetes/AKS Specifically
 
 - GitOps is particularly well-suited to Kubernetes because Kubernetes' own object model is already fully declarative (Section 36.5) — a GitOps agent's job is simply "ensure the cluster's actual objects match what's declared in the repository," directly reusing Kubernetes' own reconciliation-loop philosophy (Section 36.3.2) at the level of "which manifests exist" rather than only "how many replicas of an already-deployed manifest exist."
 - **Flux and Argo CD** are the two most widely used GitOps agents/controllers for Kubernetes, both available as AKS add-ons or self-installed into a cluster — continuously reconciling cluster state against a configured Git repository, with drift (a manual `kubectl` change made outside the Git-declared configuration) detected and reverted, directly analogous in philosophy (though implemented at a different layer) to Terraform's drift-reconciliation behavior covered in Section 48.3.4.
 
-### 49.4.4 GitOps Trade-offs
+### 4.4 GitOps Trade-offs
 
 - **Advantage:** stronger security posture (no external push credentials), a genuinely complete audit trail (every change is a Git commit, inherently reviewed via the same PR process as any other code change, Section 45.3.3), and automatic self-healing against drift.
 - **Trade-off:** deployment is no longer a discrete, immediately-observable pipeline-run event — it happens on the agent's reconciliation cadence (near-immediate for a well-configured agent, but genuinely a different operational model to reason about and monitor than "watch the pipeline run finish"), and adopting GitOps requires running and maintaining the reconciliation agent itself as additional in-cluster infrastructure, a real operational cost to weigh against the security/audit benefits.
 
 ---
 
-## 49.5 GitHub Actions: Core Concepts
+## 5. GitHub Actions: Core Concepts
 
-### 49.5.1 Definition
+### 5.1 Definition
 
 **Plain language:** GitHub Actions is GitHub's native CI/CD automation platform — workflows defined as YAML files stored directly in the repository (`.github/workflows/`), triggered by repository events (a push, a pull request, a schedule, or a manual dispatch), executing a sequence of steps on GitHub-hosted or self-hosted runners.
 
-### 49.5.2 Core Concepts (Direct Comparison to Azure Pipelines' Equivalents)
+### 5.2 Core Concepts (Direct Comparison to Azure Pipelines' Equivalents)
 
 | GitHub Actions Term | Azure Pipelines Equivalent (Section 45.4.2) | Notes                                                                                                                                                                                                                                                                             |
 | ------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -130,7 +130,7 @@ Environment promotion (49.2) answers "in what order do environments receive a ne
 | **Environment**     | Environment                                 | A named deployment target supporting required reviewers/approval gates before a job targeting it executes — directly analogous to Azure Pipelines' environment approval gates (Section 45.4.4).                                                                                   |
 | **Secret**          | Variable group / Key Vault-linked variable  | Encrypted, repository- or organization-scoped configuration values referenced in workflows without being exposed in logs.                                                                                                                                                         |
 
-### 49.5.3 Example Workflow: Build and Push to ACR, Deploy to AKS
+### 5.3 Example Workflow: Build and Push to ACR, Deploy to AKS
 
 ```yaml
 name: Build and Deploy
@@ -187,13 +187,13 @@ jobs:
 
 ---
 
-## 49.6 GitHub Actions vs. Azure Pipelines: Decision Framework
+## 6. GitHub Actions vs. Azure Pipelines: Decision Framework
 
-### 49.6.1 When the Choice Is Already Made For You
+### 6.1 When the Choice Is Already Made For You
 
 - If source code already lives in GitHub, GitHub Actions is the natural, lowest-friction CI/CD choice (no separate platform/login/permission model to manage), and vice versa for Azure Repos and Azure Pipelines — for many organizations, this single factor (where does the code already live) settles the decision without further analysis being necessary.
 
-### 49.6.2 When a Genuine Choice Exists
+### 6.2 When a Genuine Choice Exists
 
 | Factor                                                                                                                                    | Favors Azure Pipelines                                                                                                                    | Favors GitHub Actions                                                                                                                      |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -208,26 +208,26 @@ jobs:
 
 ---
 
-## 49.7 Security Considerations Specific to CI/CD Pipeline Patterns
+## 7. Security Considerations Specific to CI/CD Pipeline Patterns
 
-### 49.7.1 Recap and Extension of Section 45.7.3's Fork-PR Risk
+### 7.1 Recap and Extension of Section 45.7.3's Fork-PR Risk
 
 The fork-originated/untrusted-PR pipeline execution risk covered for Azure Pipelines in Section 45.7.3 applies equally, and is if anything more prominently discussed, in the GitHub Actions ecosystem specifically — GitHub Actions provides explicit workflow permission settings (`pull_request` vs. `pull_request_target` triggers carry meaningfully different, easily-misunderstood security implications regarding whether secrets are exposed to a fork-originated workflow run) that require deliberate, informed configuration, following the same "untrusted-origin pipeline runs should have minimal blast radius" principle established in Section 45.7.3, now with GitHub Actions' own specific trigger-type nuances to understand correctly.
 
-### 49.7.2 OIDC Federation as the Now-Standard Pattern Across Both Platforms
+### 7.2 OIDC Federation as the Now-Standard Pattern Across Both Platforms
 
 🔑 **Key Takeaway:** by this point in the roadmap, the "eliminate stored long-lived secrets in favor of federated/Managed Identity-based authentication" pattern has now been established identically across every relevant integration point covered: ACR authentication (Section 35.4.2), AKS Workload Identity (Section 37.5.4), Functions-to-Azure-service authentication (Section 40.7.2), Logic Apps connector authentication (Section 42.7), Event Grid/Hubs/Service Bus authentication (Section 43.8), APIM-to-backend authentication (Section 44.7.2), Azure DevOps service connections (Section 45.7.2), and now GitHub Actions' OIDC federation (49.5.3) — this is not a collection of unrelated tips but one consistent, cross-cutting architectural principle applied identically at every layer of the Azure ecosystem, and being able to articulate it as a single unifying pattern (rather than a list of disconnected facts) is a strong signal of genuinely internalized, rather than memorized, understanding.
 
 ---
 
-## 49.8 Production and Enterprise Usage
+## 8. Production and Enterprise Usage
 
 - **Combining patterns:** a mature production pipeline (in either Azure Pipelines or GitHub Actions) typically combines environment promotion (49.2), a chosen deployment strategy (49.3, often canary or blue-green specifically for production given its lower risk-exposure profile), and — for AKS-hosted workloads specifically — increasingly a GitOps model (49.4) for the actual cluster-facing deployment step, with the CI pipeline responsible only for building/testing/pushing the artifact and updating the GitOps repository's manifest reference, while the in-cluster GitOps agent handles the actual pull-based deployment.
 - **Multi-tool, multi-platform reality:** many real organizations use a genuinely mixed toolchain — GitHub for source control and CI, Azure Pipelines for certain deployment stages requiring Azure DevOps-specific integration, Terraform for multi-cloud infrastructure and Bicep for Azure-only infrastructure, Flux/Argo CD for GitOps-based Kubernetes deployment — and the ability to reason about how these pieces fit together (rather than assuming any single organization uses one tool exclusively for everything) reflects realistic production practice more accurately than a single idealized toolchain.
 
 ---
 
-## 49.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                                           | Likely Cause                                                                                                                                                                                     | Diagnostic Step                                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -238,7 +238,7 @@ The fork-originated/untrusted-PR pipeline execution risk covered for Azure Pipel
 
 ---
 
-## 49.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Exactly one artifact built and promoted unchanged through every environment, with only configuration varying per environment.
 - [ ] Deployment strategy (rolling, blue-green, canary) chosen deliberately based on the specific workload's risk tolerance and infrastructure-cost trade-off, not left at a tool's default without consideration.
@@ -250,7 +250,7 @@ The fork-originated/untrusted-PR pipeline execution risk covered for Azure Pipel
 
 ---
 
-## 49.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Blue-green deployment eliminates all deployment risk since the cutover is instantaneous." _Correction:_ it eliminates the "old and new versions serving simultaneously" concern specifically, but the cutover itself can still surface issues only visible under real cutover conditions (connection draining, DNS propagation, 49.9), and running two full environments has a real infrastructure cost — it reduces certain risks, not all risk universally.
 - "GitOps means you no longer need a CI pipeline at all." _Correction:_ GitOps replaces the _deployment push_ step specifically with pull-based reconciliation; a CI pipeline (build, test, push the artifact, update the GitOps repository's manifest reference) is still needed — GitOps changes how the final deployment step happens, not whether CI is needed at all (49.8).
@@ -258,7 +258,7 @@ The fork-originated/untrusted-PR pipeline execution risk covered for Azure Pipel
 
 ---
 
-## 49.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is the difference between rolling, blue-green, and canary deployment strategies?"
 _Model answer:_ rolling deployment gradually replaces old-version instances with new-version instances, with both versions serving traffic simultaneously during the transition. Blue-green runs two complete environments and switches traffic between them nearly instantaneously at cutover, with no gradual mixed-traffic period. Canary deploys the new version to a small percentage of production traffic first, closely monitors it, and gradually expands only if it performs acceptably, providing the most deliberate, bounded-risk real-production-traffic validation of the three.
@@ -276,7 +276,7 @@ _What the interviewer is probing:_ the ability to synthesize artifact promotion,
 
 ---
 
-## 49.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Deployment patterns (environment promotion, rolling/blue-green/canary strategies, GitOps) are tool-agnostic architectural concepts that transfer across Azure Pipelines, GitHub Actions, or any other CI/CD platform — understanding them at this level is more durable knowledge than any single tool's specific YAML syntax.
 
@@ -290,7 +290,7 @@ _What the interviewer is probing:_ the ability to synthesize artifact promotion,
 
 ---
 
-## 49.14 Part 9 Wrap-Up: Consolidated Dependency Recap
+## 14. Part 9 Wrap-Up: Consolidated Dependency Recap
 
 ```
 Section 45 (Azure DevOps: Boards, Repos, Pipelines, Artifacts)
@@ -313,7 +313,7 @@ Part 9 is now complete. Every deployment of every Azure resource type covered ac
 
 ---
 
-## 49.15 Related Concepts and What Comes Next
+## 15. Related Concepts and What Comes Next
 
 - **Section 50 — Azure Monitor Fundamentals (Part 10, next):** the observability foundation that makes deployment-strategy monitoring gates (49.3.4's canary promotion signal, 49.9's version-specific monitoring requirement) actually implementable in practice — this section's monitoring references throughout (canary alerting, GitOps drift detection) are fully realized once Part 10's observability material is covered.
 - **Section 45 (prerequisite, completed):** Azure Pipelines' stage/environment/approval-gate mechanics this section's patterns were expressed against directly.

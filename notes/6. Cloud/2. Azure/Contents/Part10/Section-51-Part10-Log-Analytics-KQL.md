@@ -6,7 +6,7 @@
 
 ---
 
-## 51.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers the Log Analytics workspace as a concrete, operational environment, and KQL (Kusto Query Language) — the query language used to actually extract insight from the log data Section 50 established flows into it. This section builds genuine, hands-on KQL fluency: core query structure, the most commonly needed operators, joins/aggregations, and time-series analysis, since KQL competence is one of the most directly, practically testable skills in Azure operations interviews and real production troubleshooting alike.
 
@@ -14,26 +14,26 @@ This section covers the Log Analytics workspace as a concrete, operational envir
 
 ---
 
-## 51.2 Log Analytics Workspace: Structure
+## 2. Log Analytics Workspace: Structure
 
-### 51.2.1 Definition
+### 2.1 Definition
 
 A **Log Analytics workspace** is the storage and query container for log data within Azure Monitor (Section 50.3.2) — an Azure resource in its own right (with its own resource group, region, RBAC, and retention/pricing configuration), organized internally into **tables**, each holding a specific category of log data.
 
-### 51.2.2 Tables
+### 2.2 Tables
 
 - Each log category routed via a diagnostic setting (Section 50.4) lands in its own table — e.g., AKS's `kube-audit` category lands in a table named `AKSAudit` (exact table naming conventions vary and should be verified against current documentation for the specific resource type), a VM's Syslog data lands in a `Syslog` table, and Application Insights data (Section 52) lands in a family of tables (`AppRequests`, `AppExceptions`, `AppDependencies`, and others in the modern workspace-based configuration).
 - **Schema:** every table has a defined schema (column names and types) specific to that log category — `TimeGenerated` (the event's timestamp) is a near-universal column across virtually all tables, since KQL's time-series capabilities (51.5) depend on it being present and consistently named.
 
-### 51.2.3 Access Control
+### 2.3 Access Control
 
 - Log Analytics workspace RBAC can be scoped at the **workspace level** (broad access to every table) or, via **table-level RBAC**, restricted to specific tables — directly relevant to the multi-team access-control design discussed in Section 50.8's architect-level scenario, allowing a shared workspace to still enforce meaningful access boundaries between teams' respective data even without fully separate workspaces.
 
 ---
 
-## 51.3 KQL Fundamentals: The Pipeline Model
+## 3. KQL Fundamentals: The Pipeline Model
 
-### 51.3.1 Basic Query Structure
+### 3.1 Basic Query Structure
 
 ```kql
 TableName
@@ -52,20 +52,20 @@ TableName
   - `| order by TimeGenerated desc` — sorts the result set, most recent first.
   - `| take 50` — limits output to 50 rows, a common practice both for interactive exploration (avoiding an overwhelming result set) and for controlling query cost/performance on very large tables.
 
-### 51.3.2 KQL vs. SQL: A Direct, Explicit Comparison
+### 3.2 KQL vs. SQL: A Direct, Explicit Comparison
 
 🎯 **Interview Tip:** many candidates come to KQL with SQL background; explicitly contrasting the two syntactically (not just asserting "it's different") is a strong way to demonstrate genuine understanding rather than surface familiarity.
 
-| Concept          | SQL                                                                                  | KQL                                                                                             |
+| Concept | SQL | KQL |
 | ---------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------- |
-| Starting point   | `SELECT ... FROM table` (columns specified first)                                    | `TableName` (table specified first, columns selected later via `project`)                       |
-| Filtering        | `WHERE` clause, typically singular, combined with `AND`/`OR`                         | `where` operator, can appear multiple times as separate pipeline stages, each filtering further |
-| Column selection | `SELECT col1, col2`                                                                  | `                                                                                               | project col1, col2`                            |
-| Sorting          | `ORDER BY`                                                                           | `                                                                                               | order by`(or`                                  | sort by`) |
-| Aggregation      | `GROUP BY` with aggregate functions in `SELECT`                                      | `                                                                                               | summarize <aggregation> by <grouping columns>` |
-| Query structure  | Clauses in a fixed, non-pipeline order (SELECT...FROM...WHERE...GROUP BY...ORDER BY) | A literal left-to-right/top-to-bottom pipeline; each stage's output is the next stage's input   |
+| Starting point | `SELECT ... FROM table` (columns specified first) | `TableName` (table specified first, columns selected later via `project`) |
+| Filtering | `WHERE` clause, typically singular, combined with `AND`/`OR` | `where` operator, can appear multiple times as separate pipeline stages, each filtering further |
+| Column selection | `SELECT col1, col2` | `                                                                                               | project col1, col2` |
+| Sorting | `ORDER BY` | `                                                                                               | order by`(or`                                  | sort by`) |
+| Aggregation | `GROUP BY` with aggregate functions in `SELECT` | `                                                                                               | summarize <aggregation> by <grouping columns>` |
+| Query structure | Clauses in a fixed, non-pipeline order (SELECT...FROM...WHERE...GROUP BY...ORDER BY) | A literal left-to-right/top-to-bottom pipeline; each stage's output is the next stage's input |
 
-### 51.3.3 Time Range: `ago()` and `between`
+### 3.3 Time Range: `ago()` and `between`
 
 ```kql
 | where TimeGenerated between (datetime(2026-07-20) .. datetime(2026-07-21))
@@ -77,9 +77,9 @@ TableName
 
 ---
 
-## 51.4 Core Operators
+## 4. Core Operators
 
-### 51.4.1 `summarize` — Aggregation
+### 4.1 `summarize` — Aggregation
 
 ```kql
 AppRequests
@@ -91,7 +91,7 @@ AppRequests
 - **`bin(TimeGenerated, 1h)`:** a specific, extremely common pattern — rounds each row's timestamp down to the nearest hour boundary, enabling time-bucketed aggregation (e.g., "request count per hour") essential for time-series charting; without `bin()`, grouping by the raw `TimeGenerated` value would produce one group per unique timestamp (effectively no meaningful grouping at all), a very common beginner mistake worth flagging explicitly.
 - **Common aggregation functions:** `count()`, `avg()`, `sum()`, `min()`, `max()`, `percentile()` (for latency percentiles like p95/p99, directly relevant to the SLA/performance discussions throughout this roadmap), `dcount()` (approximate distinct count, more performant than an exact distinct count at scale).
 
-### 51.4.2 `join` — Combining Data Across Tables
+### 4.2 `join` — Combining Data Across Tables
 
 ```kql
 AppRequests
@@ -108,7 +108,7 @@ AppRequests
 - **`kind=inner`:** specifies the join type (`inner`, `leftouter`, `rightouter`, `fullouter`), directly analogous to SQL join types — an `inner` join here means only requests that _do_ have a matching exception record are returned, appropriate when specifically investigating failures known to have associated exceptions.
 - ⚠️ **Warning:** `join` performance in KQL, similar to SQL, depends heavily on the size of both tables and the selectivity of any `where` filters applied _before_ the join — filtering both sides down to the relevant time range and condition before joining (as shown in the example) is a meaningful, commonly-tested performance practice, not merely a stylistic choice.
 
-### 51.4.3 `extend` — Computed Columns
+### 4.3 `extend` — Computed Columns
 
 ```kql
 AppRequests
@@ -119,7 +119,7 @@ AppRequests
 
 - **Purpose:** adds new computed columns to the result set without removing existing ones (unlike `project`, which replaces the column set with only what's explicitly listed) — useful for deriving intermediate values used in later pipeline stages (here, `IsSlow` could be used in a subsequent `summarize ... by IsSlow` to count slow vs. fast requests).
 
-### 51.4.4 `render` — Visualization
+### 4.4 `render` — Visualization
 
 ```kql
 AppRequests
@@ -130,7 +130,7 @@ AppRequests
 
 - **Purpose:** instructs the Log Analytics query UI to visualize the result set as a specific chart type (`timechart`, `barchart`, `piechart`, and others) directly in the query results pane — a lightweight, immediate visualization capability distinct from (though sometimes feeding into) the more persistent Dashboards mechanism covered in Section 53.
 
-### 51.4.5 `parse` and String Operations
+### 4.5 `parse` and String Operations
 
 ```kql
 AppTraces
@@ -143,13 +143,13 @@ AppTraces
 
 ---
 
-## 51.5 Time-Series Analysis Patterns
+## 5. Time-Series Analysis Patterns
 
-### 51.5.1 Why This Deserves Dedicated Attention
+### 5.1 Why This Deserves Dedicated Attention
 
 Time-series analysis (trends over time, anomaly detection, comparing current behavior against a historical baseline) is one of the most common, practically valuable KQL use cases in production observability — worth covering as a distinct pattern category beyond the individual operators in 51.4.
 
-### 51.5.2 Trend Analysis with `make-series`
+### 5.2 Trend Analysis with `make-series`
 
 ```kql
 AppRequests
@@ -159,7 +159,7 @@ AppRequests
 
 - **Purpose:** produces a genuinely gap-filled time series (using `default = 0` to explicitly fill time buckets with no data, rather than simply omitting them) — a more rigorous approach than `summarize ... by bin(...)` for scenarios specifically requiring a complete, evenly-spaced series (e.g., as input to further series-analysis functions like anomaly detection), since `summarize`/`bin()` alone only produces rows for buckets that actually had data, silently omitting genuinely empty intervals.
 
-### 51.5.3 Anomaly Detection
+### 5.3 Anomaly Detection
 
 ```kql
 AppRequests
@@ -172,9 +172,9 @@ AppRequests
 
 ---
 
-## 51.6 Cross-Resource and Cross-Workspace Queries
+## 6. Cross-Resource and Cross-Workspace Queries
 
-### 51.6.1 Why This Matters
+### 6.1 Why This Matters
 
 Directly connecting to Section 50.8's centralized-vs-per-team workspace trade-off discussion: even with data split across multiple Log Analytics workspaces for access-control or organizational reasons, KQL supports querying **across** workspaces (and even directly against Application Insights resources) within a single query, via cross-resource query syntax:
 
@@ -190,33 +190,33 @@ union
 
 ---
 
-## 51.7 Query Performance Considerations
+## 7. Query Performance Considerations
 
-### 51.7.1 Filter Early, Filter on Indexed/Efficient Columns
+### 7.1 Filter Early, Filter on Indexed/Efficient Columns
 
 - Applying `where TimeGenerated > ago(...)` as early as possible in a query (ideally the very first pipeline stage after naming the table) is the single most impactful performance practice — Log Analytics is optimized around time-based partitioning, and an early, narrow time filter dramatically reduces the volume of data every subsequent pipeline stage needs to process.
 - 💡 **Tip:** while KQL's pipeline model doesn't strictly require filters to appear in any particular order for _correctness_ (the final result is the same regardless of `where` clause ordering, since each `where` is just a filter on whatever rows currently exist in the pipeline), _performance_ differs meaningfully based on ordering — placing highly selective filters (like a narrow time range) as early as possible minimizes the data volume every later stage must process, a genuine, measurable practical distinction between "produces the same correct result" and "runs efficiently."
 
-### 51.7.2 `has` vs. `contains`, and Avoiding Unnecessary `join`
+### 7.2 `has` vs. `contains`, and Avoiding Unnecessary `join`
 
 - As noted in 51.4.5, prefer `has` over `contains` for whole-term matching where applicable.
 - Prefer `summarize` with grouping over `join` where a join's purpose could be achieved via aggregation instead — joins are generally more expensive than equivalent aggregation-based approaches when the underlying need doesn't genuinely require row-level correlation across two distinct tables.
 
 ---
 
-## 51.8 Production and Enterprise Usage
+## 8. Production and Enterprise Usage
 
-### 51.8.1 Saved Queries and Query Packs
+### 8.1 Saved Queries and Query Packs
 
 - Frequently-used queries can be saved (personally or shared across a team/workspace) and organized into **query packs** — a governance-relevant pattern for standardizing common investigative/reporting queries across a platform team, directly reducing the "every engineer reinvents the same basic troubleshooting query from scratch" inefficiency.
 
-### 51.8.2 KQL as the Query Language Behind Alerts and Workbooks
+### 8.2 KQL as the Query Language Behind Alerts and Workbooks
 
 🔑 **Key Takeaway:** the KQL fluency built in this section is not siloed to ad hoc interactive investigation — the exact same query language and query bodies are used to define **log-based alert rules** (Section 53) and **Azure Monitor Workbooks** (a richer, parameterized visualization/reporting canvas beyond simple Dashboards, referenced in Section 53) — meaning KQL competence directly transfers into and underlies nearly every other Part 10 topic, not a standalone skill limited to manual troubleshooting sessions.
 
 ---
 
-## 51.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                                                   | Likely Cause                                                                                                                                                         | Diagnostic Step                                                                                                         |
 | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -228,7 +228,7 @@ union
 
 ---
 
-## 51.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Time filters (`where TimeGenerated > ago(...)`) applied as the first pipeline stage in every query.
 - [ ] `bin()` used whenever grouping/aggregating by time, to produce meaningful time buckets rather than one group per unique timestamp.
@@ -239,7 +239,7 @@ union
 
 ---
 
-## 51.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "KQL and SQL are similar enough that SQL knowledge transfers directly with only minor syntax adjustments." _Correction:_ while some concepts map directly (51.3.2's table), the pipeline model itself (each stage transforming the previous stage's output, read top-to-bottom) is a genuinely different mental model from SQL's clause-based structure, and treating it as "SQL with different keywords" leads to real confusion, particularly around `join` ordering/performance and `summarize`'s time-bucketing requirements.
 - "`where` clause order doesn't matter in KQL." _Correction:_ it doesn't affect correctness (the same final rows are returned regardless of order, 51.7.1), but it very much affects performance — placing selective, especially time-based, filters early is a genuine, measurable best practice, not a stylistic preference.
@@ -247,7 +247,7 @@ union
 
 ---
 
-## 51.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "Write a KQL query that returns the count of failed requests per hour over the last 24 hours from an AppRequests table."
 _Model answer:_
@@ -275,7 +275,7 @@ _What the interviewer is probing:_ the ability to resolve an apparent architectu
 
 ---
 
-## 51.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 KQL is fundamentally a pipeline language — each `|`-separated stage transforms the previous stage's tabular output, a genuinely different mental model from SQL's clause-based structure despite some surface-level conceptual overlap.
 
@@ -289,7 +289,7 @@ _What the interviewer is probing:_ the ability to resolve an apparent architectu
 
 ---
 
-## 51.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 50 (prerequisite, completed):** the log data model, diagnostic settings, and table/workspace structure this section's KQL material queries directly.
 - **Section 52 — Application Insights (next):** the specific table family (`AppRequests`, `AppExceptions`, `AppDependencies`, and others) this section's examples have already been drawing on, covered in full architectural depth next.

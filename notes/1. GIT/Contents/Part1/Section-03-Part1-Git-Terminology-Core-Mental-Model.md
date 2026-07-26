@@ -2,7 +2,7 @@
 
 This section defines every term Git uses precisely, the way Git itself uses it — not the generic VCS definitions from §1.9. Once these are solid, §4 onward (architecture and internals) requires zero pausing to define new vocabulary.
 
-## 3.1 The Core Mental Model — Three Trees
+## 1. The Core Mental Model — Three Trees
 
 Before individual terms, internalize this single picture. Git manages **three parallel representations of your project's files** at all times:
 
@@ -22,7 +22,7 @@ Before individual terms, internalize this single picture. Git manages **three pa
 
 Every Git operation you'll ever run is fundamentally about moving content between these three areas, or about inspecting/rewriting the history stored in the third. This three-tree model is unique to Git among mainstream VCS (SVN and Perforce have no equivalent middle "staging" step in ordinary use) and is the single most common source of beginner confusion — it gets its own full architectural treatment in §4. For now, just anchor the three names: **working directory**, **staging area / index**, **repository**.
 
-## 3.2 Foundational Terms
+## 2. Foundational Terms
 
 **Repository (repo).** The `.git` directory and everything inside it: the complete object database (every snapshot ever committed), all branches, all tags, all configuration. "The repo" colloquially also refers to the whole project folder, but precisely, the repository _is_ the `.git` subdirectory — the working directory is not part of it, it's just what the repository currently has materialized on disk.
 
@@ -62,7 +62,7 @@ Every Git operation you'll ever run is fundamentally about moving content betwee
 
 **Bare repository.** A repository that holds only the `.git` database — no working directory at all. This is the standard shape for a repository sitting on a shared server: nobody edits files directly on the server, so there's no need to materialize a working copy there. Covered in §20.
 
-## 3.3 File-State Vocabulary
+## 3. File-State Vocabulary
 
 Every file Git knows about sits in exactly one of these states at any given moment — this vocabulary is what `git status` output is built from, and you'll see it constantly starting in §10:
 
@@ -84,7 +84,7 @@ The classic tracked-file lifecycle:
                                                    modified ──git add──► staged ──git commit──► unmodified
 ```
 
-## 3.4 Object & Content Vocabulary (Preview — Full Depth in §5)
+## 4. Object & Content Vocabulary (Preview — Full Depth in §5)
 
 You'll meet these names constantly starting in the very next section, so a lightweight preview now prevents confusion:
 
@@ -93,7 +93,7 @@ You'll meet these names constantly starting in the very next section, so a light
 - **Commit object** — metadata plus a pointer to one root tree plus pointer(s) to parent commit(s).
 - **SHA** (commonly used loosely for "the hash/ID of an object") — short for the hash algorithm name (SHA-1 historically; §32 covers the SHA-256 transition). You'll see both the full 40-character hash and a shortened 7-character prefix used interchangeably once it's unambiguous.
 
-## 3.5 Workflow-Level Vocabulary
+## 5. Workflow-Level Vocabulary
 
 - **Push** — upload your local commits (and optionally branch/tag pointers) to a remote.
 - **Fetch** — download commits and refs from a remote _without_ touching your working directory or current branch — purely updates your knowledge of what the remote has.
@@ -103,7 +103,7 @@ You'll meet these names constantly starting in the very next section, so a light
 
 > ⚠️ **Common confusion to flag now:** the word "upstream" has two legitimate, unrelated Git-adjacent meanings — (1) the remote-tracking branch a local branch follows, and (2) in fork-based workflows, the original repo a fork came from. Both are correct; context disambiguates. This trips up learners reading multiple tutorials that each use only one sense.
 
-## 3.6 Terminology Comparison Table — Git vs. SVN (Bridging from §1)
+## 6. Terminology Comparison Table — Git vs. SVN (Bridging from §1)
 
 For anyone coming from a centralized-VCS background, this mapping prevents mental model contamination:
 
@@ -116,7 +116,7 @@ For anyone coming from a centralized-VCS background, this mapping prevents menta
 | Staging changes before commit | No equivalent — you commit working-copy state directly | The index / staging area                                                               |
 | Undo a commit already shared  | Not straightforward                                    | `git revert` (safe, adds new commit) vs `git reset` (rewrites, unsafe if shared) — §15 |
 
-## 3.7 Interview Questions — This Section's Material
+## 7. Interview Questions — This Section's Material
 
 **[Beginner] Q1. What are the three main areas Git works with, and what does each one represent?**
 **Model answer:** Git manages three areas for every repository: the working directory, which is the actual editable files on disk; the staging area (also called the index), which is a record of exactly what content will go into the next commit; and the repository itself, the permanent history of committed snapshots stored in `.git`. `git add` moves content from the working directory into the staging area, and `git commit` takes what's staged and records it permanently as a new commit. This three-step model is what lets you build up a commit incrementally instead of committing every changed file at once.
@@ -133,14 +133,14 @@ For anyone coming from a centralized-VCS background, this mapping prevents menta
 **[Senior] Q5. Explain the two different meanings of "upstream" in Git and how you disambiguate them.**
 **Model answer:** The first meaning is the tracking-branch relationship: a local branch can be configured to track a specific remote branch, and that remote branch is called its "upstream" — this is what lets plain `git push` or `git pull` work without specifying a remote and branch name explicitly. The second meaning is specific to fork-based workflows: when you fork a repository on a platform like GitHub, "upstream" conventionally refers to the original repository you forked from, as distinct from "origin," which refers to your own fork. Both usages are standard and you disambiguate by context — tracking-branch discussions use the first sense, fork/pull-request workflows use the second.
 
-## 3.8 Common Misconceptions
+## 8. Common Misconceptions
 
 1. **"The staging area is a folder with copies of files."** It's a single structured file (`.git/index`) recording which blob each path should get in the next commit — no per-file copies live loosely in a visible "staging folder."
 2. **"`origin` is a special, hardcoded name Git treats differently."** It's purely a convention set by `git clone`; you can rename it or use any other name with no functional difference.
 3. **"A tag is just a special kind of branch."** A branch pointer is expected to move forward with new commits; a tag is expected to stay fixed on the commit it was created at, and annotated tags are a distinct object type with their own metadata — not merely a static branch.
 4. **"Fork is a Git feature."** It's a hosting-platform feature (GitHub/GitLab/Bitbucket); plain Git has no concept of forking.
 
-## 3.9 🔑 Key Takeaways
+## 9. 🔑 Key Takeaways
 
 - Everything in daily Git use is movement between three trees: working directory → staging area (index) → repository history.
 - A branch is a lightweight, movable pointer to a commit — not a copy of anything — which is why branching is instant.
@@ -148,6 +148,6 @@ For anyone coming from a centralized-VCS background, this mapping prevents menta
 - Fetch and pull are not the same operation — pull is fetch plus an automatic integration step.
 - "Upstream" has two legitimate, context-dependent meanings; "origin" is a convention, not a Git primitive; "fork" belongs to hosting platforms, not Git itself.
 
-## 3.10 Related Concepts & What's Next
+## 10. Related Concepts & What's Next
 
 Every term above will now be given full architectural depth. Section 4 opens Part 2 by mapping exactly where the working directory, index, and `.git` repository physically live on disk, how they relate as Git's core architecture, and what triggers movement between them — the direct expansion of the three-tree diagram in 3.1.

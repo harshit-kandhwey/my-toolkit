@@ -6,7 +6,7 @@
 
 ---
 
-## 71.1 Introduction and Purpose
+## 1. Introduction and Purpose
 
 This section consolidates and organizes the interview questions distributed across every prior section of this knowledge base into a single, structured reference for interview preparation — organized by tier (Beginner → Intermediate → Senior → Architect → FAANG-style) and cross-referenced by topic area, enabling targeted review by either seniority level or subject area. This section does not introduce new technical content; every question here was originally presented, with its full model answer, in its originating section — this section provides the organizing index and, where valuable, brief synthesis notes connecting related questions across topics.
 
@@ -14,7 +14,7 @@ This section consolidates and organizes the interview questions distributed acro
 
 ---
 
-## 71.2 How to Use This Section
+## 2. How to Use This Section
 
 - **For breadth review:** work through Section 71.4's tier-by-tier organization, ensuring comfort at each tier before moving to the next.
 - **For targeted topic review:** use Section 71.5's topic-area index to jump to all questions related to a specific service or concept, reviewing the original full model answers in their source sections.
@@ -22,7 +22,7 @@ This section consolidates and organizes the interview questions distributed acro
 
 ---
 
-## 71.3 Question Volume by Part (Coverage Confirmation)
+## 3. Question Volume by Part (Coverage Confirmation)
 
 | Part                              | Sections | Approx. Questions per Section | Total Questions (Approx.) |
 | --------------------------------- | -------- | ----------------------------- | ------------------------- |
@@ -45,9 +45,9 @@ This section consolidates and organizes the interview questions distributed acro
 
 ---
 
-## 71.4 Tier-by-Tier Consolidated Index
+## 4. Tier-by-Tier Consolidated Index
 
-### 71.4.1 Beginner Tier — Representative Sample Across Parts
+### 4.1 Beginner Tier — Representative Sample Across Parts
 
 - What is Azure, and how does it differ from traditional on-premises infrastructure? (Section 1)
 - What is the difference between IaaS, PaaS, and SaaS? (Section 2)
@@ -70,7 +70,7 @@ This section consolidates and organizes the interview questions distributed acro
 - What is the shared responsibility model? (Section 58.12)
 - What is a Landing Zone, and why does an organization need one? (Section 66.9)
 
-### 71.4.2 Intermediate Tier — Representative Sample Across Parts
+### 4.2 Intermediate Tier — Representative Sample Across Parts
 
 - Explain the difference between authentication and authorization, and how OAuth2/OIDC fit into that distinction. (Section 7)
 - How does Conditional Access differ from standard RBAC? (Section 10)
@@ -89,7 +89,7 @@ This section consolidates and organizes the interview questions distributed acro
 - Why is right-sizing important before purchasing a Reserved Instance? (Section 64.10)
 - Explain the difference between a subscription and an Entra ID tenant. (Section 67.11)
 
-### 71.4.3 Senior Tier — Representative Sample Across Parts
+### 4.3 Senior Tier — Representative Sample Across Parts
 
 - Why does Kubernetes not require Docker installed on a node? (Section 34.4.5)
 - A canary deployment shows no clear promote/rollback signal — what's missing? (Section 49.12)
@@ -101,7 +101,7 @@ This section consolidates and organizes the interview questions distributed acro
 - Explain why ASR alone is insufficient protection against ransomware. (Section 62.9)
 - A team wants to skip `what-if`/`plan` previewing to save pipeline time — respond. (Section 46.12)
 
-### 71.4.4 Architect/FAANG-Style Tier — Representative Sample Across Parts
+### 4.4 Architect/FAANG-Style Tier — Representative Sample Across Parts
 
 - Design a landing zone and policy governance rollout for 40 subscriptions. (Sections 54, 55, 56, 57, 65, 67 — the roadmap's most-recurring scenario)
 - Design a complete network security architecture for a revenue-critical checkout service. (Section 59.10)
@@ -115,7 +115,7 @@ This section consolidates and organizes the interview questions distributed acro
 
 ---
 
-## 71.5 Topic-Area Cross-Reference Index
+## 5. Topic-Area Cross-Reference Index
 
 | Topic Area                                                     | Primary Sections | Related Cross-Cutting Sections                                        |
 | -------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------- |
@@ -134,7 +134,7 @@ This section consolidates and organizes the interview questions distributed acro
 
 ---
 
-## 71.6 Cross-Cutting Themes for Synthesis Practice
+## 6. Cross-Cutting Themes for Synthesis Practice
 
 Reviewing these explicitly named, recurring themes — each appearing across at least four distinct sections — is likely higher-value interview preparation than reviewing any single section in isolation, since architect-level questions specifically reward recognizing and articulating these patterns:
 
@@ -151,7 +151,7 @@ Reviewing these explicitly named, recurring themes — each appearing across at 
 
 ---
 
-## 71.7 Key Takeaways Summary
+## 7. Key Takeaways Summary
 
 🔑 This section is a navigational index, not new content — every question's full model answer lives in its originating section, referenced here for organized review.
 
@@ -161,7 +161,7 @@ Reviewing these explicitly named, recurring themes — each appearing across at 
 
 ---
 
-## 71.8 Related Concepts and What Comes Next
+## 8. Related Concepts and What Comes Next
 
 - **Section 72 — System Design Questions (Azure-Based) (next):** extends this section's question-bank format into dedicated, longer-form system-design practice scenarios, building directly on Section 70's case-study format.
 - **Section 73 — Hands-On Labs & Mini-Projects:** practical exercises for reinforcing this section's question-bank material through actual hands-on construction.

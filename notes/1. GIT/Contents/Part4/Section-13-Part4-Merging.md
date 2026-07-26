@@ -1,16 +1,16 @@
 # Section 13 (Part 4): Merging — Fast-Forward, Three-Way Merges, Strategies & Conflict Resolution
 
-## 13.1 Definition
+## 1. Definition
 
 **Plain language:** Merging is how you bring the work from one branch back into another — taking two lines of development that diverged and combining them into a single, unified line again.
 
 **Precise:** `git merge <branch>` integrates the commit history of `<branch>` into the currently checked-out branch. Depending on the ancestry relationship between the two tips, Git performs one of two fundamentally different operations: a **fast-forward** (simply moving the current branch's pointer forward, when no divergence occurred) or a **three-way merge** (computing a diff against a common ancestor and creating a new **merge commit** with two parents, when both branches have unique commits).
 
-## 13.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 §12 gave you cheap, instant branches — the natural consequence is that work constantly diverges. Merging is the half of the branch lifecycle that reunites it: without a reliable, automatic way to combine parallel lines of development, branching would be a one-way trip, and the entire copy-modify-merge philosophy from §1.5.2 that Git is built on would collapse back into manual, error-prone reconciliation.
 
-## 13.3 Fast-Forward Merges — Mechanics
+## 3. Fast-Forward Merges — Mechanics
 
 A fast-forward is possible precisely when the branch you're merging _in_ is a direct descendant of your current branch's tip — meaning your current branch hasn't moved at all since the two diverged. There's nothing to reconcile: Git simply slides the current branch's pointer forward to match.
 
@@ -49,7 +49,7 @@ No new commit object is created. `main` now points at exactly the same commit `f
 
 > ⚠️ **Common confusion to preempt:** fast-forward is not something you request — it's something Git _chooses_ automatically whenever the ancestry allows it. If you want a merge commit to exist regardless, you must explicitly suppress fast-forwarding with `--no-ff` (13.5).
 
-## 13.4 Three-Way Merges — Mechanics
+## 4. Three-Way Merges — Mechanics
 
 When both branches have unique commits since they diverged, there is no single pointer move that represents "both". Git instead performs a **three-way merge**, comparing three trees:
 
@@ -87,7 +87,7 @@ The resulting merge commit `M4` is structurally ordinary except for one thing: i
 
 > 💡 **Tip:** `git merge-base main feature-payments` prints the exact commit Git is using as the common ancestor — genuinely useful when you need to understand _why_ a merge behaved the way it did, or to manually diff "what changed on this branch since it diverged" (`git diff $(git merge-base main feature) feature`).
 
-## 13.5 `--no-ff` — Forcing a Merge Commit
+## 5. `--no-ff` — Forcing a Merge Commit
 
 ```bash
 # Purpose: always create a merge commit, even when a fast-forward is possible
@@ -110,7 +110,7 @@ Merge made by the 'ort' strategy.
 
 The inverse flag, `--ff-only`, refuses to merge at all unless a fast-forward is possible — useful in scripts/CI that want to guarantee no surprise merge commit is ever silently created.
 
-## 13.6 Merge Strategies vs Strategy Options — The Genuinely Confusing Distinction
+## 6. Merge Strategies vs Strategy Options — The Genuinely Confusing Distinction
 
 This trips up even experienced engineers because Git overloads similar-sounding flags for two entirely different concepts.
 
@@ -144,7 +144,7 @@ $ git merge -X ours feature-x
 
 > ⚠️ **Critical clarification / Common confusion to preempt:** `-s ours` and `-X ours` sound identical but do drastically different things. `git merge -s ours feature-x` produces a merge commit that **records feature-x as merged in the graph but silently discards every one of its content changes** — the resulting tree is byte-identical to what you had before, full stop, even for files feature-x never touched conflictingly. `git merge -X ours feature-x` performs a **real** three-way merge, incorporating feature-x's non-conflicting changes normally, and only falls back to "prefer our side" on the specific hunks that genuinely conflict. Using `-s ours` when you meant `-X ours` is a classic way to accidentally throw away an entire branch's work while the commit log claims it was merged.
 
-## 13.7 Conflict Anatomy — Reading Conflict Markers
+## 7. Conflict Anatomy — Reading Conflict Markers
 
 When the same region of a file was changed differently on both sides, Git cannot pick automatically and writes **conflict markers** directly into the working-directory file, leaving the merge paused mid-way.
 
@@ -173,7 +173,7 @@ function getDiscount(user) {
 
 `git status` during a conflict lists every conflicted path under "Unmerged paths," and `git diff` shows conflict markers inline with `++<<<<<<<` style annotations distinguishing which side each line belongs to.
 
-## 13.8 Resolving a Conflict — Worked Example, Step by Step
+## 8. Resolving a Conflict — Worked Example, Step by Step
 
 ```bash
 # 1. See what's conflicted
@@ -218,7 +218,7 @@ Expected output:
 
 > 💡 **Tip:** For multi-file conflicts, a configured mergetool (§8.8) turns this into a guided visual workflow — `git mergetool` launches your registered tool per conflicted file and stages each one automatically once you close it with a resolution saved.
 
-## 13.9 `git merge --abort` — Backing Out Entirely
+## 9. `git merge --abort` — Backing Out Entirely
 
 If a conflict resolution turns out to be more than you want to deal with right now, or you realize you merged the wrong branch:
 
@@ -229,7 +229,7 @@ $ git merge --abort
 
 This restores the working directory, index, and branch pointer to precisely how they were before `git merge` was run — as though the merge attempt never happened. It only works while a merge is actually in progress (i.e., conflict markers are still unresolved); once you've committed the merge, `--abort` is no longer applicable and undoing it becomes a `git reset`/`git revert` question instead (§15).
 
-## 13.10 Squash Merges: `--squash`
+## 10. Squash Merges: `--squash`
 
 ```bash
 # Purpose: bring feature-x's changes into main as a SINGLE new commit,
@@ -252,7 +252,7 @@ $ git commit -m "Add feature X (squashed)"
 | Feature branch's individual commits preserved in target's history | Yes                          | Yes                                       | No — collapsed into one                                                                  |
 | Common use                                                        | Default day-to-day merging   | Teams wanting explicit feature boundaries | Platforms' "Squash and merge" PR button, keeping `main` history to one entry per feature |
 
-## 13.11 Hands-On — Full Merge Lifecycle With a Conflict
+## 11. Hands-On — Full Merge Lifecycle With a Conflict
 
 ```bash
 $ mkdir mergedemo && cd mergedemo && git init -q
@@ -284,13 +284,13 @@ $ git add shared.txt
 $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 ```
 
-## 13.12 Production & Enterprise Usage
+## 12. Production & Enterprise Usage
 
 - Hosting platforms' pull-request "Merge" button typically offers three modes mapping directly onto this section: **Merge commit** (ordinary/`--no-ff`), **Squash and merge** (13.10), and **Rebase and merge** (§14) — the platform-level names for exactly the mechanics taught here.
 - Branch protection rules (§23) commonly require PR checks (CI, review approval) to pass before the merge button is even enabled, but the underlying `git merge` mechanics are identical whether triggered by a human locally or by the platform's merge button.
 - Large teams frequently standardize on one merge mode repo-wide specifically to keep `git log --graph` legible and consistent — mixing all three freely produces a genuinely confusing history over time.
 
-## 13.13 Troubleshooting
+## 13. Troubleshooting
 
 | Symptom                                                                                                                         | Likely cause                                                                                 | Fix                                                                                                                     |
 | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -299,7 +299,7 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 | `CONFLICT (modify/delete)`                                                                                                      | One branch edited a file, the other deleted it                                               | Decide whether the file should still exist; `git add` (keep, possibly edited) or `git rm` (confirm deletion) to resolve |
 | Merge produced no conflicts but the result is semantically broken (both sides changed related-but-different lines)              | Line-level three-way merge has no understanding of program semantics                         | No shortcut — this is why code review and tests exist after any non-trivial merge                                       |
 
-## 13.14 Interview Questions
+## 14. Interview Questions
 
 **[Beginner] Q1. What's the difference between a fast-forward merge and a three-way merge?**
 **Model answer:** A fast-forward happens when the branch being merged in is a direct descendant of the current branch's tip — nothing diverged, so Git just moves the current branch's pointer forward with no new commit. A three-way merge happens when both branches have unique commits since they diverged; Git compares the common ancestor (the merge base) against both tips, automatically combines non-overlapping changes, and creates a new merge commit with two parents recording the union.
@@ -316,7 +316,7 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 **[Senior] Q5. Your team wants `main`'s history to read as one clean commit per feature, but individual contributors still want granular WIP commits on their own branches. What merge policy achieves both?**
 **Model answer:** Squash merging feature branches into `main` on the hosting platform's PR flow achieves exactly this: contributors commit as often and messily as they like on their feature branch — that granular history is genuinely useful during review and for the author's own iteration — but the squash merge collapses the entire branch into a single, clean commit on `main` at merge time, with a commit message the team can standardize (often tied to Conventional Commits, §18, for changelog generation). The trade-off to flag explicitly: the feature branch's individual commit history is not preserved on `main` after this — if someone later needs `git blame` or `git bisect` (§19) granularity within that feature, it's gone from `main`'s perspective, though still recoverable from the original feature branch or PR if it hasn't been deleted. Teams that value that granular history long-term instead favor `--no-ff` merges or a rebase-then-merge policy (§14) that keeps individual commits but with a clean, linear, force-pushed-and-rebased history.
 
-## 13.15 Common Misconceptions
+## 15. Common Misconceptions
 
 1. **"Merging always creates a merge commit."** Only when a fast-forward isn't possible, or `--no-ff` is explicitly passed. The default behavior actively prefers fast-forwarding whenever ancestry allows it.
 2. **"A conflict means Git failed."** A conflict means Git correctly identified that it _cannot_ safely guess your intent on an overlapping change and is deferring to a human — this is Git behaving exactly as designed, not an error state.
@@ -324,7 +324,7 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 4. **"`--squash` is a kind of merge commit, just condensed."** It produces no merge commit and no parent link at all — it's closer to "compute a diff and apply it as a normal commit" than to any variety of merge.
 5. **"Once conflict markers appear, my file content or history is at risk."** Nothing is lost — both full versions are still fully present (in the index at conflict stages 1/2/3, and in each branch's own history); the markers are just an editing aid, and `git merge --abort` cleanly returns to the pre-merge state at any point before you commit.
 
-## 13.16 🔑 Key Takeaways
+## 16. 🔑 Key Takeaways
 
 - Fast-forward is a pointer move with no new commit, chosen automatically whenever the current branch hasn't diverged from the branch being merged; `--no-ff` forces a real merge commit anyway.
 - A three-way merge compares the merge base against both tips, auto-resolving non-overlapping changes and flagging only genuinely overlapping edits as conflicts.
@@ -332,6 +332,6 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 - Conflict markers (`<<<<<<<`/`=======`/`>>>>>>>`) mark the "ours" and "theirs" sides; resolving means editing out the markers to the intended final content and `git add`-ing the file before committing.
 - `git merge --abort` cleanly cancels an in-progress, unresolved merge; `--squash` deliberately discards ancestry to produce one clean commit instead of a merge commit.
 
-## 13.17 Related Concepts & What's Next
+## 17. Related Concepts & What's Next
 
 Merging is one of two ways to reconcile diverged history — §14 covers the other: rebasing, which rewrites commits onto a new base instead of joining two tips with a merge commit, trading a preserved-but-branchy history for a rewritten-but-linear one. The trade-offs between the two, and the hard rule about when rebasing is unsafe, are §14's core subject.

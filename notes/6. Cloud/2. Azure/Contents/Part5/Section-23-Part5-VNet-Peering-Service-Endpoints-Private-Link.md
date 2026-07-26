@@ -1,38 +1,38 @@
 # Section 23 — VNet Peering & Service Endpoints/Private Link
 
-## 23.1 Definition
+## 1. Definition
 
 **Plain language:** VNet Peering connects two separate Virtual Networks so resources in each can talk to each other privately, as if they were in the same network. Service Endpoints and Private Link solve a related but different problem — letting resources inside a VNet reach Azure PaaS services (like a Storage Account or a database) privately, without that traffic ever going out over the public internet.
 
 **Precise definition:** **VNet Peering** is a low-latency, high-bandwidth connection between two Virtual Networks, routed entirely over Microsoft's backbone network, enabling private connectivity between resources in each VNet as though they shared a single network. **Service Endpoints** extend a VNet's identity to specific Azure PaaS service traffic, allowing that traffic to remain on the Azure backbone rather than the public internet while still targeting the service's public endpoint. **Private Link** goes further, provisioning a private IP address within the VNet itself for the PaaS service, making it appear as a first-class private resource within the VNet's own address space.
 
-## 23.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Real-world architectures rarely fit inside a single VNet — different applications, business units, or environments (dev/test/prod) are commonly deployed in separate VNets for isolation and governance reasons, yet often still need to communicate with each other (e.g., a shared services VNet reachable by multiple application VNets). VNet Peering solves this connectivity need without requiring traffic to route through the public internet or a VPN gateway. Separately, PaaS services like Storage Accounts and Azure SQL Database are, by default, reachable via public endpoints on the internet (even though authentication/authorization still applies) — for architectures requiring that this traffic never traverse the public internet at all, whether for compliance, defense-in-depth, or eliminating exposure to internet-based threats entirely, Service Endpoints and Private Link solve this by keeping that traffic within Azure's private backbone network or, in Private Link's case, fully within the VNet's own private address space.
 
-## 23.3 VNet Peering
+## 3. VNet Peering
 
-### 23.3.1 How It Works
+### 3.1 How It Works
 
 Once two VNets are peered, resources in each can communicate using their private IP addresses directly, with traffic routed over Microsoft's private backbone network rather than the public internet — from a latency and bandwidth perspective, this performs similarly to communication within a single VNet, not like a typical internet-routed connection.
 
-### 23.3.2 Key Characteristics and Constraints
+### 3.2 Key Characteristics and Constraints
 
 - **Non-transitive by default** — if VNet A is peered with VNet B, and VNet B is peered with VNet C, VNet A cannot automatically reach VNet C through that chain; each pair requiring direct communication needs its own explicit peering (or must route through a central hub with appropriate configuration, discussed in Section 23.3.4) — this non-transitivity is a frequently tested and frequently misunderstood characteristic.
 - **No overlapping address spaces** — as emphasized in Section 21.3.1 and 21.11's troubleshooting table, peered VNets must have non-overlapping CIDR ranges; this constraint is precisely why upfront address planning matters so much at enterprise scale.
 - **Cross-region and cross-subscription support** — VNets can be peered across different Azure regions ("Global VNet Peering") and across different subscriptions (and even different Entra ID tenants, with appropriate permissions), not just within the same subscription and region.
 
-### 23.3.3 Peering vs. VPN Gateway (Preview)
+### 3.3 Peering vs. VPN Gateway (Preview)
 
 VNet Peering is used for VNet-to-VNet connectivity (both endpoints are Azure VNets); connecting an Azure VNet to an **on-premises** network instead requires VPN Gateway or ExpressRoute (Section 26), a fundamentally different connectivity mechanism covered later in this Part — VNet Peering doesn't extend to non-Azure networks.
 
-### 23.3.4 Hub-and-Spoke Topology (Full Explanation)
+### 3.4 Hub-and-Spoke Topology (Full Explanation)
 
 **Definition:** The hub-and-spoke topology, referenced in Sections 21.6 and 22.7, uses a central "hub" VNet — typically containing shared services like a firewall/NVA, VPN/ExpressRoute gateways, and shared DNS infrastructure — peered individually with multiple "spoke" VNets, each typically representing one application or business unit.
 
 **Why non-transitivity matters here:** Because peering is non-transitive, two spoke VNets peered only with the hub (not with each other) cannot communicate directly by default, even though both are peered with the same hub — if spoke-to-spoke communication is genuinely required, this must either be enabled through an additional mechanism (such as **Virtual Network Gateway transit** configuration, or routing spoke-to-spoke traffic through a central firewall NVA sitting in the hub, using Route Tables as covered in Section 22.4.2, so the hub actively forwards permitted traffic between spokes rather than relying on peering transitivity that doesn't exist by default) or via direct spoke-to-spoke peering for specific pairs that need it. This non-transitivity is often actually a **desired** security property in hub-and-spoke designs — it means spoke VNets don't automatically get open access to each other, and any spoke-to-spoke communication that is allowed can be deliberately routed through the hub's firewall for inspection, rather than happening invisibly and uninspected.
 
-## 23.4 Service Endpoints
+## 4. Service Endpoints
 
 **Definition:** A **Service Endpoint** enables a subnet to reach specific Azure PaaS services (such as Storage Accounts or Azure SQL Database) over a direct, optimized route on the Azure backbone network, rather than routing that traffic out to the public internet — while the PaaS service still has a public IP address, traffic originating from a Service Endpoint-enabled subnet takes this optimized private path instead of the general internet path.
 
@@ -40,7 +40,7 @@ VNet Peering is used for VNet-to-VNet connectivity (both endpoints are Azure VNe
 
 ⚠️ Service Endpoints, while improving the network path, do **not** give the PaaS service a private IP address within the VNet itself — the service retains its public IP address, and the traffic path optimization is a distinct mechanism from Private Link's more complete "give the service a private IP inside my VNet" approach, described next. This distinction is a frequently tested point in interviews.
 
-## 23.5 Private Link (Private Endpoints)
+## 5. Private Link (Private Endpoints)
 
 **Definition:** **Private Link**, implemented via a **Private Endpoint**, provisions an actual private IP address within your VNet's own subnet, representing a specific PaaS resource (a specific Storage Account, a specific Azure SQL Database, and so on) — traffic to that private IP is routed directly and privately to the specific target resource, with the PaaS resource's public endpoint able to be disabled entirely if full network isolation is required.
 
@@ -60,7 +60,7 @@ VNet Peering is used for VNet-to-VNet connectivity (both endpoints are Azure VNe
 
 🎯 **Interview Tip:** "Service Endpoint vs. Private Link — what's the difference?" is an extremely common Azure networking interview question; the core answer to lead with is that Private Link gives the PaaS resource an actual private IP address inside your VNet, while a Service Endpoint only optimizes the network path to the resource's still-public IP address.
 
-## 23.6 Architecture Diagram
+## 6. Architecture Diagram
 
 ```
 Hub VNet "vnet-hub" (10.0.0.0/16)
@@ -80,7 +80,7 @@ vnet-app-a and vnet-app-b are NOT directly peered (non-transitive) —
   any spoke-to-spoke traffic would need to route through the hub's firewall
 ```
 
-## 23.7 Configuration & Hands-On Example
+## 7. Configuration & Hands-On Example
 
 **Creating VNet Peering between a hub and a spoke:**
 
@@ -121,16 +121,16 @@ az network private-endpoint create \
   - `--group-id` — specifies which specific sub-service of the target resource the private endpoint targets (e.g., `blob` for Blob Storage specifically, as opposed to `file` or `queue` on the same Storage Account, which would each require their own private endpoint if needed).
 - ⚠️ As emphasized in Section 23.5, this command alone doesn't complete the setup — an Azure Private DNS Zone must also be configured and linked to the VNet so that clients resolve the storage account's standard hostname to this new private IP; omitting this step is the most common reason a newly created Private Endpoint doesn't seem to "work" as expected.
 
-## 23.8 Production & Enterprise Usage
+## 8. Production & Enterprise Usage
 
 Enterprises standardize on Private Link for PaaS services holding sensitive data (databases, storage accounts with confidential content) as part of a defense-in-depth network isolation strategy, often enforced via Azure Policy (Section 57) requiring Private Endpoints and disabling public network access by default for specific resource types. Service Endpoints remain useful for less sensitive scenarios where the simpler configuration and lack of DNS-management overhead outweigh the benefit of full private-IP isolation. Hub-and-spoke VNet Peering, combined with centralized firewall inspection for any necessary spoke-to-spoke or spoke-to-internet traffic (Section 22.4.2), is the standard enterprise network topology pattern, formalized as part of landing zone architecture (Part 13).
 
-## 23.9 Security Considerations
+## 9. Security Considerations
 
 - Private Link's ability to fully disable a PaaS resource's public endpoint is a significant security hardening step — for genuinely sensitive resources, eliminating public network exposure entirely (rather than merely restricting it via firewall rules while a public endpoint still technically exists) closes off an entire category of potential attack vectors.
 - VNet Peering's non-transitivity (Section 23.3.2) is a security-relevant default, not just a technical limitation — it prevents unintended, implicit connectivity between spokes that haven't been deliberately configured to communicate.
 
-## 23.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                                            | Likely Cause                                                         | Fix                                                                                                                                           |
 | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -139,7 +139,7 @@ Enterprises standardize on Private Link for PaaS services holding sensitive data
 | Traffic to a Storage Account with a Private Endpoint still appears to route to the public endpoint | DNS isn't resolving the storage account's hostname to the private IP | Verify Azure Private DNS Zone configuration and that it's correctly linked to the VNet                                                        |
 | Cannot create VNet Peering between two VNets                                                       | Address spaces overlap                                               | Address space overlap must be resolved (typically requiring one VNet to be recreated with a non-overlapping range) before peering can succeed |
 
-## 23.11 Interview Questions — Section 23
+## 11. Interview Questions — Section 23
 
 ### 🎯 Intermediate
 
@@ -157,18 +157,18 @@ _Model answer:_ I'd implement Private Link via a Private Endpoint for the Azure 
 
 _What the interviewer is probing:_ whether the candidate can correctly distinguish Private Link from Service Endpoints at a functional level, articulate specifically why Private Link achieves stronger isolation, and demonstrates awareness of the DNS configuration step that's easy to overlook but essential for the solution to actually work as intended.
 
-## 23.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - **"VNet Peering is transitive, so peering with a hub gives spokes access to each other automatically."** False — this is one of the most consequential VNet Peering misconceptions, and assuming it's true can lead to either broken connectivity expectations or, worse, an incorrect assumption about network isolation between spokes.
 - **"Service Endpoints and Private Link accomplish the same thing, just with different setup steps."** False — they provide meaningfully different isolation guarantees; Service Endpoints optimize the path to a still-public endpoint, while Private Link provides an actual private IP address and can fully eliminate public exposure.
 
-## 23.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 VNet Peering connects VNets over Microsoft's private backbone network but is non-transitive by default — peering with a shared hub does not automatically grant spoke-to-spoke connectivity.
 - 🔑 Service Endpoints optimize the network path to a PaaS service's still-public endpoint; Private Link/Private Endpoints provision an actual private IP address for the service within your VNet, enabling full public-endpoint elimination.
 - 🔑 Private Link requires correct DNS configuration (typically via Azure Private DNS Zones) to actually redirect traffic to the private IP — a frequently overlooked but essential implementation step.
 - 🔑 Hub-and-spoke topology, combined with centralized firewall inspection for any required spoke-to-spoke traffic, is the standard enterprise VNet architecture pattern.
 
-## 23.14 Related Concepts (Next Up)
+## 14. Related Concepts (Next Up)
 
 Section 24 covers **Load Balancer (Layer 4) vs. Application Gateway (Layer 7)** — the traffic-distribution mechanisms that sit in front of the compute resources (VMs, VM Scale Sets, App Service) covered in Part 3, directing incoming traffic across multiple instances using the private networking foundation established in Sections 21-23.

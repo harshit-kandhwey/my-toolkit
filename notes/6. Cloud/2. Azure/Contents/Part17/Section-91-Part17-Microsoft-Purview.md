@@ -6,7 +6,7 @@
 
 ---
 
-## 91.1 Definition
+## 1. Definition
 
 **Plain language:** Microsoft Purview answers a question none of the preceding security tooling in this roadmap actually answers: not "is this resource configured securely" (Defender for Cloud, Section 55) and not "who can access this secret" (Key Vault, Section 56) — but "where, across every storage account, database, and file share we own, does sensitive data (customer PII, payment card numbers, health records, credentials) actually live, and is it labeled, tracked, and protected in a way that matches its sensitivity?" Purview scans your data estate, finds and classifies sensitive information wherever it sits, and builds a searchable map and catalog of what data exists, where, and who owns it.
 
@@ -14,78 +14,78 @@
 
 ⚠️ Microsoft has substantially rebranded and re-scoped this product family more than once — "Azure Purview" became simply "Microsoft Purview," absorbing Microsoft 365 sensitivity labels, Data Loss Prevention (DLP), Insider Risk Management, and eDiscovery under the same umbrella brand. Verify current product boundaries and the exact feature set included in a given Purview SKU/plan against official documentation before scoping a rollout — the line between "Purview data governance" and "Microsoft 365 compliance center" capability has moved repeatedly.
 
-## 91.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
-Every prior security section in this roadmap protects infrastructure or secrets, not data itself. Defender for Cloud (Section 55) tells you whether a storage account's network rules or a SQL server's TLS configuration is compliant with best practice — but it has no opinion on what's actually inside the blobs or database rows behind that configuration. Key Vault (Section 56) protects keys, secrets, and certificates — not the sensitive business data an application processes using those secrets. Compliance & Encryption (Section 58) confirms data is encrypted at rest and in transit — but encryption tells you nothing about *what* is encrypted, whether it's classified correctly, or whether a well-meaning analyst just copied a table full of customer national-ID numbers into a new, unmonitored storage account nobody on the security team knows exists.
+Every prior security section in this roadmap protects infrastructure or secrets, not data itself. Defender for Cloud (Section 55) tells you whether a storage account's network rules or a SQL server's TLS configuration is compliant with best practice — but it has no opinion on what's actually inside the blobs or database rows behind that configuration. Key Vault (Section 56) protects keys, secrets, and certificates — not the sensitive business data an application processes using those secrets. Compliance & Encryption (Section 58) confirms data is encrypted at rest and in transit — but encryption tells you nothing about _what_ is encrypted, whether it's classified correctly, or whether a well-meaning analyst just copied a table full of customer national-ID numbers into a new, unmonitored storage account nobody on the security team knows exists.
 
 As an organization's data estate grows across the storage services from Part 4 (Blob, Files, Disks), the databases from Part 6 (SQL Database, Cosmos DB, PostgreSQL/MySQL), and increasingly the analytics estate from Part 15 (data lakes, Synapse, and similar), "where is our sensitive data" stops being a question any single team can answer from memory. Purview exists specifically to close this gap: continuous, automated discovery and classification of sensitive data across an entire, sprawling, frequently-changing data estate, producing both a governance answer (a catalog analysts and data stewards can search) and a security answer (what's actually sensitive, and is it protected and labeled appropriately) that feeds directly into the incident-response and SOC material the rest of Part 17 builds on top of.
 
 ---
 
-## 91.3 Core Purview Capabilities
+## 3. Core Purview Capabilities
 
-### 91.3.1 Data Map
+### 3.1 Data Map
 
 **Definition:** the Data Map is Purview's foundational metadata repository — a graph of every scanned data source, the assets within it (databases, tables, columns, files, containers), their schema, lineage (where data flows from and to), and classification results, kept continuously up to date via scheduled scans.
 
 **How it works conceptually:** a Purview account is registered against data sources (a storage account, a SQL server, an on-premises file share reached via a self-hosted integration runtime) and a scan is configured and scheduled against each; each scan run crawls the source, extracts schema/metadata, applies classification rules, and updates the Data Map with the results — the Data Map is therefore a continuously refreshed inventory, not a one-time snapshot.
 
-### 91.3.2 Data Catalog (Unified Catalog)
+### 3.2 Data Catalog (Unified Catalog)
 
 **Definition:** the human-facing, searchable layer built on top of the Data Map — allowing data stewards and analysts to search for data assets by name, classification, business glossary term, or owner, browse lineage, and see who is accountable for a given dataset.
 
 - **Business glossary:** a controlled vocabulary of business terms (e.g., "Customer Lifetime Value," "PCI Cardholder Data") that can be linked to specific technical assets in the Data Map, bridging the gap between business-analyst language and the underlying technical schema — directly analogous in spirit to tagging conventions (Section 65.3) but for data meaning rather than cost allocation.
-- **Ownership/stewardship:** assets can be assigned a data owner and data steward, establishing organizational accountability for a given dataset's quality, classification accuracy, and access governance — critical for the incident-response workflows later in this Part, where knowing *who owns this data* is often the first question during a suspected data-exposure incident.
+- **Ownership/stewardship:** assets can be assigned a data owner and data steward, establishing organizational accountability for a given dataset's quality, classification accuracy, and access governance — critical for the incident-response workflows later in this Part, where knowing _who owns this data_ is often the first question during a suspected data-exposure incident.
 
-### 91.3.3 Automated Data Classification
+### 3.3 Automated Data Classification
 
 **Definition:** Purview scans apply both Microsoft-provided **system classifiers** (pre-built pattern-matching and machine-learning-based detectors for common sensitive-data types — credit card numbers, national ID/SSN-equivalent numbers, common health-record identifiers) and organization-defined **custom classifiers** (regex patterns or exact-data-match rules tailored to an organization's own sensitive-data formats, e.g., an internal customer ID format) to discovered data, tagging matching assets/columns with the relevant classification.
 
 ⚠️ The specific catalog of built-in system classifiers, their exact detection patterns, and confidence-scoring behavior are updated by Microsoft over time — verify current classifier coverage against documentation for any compliance-critical classification requirement rather than assuming a specific sensitive-data type is automatically covered.
 
-### 91.3.4 Sensitivity Labels
+### 3.4 Sensitivity Labels
 
 **Definition:** a sensitivity label (e.g., "Confidential," "Highly Confidential — PII") is a persistent classification marking that can be applied to a data asset (or, in the Microsoft 365 information-protection context, to a document/email) either automatically (based on classification results, 91.3.3) or manually by a data owner — the label itself can drive downstream protection behavior (encryption, access restriction, DLP policy enforcement) in supporting services.
 
 **Why it matters for this Part:** a sensitivity label discovered and applied by Purview is exactly the kind of signal a mature SOC (Section 95) wants correlated with a Sentinel security incident (Section 93) — "an anomalous large download occurred against a dataset labeled Highly Confidential" is a materially higher-priority incident than the same anomalous download against unclassified data, and this correlation is only possible because Purview did the classification work upstream.
 
-### 91.3.5 Data Estate Insights
+### 3.5 Data Estate Insights
 
 **Definition:** dashboard-level, aggregated reporting across the entire scanned estate — total assets discovered, classification coverage, scan health, and sensitive-data distribution by source type or business unit — providing the same kind of estate-wide, at-a-glance visibility for data governance that Secure Score (Section 55.3) provides for security posture, letting a CISO or data-governance lead track improving (or degrading) coverage over time rather than only seeing per-asset detail.
 
 ---
 
-## 91.4 Integration With the Data Estate Covered Elsewhere in This Roadmap
+## 4. Integration With the Data Estate Covered Elsewhere in This Roadmap
 
-### 91.4.1 Storage Accounts (Part 4)
+### 4.1 Storage Accounts (Part 4)
 
 Purview scans register directly against Blob containers and Azure Data Lake Storage Gen2 hierarchical-namespace accounts (Section 17), classifying files by content (structured formats like CSV/Parquet get column-level classification; unstructured documents get document-level classification) — directly extending the storage lifecycle and access-tier guidance from Section 17 with a governance layer answering "what's actually in here" rather than only "how is it tiered and replicated" (Section 20).
 
-### 91.4.2 Databases (Part 6)
+### 4.2 Databases (Part 6)
 
 Azure SQL Database/Managed Instance (Section 29) and other relational sources expose column-level schema to Purview scans, enabling column-level sensitivity classification (e.g., flagging a `national_id` column specifically, not just the table as a whole) — this is a materially finer-grained governance signal than table-level or database-level classification alone, and connects directly to Section 29's own built-in SQL Data Discovery & Classification feature, which Purview can consume and centralize alongside every other scanned source rather than leaving SQL-specific classification siloed in each individual database.
 
-### 91.4.3 Multi-Cloud and On-Premises Sources
+### 4.3 Multi-Cloud and On-Premises Sources
 
 Purview scans extend beyond Azure-native sources to AWS S3 buckets and on-premises SQL Server/file shares (the latter reached via a **self-hosted integration runtime** — a lightweight agent installed within the on-premises network, directly analogous in purpose to Azure Arc's Section 68 role of extending Azure management to non-Azure resources, though a functionally distinct mechanism specific to Purview scanning) — giving a single governance plane visibility across a genuinely hybrid, multi-cloud data estate rather than requiring separate governance tooling per environment.
 
 ---
 
-## 91.5 Purview vs. Defender for Cloud — Comparison
+## 5. Purview vs. Defender for Cloud — Comparison
 
-| Aspect | Microsoft Defender for Cloud (Section 55) | Microsoft Purview |
-| --- | --- | --- |
-| Core question | "Is this resource configured securely, and is it under active attack?" | "Where does sensitive data actually live, and is it classified and governed appropriately?" |
-| Unit of analysis | Resource configuration and runtime behavior | Data content and schema, at the column/file/document level |
-| Output | Recommendations, Secure Score, security alerts | Data Map, catalog entries, classification/sensitivity labels, estate-wide governance insights |
-| Primary consumer | Security/cloud engineering teams | Data governance teams, data stewards, privacy/compliance teams, and — via label correlation — SOC analysts |
-| Relationship | Protects the "container" (the storage account, the VM, the database engine) | Inventories and classifies the "contents" (the actual sensitive data inside that container) |
+| Aspect           | Microsoft Defender for Cloud (Section 55)                                   | Microsoft Purview                                                                                          |
+| ---------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Core question    | "Is this resource configured securely, and is it under active attack?"      | "Where does sensitive data actually live, and is it classified and governed appropriately?"                |
+| Unit of analysis | Resource configuration and runtime behavior                                 | Data content and schema, at the column/file/document level                                                 |
+| Output           | Recommendations, Secure Score, security alerts                              | Data Map, catalog entries, classification/sensitivity labels, estate-wide governance insights              |
+| Primary consumer | Security/cloud engineering teams                                            | Data governance teams, data stewards, privacy/compliance teams, and — via label correlation — SOC analysts |
+| Relationship     | Protects the "container" (the storage account, the VM, the database engine) | Inventories and classifies the "contents" (the actual sensitive data inside that container)                |
 
-🎯 **Interview Tip:** a precise answer distinguishing these two services should avoid the common trap of treating them as competing or redundant — they operate at entirely different layers and are complementary, not overlapping: Defender for Cloud would flag a storage account with public blob access enabled as a misconfiguration regardless of what's inside it; Purview would separately tell you that the same storage account happens to contain a column matching a credit-card-number pattern — the combination (a *misconfigured* container that also happens to hold *sensitive* data) is the genuinely high-priority finding neither tool alone fully captures, and mature security programs correlate both signals rather than treating either as sufficient on its own.
+🎯 **Interview Tip:** a precise answer distinguishing these two services should avoid the common trap of treating them as competing or redundant — they operate at entirely different layers and are complementary, not overlapping: Defender for Cloud would flag a storage account with public blob access enabled as a misconfiguration regardless of what's inside it; Purview would separately tell you that the same storage account happens to contain a column matching a credit-card-number pattern — the combination (a _misconfigured_ container that also happens to hold _sensitive_ data) is the genuinely high-priority finding neither tool alone fully captures, and mature security programs correlate both signals rather than treating either as sufficient on its own.
 
 ---
 
-## 91.6 Architecture Diagram
+## 6. Architecture Diagram
 
 ```
                     Microsoft Purview Account
@@ -111,7 +111,7 @@ Classification results / sensitivity labels flow onward to:
     "we found it" to "it's properly protected"
 ```
 
-## 91.7 Configuration & Hands-On Example
+## 7. Configuration & Hands-On Example
 
 **Registering a storage account as a Purview data source and triggering a scan (via Azure CLI, using the `purview` extension):**
 
@@ -158,33 +158,33 @@ az purview account show \
 
 ---
 
-## 91.8 Production & Enterprise Usage
+## 8. Production & Enterprise Usage
 
 Enterprises with a large, distributed data estate — replicated exactly the pattern already established for Defender for Cloud in Section 55.8.1 — enforce Purview scanning coverage via **Azure Policy** (Section 57) at management-group scope, ensuring newly provisioned storage accounts and databases are automatically registered for scanning rather than depending on each application team remembering to onboard their own data source manually. A single, centrally-owned Purview account is typically used across an entire tenant (registering data sources across many subscriptions into collections scoped per business unit or environment), directly mirroring the centralized-vs-team-owned Log Analytics workspace pattern from Section 50.8, now applied to data governance rather than operational telemetry.
 
-## 91.9 Security Considerations
+## 9. Security Considerations
 
 - The managed identity or service principal Purview uses to scan a data source needs read access to that source's actual content (not merely metadata) to perform classification — this makes the Purview scanning identity itself a genuinely sensitive credential requiring careful RBAC scoping (Section 8) and monitoring, since a compromised scanning identity would have broad read access across the entire registered data estate.
-- Classification results and the catalog itself contain a summary of *where sensitive data lives* — this metadata is itself sensitive (a map of an organization's most valuable data is a high-value target for an attacker), and access to the Purview catalog/Data Map should be scoped via collection-level RBAC rather than granted broadly.
+- Classification results and the catalog itself contain a summary of _where sensitive data lives_ — this metadata is itself sensitive (a map of an organization's most valuable data is a high-value target for an attacker), and access to the Purview catalog/Data Map should be scoped via collection-level RBAC rather than granted broadly.
 
-## 91.10 Performance Considerations
+## 10. Performance Considerations
 
 Full scans of very large data estates (petabyte-scale Data Lake accounts, large database estates) can take significant time and consume scanning-infrastructure throughput; incremental scans (scanning only new/changed data since the last successful scan) are the recommended default for recurring scan schedules, reserving full re-scans for less frequent, deliberate estate-wide reclassification passes (e.g., after a significant classifier ruleset update) — ⚠️ verify current incremental-scan support and behavior per source type against documentation, as coverage varies by connector.
 
-## 91.11 Monitoring
+## 11. Monitoring
 
 Purview scan run history, success/failure status, and asset-count trends are visible within Purview Studio and exportable to a Log Analytics workspace (Section 51) for KQL-based trend analysis and alerting — directly reusing the same diagnostic-export pattern established in Section 50.4.2, now applied to data-governance-specific telemetry (e.g., alerting when a scheduled scan fails repeatedly, which would otherwise silently degrade classification coverage without anyone noticing).
 
-## 91.12 Troubleshooting
+## 12. Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-| --- | --- | --- |
-| Newly provisioned storage account shows no classification results weeks after creation | No scan registered against the new source; auto-registration policy not enforced or not covering that resource type | Verify Azure Policy-driven auto-registration (Section 57) actually covers the resource type/scope; manually register and scan in the interim |
-| Scan completes successfully but a known-sensitive column isn't flagged | The relevant system classifier doesn't cover that specific data format, or a custom classifier is needed | Review classifier coverage against the actual data format; author a custom classifier (regex or exact-data-match) for organization-specific sensitive-data patterns |
-| Scan fails with an authorization error | Purview's scanning identity lacks sufficient read permission on the target data source | Verify and grant the required RBAC role/access on the source specifically for the Purview managed identity or service principal used for that scan |
-| Catalog search returns stale results for a recently modified dataset | Scan schedule hasn't run since the change, or incremental scan missed the change | Verify scan schedule/frequency; trigger a manual scan run to confirm current state |
+| Symptom                                                                                | Likely Cause                                                                                                        | Fix                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Newly provisioned storage account shows no classification results weeks after creation | No scan registered against the new source; auto-registration policy not enforced or not covering that resource type | Verify Azure Policy-driven auto-registration (Section 57) actually covers the resource type/scope; manually register and scan in the interim                        |
+| Scan completes successfully but a known-sensitive column isn't flagged                 | The relevant system classifier doesn't cover that specific data format, or a custom classifier is needed            | Review classifier coverage against the actual data format; author a custom classifier (regex or exact-data-match) for organization-specific sensitive-data patterns |
+| Scan fails with an authorization error                                                 | Purview's scanning identity lacks sufficient read permission on the target data source                              | Verify and grant the required RBAC role/access on the source specifically for the Purview managed identity or service principal used for that scan                  |
+| Catalog search returns stale results for a recently modified dataset                   | Scan schedule hasn't run since the change, or incremental scan missed the change                                    | Verify scan schedule/frequency; trigger a manual scan run to confirm current state                                                                                  |
 
-## 91.13 Interview Questions — Section 91
+## 13. Interview Questions — Section 91
 
 ### 🎯 Intermediate
 
@@ -202,13 +202,13 @@ _Model answer:_ Preparation would center on Purview being deployed proactively, 
 
 _What the interviewer is probing:_ recognition that Purview's real value is in continuous, proactive coverage rather than point-in-time discovery, and the ability to connect classification results back to ownership metadata and Defender for Cloud posture as a combined governance-plus-security answer, not two disconnected tools.
 
-## 91.14 Common Misconceptions
+## 14. Common Misconceptions
 
 - **"Purview is just a rebrand of Azure Data Catalog / a simple metadata browser."** False — while it does include a searchable catalog, its core value in a security context is automated, continuous, estate-wide sensitive-data classification and the resulting governance/risk signal, not merely a passive metadata browsing tool.
 - **"Enabling Purview automatically encrypts or restricts access to discovered sensitive data."** False — Purview discovers, classifies, and labels; it does not itself enforce access restrictions or apply encryption. Acting on a classification result (restricting access, applying DLP, verifying Key Vault-backed encryption, Section 56) is a separate step that must be deliberately connected to Purview's findings.
 - **"Column-level classification in Azure SQL and Purview's classification are two unrelated things."** False — Purview centralizes and can consume SQL Data Discovery & Classification results (Section 29) alongside every other scanned source, rather than requiring classification to be managed separately per database engine.
 
-## 91.15 Key Takeaways
+## 15. Key Takeaways
 
 - 🔑 Purview answers "where does sensitive data live and is it classified/governed appropriately" — a data-content question entirely distinct from and complementary to Defender for Cloud's (Section 55) infrastructure-configuration and threat-detection focus.
 - 🔑 The Data Map (metadata inventory), Data Catalog (searchable, business-glossary-linked layer), and classification/sensitivity labeling engine are Purview's three foundational capabilities, working together across Azure-native, on-premises, and multi-cloud sources.
@@ -216,6 +216,6 @@ _What the interviewer is probing:_ recognition that Purview's real value is in c
 - 🔑 Sensitivity labels and classification results are the upstream signal that later Part 17 sections (Sentinel, Section 92-93) correlate with security incidents — a data-exposure incident against classified-sensitive data is a materially higher priority than the same incident against unclassified data.
 - 🔑 Enterprise-scale Purview adoption requires the same management-group-scoped, policy-enforced auto-registration pattern already established for Defender for Cloud (Section 55.8.1) — proactive, continuous coverage, not a one-time audit.
 
-## 91.16 Related Concepts (Next Up)
+## 16. Related Concepts (Next Up)
 
 Section 92 begins the SIEM/SOAR half of Part 17 with **Microsoft Sentinel Fundamentals** — the cloud-native SIEM built directly on top of the Log Analytics workspace (Section 51) that will consume security signal from across the estate, including, where wired up, Purview's classification and sensitivity-label context established in this section, to enrich and prioritize the security incidents Sections 93-95 cover in depth.

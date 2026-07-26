@@ -6,7 +6,7 @@
 
 ---
 
-## 42.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Azure Logic Apps: its low-code/no-code workflow model, the connector ecosystem, the two hosting models (Consumption and Standard), and — critically for interview and architecture purposes — a rigorous comparison against Azure Functions/Durable Functions (Section 40) for deciding which service fits a given integration or automation requirement.
 
@@ -14,21 +14,21 @@ This section covers Azure Logic Apps: its low-code/no-code workflow model, the c
 
 ---
 
-## 42.2 What Is Logic Apps and What Problem It Solves
+## 2. What Is Logic Apps and What Problem It Solves
 
-### 42.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Logic Apps is a service for building automated workflows that connect different systems and services — a way to say "when X happens, do Y, then Z" by visually (or via JSON) composing a sequence of prebuilt "connector" steps, largely without writing custom code.
 
 **Precise definition:** Azure Logic Apps is a cloud-based platform for creating and running automated workflows that integrate applications, data, and services, using a declarative workflow definition (JSON, editable via a visual designer) composed of a trigger and a sequence of actions, drawing on a large ecosystem of prebuilt connectors to external and Azure-native systems.
 
-### 42.2.2 Why It Exists — The Problem It Solves
+### 2.2 Why It Exists — The Problem It Solves
 
 - **Reducing integration code to configuration:** many business integration scenarios — "when a new row is added to this SQL table, post a message to this Teams channel and create a ticket in this ticketing system" — involve connecting well-known systems in a fairly standard way. Writing custom code (even with Functions' binding model, Section 40.2.2) for every such integration is more effort than necessary when a maintained, prebuilt connector already exists for both the SQL trigger and the Teams/ticketing-system actions.
 - **Accessibility to a broader audience:** Logic Apps' visual designer allows people without deep programming backgrounds (business analysts, IT professionals with limited coding experience) to build and maintain integration workflows directly, broadening who can own and evolve integration logic beyond a dedicated development team — a genuine organizational benefit distinct from any purely technical capability.
 - **A large, maintained connector ecosystem:** hundreds of prebuilt connectors exist for both Azure services and widely used third-party/SaaS systems (Salesforce, SAP, Office 365, Twitter, and many more), each maintained by Microsoft or the partner, reducing the integration-specific maintenance burden compared to hand-written code calling each system's own API/SDK directly.
 
-### 42.2.3 Terminology
+### 2.3 Terminology
 
 | Term                    | Definition                                                                                                                                                                                                                                                                                                                         |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,20 +43,20 @@ This section covers Azure Logic Apps: its low-code/no-code workflow model, the c
 
 ---
 
-## 42.3 Hosting Models
+## 3. Hosting Models
 
-### 42.3.1 Consumption (Multi-Tenant)
+### 3.1 Consumption (Multi-Tenant)
 
 - **Definition:** the original Logic Apps model — each workflow is its own Azure resource, running on Microsoft's shared, multi-tenant Logic Apps infrastructure, billed per action/connector execution (a genuinely consumption-based, pay-per-execution model, similar in spirit to Azure Functions' Consumption plan, Section 40.3.2).
 - **Characteristics:** automatic scaling with no infrastructure to manage; connectors used are exclusively the "managed connector" type, executed by Microsoft's shared connector infrastructure rather than within the customer's own compute/network boundary; limited direct VNet integration for reaching private-networked resources (historically requiring an additional On-Premises Data Gateway or specific managed connector configuration for private connectivity — verify current VNet integration capabilities against documentation, as this has evolved).
 
-### 42.3.2 Standard (Single-Tenant)
+### 3.2 Standard (Single-Tenant)
 
 - **Definition:** a newer hosting model where a Logic App runs on dedicated, single-tenant infrastructure (built on the same underlying Azure Functions extensibility model, architecturally), allowing multiple _workflows_ to be hosted within a single Logic App (Standard) resource, with full VNet integration support.
 - **Why it exists:** addresses Consumption's networking limitations (direct VNet integration, reaching private-networked resources without an additional gateway component in more scenarios) and offers **built-in connectors** for several common services, executing natively within the Standard runtime for better performance than the equivalent managed connector call.
 - **Cost model:** typically billed based on the underlying hosting plan (an App Service Plan-like model, or a Functions-Premium-like model depending on configuration) rather than Consumption's strict per-action billing — another point where the choice mirrors Section 40.3's Functions hosting-plan trade-offs (predictable-cost always-on vs. granular pay-per-use).
 
-### 42.3.3 Comparison Table
+### 3.3 Comparison Table
 
 | Aspect                    | Consumption                                                                | Standard                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -69,9 +69,9 @@ This section covers Azure Logic Apps: its low-code/no-code workflow model, the c
 
 ---
 
-## 42.4 Building Blocks: Triggers, Actions, and Control Flow
+## 4. Building Blocks: Triggers, Actions, and Control Flow
 
-### 42.4.1 Example Workflow (Conceptual JSON Structure)
+### 4.1 Example Workflow (Conceptual JSON Structure)
 
 ```json
 {
@@ -107,11 +107,11 @@ This section covers Azure Logic Apps: its low-code/no-code workflow model, the c
 - This illustrates the declarative structure: a trigger (`When_a_new_email_arrives`), and a control action (`If`/`Condition_check_subject`) branching between two different downstream connector actions based on the incoming email's content — expressed entirely as configuration, with the visual designer generating and editing this same underlying JSON.
 - 💡 **Tip:** even though Logic Apps is "low-code," the underlying workflow definition is genuine, source-controllable JSON — production Logic Apps deployments should be managed via Infrastructure as Code (ARM/Bicep, Section 46–47) and version control exactly like any other Azure resource, not solely edited ad hoc through the visual designer in the Azure Portal.
 
-### 42.4.2 Expressions and Workflow Definition Language
+### 4.2 Expressions and Workflow Definition Language
 
 - Logic Apps uses its own **Workflow Definition Language** expression syntax (`@triggerBody()`, `@parameters(...)`, `@concat(...)`, and many built-in functions) to reference trigger/action outputs and perform data transformation inline within the declarative JSON — a distinct, purpose-built expression language rather than a general-purpose programming language, appropriate for the kinds of data-shaping and conditional logic common in integration workflows, but with real limits compared to arbitrary code for genuinely complex transformation logic (42.6.3's comparison addresses this trade-off directly).
 
-### 42.4.3 Control Actions
+### 4.3 Control Actions
 
 | Action     | Purpose                                                                                                                                                                                         |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -123,26 +123,26 @@ This section covers Azure Logic Apps: its low-code/no-code workflow model, the c
 
 ---
 
-## 42.5 Error Handling and Retry
+## 5. Error Handling and Retry
 
-### 42.5.1 Built-In Retry Policies
+### 5.1 Built-In Retry Policies
 
 - Most connector actions support a configurable retry policy (fixed interval, exponential backoff, or none) applied automatically on transient failure, without any custom retry code — directly parallel in purpose to resilience patterns a developer would otherwise hand-write around an SDK call.
 
-### 42.5.2 Run After Configuration and Scopes
+### 5.2 Run After Configuration and Scopes
 
 - Every action can be configured with a `runAfter` condition specifying which prior action(s) it depends on and under what status (`Succeeded`, `Failed`, `Skipped`, `TimedOut`) it should execute — enabling explicit error-handling branches (e.g., an action configured to run only if a prior action's status was `Failed`, implementing a compensating or notification step).
 - **Scopes (42.4.3)** combined with this pattern provide a structured try/catch-equivalent: a `Scope` containing the primary actions, followed by a second `Scope` configured to run only if the first scope's aggregate status was `Failed`, containing cleanup/notification/compensating actions — the Logic Apps declarative equivalent of a code-based try/catch block.
 
 ---
 
-## 42.6 Logic Apps vs. Azure Functions (Durable Functions): Decision Framework
+## 6. Logic Apps vs. Azure Functions (Durable Functions): Decision Framework
 
-### 42.6.1 Why This Comparison Is a Frequent Interview and Architecture Topic
+### 6.1 Why This Comparison Is a Frequent Interview and Architecture Topic
 
 Both services can express workflows connecting multiple steps/systems, and both can be genuinely valid choices for a given integration requirement — making the _reasoning process_ for choosing between them (or combining them) a common, substantive interview question, rather than a simple factual lookup.
 
-### 42.6.2 Comparison Table
+### 6.2 Comparison Table
 
 | Aspect                              | Logic Apps                                                                                                                                                                                                     | Azure Functions / Durable Functions                                                                                  |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -155,7 +155,7 @@ Both services can express workflows connecting multiple steps/systems, and both 
 | Source control / testing discipline | Possible (JSON is source-controllable) but less naturally aligned with standard software engineering practices (unit testing a Logic App workflow is less straightforward than unit testing a function's code) | Naturally aligned with standard software engineering practices — unit testing, code review, CI/CD for code artifacts |
 | Cost model                          | Per-action (Consumption) or hosting-plan-based (Standard)                                                                                                                                                      | Per-execution (Consumption) or hosting-plan-based (Premium/Dedicated) — genuinely parallel structure                 |
 
-### 42.6.3 Decision Guidance (Framed as Trade-offs, Not a Universal Rule)
+### 6.3 Decision Guidance (Framed as Trade-offs, Not a Universal Rule)
 
 - **Favor Logic Apps when:** the workflow is primarily _connecting_ well-supported systems via existing connectors with modest transformation/conditional logic, the team includes non-developers who need to own/maintain the workflow, B2B/EDI capabilities are required, or rapid, largely configuration-driven delivery is prioritized over rigorous software-engineering practice for this particular integration.
 - **Favor Azure Functions (with Durable Functions for orchestration) when:** the workflow requires substantial custom logic, algorithms, or data transformation beyond what the Workflow Definition Language expresses cleanly; the team wants the integration logic under the same code-review/testing/CI discipline as the rest of the codebase; performance-critical, high-throughput scenarios where code-level control matters; or the required external system has no maintained connector and would need custom SDK/API integration code regardless.
@@ -165,7 +165,7 @@ Both services can express workflows connecting multiple steps/systems, and both 
 
 ---
 
-## 42.7 Security Considerations
+## 7. Security Considerations
 
 - **Connector authentication:** most connectors authenticate to their target system via stored connection credentials (an API key, OAuth token) managed as part of the connection resource; where the target is an Azure service, Managed Identity-based authentication (Section 9) is generally preferred over connection-string/key-based credentials, consistent with the pattern established across Sections 35.4.2, 37.5.4, and 38.7.2.
 - **Access to trigger endpoints:** HTTP-triggered Consumption Logic Apps generate a callback URL containing a SAS-style signature as its default access control mechanism — this URL itself functions as a bearer credential and should be treated with the same care as any other secret (not logged, not embedded in client-side code, rotated if exposed).
@@ -173,7 +173,7 @@ Both services can express workflows connecting multiple steps/systems, and both 
 
 ---
 
-## 42.8 Production and Enterprise Usage
+## 8. Production and Enterprise Usage
 
 - **Integration Account and B2B scenarios:** enterprises with trading-partner integration requirements (AS2, X12, EDIFACT message formats common in supply-chain/EDI scenarios) use Logic Apps combined with an Integration Account as a mature, purpose-built platform for this class of integration — a capability with no close equivalent in the Azure Functions ecosystem, making this scenario one of the clearer cases where Logic Apps is the appropriate default rather than a close trade-off call.
 - **Monitoring:** Logic Apps integrates with Azure Monitor (Section 50) for run history, failure alerting, and diagnostic logging; each workflow run's full action-by-action execution history (inputs/outputs per step) is available for troubleshooting directly in the Azure Portal — a debugging experience notably more visual/accessible than reading Application Insights traces for a Functions-based equivalent, another factor in the "broader audience" accessibility argument from 42.2.2.
@@ -181,7 +181,7 @@ Both services can express workflows connecting multiple steps/systems, and both 
 
 ---
 
-## 42.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                      | Likely Cause                                                                                                                                 | Diagnostic Step                                                                                                            |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -192,7 +192,7 @@ Both services can express workflows connecting multiple steps/systems, and both 
 
 ---
 
-## 42.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Hosting model (Consumption vs. Standard) chosen based on actual VNet/networking and workflow-count requirements, not by default.
 - [ ] Production workflows managed via Infrastructure as Code and source control, not solely edited ad hoc in the visual designer.
@@ -204,14 +204,14 @@ Both services can express workflows connecting multiple steps/systems, and both 
 
 ---
 
-## 42.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Logic Apps is just a worse, less flexible version of Azure Functions." _Correction:_ they serve different primary purposes — connector breadth and accessibility to non-developers versus general-purpose code flexibility — and are frequently combined rather than treated as strictly competing options (42.6.3).
 - "Because it's 'low-code,' Logic Apps workflows don't need the same engineering discipline (source control, testing, CI/CD) as code-based systems." _Correction:_ production Logic Apps should be managed with the same IaC/version-control discipline as any other Azure resource (42.4.1, 42.8) — "low-code" describes the authoring experience, not a license to skip operational rigor.
 
 ---
 
-## 42.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is a connector in Logic Apps, and why does the connector ecosystem matter?"
 _Model answer:_ a connector is a prebuilt component providing triggers and/or actions for a specific service, handling that service's authentication and API calls so the workflow author does not need to write custom integration code. The large connector ecosystem matters because it lets common integration scenarios (connecting to widely used Azure and third-party/SaaS systems) be built primarily through configuration rather than custom-written, individually maintained integration code for each system.
@@ -229,7 +229,7 @@ _What the interviewer is probing:_ the ability to satisfy competing organization
 
 ---
 
-## 42.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Logic Apps and Azure Functions occupy different points on the code-vs-configuration spectrum and are frequently combined, not treated as exclusive alternatives — the decision hinges on connector fit, custom-logic complexity, team composition, and specialized needs like B2B/EDI.
 
@@ -243,7 +243,7 @@ _What the interviewer is probing:_ the ability to satisfy competing organization
 
 ---
 
-## 42.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 40 (prerequisite, completed):** the Functions/Durable Functions comparison points referenced throughout 42.6.
 - **Section 43 — Event Grid, Event Hubs, Service Bus (next):** the messaging services that frequently serve as both Logic Apps triggers/actions and Azure Functions triggers, providing the underlying eventing/messaging layer both services build on.

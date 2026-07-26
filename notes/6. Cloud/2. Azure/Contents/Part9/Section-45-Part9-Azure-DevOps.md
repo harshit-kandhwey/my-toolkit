@@ -6,7 +6,7 @@
 
 ---
 
-## 45.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Azure DevOps as an integrated suite of five services — Boards, Repos, Pipelines, Artifacts, and Test Plans — with primary emphasis on Repos, Pipelines, and Artifacts, since these are the components most directly relevant to the infrastructure/deployment automation focus of this roadmap's Part 9. Boards and Test Plans are covered at an appropriate but lighter depth, since they address project-management and testing-process concerns adjacent to, rather than central to, the DevOps engineering focus of this material.
 
@@ -14,15 +14,15 @@ This section covers Azure DevOps as an integrated suite of five services — Boa
 
 ---
 
-## 45.2 What Is Azure DevOps
+## 2. What Is Azure DevOps
 
-### 45.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Azure DevOps is a suite of development collaboration tools covering the full software delivery lifecycle — planning and tracking work (Boards), storing and versioning code (Repos), automating build/test/deployment (Pipelines), managing package/binary artifacts (Artifacts), and managing test plans/execution (Test Plans) — usable together as an integrated platform or adopted piecemeal alongside other tools.
 
 **Precise definition:** Azure DevOps is Microsoft's cloud-hosted (Azure DevOps Services) or self-hosted (Azure DevOps Server) suite of five integrated services supporting Agile planning, source control, continuous integration/continuous delivery, package management, and manual/automated testing.
 
-### 45.2.2 The Five Services
+### 2.2 The Five Services
 
 | Service        | Purpose                                                                                                                                                                              |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -32,39 +32,39 @@ This section covers Azure DevOps as an integrated suite of five services — Boa
 | **Artifacts**  | Package management — hosts NuGet, npm, Maven, Python, and universal package feeds, for sharing internally built packages/dependencies across projects and teams.                     |
 | **Test Plans** | Manual and exploratory test case management, plus integration with automated test results from Pipelines.                                                                            |
 
-### 45.2.3 Azure DevOps vs. GitHub (Both Microsoft-Owned)
+### 2.3 Azure DevOps vs. GitHub (Both Microsoft-Owned)
 
 ⚠️ **Warning:** since Microsoft owns both Azure DevOps and GitHub, a frequent point of confusion (and a legitimate architecture decision point) is choosing between them. They are not the same product: GitHub emphasizes open-source-friendly social coding, GitHub Actions for CI/CD, and broader developer-community features; Azure DevOps emphasizes integrated enterprise Agile planning (Boards) alongside its own CI/CD (Pipelines) and is often preferred in enterprises with established Microsoft-ecosystem tooling investment and specific Agile process/reporting needs Boards addresses natively. Many organizations use a hybrid: GitHub for source control (Repos) combined with Azure Pipelines for CI/CD, or vice versa — this section's CI/CD material (Pipelines) applies conceptually to either combination, and Section 49 covers GitHub Actions as a direct alternative/complement.
 
 ---
 
-## 45.3 Azure Repos
+## 3. Azure Repos
 
-### 45.3.1 Git Fundamentals Applied (Brief — Full Git Coverage Is a Separate Topic)
+### 3.1 Git Fundamentals Applied (Brief — Full Git Coverage Is a Separate Topic)
 
 Azure Repos hosts standard Git repositories; this roadmap assumes no dedicated prior Git-specific section exists yet, so this subsection notes the concepts specifically relevant to enterprise Azure DevOps usage without re-teaching Git from first principles (a natural candidate for a future "Git" topic roadmap in this same knowledge base series, referenced as a related topic in 45.14).
 
-### 45.3.2 Branch Policies
+### 3.2 Branch Policies
 
 - **Definition:** rules enforced on a specific branch (typically the main/release branch) requiring certain conditions before changes can be merged — a minimum number of reviewer approvals, successful build validation (a Pipeline run triggered automatically on the pull request), linked work items, and comment resolution.
 - **Why they exist:** without enforced policies, code quality and review discipline depend entirely on individual developer/team discipline; branch policies make specific quality gates mandatory and unbypassable (for non-administrator users) at the platform level — directly parallel in philosophy to Pod Security Admission (Section 37.6.3) enforcing hardening as cluster policy rather than developer discretion, now applied to source control.
 - **Build validation policy specifically:** requires a specified Pipeline to run and succeed against the proposed merge before it can complete — this is the mechanism connecting Repos to Pipelines, ensuring code cannot reach the protected branch without passing automated checks.
 
-### 45.3.3 Pull Request Workflow
+### 3.3 Pull Request Workflow
 
 - A pull request (PR) proposes merging changes from a source branch into a target branch, triggering configured branch policies, enabling threaded code review comments, and (once approved and passing policies) completing the merge — the standard collaborative code-review mechanism, with Azure Repos' specific implementation supporting features like squash merge options, automatic work-item linking (connecting a PR to its originating Boards work item), and PR templates.
 
 ---
 
-## 45.4 Azure Pipelines
+## 4. Azure Pipelines
 
-### 45.4.1 Definition
+### 4.1 Definition
 
 **Plain language:** Azure Pipelines automates the process of building, testing, and deploying code — triggered automatically by a code change (or on a schedule, or manually), running a defined sequence of steps on managed or self-hosted compute, producing artifacts and/or deploying to target environments.
 
 **Precise definition:** Azure Pipelines is a cloud-based CI/CD service that automates build, test, and deployment workflows, defined declaratively in YAML (the modern, recommended approach) or via the legacy classic visual designer, executing on Microsoft-hosted or self-hosted **agents**.
 
-### 45.4.2 Core Concepts
+### 4.2 Core Concepts
 
 | Term                   | Definition                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -76,7 +76,7 @@ Azure Repos hosts standard Git repositories; this roadmap assumes no dedicated p
 | **Trigger**            | The condition causing a pipeline to run — a push to a specific branch (CI trigger), a pull request (PR trigger), a schedule, or a manual/API-invoked run.                                                                                                                                                                                                                                                       |
 | **Service connection** | A stored, reusable authentication configuration (e.g., to an Azure subscription via a Service Principal or Workload Identity Federation, to ACR, Section 35) that pipeline tasks reference to authenticate to external systems without embedding credentials directly in the pipeline YAML.                                                                                                                     |
 
-### 45.4.3 Example Pipeline: Build and Push a Container Image to ACR
+### 4.3 Example Pipeline: Build and Push a Container Image to ACR
 
 ```yaml
 trigger:
@@ -123,68 +123,68 @@ stages:
   - The `DeployToAKS` stage's `environment: 'production'` reference enables **environment-level approval gates** (45.4.4) — this stage will not execute until any configured approval for the `production` environment is satisfied, regardless of the prior stage's success.
   - `dependsOn: Build` makes the deployment stage's execution explicitly conditional on the build stage succeeding — stages execute in dependency order, not simply top-to-bottom by default (a common point of confusion, worth being precise about).
 
-### 45.4.4 Environments and Approval Gates
+### 4.4 Environments and Approval Gates
 
 - **Environments** are a Pipelines construct representing a logical deployment target (e.g., `dev`, `staging`, `production`), against which deployment history and approval requirements can be configured, independent of the pipeline YAML itself.
 - **Approval gates:** a required manual approval (by a specified individual or group) before a deployment to a given environment proceeds — the standard mechanism for enforcing human sign-off before production deployment specifically, while allowing lower environments (dev, staging) to deploy fully automatically without gating.
 - 💡 **Tip:** this pattern — full CI automation through build/test, automatic deployment to non-production environments, and a manual approval gate specifically before production — is a widely adopted, sensible default balancing deployment velocity against production change-management risk, though the specific gating requirements (who approves, whether additional automated checks like a canary analysis also gate production) should be tailored to an organization's actual risk tolerance and regulatory requirements rather than treated as one-size-fits-all.
 
-### 45.4.5 Templates and Pipeline Reuse
+### 4.5 Templates and Pipeline Reuse
 
 - Pipeline YAML supports **templates** — reusable, parameterized YAML fragments referenced from multiple pipelines — addressing the real-world problem of near-duplicate pipeline definitions proliferating across many repositories/teams as an organization's pipeline count grows, allowing common patterns (e.g., a standard build-and-scan sequence) to be defined once and referenced everywhere, with organization-specific mandatory steps (e.g., a required security scan) centrally maintainable rather than needing to be manually replicated and kept in sync across every team's individual pipeline.
 
 ---
 
-## 45.5 Azure Artifacts
+## 5. Azure Artifacts
 
-### 45.5.1 Definition
+### 5.1 Definition
 
 **Plain language:** Azure Artifacts is a package repository service — a place to publish and consume internally built packages (NuGet, npm, Maven, Python packages, or arbitrary "universal packages") within an organization, functioning as a private equivalent to public package registries like npm's registry or NuGet.org.
 
-### 45.5.2 Why It Exists
+### 5.2 Why It Exists
 
 - **Sharing internal code as versioned dependencies:** rather than copy-pasting shared code across repositories, or vendoring it via Git submodules (both error-prone at scale), teams publish shared internal libraries as versioned packages consumed via standard package-manager tooling (`npm install`, `dotnet add package`), exactly as they would consume any public package — but from a private, organization-controlled feed.
 - **Upstream sources / proxying public registries:** Artifacts feeds can be configured with an "upstream source" pointing to a public registry (npmjs.org, NuGet.org), caching packages the organization actually consumes — providing resilience against public registry outages, a single governed point for scanning/vetting which external package versions are actually in use, and reduced external bandwidth, directly parallel in purpose to `az acr import`'s pattern of mirroring approved public container images into a controlled private registry (Section 35.10).
 - **Universal Packages:** a feed type for arbitrary binary artifacts not fitting a language-specific package format (e.g., a build's compiled output, ML model files) — providing versioned artifact storage for scenarios beyond the standard language package managers.
 
-### 45.5.3 Relationship to ACR (Section 35)
+### 5.3 Relationship to ACR (Section 35)
 
 🔑 **Key Takeaway:** Azure Artifacts and Azure Container Registry serve analogous purposes for different artifact types — Artifacts for language-ecosystem packages (NuGet, npm, Maven, etc.) and general binary artifacts, ACR specifically for OCI container images. A mature CI/CD pipeline commonly publishes to both: application dependencies/shared libraries to Artifacts, and the final container image to ACR — understanding this division (rather than conflating "package registry" as a single undifferentiated concept) is relevant both practically and for precise interview answers.
 
 ---
 
-## 45.6 Azure Boards (Brief Coverage)
+## 6. Azure Boards (Brief Coverage)
 
-### 45.6.1 Core Concepts
+### 6.1 Core Concepts
 
 - **Work item types:** hierarchical Agile planning artifacts — typically Epic → Feature → User Story/Product Backlog Item → Task, plus Bug as a parallel type — configurable per the specific process template (Basic, Agile, Scrum, CMMI) an Azure DevOps project uses.
 - **Boards (Kanban) and Sprints:** visual, drag-and-drop work tracking (Kanban board for continuous flow, Sprint/Scrum board for time-boxed iterations), with configurable columns/swimlanes reflecting a team's actual workflow states.
 - **Traceability to code:** work items can be linked to commits, pull requests, and pipeline builds — providing an audit trail from a planned unit of work through to the actual code change and deployment that implemented it, valuable both for project visibility and for compliance/audit requirements in regulated environments.
 
-### 45.6.2 Why This Is Covered Lightly in This Roadmap
+### 6.2 Why This Is Covered Lightly in This Roadmap
 
 Boards addresses Agile project-management process, a discipline with its own substantial depth (estimation techniques, Scrum/Kanban methodology specifics, portfolio management) that is adjacent to, rather than core to, this roadmap's DevOps/infrastructure/cloud-engineering focus — covered here at the level needed to understand its role in the Azure DevOps suite and its integration points with Repos/Pipelines (work-item-linked commits and PRs), without duplicating a full Agile-methodology curriculum.
 
 ---
 
-## 45.7 Security and Access Control
+## 7. Security and Access Control
 
-### 45.7.1 Azure DevOps Permissions Model
+### 7.1 Azure DevOps Permissions Model
 
 - Azure DevOps has its own permissions system (organization, project, and object-level — e.g., specific repository or pipeline permissions), layered similarly in spirit to the Kubernetes-RBAC-vs-Azure-RBAC distinction from Section 37.5.1: Azure DevOps access is managed within Azure DevOps' own permission model (often synchronized with Entra ID group membership for identity, but the actual permission grants are Azure-DevOps-native), and is a **separate system** from Azure RBAC governing the Azure resources a pipeline might ultimately deploy to.
 
-### 45.7.2 Service Connections and Least Privilege
+### 7.2 Service Connections and Least Privilege
 
 - Service connections (45.4.2) authenticating a pipeline to an Azure subscription should be scoped to the minimum necessary permission — a pipeline that only needs to deploy to a specific resource group should use a Service Principal/Workload Identity scoped to that resource group (Section 8's RBAC scoping concepts), not a subscription-wide `Owner` or `Contributor` role, following the same least-privilege discipline established throughout this roadmap.
 - **Workload Identity Federation for service connections:** modern Azure DevOps supports federated credentials for Azure service connections (directly parallel to the GitHub Actions OIDC federation pattern noted in Section 35.4.2), avoiding a stored Service Principal secret entirely — the currently preferred pattern over classic secret-based Service Principal connections, consistent with the Managed-Identity-and-federation preference established repeatedly across this roadmap.
 
-### 45.7.3 Pipeline Security: Preventing Unreviewed Code From Running With Elevated Permissions
+### 7.3 Pipeline Security: Preventing Unreviewed Code From Running With Elevated Permissions
 
 ⚠️ **Warning:** a pipeline triggered by a pull request from a fork or an untrusted branch, if allowed to run with the same service connection permissions as a trusted main-branch pipeline, creates a supply-chain risk: an attacker submitting a malicious PR could potentially exfiltrate secrets or abuse the pipeline's Azure permissions before any human review occurs. Azure Pipelines provides settings to restrict this (e.g., requiring approval before a fork-originated PR's pipeline run executes, or restricting which branches/triggers can access sensitive service connections) — a genuine, actively exploited real-world CI/CD attack pattern across the industry (not unique to Azure DevOps), worth explicit awareness and deliberate configuration rather than assuming default settings are automatically safe.
 
 ---
 
-## 45.8 Production and Enterprise Usage Patterns
+## 8. Production and Enterprise Usage Patterns
 
 - **Multi-stage pipelines as the standard, not classic release pipelines:** modern Azure DevOps guidance favors YAML-based multi-stage pipelines (as shown in 45.4.3) over the legacy classic (UI-designer-based) release pipeline model, for the version-control/reviewability benefits of pipeline-as-code — directly paralleling this roadmap's recurring "manage it as version-controlled configuration, not manual UI edits" principle (Sections 36.5.3, 45.4.1).
 - **Pipeline templates enforcing organizational standards (45.4.5):** enterprises commonly mandate that all pipelines extend from a centrally maintained template enforcing required steps (security scanning, required approvals, tagging conventions) — providing governance without requiring every individual team to manually replicate compliance logic.
@@ -192,7 +192,7 @@ Boards addresses Agile project-management process, a discipline with its own sub
 
 ---
 
-## 45.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                                          | Likely Cause                                                                                                                                                  | Diagnostic Step                                                                                                                     |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -204,7 +204,7 @@ Boards addresses Agile project-management process, a discipline with its own sub
 
 ---
 
-## 45.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Pipelines defined as YAML, version-controlled alongside source code, not managed solely via the classic visual designer.
 - [ ] Branch policies enforced on protected branches, including mandatory build validation.
@@ -216,7 +216,7 @@ Boards addresses Agile project-management process, a discipline with its own sub
 
 ---
 
-## 45.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "Azure DevOps and GitHub are essentially the same product since Microsoft owns both." _Correction:_ they have genuinely distinct strengths and typical usage patterns (45.2.3), and are frequently combined rather than treated as strict alternatives.
 - "A service connection with broad subscription-level permissions is simpler and therefore fine for most pipelines." _Correction:_ this directly violates least-privilege (45.7.2) and expands the blast radius of any pipeline compromise; scoping to the minimum necessary resource group/permission is the correct default, not an optional hardening step.
@@ -224,7 +224,7 @@ Boards addresses Agile project-management process, a discipline with its own sub
 
 ---
 
-## 45.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What are the five services that make up Azure DevOps, and what does each do?"
 _Model answer:_ Boards for Agile work tracking; Repos for Git source control with pull requests and branch policies; Pipelines for CI/CD build/test/deployment automation; Artifacts for hosting internal package feeds (NuGet, npm, Maven, etc.); and Test Plans for manual/exploratory test case management. They can be adopted together as an integrated suite or independently alongside other tools.
@@ -242,7 +242,7 @@ _What the interviewer is probing:_ the ability to design a concrete, two-tier tr
 
 ---
 
-## 45.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 Azure DevOps is a toolchain of five independently adoptable services (Boards, Repos, Pipelines, Artifacts, Test Plans) — not a monolithic single product, and frequently combined with non-Microsoft tools (e.g., GitHub Repos with Azure Pipelines).
 
@@ -256,7 +256,7 @@ _What the interviewer is probing:_ the ability to design a concrete, two-tier tr
 
 ---
 
-## 45.14 Related Concepts and What Comes Next
+## 14. Related Concepts and What Comes Next
 
 - **Section 46 — ARM Templates (next):** the native Azure Infrastructure-as-Code format that Azure Pipelines (and Azure DevOps generally) commonly deploys as part of a pipeline's infrastructure-provisioning stage.
 - **Section 47 — Bicep:** the modern, more ergonomic authoring layer over ARM Templates, also commonly deployed via Azure Pipelines tasks.

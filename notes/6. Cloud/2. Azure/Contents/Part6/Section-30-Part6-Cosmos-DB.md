@@ -1,18 +1,18 @@
 # Section 30 — Cosmos DB
 
-## 30.1 Definition
+## 1. Definition
 
 **Plain language:** Cosmos DB is Azure's globally distributed database — you can spread a single database across multiple regions worldwide, with each region able to read (and optionally write) data, and choose exactly how strictly "up to date" every region's copy needs to be, trading consistency for speed as your application requires.
 
 **Precise definition:** Azure Cosmos DB is a fully managed, globally distributed, multi-model NoSQL database service, providing turnkey multi-region replication (including optional multi-region writes), guaranteed low single-digit-millisecond latency at defined percentiles, elastic and independent scaling of throughput and storage, and a choice of five well-defined consistency levels balancing consistency against latency and availability.
 
-## 30.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Azure SQL Database and Managed Instance (Section 29), while capable of some geo-replication, are fundamentally relational databases designed around a traditional single-primary-region model with a defined schema. Many modern application patterns — globally distributed user bases needing low-latency access from anywhere, rapidly evolving or inherently non-relational data shapes (documents, key-value pairs, graphs), and massive horizontal scale requirements — don't fit this model well. Cosmos DB exists specifically to serve these patterns: true multi-region active distribution designed in from the ground up (not retrofitted onto a relational engine), flexible schema-less or semi-structured data models suited to rapidly evolving application needs, and elastic, independently-scalable throughput designed for unpredictable or massive-scale workloads.
 
-## 30.3 Core Concepts
+## 3. Core Concepts
 
-### 30.3.1 Multi-Model APIs
+### 3.1 Multi-Model APIs
 
 Cosmos DB supports multiple data-access APIs on top of the same underlying globally-distributed engine, letting developers work with the data model and API most natural to their application:
 
@@ -26,7 +26,7 @@ Cosmos DB supports multiple data-access APIs on top of the same underlying globa
 
 💡 **Tip:** A common point of confusion: choosing the MongoDB or Cassandra API doesn't mean you're running actual MongoDB or Cassandra software — it means Cosmos DB's own engine is speaking that protocol/wire format, allowing compatible client drivers and tools to connect, while the underlying storage, distribution, and scaling engine is entirely Cosmos DB's own.
 
-### 30.3.2 Partitioning
+### 3.2 Partitioning
 
 **Definition:** Cosmos DB achieves horizontal scalability by **partitioning** data across multiple underlying physical partitions based on a **partition key** — a property chosen from your data that determines which logical/physical partition a given item is stored in.
 
@@ -34,7 +34,7 @@ Cosmos DB supports multiple data-access APIs on top of the same underlying globa
 
 ⚠️ Partition key selection is effectively a foundational, difficult-to-change-later design decision (changing a partition key typically requires migrating data into a new container) — this makes upfront partition key design one of the most consequential Cosmos DB architectural decisions, deserving careful analysis of actual query and write patterns before committing to a specific property.
 
-### 30.3.3 Consistency Levels
+### 3.3 Consistency Levels
 
 Cosmos DB offers five consistency levels, forming a spectrum trading data consistency (how "fresh" and ordered reads are guaranteed to be relative to writes) against latency, availability, and throughput:
 
@@ -50,7 +50,7 @@ Cosmos DB offers five consistency levels, forming a spectrum trading data consis
 
 🎯 **Interview Tip:** Being able to explain this five-level consistency spectrum — and specifically why **Session** consistency is the most commonly chosen default (balancing intuitive "read your own writes" behavior against strong latency/availability characteristics) — is one of the most distinctive and frequently tested pieces of Cosmos DB-specific knowledge, differentiating candidates who've genuinely worked with the service from those with only surface familiarity.
 
-### 30.3.4 Throughput Provisioning (Request Units)
+### 3.4 Throughput Provisioning (Request Units)
 
 **Definition:** Cosmos DB throughput is measured and provisioned in **Request Units (RUs)** — a normalized measure abstracting away the actual CPU, memory, and I/O cost of a given database operation, allowing throughput to be reasoned about and provisioned in a single, consistent unit regardless of the specific mix of operations (reads, writes, queries) an application performs.
 
@@ -60,11 +60,11 @@ Cosmos DB offers five consistency levels, forming a spectrum trading data consis
 - **Serverless** — billed purely per-request based on actual RU consumption, with no pre-provisioned capacity, appropriate for intermittent, unpredictable, or low-average-with-occasional-burst workloads (conceptually similar to the Consumption plan trade-off discussed for Azure Functions, Section 14.3.2).
 - **Autoscale** — automatically scales provisioned RUs between a defined minimum and maximum based on actual usage, billed based on the highest RU tier actually used within each hour, balancing the predictability of provisioned throughput against the elasticity of serverless.
 
-### 30.3.5 Global Distribution and Multi-Region Writes
+### 3.5 Global Distribution and Multi-Region Writes
 
 Cosmos DB supports adding read regions to a database with a few clicks/commands, with data automatically replicated to each added region; additionally, **multi-region writes** (sometimes called multi-master) can be enabled, allowing writes to be accepted in multiple regions simultaneously rather than requiring all writes to funnel through a single primary region — this comes with important consistency implications (write conflicts across regions must be resolved via a conflict resolution policy) and is a meaningfully more complex architectural pattern than single-write-region-with-multiple-read-regions, appropriate specifically for applications genuinely requiring low-latency writes from multiple geographically distant locations simultaneously.
 
-## 30.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
 Cosmos DB Account "cosmos-globalapp"
@@ -86,7 +86,7 @@ Cosmos DB Account "cosmos-globalapp"
               based on partition key value)
 ```
 
-## 30.5 Configuration & Hands-On Example
+## 5. Configuration & Hands-On Example
 
 **Creating a Cosmos DB account, database, and container with a specified partition key:**
 
@@ -118,25 +118,25 @@ az cosmosdb sql container create \
   - `--partition-key-path` — this decision, per Section 30.3.2, should be made deliberately based on actual analyzed access patterns (here, `/customerId` assumes queries and writes are predominantly scoped per-customer, spreading load evenly assuming a reasonably large and evenly-active customer base) rather than an arbitrary or convenient-seeming field.
 - **Common error:** Choosing a low-cardinality partition key (e.g., partitioning by `/status` with only a few possible values like "pending"/"completed") concentrates most data and traffic onto very few partitions, creating the hot-partition problem described in Section 30.3.2 — this is a design-time mistake, not something easily fixed via configuration after significant data has accumulated.
 
-## 30.6 Production & Enterprise Usage
+## 6. Production & Enterprise Usage
 
 Enterprises use Cosmos DB for genuinely globally-distributed, low-latency-critical applications (e-commerce catalogs, IoT telemetry ingestion, gaming leaderboards, globally-used SaaS applications) where the relational model and single/limited-region-write pattern of Azure SQL Database wouldn't meet latency or scale requirements. Partition key design is treated as a formal upfront architectural exercise, typically informed by actual or projected query and write patterns rather than convenience, given how costly a wrong choice is to correct later. Consistency level selection is a deliberate, documented trade-off decision per application (or even per specific operation, given Cosmos DB's support for per-request consistency overrides within the account's maximum), balancing the specific correctness requirements of each operation against latency and cost.
 
-## 30.7 Security Considerations
+## 7. Security Considerations
 
 - Cosmos DB supports both key-based authentication (account keys, similar in risk profile to Storage Account shared keys, Section 16.7) and Entra ID-based (RBAC) authentication — Entra ID-based access is generally preferred for the same least-privilege, auditability, and credential-lifecycle reasons established throughout Part 2.
 - Network isolation via Private Link (Section 23.5) is supported and recommended for production Cosmos DB accounts holding sensitive data, following the same pattern established for other PaaS services.
 - Data is encrypted at rest by default, with the option for customer-managed keys for organizations requiring direct encryption key control, mirroring the pattern already established for Managed Disks (Section 18.3.4) and Storage Accounts.
 
-## 30.8 Performance Considerations
+## 8. Performance Considerations
 
 RU consumption should be monitored per operation type (a poorly-designed query, or one lacking an appropriate index, can consume disproportionately more RUs than necessary) — Cosmos DB's automatic indexing of all properties by default is convenient but can be tuned (via a custom indexing policy) to exclude properties that don't need to be queried, reducing both storage and write RU cost; this indexing-policy tuning is a genuine, non-obvious performance and cost optimization lever specific to Cosmos DB's architecture.
 
-## 30.9 Monitoring
+## 9. Monitoring
 
 Cosmos DB integrates with Azure Monitor (Part 10), providing RU consumption metrics (critical for right-sizing provisioned throughput or evaluating whether Serverless/Autoscale would be more cost-effective), partition-level metrics (useful for detecting a hot-partition problem before it becomes a significant production issue), and replication-latency metrics across configured regions.
 
-## 30.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                                  | Likely Cause                                                                                                                                                | Fix                                                                                                                                            |
 | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -144,7 +144,7 @@ Cosmos DB integrates with Azure Monitor (Part 10), providing RU consumption metr
 | One specific partition consistently shows much higher RU consumption/latency than others | Hot partition — poorly distributed partition key values                                                                                                     | Requires redesigning the partition key strategy and migrating data to a new container, since partition keys aren't easily changed in place     |
 | Application reads stale data unexpectedly                                                | Consistency level weaker than the application actually requires for that specific read (e.g., Eventual consistency used where Session or Strong was needed) | Review and adjust consistency level (account default or per-request override) to match the actual correctness requirement of the specific read |
 
-## 30.11 Interview Questions — Section 30
+## 11. Interview Questions — Section 30
 
 ### 🎯 Intermediate
 
@@ -162,12 +162,12 @@ _Model answer:_ I'd use Cosmos DB with regions in each of the three geographies,
 
 _What the interviewer is probing:_ whether the candidate can make differentiated, requirement-driven decisions about consistency level per data type (not applying one blanket consistency level to the entire application), and whether they understand the genuine complexity trade-off of multi-region writes versus simpler alternatives that might satisfy the actual stated requirement with less architectural complexity.
 
-## 30.12 Common Misconceptions
+## 12. Common Misconceptions
 
 - **"Choosing the MongoDB API means you're running actual MongoDB."** False — Cosmos DB's own engine speaks the MongoDB wire protocol, allowing compatible drivers/tools to connect, but the underlying storage and distribution engine is entirely Cosmos DB's own, not MongoDB software.
 - **"Strong consistency is always the safest default choice."** Not necessarily — Strong consistency carries meaningful latency and availability trade-offs; Session consistency is the most commonly appropriate default for many applications, and the correct choice should be driven by the actual correctness requirements of each specific data/operation type, not a blanket assumption that "stronger is always better."
 
-## 30.13 Key Takeaways
+## 13. Key Takeaways
 
 - 🔑 Cosmos DB provides globally-distributed, multi-model NoSQL database capabilities with five tunable consistency levels trading consistency against latency/availability, unlike Azure SQL Database's traditional relational, more limited-region-write model.
 - 🔑 Partition key selection is a critical, difficult-to-change-later design decision directly determining scalability — poor choices create hot partitions that provisioned throughput alone cannot fix.
@@ -175,9 +175,9 @@ _What the interviewer is probing:_ whether the candidate can make differentiated
 - 🔑 Throughput is measured in Request Units (RUs), provisionable as fixed Provisioned throughput, pure pay-per-use Serverless, or auto-adjusting Autoscale, chosen based on workload predictability.
 - 🔑 Multi-region writes enable true multi-master global distribution but introduce meaningful conflict-resolution complexity, and should only be adopted when genuinely required by the application's latency needs.
 
-## 30.14 Change Feed, Transactional Scope, and Backup/Restore
+## 14. Change Feed, Transactional Scope, and Backup/Restore
 
-### 30.14.1 Change Feed
+### 14.1 Change Feed
 
 **Definition:** The **Change Feed** is a persistent, ordered log of changes (inserts and updates — by default not deletes, though a "soft delete" application pattern using a flag can make deletes observable too) made to a Cosmos DB container, which client applications can read incrementally to react to data changes as they happen, without needing to repeatedly poll or query the container for what changed.
 
@@ -185,7 +185,7 @@ _What the interviewer is probing:_ whether the candidate can make differentiated
 
 ⚠️ Change Feed is a read-only, append-log-style mechanism, not a general-purpose query interface — consumers process it sequentially (typically tracking their own read position/checkpoint) rather than issuing ad hoc queries against it; exact current consumption models (e.g., push-model via Azure Functions trigger vs. pull-model via SDK) and their specific capabilities should be verified against current documentation.
 
-### 30.14.2 Transactional Batch and Stored Procedures
+### 14.2 Transactional Batch and Stored Procedures
 
 **Transactional Batch:** Cosmos DB supports **Transactional Batch** operations — grouping multiple point operations (creates, updates, deletes, reads) against items that **share the same partition key** into a single atomic unit, where either all operations succeed or none do. This is Cosmos DB's mechanism for multi-item ACID transactions, but it comes with a fundamental scope limitation.
 
@@ -193,7 +193,7 @@ _What the interviewer is probing:_ whether the candidate can make differentiated
 
 **Stored Procedures:** Cosmos DB supports **stored procedures** (written in JavaScript), which execute server-side and, like Transactional Batch, are scoped to a single partition key/logical partition — allowing multiple operations to be bundled into one atomic, server-executed unit. Stored procedures are commonly used for exactly the kind of multi-document-within-one-partition atomic operation Transactional Batch also addresses, and for encapsulating reusable server-side logic, though newer applications often prefer Transactional Batch (via the SDK, without needing to write and deploy JavaScript) where its capabilities suffice.
 
-### 30.14.3 Backup and Restore
+### 14.3 Backup and Restore
 
 **Definition:** Cosmos DB performs **automatic backups** by default, with two backup modes available:
 
@@ -204,7 +204,7 @@ _What the interviewer is probing:_ whether the candidate can make differentiated
 
 ⚠️ Exact backup mode names, retention limits, and restore mechanics continue to evolve — verify current details against official documentation, and note that backup mode is generally an account-level setting chosen at account creation time (or with specific migration paths between modes), not a casually reversible per-request choice.
 
-### 30.14.4 Interview Questions — Section 30.14
+### 14.4 Interview Questions — Section 30.14
 
 **🎯 Senior**
 **Q: An application needs to atomically update a customer's order document and their account balance document together. How does this work in Cosmos DB, and what design implication does it carry?**
@@ -213,12 +213,12 @@ _Model answer:_ Cosmos DB's Transactional Batch (or a stored procedure) can perf
 
 _What the interviewer is probing:_ whether the candidate understands that Cosmos DB's transactional guarantees are fundamentally partition-scoped, a direct and consequential extension of the partitioning architecture, rather than assuming database-wide ACID transactions are available the way they would be in a traditional relational database.
 
-### 30.14.5 Key Takeaways — Section 30.14
+### 14.5 Key Takeaways — Section 30.14
 
 - 🔑 Change Feed provides an ordered, incremental log of container changes, foundational to event-driven patterns (triggering Functions, materialized views, downstream event pipelines) — ordering is guaranteed within a partition key range, not globally across the container.
 - 🔑 Transactional Batch and stored procedures provide atomic multi-operation transactions, but strictly scoped to a single partition key — cross-partition atomicity isn't natively supported and must be handled at the application level if required.
 - 🔑 Periodic backup mode requires a Microsoft support request to restore; Continuous backup mode provides self-service point-in-time restore — the choice materially affects achievable Recovery Time Objective for a production workload.
 
-## 30.15 Related Concepts (Next Up)
+## 15. Related Concepts (Next Up)
 
 Section 31 covers **Azure Database for PostgreSQL/MySQL** — Azure's managed offerings for these popular open-source relational database engines, rounding out the relational database options (alongside Azure SQL Database/Managed Instance, Section 29) available for workloads specifically built around PostgreSQL or MySQL rather than SQL Server or Cosmos DB's NoSQL model.

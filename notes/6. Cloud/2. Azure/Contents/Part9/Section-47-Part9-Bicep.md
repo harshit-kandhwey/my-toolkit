@@ -6,7 +6,7 @@
 
 ---
 
-## 47.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This section covers Bicep: Microsoft's domain-specific language (DSL) for authoring Azure infrastructure, positioned as the modern, recommended replacement for hand-written ARM JSON (Section 46) as an _authoring_ experience — while compiling directly to that same ARM JSON as its execution format. This section covers Bicep's syntax, modules (its modularity mechanism), the decompilation/compilation relationship with ARM, and a direct feature-by-feature comparison against the raw ARM JSON constructs from Section 46.
 
@@ -14,15 +14,15 @@ This section covers Bicep: Microsoft's domain-specific language (DSL) for author
 
 ---
 
-## 47.2 What Is Bicep and Why It Exists
+## 2. What Is Bicep and Why It Exists
 
-### 47.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** Bicep is a cleaner, more concise language for writing Azure infrastructure definitions — you write in Bicep syntax, and a compiler (built into the Azure CLI and other tooling) transparently converts it into the ARM JSON that Azure Resource Manager actually deploys, giving you all of ARM's deployment capability with a much more pleasant authoring experience.
 
 **Precise definition:** Bicep is a declarative domain-specific language for deploying Azure resources, providing a more concise, readable syntax with first-class tooling support (type checking, IntelliSense, modularity) than raw ARM Template JSON, which the Bicep CLI/compiler transpiles into standard ARM JSON for actual deployment via the same Resource Manager deployment APIs used directly by ARM Templates.
 
-### 47.2.2 The Specific Problems Bicep Solves (Direct Comparison to Section 46's Pain Points)
+### 2.2 The Specific Problems Bicep Solves (Direct Comparison to Section 46's Pain Points)
 
 | ARM JSON Pain Point (Section 46)                                                        | Bicep's Solution                                                                                                            |
 | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +32,7 @@ This section covers Bicep: Microsoft's domain-specific language (DSL) for author
 | No compile-time type checking — errors often surface only at deployment time            | Strong typing and IntelliSense in supported editors, catching many errors before deployment is even attempted               |
 | Difficult to read/review in pull requests due to JSON verbosity                         | Materially more concise and readable syntax, directly improving the PR-review workflow established in Section 45.3.2/42.3.3 |
 
-### 47.2.3 Terminology
+### 2.3 Terminology
 
 | Term                                                     | Definition                                                                                                                                                                                                                                              |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,9 +45,9 @@ This section covers Bicep: Microsoft's domain-specific language (DSL) for author
 
 ---
 
-## 47.3 Bicep Syntax
+## 3. Bicep Syntax
 
-### 47.3.1 Direct Comparison: The Same Template in ARM JSON vs. Bicep
+### 3.1 Direct Comparison: The Same Template in ARM JSON vs. Bicep
 
 **ARM JSON (from Section 46.3):**
 
@@ -101,7 +101,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 
 🔑 **Key Takeaway (illustrated concretely):** these two files compile to functionally identical ARM deployment behavior — same resource, same properties, same idempotency and scope semantics from Section 46 — but the Bicep version is shorter, avoids the bracket-string function-call syntax entirely, and gives a named local reference (`storageAccount`) to the resource for use elsewhere in the file, rather than repeatedly calling `resourceId()`/`reference()` functions as ARM JSON requires.
 
-### 47.3.2 Parameters, Variables, Resources, Outputs — Bicep Syntax Reference
+### 3.2 Parameters, Variables, Resources, Outputs — Bicep Syntax Reference
 
 ```bicep
 // Parameter with a decorator for validation/description (comparable to ARM JSON's allowedValues/metadata)
@@ -127,7 +127,7 @@ output vnetId string = vnet.id
 
 - **The symbolic name (`vnet`, `storageAccount`)** is Bicep-only syntax — it does not exist in the compiled ARM JSON output directly (ARM has no equivalent named-reference concept in the same way) but provides a critically important authoring convenience: referencing `vnet.id` elsewhere in the file is direct, type-checked property access, compiled automatically into the equivalent `resourceId()`/`reference()` ARM function calls — eliminating an entire category of ARM JSON's string-based reference errors (a typo in a `resourceId()` string argument fails only at deployment time in raw ARM JSON, whereas referencing `vnet.id` incorrectly is generally caught by the Bicep compiler/tooling before deployment is even attempted).
 
-### 47.3.3 Resource Dependencies — Implicit by Default
+### 3.3 Resource Dependencies — Implicit by Default
 
 ```bicep
 resource nic 'Microsoft.Network/networkInterfaces@2023-09-01' = {
@@ -157,7 +157,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
 - Because `vm`'s properties directly reference `nic.id`, Bicep's compiler automatically infers and emits the correct `dependsOn` in the generated ARM JSON — **explicit `dependsOn` is rarely needed in Bicep** for dependencies expressed through direct symbolic references, a direct, practical improvement over ARM JSON's more manual dependency-declaration burden (Section 46.3.5).
 - 💡 **Tip:** explicit `dependsOn` remains available and occasionally necessary in Bicep for the rare case of a genuine ordering dependency that isn't expressed through any direct property reference (e.g., an ordering requirement based purely on deployment sequencing rather than an actual data dependency) — but this is now the exception rather than the default requirement.
 
-### 47.3.4 Loops (`for` Expression)
+### 3.4 Loops (`for` Expression)
 
 ```bicep
 param subnetNames array = ['web', 'app', 'data']
@@ -174,7 +174,7 @@ resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = [for (
 - A direct, concise replacement for ARM JSON's verbose `copy` element (Section 46.4.3) — iterating over an array with both the item (`name`) and its index (`i`) available, generating one resource instance per array entry.
 - 🎯 **Interview Tip:** being able to show this exact `for`-expression-versus-`copy`-element contrast (43.4.3 vs. this subsection) is a strong, concrete way to demonstrate genuine hands-on Bicep familiarity in an interview, rather than only asserting "Bicep is more concise" abstractly.
 
-### 47.3.5 Conditional Deployment
+### 3.5 Conditional Deployment
 
 ```bicep
 param deployMonitoring bool = true
@@ -190,13 +190,13 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = if
 
 ---
 
-## 47.4 Modules: Bicep's Modularity Mechanism
+## 4. Modules: Bicep's Modularity Mechanism
 
-### 47.4.1 Definition
+### 4.1 Definition
 
 A **module** in Bicep is a reference to another `.bicep` file (or a compiled ARM JSON file), treated as a self-contained, parameterized, reusable unit — Bicep's direct, first-class answer to the modularity problem Section 46.5 addressed via linked/nested ARM Templates, but with dramatically simpler syntax and no external-file-accessibility burden for local modules.
 
-### 47.4.2 Example: Local Module Reference
+### 4.2 Example: Local Module Reference
 
 ```bicep
 // networking.bicep (module file)
@@ -227,7 +227,7 @@ output networkId string = networking.outputs.vnetId
 
 - The parent file references the module by relative file path, passes parameters directly, and consumes the module's declared outputs via `networking.outputs.vnetId` — all resolved and compiled at build time into a single ARM JSON deployment containing an appropriately structured nested/linked deployment, without the author needing to manually manage a linked template's external file accessibility (Section 46.5.2's noted trade-off) for a local module reference.
 
-### 47.4.3 Registry-Published Modules
+### 4.3 Registry-Published Modules
 
 ```bicep
 module networking 'br:myregistry.azurecr.io/bicep/modules/networking:1.0.0' = {
@@ -239,32 +239,32 @@ module networking 'br:myregistry.azurecr.io/bicep/modules/networking:1.0.0' = {
 - The `br:` (Bicep Registry) prefix references a versioned module published to an OCI-compliant registry — commonly ACR (Section 35), directly reusing that section's registry infrastructure and Managed Identity-based authentication guidance (Section 35.4.2) for a fundamentally different artifact type (a Bicep module) than the container images ACR was originally introduced for in Section 35, illustrating ACR's broader OCI-artifact-storage role beyond containers specifically.
 - **Production/enterprise usage:** this is the direct Bicep-native equivalent of the Template Spec pattern from Section 46.5.4 — an organization publishes vetted, versioned, centrally governed modules (e.g., a standardized "compliant storage account" module enforcing the organization's security defaults) that individual teams reference by version, rather than each team hand-authoring their own potentially-inconsistent resource definitions — directly supporting the same governance-at-scale pattern discussed in Section 46's architect-level scenario answer, now with Bicep's more ergonomic authoring and versioning mechanism.
 
-### 47.4.4 Azure Verified Modules (AVM)
+### 4.4 Azure Verified Modules (AVM)
 
 - Microsoft (in collaboration with the community) maintains and publishes a curated set of **Azure Verified Modules** — well-tested, actively maintained Bicep (and Terraform) modules implementing common resource patterns with sensible, security-conscious defaults, published to a public registry for broad reuse.
 - 💡 **Tip:** starting from an AVM module rather than hand-authoring a resource definition from scratch is an increasingly common and sensible practice, reducing duplicated effort across the industry for well-understood, commonly needed resource patterns — though organizations with specific, non-standard requirements may still need custom modules or modifications beyond what a general-purpose verified module provides, a reasonable trade-off to evaluate case by case rather than assuming AVM modules are always sufficient as-is.
 
 ---
 
-## 47.5 Compilation, Decompilation, and the ARM Relationship in Practice
+## 5. Compilation, Decompilation, and the ARM Relationship in Practice
 
-### 47.5.1 Compilation
+### 5.1 Compilation
 
 - `az bicep build main.bicep` (or the equivalent `bicep build` CLI) produces the equivalent ARM JSON file explicitly, useful for inspection or for scenarios requiring the raw ARM JSON artifact specifically (e.g., feeding into tooling that only accepts ARM JSON).
 - In normal deployment workflows, this compilation happens transparently: `az deployment group create --template-file main.bicep` compiles and deploys in one step, without the author needing to manually invoke a separate build step.
 
-### 47.5.2 Decompilation
+### 5.2 Decompilation
 
 - `bicep decompile template.json` converts existing ARM JSON into Bicep syntax — valuable for an organization migrating a large existing library of hand-written ARM Templates (or third-party/marketplace-provided ARM JSON) to Bicep authoring, without needing to manually rewrite every template from scratch.
 - ⚠️ **Warning:** decompilation output is a reasonable, generally correct starting point but is not always perfectly idiomatic Bicep (it may not fully take advantage of Bicep-specific conveniences like inferred dependencies or symbolic references in every case) — treating decompiled output as a first draft requiring review and cleanup, rather than assuming it's automatically optimal Bicep, is the accurate expectation to set.
 
-### 47.5.3 What This Means for Debugging
+### 5.3 What This Means for Debugging
 
 🔑 **Key Takeaway:** because Bicep deployment failures ultimately occur against the compiled ARM JSON (Resource Manager has no awareness that Bicep was ever involved — it only ever sees and processes ARM JSON), troubleshooting a Bicep deployment failure sometimes requires understanding the underlying ARM JSON/Resource Manager error message directly, even when the source of truth being authored and reviewed is the `.bicep` file — reinforcing why Section 46's ARM JSON foundation remains genuinely necessary knowledge, not merely historical background, even for a team that authors exclusively in Bicep day to day.
 
 ---
 
-## 47.6 Deployment, Scopes, and What-If — Identical to ARM
+## 6. Deployment, Scopes, and What-If — Identical to ARM
 
 Every concept from Section 46.6 (deployment scopes: resource group, subscription, management group, tenant) and Section 46.7 (`what-if` previewing) applies identically to Bicep deployments, since — per this section's core framing — Bicep compiles to the exact same ARM JSON deployment mechanism. `az deployment group what-if --template-file main.bicep` works exactly as described in Section 46.7, simply accepting a `.bicep` source file as input to the same underlying preview mechanism.
 
@@ -281,7 +281,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 
 ---
 
-## 47.7 Production and Enterprise Usage
+## 7. Production and Enterprise Usage
 
 - **Bicep as the default authoring choice for new Azure-native IaC work:** for organizations committed to Azure specifically (as opposed to needing multi-cloud portability, which points toward Terraform, Section 48), Bicep is now generally the recommended default over hand-written ARM JSON, given its tooling, readability, and modularity advantages with zero loss of ARM's underlying deployment capability.
 - **CI/CD integration (directly extending Section 45):** Bicep files integrate into Azure Pipelines (or GitHub Actions, Section 49) exactly as ARM Templates do — a build/validation stage running `bicep build`/`az deployment group validate`, a `what-if` stage surfacing the proposed change set for PR review, and a deployment stage gated behind environment approvals for production (Section 45.4.3–45.4.4's pattern, unchanged in substance for Bicep).
@@ -289,7 +289,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 
 ---
 
-## 47.8 Troubleshooting Reference
+## 8. Troubleshooting Reference
 
 | Symptom                                                                                              | Likely Cause                                                                                                                                                   | Diagnostic Step                                                                                                                                                                                             |
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -300,7 +300,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 
 ---
 
-## 47.9 Best Practices Checklist
+## 9. Best Practices Checklist
 
 - [ ] New Azure-native IaC work authored in Bicep by default, rather than hand-written ARM JSON, absent a specific reason to author raw JSON directly.
 - [ ] Resource dependencies expressed via direct symbolic references wherever possible, relying on Bicep's automatic dependency inference rather than manually adding unnecessary explicit `dependsOn`.
@@ -311,7 +311,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 
 ---
 
-## 47.10 Common Misconceptions
+## 10. Common Misconceptions
 
 - "Bicep is a different deployment technology from ARM Templates, with different capabilities." _Correction:_ Bicep compiles directly to ARM JSON and shares identical deployment behavior, scopes, and governance interaction — it is an authoring-layer improvement, not a different underlying deployment engine (47.2.1, 47.5.3).
 - "Because Bicep has compile-time type checking, a Bicep file that compiles successfully is guaranteed to deploy successfully." _Correction:_ compile-time checks catch many authoring errors, but runtime deployment-time failures (quota limits, permission issues, resource-provider-specific validation) can still occur exactly as they would for a raw ARM Template — Bicep reduces, but does not eliminate, the category of errors only discoverable at actual deployment time (47.8).
@@ -319,7 +319,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 
 ---
 
-## 47.11 Interview Questions (Consolidated)
+## 11. Interview Questions (Consolidated)
 
 **Beginner:** "What is the relationship between Bicep and ARM Templates?"
 _Model answer:_ Bicep is a domain-specific language that compiles directly into ARM Template JSON — the actual format Azure Resource Manager consumes for deployment. Bicep is not a separate or competing deployment technology; it's a more concise, readable, and better-tooled authoring layer over the exact same underlying ARM deployment engine, scopes, and capabilities.
@@ -337,7 +337,7 @@ _What the interviewer is probing:_ the ability to design a genuine "secure by co
 
 ---
 
-## 47.12 Key Takeaways Summary
+## 12. Key Takeaways Summary
 
 🔑 Bicep compiles directly to ARM JSON and shares Resource Manager's exact deployment engine, scopes, idempotency behavior, and governance interaction — it is an authoring-layer improvement over Section 46's raw JSON, not a different deployment technology.
 
@@ -351,7 +351,7 @@ _What the interviewer is probing:_ the ability to design a genuine "secure by co
 
 ---
 
-## 47.13 Related Concepts and What Comes Next
+## 13. Related Concepts and What Comes Next
 
 - **Section 46 (prerequisite, completed):** the ARM JSON execution format Bicep compiles to; every concept in this section was defined in direct, explicit contrast to its Section 46 equivalent.
 - **Section 48 — Terraform on Azure (next):** an alternative, non-Microsoft-native, multi-cloud-capable IaC tool with its own state-management model — providing a genuinely different architectural comparison point (rather than Bicep's "same engine, better syntax" relationship to ARM) worth understanding precisely.

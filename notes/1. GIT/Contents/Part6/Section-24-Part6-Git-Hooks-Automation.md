@@ -1,19 +1,19 @@
 # Section 24 (Part 6): Git Hooks & Automation
 
-## 24.1 Definition
+## 1. Definition
 
 **Plain language:** A Git hook is a script Git runs automatically at a specific point in its own workflow — right before a commit is recorded, right after a checkout, right before a push leaves your machine — letting you inject custom checks or automation into normal Git operations without changing Git itself.
 
 **Precise:** Hooks are executable scripts (any language, provided the file has a shebang and executable permission, or is a recognized executable on Windows) living in `.git/hooks/`, named after the exact event they respond to (`pre-commit`, `commit-msg`, `pre-push`, and about a dozen others). Git invokes the matching script at that point in the operation, passing relevant arguments/stdin, and — for most hooks — treats a non-zero exit code as "abort the operation."
 
-## 24.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 1. **Shifting checks left.** Waiting for CI to reject a badly formatted commit or a failing test wastes a round trip (push, wait, get a red build, fix, push again). A local hook catches the same problem in seconds, before anything leaves the machine.
 2. **Enforcing conventions without relying on memory.** Commit message formats (§18's Conventional Commits), no-secrets-in-diff checks, and linting are easy to forget under deadline pressure; a hook makes them automatic rather than aspirational.
 3. **Server-side gatekeeping.** A hosting server can refuse pushes that don't meet policy (no force-pushes to `main`, no oversized files, no unsigned commits) at the one point that's actually enforceable for everyone, not just cooperative clients.
 4. **Automation triggers.** Hooks are also a convenient place to fire side effects — updating a deployed working tree after a push, notifying a chat channel, regenerating derived files after checkout.
 
-## 24.3 Where Hooks Live and How Git Finds Them
+## 3. Where Hooks Live and How Git Finds Them
 
 Every repository's `.git/hooks/` directory ships with several `*.sample` files on `git init`/`git clone` — inert examples showing the expected interface for each hook, not active until renamed (drop the `.sample` suffix) and made executable.
 
@@ -29,7 +29,7 @@ pre-commit.sample          update.sample
 
 > ⚠️ **Critical clarification: hooks are not versioned by default.** `.git/` is never committed — it is the repository's private local metadata, not tracked content (§4). That means a `pre-commit` script you write and rely on lives only on your machine; a teammate cloning the same repository gets none of it, silently. This single fact is the reason 24.5's frameworks exist at all — "just write a hook" doesn't scale past a solo project.
 
-## 24.4 Client-Side Hooks
+## 4. Client-Side Hooks
 
 These fire on the developer's own machine during ordinary local operations.
 
@@ -67,11 +67,11 @@ husky - pre-commit hook exited with code 1 (error)
 
 > 💡 **Tip:** Hooks receive their input differently per hook — some via command-line arguments, some via stdin, some via environment variables. `commit-msg`, for example, receives the path to a temporary file containing the message as its one argument, letting the hook read and even rewrite that file before Git proceeds.
 
-## 24.5 The Versioning Problem — and Its Standard Solutions
+## 5. The Versioning Problem — and Its Standard Solutions
 
 Because `.git/hooks/` is local-only (24.3), teams needing hooks to be **shared, versioned, and automatically installed** for every contributor rely on one of three approaches.
 
-### 24.5.1 The `pre-commit` framework (language-agnostic, Python-distributed)
+### 5.1 The `pre-commit` framework (language-agnostic, Python-distributed)
 
 A popular, language-agnostic tool (itself named `pre-commit`, distinct from the git hook of the same name) that reads a versioned config file and manages installing/running many small check "hooks" — its own plugin ecosystem, not limited to Git's `pre-commit` event despite the name overlap.
 
@@ -99,7 +99,7 @@ pre-commit installed at .git/hooks/pre-commit
 
 **Expected outcome:** `pre-commit install` writes a small dispatcher script into `.git/hooks/pre-commit` that, on every commit, reads `.pre-commit-config.yaml` and runs the configured checks — this is the actual mechanism that bridges "config is versioned" to "the local hook exists," and it must be re-run once per fresh clone.
 
-### 24.5.2 Husky (Node.js ecosystem)
+### 5.2 Husky (Node.js ecosystem)
 
 Husky ties hook installation to `npm install` via `package.json`, so any contributor who installs project dependencies gets working hooks for free, without a separate manual step.
 
@@ -119,7 +119,7 @@ npx lint-staged
 
 **Mechanism:** Husky's own scripts live in a committed `.husky/` directory (ordinary tracked files, unlike `.git/hooks/`); its `install` step (run automatically via npm's `prepare` lifecycle script) points Git's `core.hooksPath` (24.5.3) at that committed directory, so Git executes the versioned scripts directly.
 
-### 24.5.3 `core.hooksPath` — the manual, tool-free alternative
+### 5.3 `core.hooksPath` — the manual, tool-free alternative
 
 Both frameworks above ultimately lean on a single underlying Git config option: `core.hooksPath` redirects Git to look for hooks in any directory you choose, instead of the fixed `.git/hooks/`.
 
@@ -143,7 +143,7 @@ $ git commit -m "chore: add versioned pre-commit hook"
 
 > ⚠️ **Common confusion to preempt:** none of these three approaches make Git itself "version hooks." They all work around the same underlying fact from 24.3 — `.git/` is never committed — either by installing a dispatcher into `.git/hooks/` that reads versioned config (`pre-commit` framework), by redirecting `core.hooksPath` to a committed directory (Husky, manual), or by requiring an explicit one-time setup step contributors must remember to run.
 
-## 24.6 Server-Side Hooks
+## 6. Server-Side Hooks
 
 These run on the machine hosting the bare repository that receives pushes — meaningful primarily for self-hosted Git servers (§23); major SaaS platforms (GitHub, GitLab, Bitbucket) don't expose raw server-side hooks to repository owners, offering equivalent functionality instead through branch protection rules, required status checks, and webhooks/CI integrations.
 
@@ -171,7 +171,7 @@ Push arrives at server
 
 > 💡 **Tip:** The three-stage server pipeline mirrors the client-side `pre-commit` → `commit-msg` → `post-commit` shape deliberately: "can still reject" hooks come first, "already happened, just react" hooks come last. Recognizing that pattern makes any new hook's semantics predictable from its name alone.
 
-## 24.7 Practical Example — `commit-msg` Enforcing Conventional Commits
+## 7. Practical Example — `commit-msg` Enforcing Conventional Commits
 
 Building on the Conventional Commits format from §18 (`type(scope): description`), a `commit-msg` hook can reject any commit whose message doesn't match.
 
@@ -199,7 +199,7 @@ $ git commit -m "fix(auth): correct token refresh race condition"
 
 **Expected outcome:** malformed messages never reach history at all, which matters because Conventional Commits' whole value (§18) — automated changelog generation, semantic-version bumping — depends on every commit reliably following the format; a hook is the only local enforcement point.
 
-## 24.8 Practical Example — `pre-push` Running the Test Suite
+## 8. Practical Example — `pre-push` Running the Test Suite
 
 ```bash
 # .githooks/pre-push
@@ -220,7 +220,7 @@ error: failed to push some refs — pre-push hook declined
 
 **Purpose and trade-off:** catches regressions before they reach a shared branch, but a slow full suite makes every push slower — teams commonly run only a fast subset locally (`pre-push`) and reserve the full suite for CI (§25), rather than duplicating the entire pipeline on every developer's machine.
 
-## 24.9 Bypassing Hooks
+## 9. Bypassing Hooks
 
 ```bash
 # Purpose: skip client-side hooks for one operation (use sparingly and deliberately)
@@ -230,7 +230,7 @@ $ git push --no-verify
 
 > ⚠️ **Critical clarification:** `--no-verify` only bypasses **client-side** hooks on your machine — it has no effect on server-side `pre-receive`/`update` hooks or on CI status checks (§25) or branch protection rules (§23), which run independently of anything the client requested. A developer who locally skips a check cannot force a server that enforces the same policy to also skip it.
 
-## 24.10 Interview Questions
+## 10. Interview Questions
 
 **[Beginner] Q1. What is a Git hook, and where does it live?**
 **Model answer:** A Git hook is an executable script Git automatically runs at a specific point in its workflow — for example, right before finalizing a commit, or right before pushing. Hooks live in `.git/hooks/`, one file per event, named exactly after that event (`pre-commit`, `commit-msg`, `pre-push`, and others). A repository ships with inert `.sample` versions of each; a hook only becomes active once you create an executable file with the exact matching name and no `.sample` suffix.
@@ -247,14 +247,14 @@ $ git push --no-verify
 **[Architect] Q5. Design a hook strategy for a 200-engineer monorepo where local hook execution time is becoming a productivity complaint.**
 **Model answer:** I'd separate hooks by cost and by what they can actually catch locally versus what only makes sense centrally. Fast, deterministic, file-scoped checks (formatting, basic linting on changed files only — using something like `lint-staged` to scope work to the diff rather than the whole repository) stay in `pre-commit`, since they run in well under a second and catch mistakes before they're even recorded. Anything requiring a broader build or the full test suite moves to `pre-push` at most, and ideally is trimmed to a fast, targeted subset (affected-package testing in a monorepo, not the entire suite) — with the authoritative full suite living in CI (§25), not duplicated locally. I'd standardize hook installation through `core.hooksPath` pointing at a committed directory (or Husky, if the stack is Node-heavy) wired into onboarding tooling, so no engineer has hooks silently missing. Finally, I'd make sure genuinely non-negotiable policy — commit signing (§28), branch protection, required status checks — is enforced server-side or at the platform level, never solely relied upon as a local hook, since local hooks are always bypassable with `--no-verify` and must never be the only line of defense for anything security- or compliance-relevant.
 
-## 24.11 Common Misconceptions
+## 11. Common Misconceptions
 
 1. **"Hooks are automatically shared when you clone a repository."** They are not — `.git/hooks/` is local, unversioned content; sharing requires the `pre-commit` framework, Husky, or `core.hooksPath` pointed at a committed directory.
 2. **"`--no-verify` bypasses all checks, including CI."** It only bypasses client-side hooks on the local machine; server-side hooks, branch protection rules, and CI status checks (§23, §25) are entirely unaffected.
 3. **"Server-side hooks work the same way on GitHub/GitLab as on a self-hosted server."** SaaS platforms generally don't expose raw `pre-receive`/`update`/`post-receive` hooks to repository owners; they provide equivalent policy enforcement through branch protection rules, required status checks, and webhooks instead (§23).
 4. **"A pre-commit hook and the `pre-commit` framework's `pre-commit` config key are the same thing."** They share a name by design, but one is a specific Git hook event; the other is a third-party tool's own naming convention for the checks it happens to run at that event — mind the overlap when reading documentation.
 
-## 24.12 🔑 Key Takeaways
+## 12. 🔑 Key Takeaways
 
 - Hooks are executable scripts in `.git/hooks/`, named after specific Git lifecycle events, invoked automatically, and able to abort the operation via non-zero exit code (for most hook types).
 - `.git/hooks/` is never committed, which is the root cause of the "team-wide hook" problem — the `pre-commit` framework, Husky, and manual `core.hooksPath` are the three standard solutions, differing in ecosystem and installation mechanics but converging on the same fix: get versioned, committed scripts actually wired into Git's local hook dispatch.
@@ -262,6 +262,6 @@ $ git push --no-verify
 - Server-side hooks (`pre-receive`, `update`, `post-receive`) run on self-hosted Git servers and are the actual enforcement point that cannot be bypassed client-side; SaaS platforms offer equivalent policy through branch protection and status checks instead.
 - Real-world use: linting/formatting at `pre-commit`, Conventional Commits validation (§18) at `commit-msg`, test execution at `pre-push`.
 
-## 24.13 Related Concepts & What's Next
+## 13. Related Concepts & What's Next
 
 Hooks are Git's local automation entry point; §25 zooms out to how CI/CD systems build on top of Git events (push, PR open, tag creation) at a fleet scale hooks alone can't reach — the two are complementary layers, with hooks catching problems in seconds before code leaves a machine, and CI providing the authoritative, unbypassable check once it arrives at the shared remote.

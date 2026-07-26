@@ -1,6 +1,6 @@
 # Section 84 (Part 13): Hands-On Labs & Capstone Projects
 
-## 84.1 Definition
+## 1. Definition
 
 **Plain language:** Reading about a service and actually deploying it are different skills — real operational intuition (what a misconfigured IAM binding actually looks like when it breaks, how long a GKE upgrade actually takes, what a Dataflow job's autoscaling actually does under load) only comes from building something real and watching it behave. This section is five progressively harder hands-on projects that exercise the services covered across this entire knowledge base, from a first deployable application through a secured, monitored generative AI platform.
 
@@ -8,7 +8,7 @@
 
 > 💡 **Tip:** Build these on a dedicated, low-spend GCP project (or the free-tier/trial credits), and set a billing budget alert (Section 57) before starting Lab 1 — several of these labs provision billable resources (Cloud SQL instances, GKE clusters, Dataflow jobs) that should be torn down promptly after each lab is verified complete.
 
-## 84.2 Why This Progression
+## 2. Why This Progression
 
 Each lab is deliberately scoped to exercise a different Part's core services while reusing what the previous lab already proved: Lab 1 is a single deployable application; Lab 2 shifts to data movement and analytics; Lab 3 shifts to container platform security; Lab 4 zooms out to the organizational/governance layer that should have existed _before_ Labs 1–3 in a real enterprise; and Lab 5 folds AI/ML on top of all of it, deployed inside the governed foundation Lab 4 built. Working them in order mirrors the dependency order a real platform team would actually encounter, rather than treating each service as an isolated demo.
 
@@ -16,7 +16,7 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Prerequisites by lab:** Labs 1–3 need only a single GCP project with billing enabled and Owner/Editor on that project. Lab 4 needs Organization Admin (or a folder delegated with equivalent permissions) since it provisions folders and org policies, which do not exist below the organization node. Lab 5 needs everything Lab 4 needs, plus Vertex AI API access enabled, which is not on by default in a fresh project.
 
-## 84.3 Lab 1 — Three-Tier Web Application
+## 3. Lab 1 — Three-Tier Web Application
 
 **Scope:** Deploy a standard three-tier web application: a stateless application layer on Cloud Run, a managed relational database on Cloud SQL, and a Cloud Load Balancing front end distributing traffic to the application layer over HTTPS.
 
@@ -34,7 +34,7 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Stretch goal:** Add a Cloud CDN layer in front of the load balancer for static assets, and measure the cache-hit ratio improvement.
 
-## 84.4 Lab 2 — Streaming Data Pipeline
+## 4. Lab 2 — Streaming Data Pipeline
 
 **Scope:** Build an end-to-end streaming data pipeline: simulated events published to Pub/Sub, transformed and enriched by a Dataflow streaming job, landed in BigQuery, and visualized in a live Looker Studio dashboard.
 
@@ -52,7 +52,7 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Stretch goal:** Add a Cloud Composer DAG (Section 46) that orchestrates a daily batch reconciliation job against the same BigQuery table, demonstrating batch and streaming coexisting over one dataset.
 
-## 84.5 Lab 3 — Secured GKE Cluster
+## 5. Lab 3 — Secured GKE Cluster
 
 **Scope:** Stand up a production-patterned GKE cluster with Workload Identity for pod-to-GCP-API authentication, Binary Authorization enforcing that only signed, approved images can run, and Cloud Armor protecting the cluster's ingress from common web attacks.
 
@@ -70,7 +70,7 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Stretch goal:** Add a GKE node auto-upgrade and surge-upgrade configuration (Section 34), then trigger a manual upgrade and confirm zero dropped requests against a continuously polled health-check endpoint during the rollout.
 
-## 84.6 Lab 4 — Enterprise Landing Zone
+## 6. Lab 4 — Enterprise Landing Zone
 
 **Scope:** Build an enterprise landing zone in Terraform following the folder/policy/networking/logging patterns from Sections 59–63: a folder hierarchy with environment separation, an org-policy baseline, centralized logging and security projects, a Shared VPC, and an automated project-vending mechanism.
 
@@ -88,7 +88,7 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Stretch goal:** Retrofit Labs 1–3's resources so they're provisioned inside a project vended by this landing zone rather than a standalone project, and confirm the org policies from Section 60 now apply to them automatically.
 
-## 84.7 Lab 5 — Capstone: Secured Generative AI Platform
+## 7. Lab 5 — Capstone: Secured Generative AI Platform
 
 **Scope:** The most demanding lab, combining nearly everything prior: a retrieval-augmented generation (RAG) application using Vertex AI and Vertex AI Search, served through Cloud Run, deployed _inside_ the Lab 4 landing zone, with monitoring and a documented disaster-recovery plan.
 
@@ -107,20 +107,20 @@ Each lab is deliberately scoped to exercise a different Part's core services whi
 
 **Stretch goal:** Run a Section 79-style chaos experiment against the Lab 5 platform (e.g., simulate the primary region becoming unavailable) and measure the actual failover time against the documented RTO target.
 
-## 84.8 Common Pitfalls Across These Labs
+## 8. Common Pitfalls Across These Labs
 
 - ⚠️ **Skipping the "done when" verification steps.** It's tempting to declare a lab complete once a resource exists and looks correct in the console — but a Binary Authorization policy that was never actually tested against an unsigned image, or a VPC Service Controls perimeter never actually probed with a real exfiltration attempt, may silently be misconfigured and permissive. Every checklist item above is written to require triggering the control, not just configuring it.
 - ⚠️ **Building each lab in total isolation.** Labs 1–3 are written so they can technically be built standalone, but the real value of Labs 4 and 5 comes from retrofitting earlier labs' resources into the landing zone rather than building the capstone from a blank slate — this is what makes the progression feel like one platform instead of five disconnected demos.
 - ⚠️ **Leaving billable resources running.** GKE clusters, Cloud SQL instances, and long-running Dataflow jobs accrue cost continuously; the Section 84.1 tip about a billing budget alert exists specifically because these are the resources most likely to be forgotten after a lab is verified complete.
 - ⚠️ **Treating IAM scoping as an afterthought.** Every lab's checklist includes a least-privilege IAM verification step deliberately — it's easy to grant `Editor` to unblock a lab quickly and never revisit it, which defeats the point of practicing production-realistic patterns.
 
-## 84.9 Key Takeaways
+## 9. Key Takeaways
 
 - 🔑 Each lab is deliberately cumulative — Lab 5 assumes Lab 4's landing zone exists, and reuses Lab 1–3's compute/data patterns inside it, mirroring how real platforms actually get built.
 - 🔑 "Done when" checklists are written to require _verification_, not just configuration — a control that hasn't been deliberately triggered and observed to work (a blocked exfiltration attempt, a fired alert, a rejected unsigned image) isn't actually proven yet.
 - 🔑 Every lab maps back to specific sections in Parts 1–12 and Section 83's question bank — building these labs is the single most effective way to convert that question bank's answers from memorized to genuinely understood.
 - 🔑 Tear down billable resources (GKE clusters, Cloud SQL instances, Dataflow jobs) promptly after verifying each lab's checklist — these labs are learning exercises, not workloads meant to run indefinitely.
 
-## 84.10 Related Concepts
+## 10. Related Concepts
 
 These labs are the applied counterpart to Section 83's interview question bank and draw on Sections 7, 13, 14, 22, 29–34, 38, 41, 43–52, 54, 57–74 collectively; Section 85 closes the knowledge base by mapping which of these labs matter most for which specific career path and certification goal.

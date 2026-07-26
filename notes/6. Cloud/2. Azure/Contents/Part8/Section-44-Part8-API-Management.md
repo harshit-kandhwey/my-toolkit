@@ -6,7 +6,7 @@
 
 ---
 
-## 44.1 Introduction and Scope
+## 1. Introduction and Scope
 
 This final section of Part 8 covers Azure API Management (APIM): its role as the governance and consumption layer sitting in front of backend APIs (regardless of whether those backends are Azure Functions, App Service, AKS-hosted services, or entirely external systems), its core capabilities (policies, products, developer portal, versioning), and how it ties together the compute and integration services covered throughout Part 8.
 
@@ -14,22 +14,22 @@ This final section of Part 8 covers Azure API Management (APIM): its role as the
 
 ---
 
-## 44.2 What Is API Management and What Problem It Solves
+## 2. What Is API Management and What Problem It Solves
 
-### 44.2.1 Definition
+### 2.1 Definition
 
 **Plain language:** API Management sits between API consumers (client applications, partners, other internal teams) and one or more backend APIs, acting as a single, governed front door — enforcing security policies, rate limits, and transformations consistently, and giving API consumers a self-service portal to discover and get access to APIs, without consumers needing direct knowledge of or access to the actual backend implementation.
 
 **Precise definition:** Azure API Management is a fully managed service for publishing, securing, transforming, maintaining, and monitoring APIs, providing a unified gateway in front of one or more backend services, along with a developer portal, policy engine, and analytics.
 
-### 44.2.2 Why It Exists — The Problem It Solves
+### 2.2 Why It Exists — The Problem It Solves
 
 - **Cross-cutting concerns don't belong duplicated in every backend:** authentication/authorization enforcement, rate limiting, request/response transformation, and API versioning are concerns that apply across many APIs; implementing each independently inside every backend service (an Azure Function, an App Service app, an AKS-hosted microservice) means duplicating that logic — and duplicated logic drifts inconsistently over time. APIM centralizes these concerns in one governed layer in front of all of them.
 - **Decoupling the public API contract from the backend implementation:** a consumer-facing API's URL structure, versioning scheme, and request/response shape can remain stable even as the underlying backend implementation changes entirely (a different Function App, a migrated-to-AKS backend, a completely rewritten service) — APIM's transformation policies (44.4) can adapt between the public contract and whatever the current backend actually expects, decoupling these two concerns.
 - **Self-service API consumption at scale:** for organizations exposing APIs to many internal teams or external partners, the developer portal (44.6) provides self-service discovery, subscription key issuance, and documentation, removing the operational burden of manually onboarding every new API consumer.
 - **Centralized governance and observability:** rather than each backend team implementing and maintaining its own rate limiting, logging, and analytics, APIM provides these uniformly, giving a platform team a single point of control and visibility across the organization's entire API surface.
 
-### 44.2.3 Terminology
+### 2.3 Terminology
 
 | Term                    | Definition                                                                                                                                                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -44,9 +44,9 @@ This final section of Part 8 covers Azure API Management (APIM): its role as the
 
 ---
 
-## 44.3 Architecture
+## 3. Architecture
 
-### 44.3.1 Request Flow
+### 3.1 Request Flow
 
 ```
 API Consumer (app, partner, internal team)
@@ -75,7 +75,7 @@ API Consumer (app, partner, internal team)
 
 - Every request flows through the gateway, which is the single component actually executing policy logic and forwarding to the appropriate backend — the API consumer never calls the backend directly (assuming the backend is correctly network-isolated behind the gateway, an important security configuration point in 44.7).
 
-### 44.3.2 Gateway Deployment Models (Tiers)
+### 3.2 Gateway Deployment Models (Tiers)
 
 | Tier Category                                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -87,13 +87,13 @@ API Consumer (app, partner, internal team)
 
 ---
 
-## 44.4 Policies: APIM's Core Extensibility Mechanism
+## 4. Policies: APIM's Core Extensibility Mechanism
 
-### 44.4.1 Definition
+### 4.1 Definition
 
 A **policy** is an XML-configured statement applied at one of several pipeline stages (`inbound`, `backend`, `outbound`, `on-error`) that modifies request/response behavior — the mechanism through which nearly every APIM capability beyond basic pass-through routing is actually implemented.
 
-### 44.4.2 Example Policy Document
+### 4.2 Example Policy Document
 
 ```xml
 <policies>
@@ -128,7 +128,7 @@ A **policy** is an XML-configured statement applied at one of several pipeline s
 - **`set-header`:** demonstrates request/response transformation — adding, modifying, or removing headers as requests pass through, useful for both functional needs (forwarding client IP information) and security hardening (removing headers that leak backend implementation details, such as `X-Powered-By`).
 - **`<base />`:** a special element indicating "apply policies inherited from a broader scope here" (e.g., product-level or global policies) — policies can be defined at multiple scopes (global, product, API, operation), and `<base />` controls where inherited policies are applied relative to scope-specific ones, enabling a layered, override-capable policy model.
 
-### 44.4.3 Common Policy Categories
+### 4.3 Common Policy Categories
 
 | Category                         | Example Policies                                       | Purpose                                                                                                                                    |
 | -------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -138,25 +138,25 @@ A **policy** is an XML-configured statement applied at one of several pipeline s
 | **Caching**                      | `cache-lookup`, `cache-store`                          | Cache backend responses at the gateway to reduce backend load and improve latency for cacheable, repeatable requests.                      |
 | **Routing**                      | `set-backend-service`, conditional `choose` logic      | Route requests to different backends based on request content — e.g., directing traffic to a canary/beta backend for a subset of requests. |
 
-### 44.4.4 Production and Enterprise Usage
+### 4.4 Production and Enterprise Usage
 
 - **Centralized authentication enforcement:** rather than each backend independently validating tokens (with the risk of inconsistent implementation/configuration across teams), APIM's `validate-jwt` policy provides one consistently configured, centrally auditable enforcement point — directly extending Section 7's OAuth2/OIDC concepts into a concrete governance mechanism.
 - **Mock responses during backend development:** APIM policies can return a mocked response directly from the gateway (without forwarding to a not-yet-implemented backend), enabling API consumer teams to begin integration testing against the published API contract before the actual backend implementation is complete — a genuine parallel-development-enablement pattern.
 
 ---
 
-## 44.5 Products, Versioning, and Revisions
+## 5. Products, Versioning, and Revisions
 
-### 44.5.1 Products
+### 5.1 Products
 
 - A **Product** groups one or more APIs together for publication and access control, with its own subscription requirement (open, or requiring approval), usage terms, and rate-limit/quota policy applied uniformly across every API within it — the actual unit a consumer subscribes to via the developer portal, not an individual API directly.
 - **Example organizational pattern:** a "Partner" product bundling a restricted subset of APIs with strict rate limits and mandatory subscription approval, alongside an "Internal" product exposing a broader set of APIs with more generous limits and open subscription for internal teams — the same underlying backend APIs, governed differently depending on which Product's policy applies to a given consumer's access path.
 
-### 44.5.2 API Versioning
+### 5.2 API Versioning
 
 - APIM supports explicit API versioning (via URL path segment, query string, or header-based versioning schemes), allowing multiple versions of the same logical API to coexist, each independently discoverable and documented in the developer portal — directly supporting the common real-world need to evolve an API's contract over time without breaking existing consumers still on an older version.
 
-### 44.5.3 Revisions
+### 5.3 Revisions
 
 - **Revisions** are distinct from versions: a revision represents a non-breaking change to an API's configuration (a policy update, documentation change) that can be tested privately (accessible only via an explicit revision identifier) before being made the "current" revision that regular consumers hit — a safe-rollout mechanism for configuration changes, distinct from versioning's purpose of managing genuinely breaking contract changes for long-term coexistence.
 
@@ -164,30 +164,30 @@ A **policy** is an XML-configured statement applied at one of several pipeline s
 
 ---
 
-## 44.6 Developer Portal
+## 6. Developer Portal
 
-### 44.6.1 Definition and Purpose
+### 6.1 Definition and Purpose
 
 The **developer portal** is a customizable, publicly (or internally) accessible website automatically generated from an APIM instance's published Products/APIs, providing interactive API documentation (including a "try it" console for testing operations directly from the browser), self-service subscription key management, and usage analytics visible to the consumer.
 
-### 44.6.2 Why It Matters Beyond "Nice to Have Documentation"
+### 6.2 Why It Matters Beyond "Nice to Have Documentation"
 
 - **Reduces onboarding friction and support burden:** without a self-service portal, every new API consumer (an internal team, an external partner) requires manual coordination to obtain access credentials and understand the API contract — the portal automates this, directly reducing the operational load on the platform/API-owning team, an organizational efficiency benefit distinct from any purely technical capability.
 - **Interactive testing reduces integration errors:** the "try it" console lets a prospective consumer validate their understanding of request/response shapes before writing integration code, reducing a common category of early integration friction.
 
 ---
 
-## 44.7 Security Considerations
+## 7. Security Considerations
 
-### 44.7.1 Ensuring the Gateway Is the Only Path to the Backend
+### 7.1 Ensuring the Gateway Is the Only Path to the Backend
 
 ⚠️ **Warning:** APIM's centralized policy enforcement (authentication, rate limiting) provides no actual security benefit if the backend remains directly, publicly reachable through its own separate endpoint — a determined caller could simply bypass the gateway entirely and call the backend directly, skipping every policy APIM was configured to enforce. Production architectures must ensure the backend is **not** independently publicly accessible: for an Azure Function, this typically means network-restricting the Function App (e.g., via VNet integration and disabling public access, or requiring a shared secret/certificate known only to APIM) so that only the APIM gateway's outbound traffic can actually reach it — the same "the gateway must be the _only_ path in" principle applies regardless of backend type (Function, App Service, AKS service).
 
-### 44.7.2 Managed Identity for Backend Authentication
+### 7.2 Managed Identity for Backend Authentication
 
 - APIM can authenticate to its own backends using a Managed Identity (Section 9), rather than a stored credential, when the backend supports Entra ID-based authentication — consistent with the Managed Identity preference pattern established throughout this roadmap (Sections 35.4.2, 37.5.4, 40.7.2, 43.8).
 
-### 44.7.3 Layered Authentication: Subscription Keys vs. OAuth2/OIDC
+### 7.3 Layered Authentication: Subscription Keys vs. OAuth2/OIDC
 
 - **Subscription keys** identify _which consumer/subscription_ is calling (for rate limiting, usage tracking, and product-level access control) but are not, on their own, a strong identity/authorization mechanism — they are more akin to an API-usage identifier than a robust authentication credential.
 - **OAuth2/OIDC token validation** (via `validate-jwt`, 44.4.2) provides genuine identity-based authentication and authorization, verifying _who_ the calling user/application actually is and what they are authorized to do, per Section 7's concepts.
@@ -195,7 +195,7 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ---
 
-## 44.8 Production and Enterprise Usage Patterns
+## 8. Production and Enterprise Usage Patterns
 
 - **Facade over a heterogeneous backend landscape:** a single APIM instance commonly fronts a genuinely mixed set of backends — some Azure Functions (Section 40), some AKS-hosted microservices (Section 36–38), some legacy on-premises systems reached via a hybrid connectivity mechanism (VPN Gateway/ExpressRoute, Section 26) — presenting a single, consistent API surface to consumers regardless of this backend heterogeneity, directly realizing the "facade, not compute" framing from 44.1.
 - **Multi-region APIM deployment:** Premium-tier APIM supports deploying gateway instances across multiple Azure regions while sharing a single management plane/configuration, providing lower-latency access for geographically distributed consumers and regional resilience — architecturally parallel to the geo-replication concept already established for ACR in Section 35.7, now applied to the API gateway layer.
@@ -203,7 +203,7 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ---
 
-## 44.9 Troubleshooting Reference
+## 9. Troubleshooting Reference
 
 | Symptom                                                        | Likely Cause                                                                                                                                                                                      | Diagnostic Step                                                                                                                      |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -215,7 +215,7 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ---
 
-## 44.10 Best Practices Checklist
+## 10. Best Practices Checklist
 
 - [ ] Backend services network-restricted so the APIM gateway is the only path to them, not merely fronted by APIM while remaining independently reachable.
 - [ ] OAuth2/OIDC token validation (`validate-jwt`) used for genuine identity-based authorization on sensitive operations, not subscription keys alone.
@@ -228,7 +228,7 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ---
 
-## 44.11 Common Misconceptions
+## 11. Common Misconceptions
 
 - "API Management runs my application logic." _Correction:_ APIM is a facade/gateway layer applying policies and routing; it does not execute business logic itself — that remains the responsibility of the backend (44.1).
 - "Putting an API behind APIM automatically secures the backend." _Correction:_ this is only true if the backend is also restricted to be unreachable except through APIM (44.7.1) — a very common and consequential real-world gap.
@@ -236,7 +236,7 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ---
 
-## 44.12 Interview Questions (Consolidated)
+## 12. Interview Questions (Consolidated)
 
 **Beginner:** "What is the role of Azure API Management, and what does it not do?"
 _Model answer:_ APIM acts as a governed gateway/facade in front of one or more backend APIs, centrally enforcing cross-cutting concerns like authentication, rate limiting, and transformation, and providing a self-service developer portal. It does not execute the actual application/business logic itself — that remains the responsibility of the backend services it fronts (an Azure Function, App Service, AKS service, or other system).
@@ -254,7 +254,7 @@ _What the interviewer is probing:_ the ability to map a multi-tier consumer acce
 
 ---
 
-## 44.13 Key Takeaways Summary
+## 13. Key Takeaways Summary
 
 🔑 API Management is a facade/gateway layer, not a compute service — it centralizes cross-cutting concerns (auth, rate limiting, transformation, versioning) in front of one or more backends, which remain responsible for actual business logic.
 
@@ -268,7 +268,7 @@ _What the interviewer is probing:_ the ability to map a multi-tier consumer acce
 
 ---
 
-## 44.14 Part 8 Wrap-Up: Consolidated Dependency Recap
+## 14. Part 8 Wrap-Up: Consolidated Dependency Recap
 
 ```
 Section 40 (Azure Functions Deep Dive)
@@ -288,7 +288,7 @@ Part 8 is now complete. Every synchronous, consumer-facing API built on Function
 
 ---
 
-## 44.15 Related Concepts and What Comes Next
+## 15. Related Concepts and What Comes Next
 
 - **Section 45 — Azure DevOps (Part 9, next):** shifts focus to the CI/CD and Infrastructure-as-Code tooling used to actually build, test, and deploy everything covered in Parts 7–8 (container images, Function App packages, Logic App definitions, APIM policy/configuration) in a governed, repeatable pipeline.
 - **Section 7 (prerequisite, completed):** OAuth2/OIDC concepts underlying 44.4.2's `validate-jwt` policy and 44.7.3's layered authentication guidance.

@@ -1,12 +1,12 @@
 # Section 58 (Part 8): Disaster Recovery & Multi-Region Architecture
 
-## 58.1 Definition
+## 1. Definition
 
 **Plain language:** Disaster recovery (DR) is the plan for what happens when an entire region — or a critical piece of your system — goes down unexpectedly, and how quickly and completely you can get back up and running elsewhere. Multi-region architecture is the technical foundation that makes that recovery possible, by keeping data and infrastructure ready in more than one geographic location.
 
 **Precise:** Disaster recovery on GCP is the discipline of designing systems to meet defined **Recovery Point Objective (RPO)** and **Recovery Time Objective (RTO)** targets in the event of a regional or large-scale failure, using a combination of cross-region data replication (Cloud SQL replicas, GCS multi-region/turbo replication, Spanner multi-region configurations) and one of several standardized DR patterns (backup & restore, pilot light, warm standby, multi-site active-active).
 
-## 58.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Even with zone-level redundancy (Section 2) within a single region, an entire region can become unavailable — a large-scale natural disaster, a cascading regional network issue, or (rarely) an extended provider-side outage. Without an explicit DR plan:
 
@@ -16,7 +16,7 @@ Even with zone-level redundancy (Section 2) within a single region, an entire re
 
 DR planning exists to make these trade-offs explicit and deliberate: define acceptable data loss and downtime _before_ an incident, then choose (and regularly test) the cheapest pattern that meets those targets.
 
-## 58.3 RPO and RTO Fundamentals
+## 3. RPO and RTO Fundamentals
 
 - **Recovery Point Objective (RPO):** The maximum acceptable amount of data loss, measured as time. An RPO of 15 minutes means that after recovery, you may have lost up to the last 15 minutes of writes that occurred before the disaster — it directly drives how frequently data must be backed up or replicated.
 - **Recovery Time Objective (RTO):** The maximum acceptable time to restore service after a disaster is declared. An RTO of 1 hour means the system must be back up and serving traffic within 1 hour of the failure — it directly drives how much standby infrastructure must already exist versus be provisioned from scratch during the incident.
@@ -37,18 +37,18 @@ DR planning exists to make these trade-offs explicit and deliberate: define acce
 - **Tighter RPO/RTO = higher cost.** Near-zero RPO requires continuous synchronous or near-synchronous replication; near-zero RTO requires standby capacity already running and ready to accept traffic. Both cost more than infrequent backups and on-demand provisioning.
 - RPO and RTO should be defined **per system**, not organization-wide — a marketing content site and a payments ledger have very different acceptable loss/downtime, and applying a single blanket target either over- or under-protects most systems.
 
-## 58.4 GCP Service-Level Replication Mechanisms
+## 4. GCP Service-Level Replication Mechanisms
 
-### 58.4.1 Cloud SQL Cross-Region Read Replicas
+### 4.1 Cloud SQL Cross-Region Read Replicas
 
 Cloud SQL supports creating a **cross-region read replica** — an asynchronously replicated, read-only copy of a primary instance in a different region. In a DR event, this replica can be **promoted** to a standalone read-write primary, at the cost of losing whatever writes hadn't yet replicated (asynchronous replication means non-zero RPO, typically seconds to low minutes depending on write volume and cross-region latency).
 
-### 58.4.2 Cloud Storage Multi-Region and Turbo Replication
+### 4.2 Cloud Storage Multi-Region and Turbo Replication
 
 - **Multi-region buckets** store objects redundantly across the multiple regions within a large geographic area (e.g., "US") automatically, providing very high availability and durability for read access without any application-level replication logic.
 - **Turbo replication** (available on dual-region buckets) provides a much faster replication SLA (objects replicated to the second region within minutes) compared to standard dual-region replication, at additional cost — relevant when RPO for object storage must be tight.
 
-### 58.4.3 Cloud Spanner Multi-Region Configurations
+### 4.3 Cloud Spanner Multi-Region Configurations
 
 Spanner can be deployed in a **multi-region configuration**, synchronously replicating data (using the TrueTime-based Paxos consensus protocol) across regions within the configuration, so that a regional failure does not lose committed writes — this is the strongest (near-zero RPO) replication option among GCP's managed databases, at the cost of higher write latency (since a write must achieve consensus across geographically distant replicas) and higher price than a single-region configuration.
 
@@ -59,9 +59,9 @@ Spanner can be deployed in a **multi-region configuration**, synchronously repli
 | **Cloud Storage** dual-region + turbo replication | Asynchronous, fast SLA                                   | Minutes             | N/A — application reads from either region                                                                  |
 | **Cloud Spanner** multi-region config             | Synchronous (Paxos consensus)                            | Near-zero           | Automatic — no promotion step, all regions in the config can serve reads/writes per the configured topology |
 
-## 58.5 DR Patterns Mapped to GCP Services
+## 5. DR Patterns Mapped to GCP Services
 
-### 58.5.1 Backup and Restore
+### 5.1 Backup and Restore
 
 The lowest-cost, highest-RTO/RPO pattern: regularly back up data (Cloud SQL automated backups, GCS object versioning/backups, persistent disk snapshots) to a separate region, with **no standing compute infrastructure** in the DR region at all. On disaster, infrastructure is provisioned from Infrastructure-as-Code (Section 52) and data restored from the latest backup.
 
@@ -69,7 +69,7 @@ The lowest-cost, highest-RTO/RPO pattern: regularly back up data (Cloud SQL auto
 - **RTO:** Bounded by how long it takes to provision infrastructure and restore data from scratch (often hours).
 - **Cost:** Lowest — only backup storage cost, no idle standby compute.
 
-### 58.5.2 Pilot Light
+### 5.2 Pilot Light
 
 A minimal version of the core infrastructure (e.g., just the database, kept continuously replicated) runs in the DR region, while the full application/compute tier is **not** running and must be started on failover. This is a middle ground: the hardest-to-quickly-recreate piece (data) is always warm, while the cheaper-to-recreate piece (stateless compute) is provisioned on demand.
 
@@ -77,7 +77,7 @@ A minimal version of the core infrastructure (e.g., just the database, kept cont
 - **RTO:** Moderate (compute tier still needs to be started/scaled up from zero).
 - **Cost:** Low-to-moderate — only the data replication layer runs continuously.
 
-### 58.5.3 Warm Standby
+### 5.3 Warm Standby
 
 A scaled-down but fully functional copy of the entire stack runs continuously in the DR region — smaller Managed Instance Group/GKE node pool sizes than production, but the full n-tier architecture (Section 56) is live and can be scaled up quickly on failover, rather than provisioned from scratch.
 
@@ -85,7 +85,7 @@ A scaled-down but fully functional copy of the entire stack runs continuously in
 - **RTO:** Low (minutes — scaling up existing running infrastructure is much faster than provisioning it from zero).
 - **Cost:** Moderate — continuously running (if reduced-capacity) compute in the DR region.
 
-### 58.5.4 Multi-Site Active-Active
+### 5.4 Multi-Site Active-Active
 
 Both regions run at full production capacity and serve live traffic simultaneously (as introduced in Section 56.3.2) — the strongest DR posture, since a regional failure simply removes a fraction of already-serving capacity rather than requiring any failover action at all.
 
@@ -102,7 +102,7 @@ Both regions run at full production capacity and serve live traffic simultaneous
 
 > 💡 **Tip:** Choose the pattern by working backward from the business's actual RPO/RTO requirement for that specific system, not by defaulting to the most resilient-sounding option. A pattern more resilient than required is pure wasted spend; a pattern less resilient than required is an unacceptable business risk waiting to be discovered during a real incident.
 
-## 58.6 Comparison: GCP vs AWS vs Azure DR Approaches
+## 6. Comparison: GCP vs AWS vs Azure DR Approaches
 
 | Aspect                                        | GCP                                                                                                                                                     | AWS                                                                                                               | Azure                                                                                                                                                                    |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -113,18 +113,18 @@ Both regions run at full production capacity and serve live traffic simultaneous
 
 > ⚠️ **Key distinction:** Azure Site Recovery is a notably more turnkey, VM-replication-centric DR product than anything GCP or AWS offers as a single named service — it replicates entire VMs (including on-premises VMware/Hyper-V workloads into Azure) with an orchestrated recovery-plan workflow. GCP and AWS DR postures are more commonly _composed_ from individual data-layer replication features plus Infrastructure-as-Code, rather than delivered as one all-in-one replication product — a meaningful practical difference when scoping DR tooling and effort across clouds.
 
-## 58.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - Regulated industries typically classify systems by business-impact tier (e.g., Tier 1/2/3), assigning explicit RPO/RTO targets and required DR pattern per tier, rather than applying a single organization-wide DR standard — this keeps DR spend proportional to actual business risk.
 - DR plans are only as good as their last successful test — mature organizations run scheduled failover drills (sometimes called game days, covered further in Section 80) to validate that documented RTO/RPO targets are actually achievable, not just theoretically designed.
 - Cross-region replication choices (Section 58.4) are typically decided jointly with the architecture pattern from Section 56 — a system already built active-active for performance reasons effectively gets near-zero-RPO/RTO DR "for free," while a single-region system needs an explicit, separate DR investment layered on top.
 
-## 58.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "Having automated backups means we have disaster recovery." Backups alone only support the backup & restore pattern, which typically has the worst RTO of all four patterns (hours to reprovision infrastructure and restore data) — calling this "DR-ready" without having tested and timed the actual restore process is a common and dangerous gap.
 - **Misconception:** "Multi-region always means active-active." A cross-region Cloud SQL read replica, kept warm purely for failover promotion, is a legitimate and common multi-region architecture (pilot light or warm standby, depending on whether compute is also running) — "multi-region" describes where data/infrastructure exists, not necessarily that both regions are equally serving live traffic.
 
-## 58.9 Key Takeaways
+## 9. Key Takeaways
 
 - 🔑 RPO bounds acceptable data loss (driving replication frequency); RTO bounds acceptable downtime (driving how much standby infrastructure must already exist) — define both explicitly, per system, before an incident.
 - 🔑 GCP's core replication building blocks are Cloud SQL cross-region replicas (async, manual promotion), GCS multi-region/turbo replication (for objects), and Cloud Spanner multi-region configurations (synchronous, near-zero RPO/RTO).

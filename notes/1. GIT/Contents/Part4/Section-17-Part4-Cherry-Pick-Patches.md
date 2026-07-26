@@ -1,16 +1,16 @@
 # Section 17 (Part 4): Cherry-Pick & Moving Changes Between Branches; Patch Files
 
-## 17.1 Definition
+## 1. Definition
 
 **Plain language:** Cherry-picking takes one specific commit from anywhere in the repository and reapplies just that commit's changes onto your current branch — grabbing a single "cherry" out of another branch's history rather than merging or rebasing everything.
 
 **Precise:** `git cherry-pick <commit>` computes the diff a given commit introduced (relative to its own parent) and applies that diff as a **new commit** on the current branch, with a new hash and a parent equal to whatever the current branch's tip already was. Patch files (`git format-patch`/`git apply`/`git am`) generalize the same underlying idea — extracting a diff and applying it elsewhere — but as portable files that can move entirely outside Git's own transport (§20), including over email.
 
-## 17.2 Why It Exists / Problem It Solves
+## 2. Why It Exists / Problem It Solves
 
 Merge (§13) and rebase (§14) both operate on **entire branches or ranges of commits**. Sometimes you want exactly one commit — a specific bugfix that needs to land on an older release branch, without dragging along everything else that's happened on the branch it originated from. Cherry-pick and patch files exist for this precise, narrower need: moving a deliberately chosen, specific unit of change from one place to another, independent of the surrounding history either side has accumulated.
 
-## 17.3 `git cherry-pick` — Mechanics and Contrast
+## 3. `git cherry-pick` — Mechanics and Contrast
 
 ```bash
 $ git switch release-2.4
@@ -63,7 +63,7 @@ Fix null pointer in cart total
 (cherry picked from commit a1b2c3d4e5f6789012345678901234567890abcd)
 ```
 
-## 17.4 Cherry-Pick Conflicts
+## 4. Cherry-Pick Conflicts
 
 Because a cherry-pick applies a diff computed relative to the _original_ commit's parent onto a potentially very different target tip, conflicts are common when the surrounding code has diverged meaningfully.
 
@@ -89,7 +89,7 @@ $ git cherry-pick --abort
 $ git cherry-pick --skip
 ```
 
-## 17.5 When Cherry-Pick Is Right vs a Smell
+## 5. When Cherry-Pick Is Right vs a Smell
 
 **Legitimate uses:**
 
@@ -103,11 +103,11 @@ $ git cherry-pick --skip
 
 > ⚠️ **Common confusion to preempt:** a cherry-picked commit and its original share **identical content** (the same diff) but are **entirely different objects with different hashes** and no ancestry relationship Git can see automatically. If the same logical fix later needs to be merged normally between the two branches, Git has no inherent way to know "these are the same change" — it can still cause conflicts or, at best, a harmless no-op merge, depending on exact circumstances. `-x`'s "(cherry picked from...)" trailer is a human-readable breadcrumb for this exact ambiguity, not something Git's merge machinery itself understands structurally.
 
-## 17.6 Patch Files — The Portable Alternative
+## 6. Patch Files — The Portable Alternative
 
 A patch file captures a diff as a plain text file that can be emailed, attached to a ticket, or applied to a completely disconnected repository with no shared remote or network access at all.
 
-### 17.6.1 `git format-patch` vs a plain `git diff`
+### 6.1 `git format-patch` vs a plain `git diff`
 
 ```bash
 # Purpose: produce ONE FILE PER COMMIT, formatted as a proper email/patch with
@@ -131,7 +131,7 @@ $ git diff HEAD~1 HEAD > plain.diff
 | Applying preserves authorship | No — whoever applies it becomes the sole author of a new commit | **Yes**, when applied with `git am` (17.6.3) — original author metadata is preserved                 |
 | Typical use                   | Quick "here's what changed" sharing, code review snippets       | Formal patch submission, backporting across disconnected repos, mailing-list workflows               |
 
-### 17.6.2 `git apply` — Content Only
+### 6.2 `git apply` — Content Only
 
 ```bash
 # Purpose: apply a patch's CONTENT changes to the working directory,
@@ -141,7 +141,7 @@ $ git apply 0001-Fix-null-pointer-in-cart-total.patch
 
 `git apply` is the lower-level tool: it modifies the working directory (and, with `--index`, the index) to match the patch's content changes, but it never creates a commit itself and discards all of `format-patch`'s email-style metadata — you'd `git add` and `git commit` manually afterward, becoming the new commit's sole author regardless of who actually wrote the original change.
 
-### 17.6.3 `git am` — Apply Mailbox, With Metadata
+### 6.3 `git am` — Apply Mailbox, With Metadata
 
 ```bash
 # Purpose: apply one or more format-patch files AS COMMITS, preserving the
@@ -167,13 +167,13 @@ $ git am --skip
 $ git am --abort
 ```
 
-## 17.7 Tying Back to §2's Email Workflow
+## 7. Tying Back to §2's Email Workflow
 
 §2.1 described the Linux kernel's pre-Git era: contributors emailed patches, applied by hand. `git format-patch` and `git am` are not a historical footnote — they are the **direct, still-actively-used mechanism** the kernel project and many other large open-source projects use _today_ for their entire contribution workflow: a contributor runs `format-patch`, emails the resulting files (often via `git send-email`, a companion tool) to a mailing list, and a maintainer runs `git am` to apply them, preserving full authorship with zero dependency on a shared Git hosting platform, GitHub account, or even a shared remote at all. Understanding cherry-pick and patch files together demystifies why some of the most consequential software on earth is still developed with a workflow that predates GitHub and pull requests entirely.
 
 > 💡 **Tip:** A pull request on GitHub/GitLab is, functionally, a hosted, GUI-wrapped convenience layer over "here is a set of commits I'd like you to apply to your branch" — conceptually the same request `format-patch`/`am` fulfilled by email for a decade before platforms existed, even though the mechanics (merge via the platform's API) differ from literal patch application.
 
-## 17.8 Hands-On — Cherry-Pick a Backport and Generate a Patch
+## 8. Hands-On — Cherry-Pick a Backport and Generate a Patch
 
 ```bash
 $ mkdir cherrydemo && cd cherrydemo && git init -q
@@ -200,14 +200,14 @@ Date: Tue, 21 Jul 2026 10:15:00 +0530
 Subject: [PATCH] Fix critical null check
 ```
 
-## 17.9 Production & Enterprise Usage
+## 9. Production & Enterprise Usage
 
 - **Security backports:** a CVE fix lands on `main` and must be independently applied to every still-supported release branch (2.4, 2.5, 2.6) without pulling in unrelated features — the textbook cherry-pick use case, often scripted across many branches at once.
 - **Vendor/fork syncing:** teams maintaining a fork of an upstream project sometimes cherry-pick specific upstream fixes rather than merging the entire upstream history, to keep their fork's divergence deliberate and reviewable.
 - **Air-gapped or offline environments:** some regulated or high-security environments transfer changes via patch files precisely because no direct network path between two Git instances is permitted — `format-patch`/`am` (or even plain `apply`) remain the standard mechanism for that transfer.
 - **Mailing-list-based open source projects** (the Linux kernel foremost among them, but also many other C/systems projects) still run their entire contribution and review process over `format-patch`/`send-email`/`am`, with no pull-request mechanism in the primary workflow at all.
 
-## 17.10 Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                                                            | Likely cause                                                                         | Fix                                                                                                                                                                                                                |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -216,7 +216,7 @@ Subject: [PATCH] Fix critical null check
 | Cherry-picked commit shows as a completely separate, duplicate entry when later doing a real merge | Expected — cherry-pick creates no ancestry link to the original (17.5)               | Accept the harmless duplicate/no-op, or use `git merge -s ours`-style conscious handling if it causes real conflicts; better, adopt a branching strategy (§22) that avoids relying on repeated ad hoc cherry-picks |
 | `git apply` succeeds but the resulting commit has the wrong author                                 | Expected — `apply` never carries commit metadata, only `am` does                     | Use `git am` instead if authorship preservation matters                                                                                                                                                            |
 
-## 17.11 Interview Questions
+## 11. Interview Questions
 
 **[Beginner] Q1. What does `git cherry-pick` do?**
 **Model answer:** It takes one specific commit from anywhere in the repository's history and applies just that commit's changes as a new commit on your current branch. The new commit has a new hash and its parent is whatever your current branch's tip already was — it carries no recorded ancestry link back to the original commit or the branch it came from, even though the actual content change is identical.
@@ -233,7 +233,7 @@ Subject: [PATCH] Fix critical null check
 **[Senior] Q5. Why does the Linux kernel project still use `git format-patch`/`git am` over email instead of GitHub pull requests, and what does that tell you about Git's design?**
 **Model answer:** The kernel's contributor base predates GitHub by well over a decade, and its entire review culture — public mailing-list discussion, maintainer trees reviewing and forwarding patches up a hierarchy, no dependency on any single hosting company — was built around email and patch files from the start; migrating tens of thousands of contributors and a deeply embedded review process to a platform-centric model has enormous cultural and workflow cost for uncertain benefit, especially given the project's stated priority on being maximally distributed and platform-independent, echoing exactly the design philosophy from §2.4.3. What it reveals about Git's design is that `format-patch`/`apply`/`am` were never a stopgap bolted on before "real" collaboration tooling arrived — they were designed as first-class, fully sufficient primitives for exactly this workflow, and pull requests are better understood as one popular, GUI-convenient layer built on top of the same underlying idea (here are some commits, please apply them), not the only legitimate way to collaborate with Git. A senior answer should recognize that PR-based workflows are a platform convention, not a Git requirement.
 
-## 17.12 Common Misconceptions
+## 12. Common Misconceptions
 
 1. **"Cherry-picking is the same as a small rebase."** Rebase moves your branch's entire unique commit sequence; cherry-pick moves exactly the commit(s) you individually specify, with no assumption of taking everything else.
 2. **"A cherry-picked commit is 'linked' to its original in some way Git tracks."** Git records no structural ancestry relationship between them at all — they're independent objects that happen to share identical (or near-identical) content; `-x`'s trailer is a human-readable note, not something Git's merge/diff machinery understands natively.
@@ -241,7 +241,7 @@ Subject: [PATCH] Fix critical null check
 4. **"Patch files are an obsolete, pre-GitHub relic."** They remain the primary contribution mechanism for major projects (the Linux kernel foremost) and the standard tool for air-gapped/offline change transfer today.
 5. **"Cherry-picking between two branches instead of merging is always fine since the code ends up the same."** At scale and as a systematic substitute for real integration, it produces duplicated history with no recognized common ancestry, confusing blame/log output and potential conflicts if a real merge happens later.
 
-## 17.13 🔑 Key Takeaways
+## 13. 🔑 Key Takeaways
 
 - `git cherry-pick` applies one specific commit's diff as a brand-new commit on the current branch, with a new hash and no recorded ancestry link back to the source — contrast with rebase's whole-sequence replay and merge's explicit two-parent reconciliation.
 - `-x` appends a "(cherry picked from...)" trailer for human traceability; `-n` stages without committing for review first.
@@ -249,6 +249,6 @@ Subject: [PATCH] Fix critical null check
 - `git diff` captures content only; `git format-patch` captures full commit metadata as portable, per-commit files; `git apply` applies content only (no commit, no attribution); `git am` applies and commits, preserving original authorship.
 - Patch-file workflows aren't a historical relic — they remain the primary, actively used contribution mechanism for major projects like the Linux kernel, and the standard tool for air-gapped change transfer.
 
-## 17.14 Related Concepts & What's Next
+## 14. Related Concepts & What's Next
 
 Cherry-pick and patches both move already-committed change around deliberately. §18 shifts to a different kind of permanent marker on committed history — tags — covering the practical discipline of creating, pushing, and managing them for real release management, Semantic Versioning, and how Conventional Commits feed automated changelog and release tooling in CI/CD (§25).

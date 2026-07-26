@@ -1,36 +1,36 @@
 # Section 41 (Part 5): VPC Service Controls
 
-## 41.1 Definition
+## 1. Definition
 
 **Plain language:** IAM (Section 35) controls _who_ can call an API and _what_ they're allowed to do. But even with perfectly correct IAM, a legitimate, correctly-scoped credential that gets stolen (a leaked service account key, a compromised laptop with valid `gcloud` credentials) can still be used to copy data out of a Cloud Storage bucket or BigQuery dataset to somewhere outside your control — because IAM alone doesn't know or care _where_ the request is coming from or _where the data is going_. VPC Service Controls closes that specific gap.
 
 **Precise:** **VPC Service Controls (VPC-SC)** creates a **service perimeter** around a set of GCP resources (projects) and supported APIs (Cloud Storage, BigQuery, and dozens of others), restricting data movement across that perimeter's boundary regardless of IAM permissions — even a principal with valid IAM Allow permissions cannot move data out of the perimeter to an unauthorized destination, mitigating **data exfiltration** as a distinct threat model from unauthorized access.
 
-## 41.2 Why It Exists
+## 2. Why It Exists
 
 Consider a compromised service account key with legitimate `roles/storage.objectViewer` on a sensitive bucket. Under IAM alone, that stolen credential can be used from _anywhere_ — an attacker's laptop, a VM in an unrelated project, a different organization entirely — to read and exfiltrate that data, because IAM evaluates "is this principal allowed to do this action," not "is this request originating from, and directed to, somewhere it should be." This is precisely the exfiltration path VPC Service Controls exists to block: it adds a network/context-aware boundary _on top of_ IAM, so that even a valid, correctly-permissioned credential is denied if the request crosses outside an approved perimeter — a second, independent layer that has to also be satisfied, not an alternative to correct IAM.
 
-## 41.3 Core Concepts
+## 3. Core Concepts
 
-### 41.3.1 Service Perimeter
+### 3.1 Service Perimeter
 
 A **service perimeter** groups one or more GCP projects and a defined set of supported services (e.g., `storage.googleapis.com`, `bigquery.googleapis.com`) into a boundary. Requests to those services _from inside_ the perimeter to resources _inside_ the perimeter proceed normally (subject to IAM as usual); requests attempting to reach _across_ the boundary — either data leaving to an external destination, or an external identity/network reaching in — are blocked by VPC-SC regardless of IAM, unless an explicit exception is configured.
 
-### 41.3.2 Perimeter Bridges
+### 3.2 Perimeter Bridges
 
 Two separate perimeters (e.g., belonging to different departments, each with their own project set) normally cannot exchange data at all. A **perimeter bridge** creates a controlled, bidirectional connection between two specific perimeters, allowing defined communication between them without merging them into one perimeter or fully opening either boundary — useful when two otherwise-isolated teams have one legitimate integration point (e.g., a shared pipeline reading from one team's BigQuery dataset into another's).
 
-### 41.3.3 Ingress and Egress Rules
+### 3.3 Ingress and Egress Rules
 
 Rather than the coarser bridge mechanism, **ingress/egress rules** allow fine-grained exceptions on a single perimeter — e.g., "allow requests from this specific external service account, restricted to this specific project and this specific API method, to read from inside the perimeter." This is the mechanism used for controlled access from outside sources (an on-premises system, a partner's GCP project) without opening the perimeter broadly.
 
-### 41.3.4 Dry-Run Mode
+### 3.4 Dry-Run Mode
 
 Because a service perimeter can break legitimate existing traffic if misconfigured (a real risk given how many services and access patterns a production environment has), VPC-SC supports **dry-run mode**: the perimeter's rules are evaluated and violations are logged (to Cloud Audit Logs' Policy Denied logs, Section 40) exactly as they would be enforced, but nothing is actually blocked. This lets a team observe what _would_ break before committing to enforcement, iterating on the perimeter's rules until dry-run shows no unexpected violations, then switching to enforced mode.
 
 > ⚠️ **Interview-relevant nuance:** Skipping dry-run mode and enabling a new perimeter directly in enforced mode is one of the most common causes of a self-inflicted production outage in GCP security hardening projects — a perimeter that looks correct on paper frequently misses a legitimate access pattern (a cross-project data pipeline, a CI/CD system reading from BigQuery) that only surfaces once real traffic hits it. Dry-run mode exists specifically to catch this before it becomes an incident.
 
-## 41.4 Architecture Diagram
+## 4. Architecture Diagram
 
 ```
                           ORGANIZATION
@@ -59,7 +59,7 @@ Because a service perimeter can break legitimate existing traffic if misconfigur
    └────────────────────────┘ bridge └───────────────────────┘
 ```
 
-## 41.5 Comparison with AWS and Azure
+## 5. Comparison with AWS and Azure
 
 | Concept                                                     | GCP                                               | AWS                                                                                                                         | Azure                                                                                       |
 | ----------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -71,7 +71,7 @@ Because a service perimeter can break legitimate existing traffic if misconfigur
 
 > 💡 **Tip:** This is a genuine differentiator worth knowing cold for interviews — VPC-SC is purpose-built around the exfiltration threat model as its primary design goal, whereas AWS and Azure's nearest equivalents (VPC Endpoints + SCPs, Private Link + Policy) achieve a similar outcome only when several separate features are deliberately combined together.
 
-## 41.6 Hands-On Example: Creating a Service Perimeter in Dry-Run Mode
+## 6. Hands-On Example: Creating a Service Perimeter in Dry-Run Mode
 
 **Purpose:** Create an access policy and a service perimeter around a project's Cloud Storage and BigQuery usage, starting in dry-run mode to observe impact before enforcing.
 
@@ -108,19 +108,19 @@ gcloud access-context-manager perimeters dry-run enforce finance-data \
   --policy=THE_POLICY_ID
 ```
 
-## 41.7 Production & Enterprise Usage
+## 7. Production & Enterprise Usage
 
 - **Perimeter around the org's most sensitive data services, not everything.** Because VPC-SC adds real friction to legitimate cross-service and cross-project access patterns, enterprises typically scope perimeters tightly around genuinely sensitive data stores (financial data, PII/PHI, source code in a private Artifact Registry) rather than wrapping the entire organization, where the operational overhead would outweigh the benefit for lower-sensitivity workloads.
 - **Perimeters as a required control for regulated workloads.** VPC-SC is commonly a mandatory component of Assured Workloads (Section 40) configurations, since exfiltration resistance is exactly the property many compliance regimes require beyond simple access control.
 - **Always dry-run, always review Policy Denied logs before enforcing.** Mature platform teams treat skipping the dry-run phase as a hard process violation — every new perimeter or perimeter change runs in dry-run first, with a deliberate review of Policy Denied logs (Section 40) against known legitimate traffic patterns before flipping to enforced.
 
-## 41.8 Common Misconceptions
+## 8. Common Misconceptions
 
 - **Misconception:** "VPC Service Controls is a firewall — it's about network traffic." It operates at the API/service level, not the network packet level — it governs which API calls involving supported services (like Cloud Storage or BigQuery) are allowed to cross a perimeter boundary, independent of the underlying network path, which is a different concern from VPC firewall rules or Cloud Firewall.
 - **Misconception:** "If my IAM policy is correct, I don't need VPC-SC." IAM and VPC-SC solve different threats — IAM governs authorized actions for a given identity; VPC-SC governs data movement across a boundary regardless of whether the identity performing it is authorized. A stolen but validly-permissioned credential is exactly the scenario IAM alone cannot stop and VPC-SC is designed to.
 - **Misconception:** "A perimeter with no exceptions configured means nothing gets through, full stop." Legitimate cross-perimeter access is still possible via perimeter bridges or explicit ingress/egress rules — VPC-SC isn't an all-or-nothing lockdown, it's a default-deny boundary with deliberate, auditable exception mechanisms.
 
-## 41.9 Interview Questions
+## 9. Interview Questions
 
 **🎯 Beginner:** _What problem does VPC Service Controls solve that IAM alone does not?_
 **Model answer:** IAM determines whether a given identity is allowed to perform a given action, but doesn't know or restrict where the request originates from or where resulting data goes. A stolen but validly-permissioned credential can still exfiltrate data from anywhere under IAM alone. VPC Service Controls adds a perimeter boundary around supported services and projects that blocks data movement across that boundary regardless of IAM permissions, directly mitigating data exfiltration as a distinct threat.
