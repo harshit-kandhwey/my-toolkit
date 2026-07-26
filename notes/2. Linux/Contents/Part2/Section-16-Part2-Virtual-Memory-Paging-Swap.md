@@ -14,20 +14,20 @@ Two independent problems are solved by the same design:
 ```text
 Process's view:                    Reality (kernel + MMU + hardware):
 ┌─────────────────────┐
-│ Virtual Address      │  0x00007fa3...
-│ Space (private,      │────────────┐
-│ looks contiguous)    │            ▼
+│ Virtual Address     │  0x00007fa3...
+│ Space (private,     │────────────┐
+│ looks contiguous)   │            ▼
 └─────────────────────┘      ┌─────────────┐        ┌──────────────────┐
-                              │     MMU      │───────►│  Physical RAM     │
-                              │ (translates   │        │  (fragmented,     │
-                              │  using page    │        │  shared across    │
-                              │  tables)       │        │  all processes)   │
-                              └─────────────┘        └──────────────────┘
+                             │     MMU     │───────►│  Physical RAM    │
+                             │ (translates │        │  (fragmented,    │
+                             │  using page │        │  shared across   │
+                             │  tables)    │        │  all processes)  │
+                             └─────────────┘        └──────────────────┘
                                      │
                                      ▼ (page not resident)
                               ┌──────────────┐
-                              │  Swap space   │
-                              │  (disk)       │
+                              │  Swap space  │
+                              │  (disk)      │
                               └──────────────┘
 ```
 

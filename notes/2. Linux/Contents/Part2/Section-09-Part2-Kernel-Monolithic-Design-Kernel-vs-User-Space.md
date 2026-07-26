@@ -41,20 +41,20 @@ The separation between kernel space and user space is not merely a software desi
 ```text
                     Ring 3 / EL0 — USER SPACE
         ┌─────────────────────────────────────────────┐
-        │  bash   nginx   python3   your application    │
-        │  — cannot execute privileged instructions —   │
-        │  — cannot touch hardware directly —            │
-        └───────────────────┬────────────────────────────┘
-                             │  system call (§11)
-                             │  (the only sanctioned crossing point)
-                             ▼
+        │  bash   nginx   python3   your application  │
+        │  — cannot execute privileged instructions — │
+        │  — cannot touch hardware directly —         │
+        └───────────────────┬─────────────────────────┘
+                            │  system call (§11)
+                            │  (the only sanctioned crossing point)
+                            ▼
                     Ring 0 / EL1 — KERNEL SPACE
         ┌─────────────────────────────────────────────┐
-        │  scheduler │ memory manager │ VFS │ network  │
-        │  stack │ device drivers — one address space,  │
-        │  full hardware privilege, no internal wall    │
-        └───────────────────┬────────────────────────────┘
-                             ▼
+        │  scheduler │ memory manager │ VFS │ network │
+        │  stack │ device drivers — one address space,│
+        │  full hardware privilege, no internal wall  │
+        └───────────────────┬─────────────────────────┘
+                            ▼
                           HARDWARE
                  CPU · RAM · disk · NIC · devices
 ```

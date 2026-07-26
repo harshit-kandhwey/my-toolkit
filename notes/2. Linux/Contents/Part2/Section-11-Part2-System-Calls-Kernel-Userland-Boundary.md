@@ -25,31 +25,31 @@ A syscall is not a normal function call — it is a deliberate, CPU-assisted pri
 ```text
  USER SPACE (ring 3)                          KERNEL SPACE (ring 0)
 ┌────────────────────────┐                   ┌────────────────────────┐
-│ 1. Program calls a      │                   │                        │
-│    libc wrapper, e.g.   │                   │                        │
-│    read(fd, buf, n)     │                   │                        │
-│                          │                   │                        │
-│ 2. Wrapper loads the    │                   │                        │
-│    syscall number and   │                   │                        │
-│    arguments into CPU   │                   │                        │
-│    registers            │                   │                        │
-│                          │                   │                        │
-│ 3. Wrapper executes a   │  ── trap/  ──────►│ 4. CPU switches to     │
-│    special trap         │     interrupt      │    ring 0, jumps to    │
-│    instruction:          │                   │    the kernel's fixed  │
-│    x86_64 → `syscall`   │                   │    syscall entry point │
-│    ARM64  → `svc`       │                   │                        │
-│                          │                   │ 5. Kernel dispatches   │
-│                          │                   │    on the syscall      │
-│                          │                   │    number via the      │
-│                          │                   │    syscall table,      │
-│                          │                   │    runs the handler,   │
-│                          │                   │    touches hardware/   │
-│                          │                   │    kernel data safely  │
-│                          │                   │                        │
-│ 7. Wrapper returns the  │◄────── return ─────│ 6. CPU switches back   │
-│    result (or errno) to │                   │    to ring 3, resumes  │
-│    the calling program  │                   │    user-space code     │
+│ 1. Program calls a     │                   │                        │
+│    libc wrapper, e.g.  │                   │                        │
+│    read(fd, buf, n)    │                   │                        │
+│                        │                   │                        │
+│ 2. Wrapper loads the   │                   │                        │
+│    syscall number and  │                   │                        │
+│    arguments into CPU  │                   │                        │
+│    registers           │                   │                        │
+│                        │                   │                        │
+│ 3. Wrapper executes a  │  ── trap/  ──────►│ 4. CPU switches to     │
+│    special trap        │     interrupt     │    ring 0, jumps to    │
+│    instruction:        │                   │    the kernel's fixed  │
+│    x86_64 → `syscall`  │                   │    syscall entry point │
+│    ARM64  → `svc`      │                   │                        │
+│                        │                   │ 5. Kernel dispatches   │
+│                        │                   │    on the syscall      │
+│                        │                   │    number via the      │
+│                        │                   │    syscall table,      │
+│                        │                   │    runs the handler,   │
+│                        │                   │    touches hardware/   │
+│                        │                   │    kernel data safely  │
+│                        │                   │                        │
+│ 7. Wrapper returns the │◄───── return ─────│ 6. CPU switches back   │
+│    result (or errno) to│                   │    to ring 3, resumes  │
+│    the calling program │                   │    user-space code     │
 └────────────────────────┘                   └────────────────────────┘
 ```
 
@@ -222,12 +222,12 @@ Every syscall is a place where the kernel accepts input from code it does not tr
 ## 12. Tiered Interview Questions
 
 **🎯 Beginner:** _"What is a system call, and why can't a program just access the kernel's memory or hardware directly?"_
-**Model answer:** A system call is the controlled interface a user-space program uses to ask the kernel to perform a privileged operation — opening a file, allocating memory, sending network data. A program can't touch kernel memory or hardware directly because the CPU enforces privilege rings: user-space code runs in an unprivileged ring (ring 3 on x86_64) and physically cannot execute privileged instructions or access kernel memory. The only way to get the kernel to do something on your behalf is to trigger a syscall, which uses a special trap instruction to transition the CPU into the privileged ring (ring 0) under the kernel's own controlled entry point — never under arbitrary user-supplied code.
-_What the interviewer is probing for:_ whether the candidate connects "system call" to the actual hardware privilege-separation mechanism from §9, rather than treating it as an abstract API concept with no grounding in how the CPU enforces it.
+**Model answer:** A system call is the controlled interface a user-space program uses to ask the kernel to perform a privileged operation — opening a file, allocating memory, sending network data. A program can't touch kernel memory or hardware directly because the CPU enforces privilege rings: user-space code runs in an unprivileged ring (ring 3 on x86*64) and physically cannot execute privileged instructions or access kernel memory. The only way to get the kernel to do something on your behalf is to trigger a syscall, which uses a special trap instruction to transition the CPU into the privileged ring (ring 0) under the kernel's own controlled entry point — never under arbitrary user-supplied code.
+\_What the interviewer is probing for:* whether the candidate connects "system call" to the actual hardware privilege-separation mechanism from §9, rather than treating it as an abstract API concept with no grounding in how the CPU enforces it.
 
 **🎯 Intermediate:** _"Walk me through what happens, step by step, when a C program calls `read()`."_
-**Model answer:** The program calls glibc's `read()` wrapper, which is ordinary userspace code up to this point. That wrapper loads the syscall number for `read` and its arguments (file descriptor, buffer pointer, byte count) into the registers the calling convention specifies, then executes a trap instruction — `syscall` on x86_64. The CPU switches from ring 3 to ring 0 and jumps to the kernel's fixed syscall entry point, which dispatches on the syscall number to the kernel's actual `read` implementation. The kernel performs the operation — reading from the file's underlying storage or buffer cache — and returns a result. Control transitions back to ring 3, and the glibc wrapper translates the kernel's return value into the C-level return value and `errno` convention the caller expects.
-_What the interviewer is probing for:_ real mechanical understanding of the boundary crossing, not just "it asks the kernel to read the file" — can they name the trap instruction, the ring transition, and glibc's mediating role specifically.
+**Model answer:** The program calls glibc's `read()` wrapper, which is ordinary userspace code up to this point. That wrapper loads the syscall number for `read` and its arguments (file descriptor, buffer pointer, byte count) into the registers the calling convention specifies, then executes a trap instruction — `syscall` on x86*64. The CPU switches from ring 3 to ring 0 and jumps to the kernel's fixed syscall entry point, which dispatches on the syscall number to the kernel's actual `read` implementation. The kernel performs the operation — reading from the file's underlying storage or buffer cache — and returns a result. Control transitions back to ring 3, and the glibc wrapper translates the kernel's return value into the C-level return value and `errno` convention the caller expects.
+\_What the interviewer is probing for:* real mechanical understanding of the boundary crossing, not just "it asks the kernel to read the file" — can they name the trap instruction, the ring transition, and glibc's mediating role specifically.
 
 **🎯 Senior:** _"Why does the kernel provide a vDSO for calls like `gettimeofday` instead of just making them fast regular syscalls?"_
 **Model answer:** Because even a "fast" syscall still pays the fixed cost of a ring 3→0→3 transition, and calls like `gettimeofday`/`clock_gettime` are made extremely frequently by a huge range of code — logging, tracing, timeouts, benchmarking — so that fixed per-call overhead adds up to a real, measurable cost at scale even though each individual call is cheap. The vDSO avoids the transition entirely for a narrow set of calls where the kernel can safely expose the needed data (a timer value maintained by the kernel) directly into the process's own address space, letting glibc satisfy the request with pure userspace code and zero traps. It's a targeted optimization for the specific case where "make the syscall itself faster" has a lower ceiling than "avoid the syscall entirely."

@@ -315,12 +315,12 @@ _(Empty at project start. Populated when the user requests additions, gap covera
 | #   | Part                                               | Section   | Status       |
 | --- | -------------------------------------------------- | --------- | ------------ |
 | 01  | Part 1 — Foundations and History                   | 1.1–1.7   | ✅ Completed |
-| —   | Part 2 — Architecture and the Kernel               | 2.1–2.9   | ⏳ Remaining |
-| —   | Part 3 — Filesystem and Storage Basics             | 3.1–3.8   | ⏳ Remaining |
-| —   | Part 4 — Users, Permissions, and Access Control    | 4.1–4.8   | ⏳ Remaining |
-| —   | Part 5 — Process and Job Management                | 5.1–5.8   | ⏳ Remaining |
-| —   | Part 6 — Shell, Scripting, and Text Processing     | 6.1–6.10  | ⏳ Remaining |
-| —   | Part 7 — Networking                                | 7.1–7.8   | ⏳ Remaining |
+| 02  | Part 2 — Architecture and the Kernel               | 2.1–2.9   | ✅ Completed |
+| 03  | Part 3 — Filesystem and Storage Basics             | 3.1–3.8   | ✅ Completed |
+| 04  | Part 4 — Users, Permissions, and Access Control    | 4.1–4.8   | ✅ Completed |
+| 05  | Part 5 — Process and Job Management                | 5.1–5.8   | ✅ Completed |
+| 06  | Part 6 — Shell, Scripting, and Text Processing     | 6.1–6.10  | ✅ Completed |
+| 07  | Part 7 — Networking                                | 7.1–7.8   | ✅ Completed |
 | —   | Part 8 — Package Management                        | 8.1–8.6   | ⏳ Remaining |
 | —   | Part 9 — Systemd and Services                      | 9.1–9.8   | ⏳ Remaining |
 | —   | Part 10 — Advanced Storage and LVM                 | 10.1–10.7 | ⏳ Remaining |
@@ -332,4 +332,4 @@ _(Empty at project start. Populated when the user requests additions, gap covera
 | —   | Part 16 — Interview Preparation                    | 16.1–16.7 | ⏳ Remaining |
 | —   | Part 17 — Wrap-Up                                  | 17.1–17.3 | ⏳ Remaining |
 
-**Next Section:** 2.1–2.9 (`02-Architecture-and-Kernel.md`)
+**Next Section:** 8.1–8.6 (Part 8 — Package Management)

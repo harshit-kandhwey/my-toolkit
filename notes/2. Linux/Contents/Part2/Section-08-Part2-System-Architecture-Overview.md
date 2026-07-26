@@ -6,23 +6,23 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│                        Applications                            │  nginx, bash, python,
-│                                                                  │  custom services
+│                        Applications                          │  nginx, bash, python,
+│                                                              │  custom services
 ├──────────────────────────────────────────────────────────────┤
-│                 Userland / System Software                     │  systemd, glibc, coreutils,
-│                                                                  │  shells, package managers
-│  ════════════════ Ring 3 — User Mode ════════════════════════  │  ◄── unprivileged CPU mode
+│                 Userland / System Software                   │  systemd, glibc, coreutils,
+│                                                              │  shells, package managers
+│  ════════════════ Ring 3 — User Mode ════════════════════════│  ◄── unprivileged CPU mode
 ├──────────────────────────────────────────────────────────────┤
-│                        Linux Kernel                             │  scheduler, memory manager,
-│   ┌───────────┐ ┌───────────┐ ┌─────┐ ┌────────┐ ┌──────────┐  │  VFS, network stack,
-│   │ Scheduler │ │  Memory   │ │ VFS │ │Network │ │ Device   │  │  device drivers
-│   │           │ │  Manager  │ │     │ │ Stack  │ │ Drivers  │  │  (each: full detail in §10)
-│   └───────────┘ └───────────┘ └─────┘ └────────┘ └──────────┘  │
-│  ════════════════ Ring 0 — Kernel Mode ═══════════════════════ │  ◄── privileged CPU mode
+│                        Linux Kernel                          │  scheduler, memory manager,
+│   ┌───────────┐ ┌───────────┐ ┌─────┐ ┌────────┐ ┌──────────┐│  VFS, network stack,
+│   │ Scheduler │ │  Memory   │ │ VFS │ │Network │ │ Device   ││  device drivers
+│   │           │ │  Manager  │ │     │ │ Stack  │ │ Drivers  ││  (each: full detail in §10)
+│   └───────────┘ └───────────┘ └─────┘ └────────┘ └──────────┘│
+│  ════════════════ Ring 0 — Kernel Mode ══════════════════════│  ◄── privileged CPU mode
 ├──────────────────────────────────────────────────────────────┤
-│                          Hardware                                │  CPU, RAM, disk, NIC,
-│                                                                  │  GPU, timers, interrupt
-└──────────────────────────────────────────────────────────────┘  │  controller
+│                          Hardware                            │  CPU, RAM, disk, NIC,
+│                                                              │  GPU, timers, interrupt
+└──────────────────────────────────────────────────────────────┘  controller
 ```
 
 The double bars are deliberate — they mark **privilege-level boundaries enforced by the CPU**, not just conceptual layer boundaries drawn by software architects. That distinction is the entire point of this section.

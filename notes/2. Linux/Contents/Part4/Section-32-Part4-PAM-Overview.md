@@ -1,0 +1,118 @@
+# Section 32 (Part 4): PAM (Pluggable Authentication Modules) Overview
+
+## 1. What PAM Actually Is Architecturally
+
+Every section in this Part so far has assumed a fixed relationship: something checks `/etc/shadow` (§25) to verify a password, `sudo` (§31) decides who gets to escalate. What none of those sections addressed is a question that becomes obvious the moment you ask it: **how does `login`, `sshd`, `sudo`, and `su` each independently know how to check a password, enforce account expiry, and decide whether a session is allowed to start?** The naive answer — "each program has its own authentication logic hardcoded in" — is exactly what Linux does _not_ do, and PAM is the reason why.
+
+**PAM (Pluggable Authentication Modules)** is a framework that sits between applications that need to authenticate a user and the actual mechanisms that perform that authentication. Instead of `sshd` containing code that opens `/etc/shadow`, hashes a password, and compares it, `sshd` is written against a small, generic PAM API — "hey PAM, is this user allowed to authenticate?" — and PAM, driven entirely by configuration, decides _how_ to answer that question at runtime.
+
+This decoupling is the entire point, and it has a concrete, practical payoff: **the authentication mechanism can change without touching the application at all.** Adding two-factor authentication to SSH logins, enforcing a password-complexity policy, integrating with LDAP or Kerberos, or locking accounts after repeated failed logins are all achieved by changing PAM's configuration — not by patching `sshd`, `login`, or `sudo` source code. Every PAM-aware application gets these changes for free, uniformly, the moment the shared PAM configuration changes.
+
+> 💡 **Tip:** The cleanest mental model: PAM is to authentication what a plugin architecture is to any extensible application. The application (`sshd`, `sudo`, `login`) is the host; PAM modules (`.so` files) are the plugins; `/etc/pam.d/` config files are what wire specific plugins to specific applications, in a specific order, with specific pass/fail semantics. The application never needs to know which plugins are installed — it just calls the PAM API and gets back "yes" or "no."
+
+Almost every authentication-adjacent program on a modern Linux system is **PAM-aware**: `login`, `sshd`, `sudo`/`su` (§31 already noted `sudo` consults PAM rather than reimplementing its own auth), `passwd`, display managers, and many third-party services that choose to integrate rather than roll their own auth. A program that _isn't_ PAM-aware simply implements its own authentication path and never touches this framework at all — PAM only governs the programs deliberately written to call into it.
+
+## 2. The Four PAM Management Groups
+
+PAM organizes authentication-related concerns into four distinct **management groups**, each answering a different question. This separation matters because a single login attempt typically touches all four in sequence, and each one can fail independently for a different reason:
+
+| Group      | Question It Answers                                                                                                                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth`     | **Is this really who they claim to be?** — password verification, checking credentials, the core "prove your identity" step                                                                         |
+| `account`  | **Is this account currently allowed to log in, independent of whether the password was correct?** — expired account (`/etc/shadow`'s `expire` field, §25), account locked, time-of-day restrictions |
+| `password` | **How does this user's authentication token get updated?** — invoked when a password is changed, enforcing complexity/history rules on the new value                                                |
+| `session`  | **What has to happen at the start and end of a session?** — mounting a home directory, setting resource limits, writing a login record, running cleanup on logout                                   |
+
+**Why this split matters in practice:** a correct password does not automatically mean login succeeds. `auth` can pass (the password is genuinely correct) while `account` still fails (the account expired yesterday) — these are deliberately separate checks, not one monolithic "is the login good" decision. Diagnosing a login failure means knowing _which_ group rejected it, not just that PAM said no.
+
+## 3. `/etc/pam.d/`: Per-Service Configuration
+
+Each PAM-aware application has its own configuration file under `/etc/pam.d/`, named after the service (`/etc/pam.d/sshd`, `/etc/pam.d/sudo`, `/etc/pam.d/login`, `/etc/pam.d/passwd`). This is what lets `sudo` enforce a stricter or looser policy than `sshd` even though both ultimately consult PAM — they're reading entirely separate configuration files, not sharing one global policy by default.
+
+Each line in a service's PAM config has the same shape:
+
+```text
+type    control    module_path    module_arguments
+```
+
+**Example** (a simplified, illustrative line from `/etc/pam.d/sshd`):
+
+```text
+auth    required    pam_unix.so    nullok_secure
+```
+
+| Field              | Meaning                                                                                                                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`             | Which of the four management groups (2) this line belongs to — `auth`, `account`, `password`, or `session`                                                                          |
+| `control`          | How this module's result affects the overall outcome (4)                                                                                                                            |
+| `module_path`      | The `.so` module to invoke, e.g. `pam_unix.so`, `pam_faillock.so`                                                                                                                   |
+| `module_arguments` | Optional module-specific options, e.g. `nullok_secure` (permit empty passwords in some legacy configurations — almost always undesirable, see §25's Warning on empty shadow fields) |
+
+Many distributions also use `@include` (or `substack`-style includes) to pull in shared building-block files like `common-auth`, `common-account`, and `common-password` (Debian/Ubuntu convention), so a single change to the shared file propagates to every service that includes it, rather than requiring the same edit repeated across every `/etc/pam.d/` file individually.
+
+## 4. Control Flags: How Stacking Works
+
+A service's PAM config for a given management group (`auth`, say) is rarely just one line — it's a **stack** of modules, evaluated top to bottom, and the `control` field on each line determines how that module's success or failure combines with the others to produce the group's final result:
+
+| Control      | Behavior on Failure                                                                                                                                                                           | Behavior on Success                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `required`   | Stack continues evaluating remaining modules (so the attacker can't tell _which_ module failed from timing), but the overall group is **guaranteed to fail** once any `required` module fails | Continues to next module                                                                                                                   |
+| `requisite`  | Stack **immediately aborts** and fails right away — no further modules run at all                                                                                                             | Continues to next module                                                                                                                   |
+| `sufficient` | If it fails, the stack just continues (this module's failure alone doesn't doom the group, unless an earlier `required` already failed)                                                       | If it succeeds **and no earlier `required` module failed**, the stack can short-circuit to success immediately, skipping remaining modules |
+| `optional`   | Generally ignored unless it's the _only_ module in the stack — rarely decisive on its own                                                                                                     | Generally ignored unless it's the only module in the stack                                                                                 |
+
+**Reading a stack correctly means tracing it top to bottom, not treating any single line in isolation.** A common real pattern: a `requisite` `pam_faillock.so` line early in the `auth` stack that immediately rejects a login if the account is already locked out from too many failed attempts — deliberately short-circuiting _before_ even trying the real password check, so a locked-out account doesn't leak timing information about whether the supplied password happens to be correct.
+
+> ⚠️ **Warning:** PAM misconfiguration is one of the few Linux mistakes that can lock out **all authentication, including root**, on a running system. A `required` module that always fails (a missing `.so`, a typo in `module_path`, a module misconfigured to reject everything) breaks every application that reads that stack — and because `sudo` and `su` are themselves PAM-aware, a broken PAM config can simultaneously break your normal login _and_ your ability to escalate to fix it. Always keep a root shell or console session open while testing PAM config changes, test in a non-production environment first, and never edit `/etc/pam.d/` files over an SSH session you're not prepared to lose.
+
+## 5. Common Real Modules
+
+A handful of modules cover the overwhelming majority of what shows up in production PAM stacks:
+
+- **`pam_unix.so`** — the traditional module, consulting `/etc/passwd` and `/etc/shadow` (§25) directly for standard Unix-style password authentication, account info, and password-change handling. This is the module doing the actual work that earlier sections implicitly assumed "just happens."
+- **`pam_faillock.so`** (modern) / **`pam_tally2.so`** (older, largely superseded) — implement **account lockout after repeated failed login attempts**, tracking failure counts per user and denying further attempts once a configured threshold is reached, for a configured cooldown period. This is the mechanism that actually enforces a brute-force-lockout policy that §25's shadow-file coverage alone can't provide — `/etc/shadow` has no concept of "too many recent failures," PAM is where that logic lives.
+- **`pam_limits.so`** — enforces resource limits (open file descriptors, max processes, core dump size) declared in `/etc/security/limits.conf` at session start, the PAM-driven mechanism behind `ulimit` values a user's shell inherits on login.
+- **`pam_google_authenticator.so`** (or equivalent TOTP/MFA modules) — the clearest illustration of PAM's actual power described in §1: adding time-based one-time-password multi-factor authentication to SSH logins requires **zero changes to `sshd` itself**. It's purely an additional `auth` line in `/etc/pam.d/sshd`'s stack (combined with an sshd config setting to actually invoke PAM's keyboard-interactive path) — the application was written generically enough that a fundamentally new authentication factor slots in without a single line of `sshd` code changing.
+- **`pam_umask.so`** — sets a session's default `umask` (§29 covered umask's actual masking arithmetic) based on PAM configuration rather than only shell startup files, letting umask policy be centrally enforced at the PAM layer instead of relying on every user's shell profile being correctly configured.
+
+> 💡 **Tip:** When troubleshooting "why does this one PAM-aware service behave differently than another" (e.g., SSH enforces lockout but console login doesn't), the answer is almost always a difference between the two services' `/etc/pam.d/` files, not a difference in the modules themselves — the same `pam_faillock.so` module produces different behavior purely based on which stacks include it and with what control flags.
+
+## 6. Common Misconceptions
+
+1. **"PAM checks passwords."** PAM itself checks nothing — it's a dispatch framework. `pam_unix.so` (or whatever module is configured) checks passwords; PAM's job is deciding which modules run, in what order, and how their individual results combine into a final yes/no per management group (2). Conflating "PAM" with "the password-checking logic" obscures why PAM is pluggable at all.
+2. **"A correct password always means login succeeds."** Only the `auth` group cares about password correctness. The separate `account` group can still reject the login for reasons entirely unrelated to whether the password was right — an expired account, a time-of-day restriction, a lockout state (3). Treating "auth passed" as "login succeeded" misses half the picture.
+3. **"`required` and `requisite` are basically the same thing."** Both guarantee failure if the module fails, but `requisite` aborts the entire stack immediately on failure while `required` lets remaining modules keep running first (4). The difference matters operationally — `requisite` is the right choice when you deliberately want to short-circuit (e.g., a locked-out account shouldn't waste time or leak information through a real password check), while blanket-replacing `required` with `requisite` everywhere can subtly change which modules ever get a chance to run.
+4. **"Adding MFA to SSH requires patching or reconfiguring `sshd`'s own logic."** This is precisely backwards, and it's the core lesson of this section — MFA support is added by inserting an additional PAM module into `/etc/pam.d/sshd`'s `auth` stack (5), because `sshd` was written against the generic PAM API in the first place. The whole point of the pluggable architecture (§1) is that the application doesn't need to know or care what's been added.
+
+## 7. Tiered Interview Questions
+
+**🎯 Beginner:** _"What problem does PAM solve, in plain terms?"_
+**Model answer:** Without PAM, every application that needs to authenticate a user — `login`, `sshd`, `sudo`, `passwd` — would need its own hardcoded logic for checking passwords, enforcing account policy, and managing sessions. PAM decouples that: applications call a generic PAM API instead of implementing authentication themselves, and PAM's configuration decides which actual mechanism runs underneath. That means the authentication method can change — adding MFA, enforcing lockout policy, switching to LDAP — without modifying the applications at all, and every PAM-aware application benefits from the change uniformly.
+_What the interviewer is probing for:_ Understanding PAM as an architectural decoupling layer, not just "the thing that checks passwords."
+
+**🎯 Intermediate:** _"A user's password is definitely correct, but they still can't log in via SSH. Where do you look?"_
+**Model answer:** Since `auth` succeeding doesn't guarantee login succeeds, I'd check the `account` management group next — that's a separate PAM concern from password correctness, and it covers things like an expired account (`/etc/shadow`'s expire field, §25) or a lockout state from too many prior failed attempts via `pam_faillock.so`. I'd check `faillock --user <name>` (or the older `pam_tally2` equivalent) for a lockout count, check the account's expiry fields directly in `/etc/shadow`, and review `/etc/pam.d/sshd`'s `account` stack to see exactly which modules are consulted. I'd also check `/var/log/auth.log` or `journalctl` for the specific PAM module that rejected the attempt, since PAM logging usually names the module and reason.
+_What the interviewer is probing for:_ Recognizing that a correct password only satisfies one of PAM's four management groups, and knowing the concrete tools (`faillock`, log inspection) to isolate which group and module actually rejected the login.
+
+**🎯 Senior:** _"Walk me through how you'd add mandatory MFA to SSH logins for a fleet, and what could go wrong."_
+**Model answer:** I'd add an MFA module (TOTP-based, e.g. a Google-Authenticator-style PAM module) as an additional `auth` line in `/etc/pam.d/sshd`'s stack, combined with enabling `ChallengeResponseAuthentication`/`KbdInteractiveAuthentication` in `sshd_config` so sshd actually routes through PAM's interactive auth path rather than only key-based auth. The control flag choice matters a lot here — I'd want the MFA step to be `required` (not `sufficient`) alongside the existing password or key check, so MFA is an additional factor rather than an alternative that could be satisfied on its own. Before rolling this to a fleet, I'd test on a single non-critical host with a console session held open the entire time (§4's Warning) — a `required` module that's misconfigured, or a missing `.so` on some hosts due to inconsistent package installation across the fleet, can lock out every SSH login including root's, and because `sudo` is itself PAM-aware, a broken PAM stack can simultaneously kill the ability to fix itself remotely. I'd roll it out gradually, verify a working out-of-band console/IPMI access path exists on every host first, and keep a rollback plan (reverting the PAM config file) ready before touching production.
+_What the interviewer is probing for:_ Correctly identifying `required` vs `sufficient` as the decision that determines whether MFA is actually mandatory, and treating the fleet-wide lockout risk as a first-class operational concern, not an afterthought.
+
+**🎯 Architect:** _"How would you design PAM policy consistency across a fleet with mixed Debian and RHEL-family hosts, given that each distribution's default `/etc/pam.d/` layout and included common-\* files differ?"_
+**Model answer:** I wouldn't hand-edit `/etc/pam.d/` files per host or per distribution family — I'd manage them through configuration management (Ansible/Puppet/etc., previewed conceptually in Part 13) with distribution-aware templates, since Debian's `common-auth`/`common-account`/`common-password` include convention and RHEL's `system-auth`/`password-auth` include convention are structurally different even though the underlying modules (`pam_unix.so`, `pam_faillock.so`) are largely the same across both families. I'd standardize on a small set of policy decisions applied consistently regardless of distribution — lockout threshold and cooldown via `pam_faillock.so`, password complexity via `pam_pwquality.so` or equivalent, resource limits via `pam_limits.so` — expressed as configuration-management-templated values, not copy-pasted raw PAM lines, so a policy change (e.g., tightening the lockout threshold fleet-wide) is a single variable change propagated by automation rather than a manual multi-file edit across every host. Critically, every change would go through a canary host with verified out-of-band console access before fleet-wide rollout, given how catastrophically a bad `required` line can lock out an entire host's authentication (§4's Warning) — and I'd bake a post-deployment automated check (attempt a known-good test login, confirm it still succeeds) into the rollout pipeline itself, not just trust that the config rendered correctly.
+_What the interviewer is probing for:_ Fleet-scale, distribution-aware policy design that treats PAM configuration as something to template and canary through automation, not hand-edit — and explicit awareness of the all-auth-lockout blast radius driving deployment discipline.
+
+## 8. Key Takeaways
+
+- PAM is a pluggable framework, not an authentication mechanism itself — it decouples applications (`login`, `sshd`, `sudo`, `su`) from the specific mechanism used to verify identity, so the mechanism can change (adding MFA, enforcing lockout, switching to LDAP) without modifying the applications.
+- Four management groups — `auth` (identity verification), `account` (is the account currently allowed to log in), `password` (updating credentials), `session` (setup/teardown around a login) — are evaluated somewhat independently; a correct password alone doesn't guarantee login succeeds.
+- `/etc/pam.d/<service>` holds per-application config as a stack of `type control module_path arguments` lines, often built from shared `common-*`/`system-auth`-style includes so policy changes propagate without per-file edits.
+- Control flags (`required`, `requisite`, `sufficient`, `optional`) determine how each module's result combines into the group's final outcome — `required` fails the group but keeps evaluating, `requisite` aborts immediately, `sufficient` can short-circuit to success, `optional` is rarely decisive alone.
+- `pam_unix.so` (traditional passwd/shadow auth), `pam_faillock.so`/`pam_tally2.so` (lockout after failed attempts), `pam_limits.so` (resource limits), `pam_umask.so` (session umask), and MFA modules (e.g. TOTP-based) are the common real-world building blocks — the MFA case is the clearest demonstration of PAM's pluggability, since it requires zero changes to `sshd` itself.
+- PAM misconfiguration is uniquely dangerous — a bad `required` line can lock out all authentication including root, and since `sudo`/`su` are themselves PAM-aware, it can simultaneously remove the ability to escalate and fix it; always test with a held-open console/root session before deploying PAM changes.
+
+## 9. Related Concepts & What's Next
+
+This section closes out Part 4 (§25–§32) by answering the question §25 explicitly deferred: PAM is the actual authentication decision logic that consults `/etc/passwd`/`/etc/shadow` (§25) at login time, rather than applications reading those files directly. It ties back to §29's umask coverage via `pam_umask.so`, and to §31's sudo coverage — `sudo` itself is PAM-aware, consulting the same framework rather than reimplementing authentication independently. It looks forward to Part 7's networking coverage (§51–§58), particularly §56 (SSH), where PAM's `auth` stack is what actually makes SSH-level MFA possible, and to Part 12's security hardening (§89–§96), where PAM-driven password complexity and account lockout policy (`pam_faillock.so`) become concrete hardening controls rather than just configuration syntax. Part 5 (§33, next) shifts entirely away from identity and authentication into process and job management — what a process actually is, PID/PPID, and process states — picking up the process lifecycle thread that PID 1 (§13) and orphan-reaping first introduced.
+
+**Next Section:** §33 — `Section-33-Part5-What-A-Process-Is.md`
