@@ -1,0 +1,160 @@
+# Section 80 (Part 11): Performance Fundamentals: CPU, Memory, Disk I/O, and Network as a Unified Model
+
+## 1. Overview: Starting a New Phase
+
+Part 10 (§73–§79) closed out advanced storage administration — LVM, RAID, swap, network storage, backup strategy. Part 11 shifts into a different operational discipline entirely: **performance analysis and troubleshooting**. This opening section is deliberately more conceptual and framing-oriented than the hands-on tool-syntax sections that follow it — §81 through §84 each go deep on one specific resource's tooling, and this section exists to establish the mental model that makes those four sections click together as one coherent skill rather than four unrelated toolkits.
+
+## 2. The Four Fundamental Resources
+
+Nearly every performance problem on a Linux system, no matter how it initially presents, traces back to one (or a combination) of exactly four resources:
+
+- **CPU** — is a process getting enough scheduled time on a core to make progress, or is it waiting for CPU that's busy elsewhere?
+- **Memory** — is there enough RAM for what's actually running, or is the system swapping, reclaiming aggressively, or about to trigger the OOM killer (§83)?
+- **Disk I/O** — are reads/writes to storage completing promptly, or is a process stuck waiting on a slow or saturated disk?
+- **Network** — is data moving across the network at the rate and latency the application needs, or is a link, socket, or remote endpoint the actual constraint?
+
+**Why treating this as a unified model matters:** a slow application is very often _not_ "slow code." It's one of these four resources being saturated or contended, and the application's own logic is largely blameless — it's simply waiting on a resource that isn't available fast enough. The practical danger is misdiagnosis: an engineer who assumes "slow" means "inefficient application code" and starts profiling application logic, when the actual bottleneck is disk I/O or network latency, can burn enormous time in the wrong place before anyone thinks to check the infrastructure layer underneath. Approaching every performance problem by first ruling resources in or out — CPU, memory, disk I/O, network, in that order or whatever order fits the symptom — is a dramatically more efficient starting discipline than guessing based on where the code "feels" slow.
+
+> 💡 **Tip:** When a performance report comes in as vague as "the app is slow," resist jumping straight to application-level profiling or code review. Spend the first few minutes checking these four resources at the OS level (the tools in §81–§84 are exactly what does this) — it's a cheap, fast filter that very often either finds the real bottleneck immediately or confidently rules out the infrastructure layer, at which point application-level investigation is the right next move rather than the first move.
+
+## 3. The Concept of a Bottleneck
+
+A **bottleneck** is the single most constrained resource in a chain of dependent steps — and the genuinely important systems-thinking point is this: **improving a resource that isn't the bottleneck does nothing measurable for overall throughput or latency.**
+
+Consider a request that flows through CPU processing, then a disk read, then a network response. If the disk read is the slow step — the system is waiting on disk I/O far longer than it spends on CPU or network for that same request — then doubling the CPU count, or upgrading network bandwidth, changes nothing about how fast that request completes. The disk I/O step is still the ceiling on throughput; work simply piles up waiting for it regardless of how much faster the non-bottleneck steps become. Only improving the actual constrained resource (faster storage, fewer disk round-trips, caching to avoid the disk read entirely) moves the ceiling.
+
+This is why the diagnostic discipline in 2 matters so much in practice: correctly identifying _which_ of the four resources is the actual bottleneck — as opposed to a resource that merely looks busy but isn't the limiting factor — is the entire game. Spending engineering effort optimizing a non-bottleneck resource is not neutral; it's wasted effort that produces no measurable improvement while the real constraint continues limiting everything downstream of it.
+
+## 4. Utilization, Saturation, and Errors: Introducing the USE Method
+
+A structured way to check each of the four resources systematically, rather than looking at ad hoc metrics in no particular order, is the **USE method** — introduced here just enough to frame §81–§84's tool coverage; full troubleshooting methodology depth (including how USE fits alongside other structured approaches) is §87's territory, not this section's.
+
+For each resource, USE asks three questions:
+
+- **Utilization** — what percentage of the resource's capacity is currently being used? (CPU: percent busy. Disk: percent of time the device was busy servicing requests.)
+- **Saturation** — is there more work queued for this resource than it can currently handle? (CPU: run-queue length beyond available cores. Disk: I/O requests queued waiting to be serviced.) A resource can be at high utilization without being saturated, and — less intuitively — a resource can show saturation-adjacent symptoms even at moderate utilization if the workload arrives in bursts.
+- **Errors** — is the resource generating errors that indicate a problem independent of raw utilization or saturation? (Network: dropped packets, checksum errors. Disk: I/O errors.) Errors matter because a resource can be lightly utilized and unsaturated and still be the actual problem if it's failing outright rather than merely being busy.
+
+**Why this three-part framing matters:** utilization alone is a commonly overused, insufficient signal — a CPU sitting at 40% utilization sounds "fine" in isolation, but if that 40% is one core pegged at 100% while three others sit idle (a single-threaded bottleneck), or if the run-queue shows processes waiting even at that utilization level, the resource is actually the constraint despite the seemingly low headline number. Checking utilization, saturation, and errors together, per resource, is what the USE method is for — a checklist that stops "well, the average CPU usage looks okay" from being treated as a clean bill of health when a deeper look would show real contention.
+
+## 5. How the Next Four Sections Map to These Resources
+
+§81 through §84 exist in direct one-to-one correspondence with the four resources introduced in 2, and each one supplies the hands-on tool depth this section deliberately leaves out:
+
+| Section | Resource            | Representative tools                         |
+| ------- | ------------------- | -------------------------------------------- |
+| §81     | CPU and load        | `uptime`, `top`, `mpstat`, `vmstat`          |
+| §82     | Memory              | `free`, `/proc/meminfo`, OOM killer behavior |
+| §83     | Disk I/O            | `iostat`, `iotop`, `df`, `du`                |
+| §84     | Network performance | `iftop`, `nload`, `sar`                      |
+
+Two prior sections already surfaced pieces of this puzzle without naming it as performance analysis at the time, and connecting them back here is worth doing explicitly: §33 (Part 5) covered process states, and a process sitting in **D-state (uninterruptible sleep)** is, concretely, a process blocked waiting on I/O — a direct, already-covered instance of the disk-I/O resource in 2 showing up as a process-state symptom. §38 (Part 5) covered `nice`/`renice` — adjusting a process's CPU scheduling weight relative to others, which is a direct lever on the CPU resource when contention (not raw capacity shortage) is the actual issue. §16 (Part 2) covered virtual memory and paging conceptually, which underlies §82's memory-analysis tooling the same way it underlay §77's swap-management coverage in Part 10.
+
+The practical point of drawing these connections now, before the hands-on sections: performance troubleshooting isn't a new, separate body of knowledge bolted onto everything covered so far — it's the same process-state, scheduling, and memory concepts from Parts 2 and 5, now approached with the specific lens of "which of the four resources is actually constrained, and by how much."
+
+## 6. Resource Interactions and Cascading Bottlenecks
+
+The four resources in 2 are presented separately for clarity, but a realistic performance problem frequently involves one resource's exhaustion cascading into a symptom on a completely different resource — which is exactly why treating them as a genuinely unified model, rather than four independent checklists to tick off separately, matters in practice.
+
+**A concrete cascade worth internalizing:** memory pressure forces the kernel to swap (§77) or reclaim page cache more aggressively. Swapping is itself a disk I/O operation — so a memory shortage manifests, downstream, as elevated disk I/O and processes sitting in D-state (§33) waiting on that swap activity, even though the root cause is memory, not disk. An engineer who only checks disk I/O tooling (§83) in isolation might see the elevated I/O and conclude "the disk is the bottleneck," add faster storage, and see little improvement — because the actual constraint was memory, and the disk activity was a downstream symptom of that shortage rather than an independent problem.
+
+**Another example:** a CPU-starved host (all cores pegged, a long run-queue) can make network-facing symptoms look like a network problem — request latency climbs, connections queue up — when the actual constraint is that the application simply isn't getting scheduled CPU time promptly enough to process incoming requests. Network-tool metrics (§84) might look unremarkable even while the user-visible symptom is "the API feels slow over the network."
+
+**The practical implication:** diagnosing performance problems well means checking all four resources rather than stopping at the first one that shows _any_ elevated activity, and being willing to trace a symptom on one resource back to a root cause on a different one. §81–§84 each give the tool depth to check a given resource in isolation; this section's job is making sure that isolated checking doesn't stop at the first resource that looks "busy" without asking whether that busyness is a root cause or a downstream effect of pressure somewhere else in the chain.
+
+> ⚠️ **Warning:** Don't stop investigating the moment one resource shows elevated activity. A resource showing symptoms is not automatically the bottleneck causing them — it may simply be the most visible casualty of pressure originating elsewhere (memory pressure manifesting as disk I/O being the canonical example above). Confirming the root cause, not just the most visible symptom, is what separates a fix that actually works from one that treats a downstream effect and leaves the real constraint untouched.
+
+## 7. Baselines: Why "Normal" Has to Be Known Before an Incident
+
+None of the four-resource checks in 2 or the USE method in 4 mean much without a sense of what normal looks like on a given host under its ordinary workload. A CPU run-queue of a certain length, a specific disk I/O utilization percentage, or a given network throughput figure might be a five-alarm anomaly on one host and completely unremarkable steady-state behavior on another, depending entirely on that host's typical workload shape.
+
+**The practical consequence:** establishing a performance baseline — what CPU, memory, disk I/O, and network metrics look like during normal operation, ideally captured across a representative time window that includes both quiet periods and expected peak load — has to happen _before_ an incident, not during one. Reaching for `top` for the first time in the middle of an outage and seeing "CPU at 70%" is far less useful without knowing whether 70% is this host's normal Tuesday-afternoon peak or a genuinely unusual spike. Sections §81–§84's tools are exactly what would be used to capture that baseline in the first place, in addition to being used reactively during an incident.
+
+**How this connects forward:** structured troubleshooting methodology (§87) and monitoring/observability practices (§86–§87's territory) build directly on having baseline data available — a good incident response often starts with "compare current metrics against the known baseline for this host/service" rather than trying to judge whether a number is concerning in a vacuum. This section flags the need for baselines now, as part of the unified performance model, precisely because it's easy to treat baseline-gathering as a monitoring-team concern separate from hands-on troubleshooting, when in practice the same tools serve both purposes.
+
+## 8. A Worked Example: Tracing a Symptom to Its Root Cause
+
+Tying 2, 3, and 6 together with a concrete (if simplified) walkthrough is worth doing explicitly, since the unified model is easiest to internalize through an example rather than abstract description alone.
+
+**Symptom reported:** "API response times have roughly tripled since this morning, and it's affecting every endpoint, not just one."
+
+**Step 1 — resist the code-first instinct.** "Every endpoint" affected simultaneously is itself a clue pointing away from application logic (a bug in one endpoint's code wouldn't typically slow down every other endpoint uniformly) and toward a shared underlying resource.
+
+**Step 2 — check CPU first (§81 tooling).** `top`/`vmstat` show CPU utilization is unremarkable, no elevated run-queue — CPU is provisionally ruled out as the bottleneck.
+
+**Step 3 — check memory (§82 tooling).** `free` shows available memory has dropped sharply compared to the known baseline (7), and `/proc/swaps`/`swapon -s` (§77) shows swap usage climbing steadily since this morning, matching the timeline of the reported symptom.
+
+**Step 4 — check disk I/O (§83 tooling).** `iostat` shows the disk backing the swap area is indeed busier than baseline — but this is exactly the cascading pattern from 6: the elevated disk I/O is a downstream symptom of the memory shortage driving swap activity, not an independent disk problem. Adding faster storage here would not address the root cause.
+
+**Step 5 — identify the actual constraint.** The root cause is memory — something (a memory leak in a specific process, an unexpectedly large batch job, a misconfigured cache with no eviction limit) is consuming more memory than the host has available, forcing swap activity that manifests as the disk I/O symptom in step 4 and the uniform-across-all-endpoints latency symptom originally reported, since every request now competes for memory and occasionally pays the cost of a swapped-out page needing to be paged back in.
+
+**The lesson:** following the resource chain — checking each of the four systematically rather than fixating on the first "busy-looking" metric (disk I/O, in step 4) — is what correctly identifies memory as the actual bottleneck rather than misdiagnosing the disk as the problem and spending effort on a fix that wouldn't have helped.
+
+## 9. Quick-Reference: Symptom-to-Resource Starting Points
+
+This table isn't a substitute for actually running the tools in §81–§84 — it's a starting hypothesis to test, not a diagnosis, precisely because of the cascading effects covered in 6. Use it to decide which resource to check _first_, not as a conclusion in itself.
+
+| Observed symptom                                                                  | Resource to check first                                                                                          | Why, and the caveat                                                                                                                                              |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| High latency uniformly across all requests/endpoints                              | CPU or Memory                                                                                                    | A shared, host-wide resource constraint tends to affect everything running on the host roughly equally, unlike a bug isolated to one code path                   |
+| Latency specific to one endpoint or one type of operation                         | Application code, or a resource that endpoint specifically depends on (e.g., a slow downstream disk-heavy query) | A localized symptom is more likely (though not certain) to trace to something specific to that code path rather than a host-wide resource                        |
+| Processes stuck in D-state (§33)                                                  | Disk I/O — but verify it isn't memory-driven swap I/O (6)                                                        | D-state specifically means blocked on an I/O syscall; check `iostat` (§83) and cross-check swap activity (§77, §82) before concluding it's a "real" disk problem |
+| OOM killer log entries, or processes disappearing unexpectedly                    | Memory (§82, §83 covers the OOM killer in depth)                                                                 | A hard confirmation of memory exhaustion, not just pressure — this is a definitive signal, not a hypothesis to test further                                      |
+| Steadily climbing response times over hours/days rather than a sudden step change | Memory (a leak) or disk (filling up, §83's `df`/`du`)                                                            | A gradual trend often points to something accumulating (leaked memory, growing log files) rather than a sudden external event                                    |
+| Sudden step-change in latency correlated with a deploy or config change           | Any resource, but check what the change actually altered first                                                   | Correlation with a recent change is a strong lead — check what that specific change touched before running the full four-resource sweep from scratch             |
+
+## 10. A Cloud/Virtualized Complication: Resource Limits You Can't See Directly
+
+Everything in 2–9 assumes the four resources are being measured on hardware that's fully and exclusively available to the host being investigated. On virtualized and cloud infrastructure, that assumption doesn't always hold, and it's worth flagging explicitly before moving into the hands-on sections.
+
+**"Noisy neighbor" contention:** on shared virtualization hosts, another tenant's VM competing for the same underlying physical CPU, disk, or network hardware can produce symptoms that look identical to genuine resource exhaustion from inside the affected VM's own view of `top`, `iostat`, or network tools — the guest OS sees degraded performance without necessarily seeing an obvious internal cause, because the actual contention is happening a layer below what in-guest tooling can directly observe.
+
+**Cloud-imposed resource limits (throttling):** many cloud providers enforce CPU credits/burst limits, IOPS ceilings, or network bandwidth caps at the instance-type level — a workload can be throttled by the provider's enforced limit well before the guest OS's own view of CPU/disk/network utilization would suggest a problem. A host reporting only 50% CPU utilization can still be actively throttled if it burned through a burstable-CPU credit balance, for instance — the in-guest utilization number doesn't tell the whole story on its own.
+
+**The practical implication:** on cloud/virtualized infrastructure, the four-resource model from 2 still applies, but "check CPU, memory, disk I/O, network" sometimes needs to include checking the _cloud provider's own_ metrics and any documented instance-type limits, not just what's visible from inside the guest — a resource can be constrained by something entirely outside the guest OS's field of view. This is a detail worth carrying forward into Part 14's cloud-operations coverage, where instance sizing and burstable-performance instance types get fuller treatment.
+
+## 11. Common Misconceptions
+
+1. **"A slow application usually means slow application code."** Frequently the actual constraint is one of the four infrastructure-level resources — CPU, memory, disk I/O, or network — being saturated or contended, with the application's own logic blameless. Checking these first (2) is a cheap filter that avoids wasted application-level investigation time.
+2. **"Improving any resource that's under heavy load will help overall performance."** Only improving the actual bottleneck — the single most constrained resource in the chain — moves the throughput ceiling; improving a non-bottleneck resource, however busy it looks, produces no measurable overall improvement (3).
+3. **"High utilization is the only sign of a resource problem."** Saturation (queued work exceeding capacity) and errors (a resource actively failing) are independent signals that utilization alone can miss — a resource can look moderately utilized on average while still being the actual bottleneck due to saturation, or be the problem outright due to errors regardless of utilization (4).
+4. **"CPU, memory, disk, and network are independent concerns best diagnosed in isolation."** They interact — memory pressure can drive swapping, which turns a memory problem into a disk I/O problem (6, §77's swap coverage, §82); a process stuck in D-state (§33) waiting on disk I/O consumes no CPU while still blocking application progress. Treating all four as one interconnected model, per 2 and 6, is what avoids missing these cross-resource effects.
+5. **"Whichever resource shows elevated activity first is the bottleneck."** A resource can be a downstream casualty of pressure elsewhere rather than the root cause — elevated disk I/O caused by memory-pressure-driven swapping being the canonical example (6). Confirming root cause rather than stopping at the most visible symptom is essential to fixing the actual constraint rather than a side effect of it.
+6. **"In-guest resource utilization tells the whole story on cloud/virtualized infrastructure."** Noisy-neighbor contention and provider-enforced throttling (burstable CPU credits, IOPS ceilings) can constrain a workload from outside the guest OS's field of view entirely — a guest can look underutilized by its own metrics while still being actively throttled by the underlying platform (10).
+
+## 12. Tiered Interview Questions
+
+**🎯 Beginner:** _"An application is running slowly. What's your first step?"_
+**Model answer:** Before assuming it's the application's own code, I'd check the four fundamental resources at the OS level — CPU, memory, disk I/O, and network — since a slow application is very often one of these being saturated or contended rather than genuinely inefficient logic. Tools like `top`/`vmstat` for CPU, `free` for memory, `iostat` for disk I/O, and `iftop`/`sar` for network give a fast read on whether any of the four is clearly the constraint before spending time on application-level profiling.
+_What the interviewer is probing for:_ Whether the candidate defaults to a structured infrastructure-level check first, rather than jumping straight into code-level assumptions.
+
+**🎯 Intermediate:** _"What's a bottleneck, and why does it matter which resource you improve?"_
+**Model answer:** A bottleneck is the single most constrained resource in a chain of dependent steps a request or job passes through. It matters because improving a resource that isn't the actual bottleneck does nothing for overall throughput — if disk I/O is the constraint, adding more CPU or network bandwidth doesn't change how fast requests complete, because they're still queued waiting on the same slow disk step regardless of how much faster the non-bottleneck steps become. Correctly identifying which resource is actually the bottleneck, rather than just the one that looks busiest, is what determines whether an optimization effort produces a measurable improvement or is wasted work.
+_What the interviewer is probing for:_ Genuine understanding of the systems-thinking point, not just a dictionary definition of "bottleneck."
+
+**🎯 Senior:** _"A server shows CPU utilization around 40% on average, and someone concludes CPU isn't the problem. How would you push back on that?"_
+**Model answer:** Average utilization alone is an insufficient signal — I'd check saturation and errors too, per the USE method's three-part framing, not just utilization. A 40% average could hide a single core pegged at 100% while others sit idle, which is a real single-threaded bottleneck the average masks entirely; it could also coexist with a run-queue showing processes waiting for CPU time even at that utilization level, which is saturation independent of the raw utilization number. I'd look at per-core utilization and run-queue length (§81's tooling) before accepting "40% average means CPU is fine" as a conclusion — the average is a starting point for investigation, not a clean bill of health on its own.
+_What the interviewer is probing for:_ Ability to go beyond a single headline metric and apply the utilization/saturation/errors framing concretely, rather than accepting an oversimplified average as sufficient evidence.
+
+**🎯 Architect:** _"How would you build a performance-troubleshooting culture across a team that currently jumps straight to application profiling whenever something feels slow?"_
+**Model answer:** I'd introduce the four-resource unified model (2) as the mandatory first pass before any application-level investigation — a lightweight, fast checklist (CPU, memory, disk I/O, network, using §81–§84's specific tools) that either finds the real constraint immediately or confidently clears the infrastructure layer, at which point application profiling becomes the justified next step rather than the reflexive first one. I'd pair that with the USE method's utilization/saturation/errors framing specifically to prevent the team from being satisfied with a single misleading average metric, and I'd tie this into existing skills the team likely already has without realizing it's the same discipline — process states (§33, a D-state process is a disk-I/O symptom), scheduling weight (§38's `nice`/`renice`), and virtual memory behavior (§16) all already touch this model, just not framed as "performance troubleshooting" at the time they were learned. Longer term, I'd want this checklist built into runbooks (§87's full methodology) and, ideally, automated into monitoring dashboards so the four-resource read is available at a glance during an incident rather than requiring someone to manually run tools under pressure.
+_What the interviewer is probing for:_ Ability to operationalize a mental model as an actual team practice — not just personally understanding the framework, but building the discipline into how a team responds to vague "it's slow" reports by default.
+
+## 13. Key Takeaways
+
+- Nearly every performance problem traces back to one or a combination of four resources — CPU, memory, disk I/O, network — and treating them as a unified model prevents the common misdiagnosis of blaming application code when the real constraint is infrastructure-level (2).
+- A bottleneck is the single most constrained resource in a chain; improving any other resource, however heavily utilized it looks, produces no measurable overall improvement — only fixing the actual bottleneck moves the ceiling (3).
+- The USE method (utilization, saturation, errors) is a structured way to check each resource without being misled by a single headline metric like average utilization — full troubleshooting methodology depth is deferred to §87 (4).
+- §81–§84 map one-to-one onto the four resources introduced here, supplying the hands-on tool depth this section deliberately keeps conceptual (5).
+- Resource problems cascade — memory pressure driving swap activity is a canonical example of a memory problem manifesting as elevated disk I/O — so diagnosis should confirm root cause rather than stopping at the first resource showing visible symptoms (6).
+- Performance troubleshooting isn't new knowledge bolted onto the rest of this KB — it directly reuses process states (§33, D-state as an I/O symptom), scheduling (§38's `nice`/`renice`), and virtual memory/swap (§16, §77) concepts already covered, now applied through a resource-bottleneck lens (5).
+- A performance baseline — what normal looks like on a given host under its ordinary workload — has to be captured before an incident, since the same metric can be alarming on one host and unremarkable on another depending on typical load (7).
+- Tracing a symptom to its root cause often means walking through all four resources in sequence rather than fixating on the first one that looks busy — the worked example in 8 shows how an apparent disk I/O problem was actually a downstream effect of memory pressure.
+- A symptom-to-resource quick-reference (9) is useful as a starting hypothesis for which resource to check first, never as a substitute for actually confirming the diagnosis with §81–§84's tools.
+- On cloud/virtualized infrastructure, in-guest resource metrics don't always tell the full story — noisy-neighbor contention and provider-enforced throttling (burstable CPU credits, IOPS ceilings) can constrain a workload from outside what the guest OS can directly observe (10).
+
+## 14. Related Concepts & What's Next
+
+This section opens Part 11, following directly after Part 10 closed with §79's backup-strategy coverage — a shift from storage administration into performance analysis and troubleshooting as a distinct operational discipline. It depends conceptually on §33's process states and §38's scheduling coverage (Part 5) and §16's virtual memory fundamentals (Part 2), all of which resurface here through a resource-bottleneck lens rather than being re-taught. The cloud/virtualization complication raised in 10 previews territory Part 14's cloud-operations coverage returns to with fuller depth. §81 (next) begins the hands-on resource-specific depth with CPU and load analysis — `uptime`, `top`, `mpstat`, `vmstat` — the first of the four one-to-one resource sections this overview introduced.
+
+**Next Section:** §81 — `Section-81-Part11-CPU-Load-Analysis.md`

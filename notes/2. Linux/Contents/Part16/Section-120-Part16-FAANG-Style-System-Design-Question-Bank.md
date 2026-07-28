@@ -1,0 +1,178 @@
+# Section 120 (Part 16): FAANG-Style and System-Design Question Bank
+
+This bank targets the hardest tier of interview question in this entire roadmap: large-scale system-design prompts with a specifically **Linux-infrastructure** angle. These are not generic "design Twitter" distributed-systems whiteboard exercises — every question below forces the candidate to defend real OS-level, fleet-level, and host-level decisions, not just draw boxes and arrows.
+
+## 1. Compute and Scaling
+
+**Question:** _"Design the Linux host fleet architecture for a service that needs to scale from 10 requests/second to 10,000 requests/second over the next year — what actually changes at each order of magnitude, at the Linux host level?"_
+
+**Model answer:** At 10 req/s, a single reasonably-sized host handles this trivially — the interesting design work isn't capacity, it's making the single host boringly reliable: systemd unit files with proper `Restart=` policy (§65/§67) so the service self-heals from crashes, basic monitoring (§80/§81) so I know before a customer does, and a repeatable provisioning process (golden image or cloud-init, §102/§104) so the host isn't a hand-configured snowflake. At 100 req/s, I'd want at least two hosts behind a load balancer purely for availability, not capacity — this is where I start caring about the fleet being homogeneous (same golden image, §102) so any host can serve any request, and where health-check design (does the load balancer's check actually reflect application health, or just "is sshd up") starts mattering. At 1,000 req/s, single-host capacity planning (§107) becomes real — I'd be watching CPU run-queue depth and load average (§81) and memory pressure (§82) per host, sizing instance types deliberately rather than guessing, and I'd want autoscaling driven by an actual bottleneck metric rather than a round number. This is also where connection-handling limits at the OS level start to bite — file descriptor ulimits, ephemeral port exhaustion, TCP backlog tuning (§55's socket-state tooling, kernel networking sysctls) — problems that are invisible at 10 req/s and very real at 1,000. At 10,000 req/s, the design question shifts from "how big is one host" to "how do I operate a fleet of hosts as a fungible unit" — this is where §105's HA architecture, §108's zero-downtime patching (rolling through the fleet without a global outage window), and §85/§86's centralized logging/observability pipeline stop being nice-to-haves and become load-bearing, because at that scale you cannot SSH into individual boxes to debug — you need aggregated metrics and logs to even know which subset of the fleet is unhealthy. I'd also expect kernel-level tuning (network stack buffers, `nofile` limits, TCP `SYN` backlog) to require deliberate, tested sysctl profiles baked into the golden image rather than defaults, because default Linux kernel networking parameters are tuned for a workstation, not a 10,000 req/s fleet member.
+_What this probes for:_ Whether the candidate can reason about scaling as a series of qualitatively different regimes rather than "just add more servers," and whether they connect each regime to concrete Linux-level mechanics (ulimits, sysctls, health checks, fleet homogeneity) rather than staying purely at the application-architecture level.
+
+_Key design decisions surfaced by this question:_
+
+- Reliability-first at low scale (self-healing units, monitoring) before any capacity work is needed.
+- Fleet homogeneity (golden image) as the enabler of horizontal scaling once more than one host exists.
+- OS-level connection limits (ulimits, ephemeral ports, backlog) as a hidden capacity ceiling most candidates forget.
+- Centralized logging/observability as a hard requirement, not an optimization, once per-host debugging stops being viable.
+
+**Question:** _"A fleet of application hosts needs to deploy a new version several times a day. How do you design the host-level mechanics of that deployment so it's safe at scale?"_
+
+**Model answer:** I'd start from the golden-image/immutable-infrastructure principle (§102) — the deployment unit should be a new, fully-baked host image or container, not a mutation applied in place to a running host, because in-place mutation accumulates drift across a fleet in ways that become undiagnosable at scale. The rollout itself needs to be incremental — canary a small percentage of the fleet first, watch real metrics (error rate, latency, resource usage) for a defined bake period, then proceed in waves rather than all-at-once (§108's patch/upgrade strategies apply directly here even though this is app deployment, not OS patching). At the host level, this means the load balancer or service mesh needs to be able to drain a host gracefully — stop routing new connections, let in-flight requests finish, then take it out of rotation — which depends on the service correctly handling `SIGTERM` (§36) rather than being killed abruptly, and on health checks that go unhealthy immediately when draining starts. I'd also want the rollback path to be exactly as automated and tested as the rollout path, not an improvised manual process invented during an incident — if new-version hosts start failing canary metrics, reverting to the last-known-good image should be a single fast action, not a scramble.
+_What this probes for:_ Recognition that safe fleet-scale deployment is fundamentally a host-lifecycle and signal-handling problem as much as a CI/CD pipeline problem, and that rollback needs to be a first-class, pre-built path.
+
+_Key design decisions surfaced by this question:_
+
+- Immutable, fully-baked deployment units instead of in-place mutation, to prevent fleet-wide configuration drift.
+- Incremental canary-then-wave rollout with a defined bake period and real metrics as the gate.
+- Graceful draining dependent on correct `SIGTERM` handling, not abrupt kill-and-restart.
+- Rollback as automated and pre-tested as the rollout itself, not an improvised incident-time action.
+
+**Question:** _"A latency-sensitive service occasionally sees a request take ten times longer than normal, even though average CPU and memory look fine fleet-wide. How would you design the host-level instrumentation to catch this class of problem?"_
+
+**Model answer:** Fleet-wide averages are exactly the wrong lens for a tail-latency problem — an outlier affecting a small fraction of requests on a small fraction of hosts washes out completely in an aggregate mean, so the design has to capture per-request and per-host distributions, not just averages. At the host level, I'd want `perf`/`strace`-style tracing (§85's observability tooling) available on demand for the specific host and process serving a slow request, plus scheduler-level visibility — a request that's ready to run but waiting on CPU run-queue contention (§81) looks completely different from one blocked on a slow syscall or disk I/O (§83), and conflating the two leads to fixing the wrong layer. I'd design metrics collection around percentiles (p50/p95/p99) per host rather than a single fleet-wide average, specifically because a fleet-wide mean can look perfectly healthy while a specific subset of hosts (a noisy-neighbor situation, a host with degraded hardware, a host running a background cron job at the wrong moment, §37) is quietly producing all the tail latency. I'd also correlate this with kernel-level signals — CPU steal time on virtualized hosts, transparent huge page compaction stalls, or NUMA effects — since tail latency in an otherwise healthy-looking fleet frequently traces back to exactly this kind of subtle, host-specific kernel behavior rather than an application bug.
+_What this probes for:_ Whether the candidate recognizes that averages hide tail-latency problems by construction, and reaches for percentile-based, per-host instrumentation and kernel-level signals rather than assuming fleet-wide metrics are sufficient.
+
+_Key design decisions surfaced by this question:_
+
+- Percentile-based (p95/p99), per-host metrics instead of fleet-wide averages, since averages hide exactly this class of problem.
+- On-demand tracing (`perf`/`strace`) scoped to the specific host and process implicated by an outlier.
+- Explicit separation of CPU run-queue contention from I/O-wait blocking as different root causes with different fixes.
+- Kernel/virtualization-level signals (CPU steal time, NUMA effects) considered as legitimate root causes, not just application code.
+
+## 2. Storage and Data
+
+**Question:** _"You're designing storage for a service that needs both fast local scratch space and durable, shared data across a fleet of Linux hosts. Walk through the storage architecture."_
+
+**Model answer:** I'd separate these into distinct tiers rather than trying to solve both with one filesystem choice. For fast local scratch — temporary computation, caching — I'd use local NVMe/SSD-backed storage with a filesystem chosen for the workload's actual access pattern (ext4 for general use, XFS if the workload does heavy parallel I/O or very large files, §17/§18's filesystem-type trade-offs), and I'd be explicit that this tier is ephemeral — anything on it is lost if the host is replaced, which is fine for scratch space but a design bug if something durable accidentally ends up there. For durable, shared data, local disk on an individual host is the wrong answer entirely — I'd reach for network-attached storage (NFS, §77) for shared-filesystem-semantics needs, or object storage for anything that fits a key-value access pattern, specifically because tying durable data to one host's local disk recreates a single point of failure the rest of the fleet design is trying to eliminate. For anything in between — a database needing durable, high-performance block storage — I'd look at LVM (§73/§74) on top of properly redundant underlying block storage (RAID via `mdadm`, §75, or the cloud equivalent) so a single disk failure doesn't take the service down, plus a real backup strategy (§79) that's actually been tested with a restore, not just configured and assumed to work.
+_What this probes for:_ Whether the candidate defaults to "just use local disk" out of habit, versus deliberately separating ephemeral-fast from durable-shared storage needs and picking the Linux-level primitive (LVM, RAID, NFS, local filesystem) that actually matches each.
+
+_Key design decisions surfaced by this question:_
+
+- Explicit ephemeral-vs-durable tiering rather than one filesystem choice serving both needs.
+- Filesystem type chosen against actual access pattern (ext4 general-purpose vs. XFS parallel/large-file workloads).
+- Durable data never anchored to a single host's local disk, to avoid recreating a single point of failure.
+- Redundancy (RAID/LVM) plus a genuinely tested restore path, not just a backup job that exits zero.
+
+**Question:** _"How would you design a backup and disaster-recovery strategy for a fleet of Linux hosts running stateful services, keeping in mind both technical soundness and compliance constraints?"_
+
+**Model answer:** I'd first separate what's stateful and needs backing up from what's stateless and just needs the golden-image/redeploy path (§102) — backing up something reproducible from a base image is wasted effort and a false sense of security. For genuinely stateful data, I'd design backups with a real retention and testing policy — following §79's backup tooling and §106's DR concepts, meaning actual periodic restore drills, not just confirming the backup job exits zero. The DR target needs to be a separate failure domain from the primary — a different availability zone at minimum, a different region if the durability requirement demands it — and if the workload is subject to data-residency requirements (§110), the DR target has to independently satisfy the same jurisdictional constraint as the primary, which can genuinely narrow the available DR options and needs to be designed in from the start rather than discovered during a compliance audit. I'd also make sure the backup and restore process itself is covered by the same change-management and audit-trail discipline (§110) as any other production-affecting configuration, since an untested or undocumented backup process is, in practice, not a real backup process.
+_What this probes for:_ Whether the candidate treats "backup exists" and "backup is provably restorable, compliant, and in a genuinely separate failure domain" as different bars — a lot of real production backup strategies fail exactly this distinction.
+
+_Key design decisions surfaced by this question:_
+
+- Backing up only what's genuinely stateful; reproducible hosts are redeployed from the golden image instead.
+- Regular, real restore drills as proof of a working backup, not just a green backup-job status.
+- DR target as a separate failure domain that must independently satisfy any residency requirement.
+- Backup/restore process itself subject to the same change-management and audit-trail discipline as any production change.
+
+## 3. Reliability and Observability
+
+**Question:** _"How would you design a logging and observability pipeline for a fleet of 5,000 Linux hosts, where SSH-ing into individual boxes is not a viable debugging strategy?"_
+
+**Model answer:** At 5,000 hosts the core design constraint is that data has to leave each host and land in a centralized, queryable system, because per-host investigation doesn't scale and because a host might not even be reachable (or might have already been replaced) by the time someone wants to look at it. I'd design this as a pipeline: each host runs a lightweight log-shipping agent that reads from journald (§68) and application log files, tags entries with host identity and metadata, and forwards to a centralized aggregation layer rather than relying on local log retention as the source of truth (§85's logging deep dive and centralized pipeline coverage). Metrics follow the same shape — a local exporter/agent per host feeding a time-series backend, rather than expecting anyone to run `top` on 5,000 hosts by hand. The critical design decisions are what to do at the edges of this pipeline: log volume at 5,000 hosts is large enough that shipping everything at full fidelity forever is a cost problem, so I'd want tiered retention (recent data at full fidelity for live debugging, older data sampled or aggregated) and I'd want structured logging (not raw unstructured text) so the centralized system can actually be queried by field rather than grepped as one giant blob. On the observability side (§86), I'd want the pipeline itself instrumented — if log shipping silently breaks on a subset of the fleet, that needs to alert, because a fleet that silently stops reporting looks identical to a fleet that's perfectly healthy until the moment you actually need the missing data. Alerting thresholds need to be based on fleet-wide aggregates and outlier detection (this host's error rate vs. the fleet's), not per-host static thresholds that don't scale to review.
+_What this probes for:_ Whether the candidate designs for the actual constraint of "5,000 hosts" — centralization, tiered retention, self-monitoring of the pipeline — rather than describing a single-host logging setup and assuming it generalizes.
+
+_Key design decisions surfaced by this question:_
+
+- Centralized, structured aggregation of logs and metrics as the only viable model at this scale.
+- Tiered retention balancing live-debugging fidelity against cost, rather than keeping everything forever at full fidelity.
+- The pipeline itself instrumented and alerted on — a silently-broken shipper looks identical to a healthy, quiet fleet.
+- Fleet-wide aggregate and outlier-based alerting instead of static per-host thresholds.
+
+**Question:** _"Design zero-downtime patching for a stateful service running across a fleet, where the service can't simply be restarted all at once."_
+
+**Model answer:** The core technique is rolling patching combined with redundancy that tolerates a subset of the fleet being briefly unavailable, following §105's HA architecture and §108's patch-strategy comparison. Concretely: the service needs to already be running with enough redundancy (N+2 rather than N+0) that taking one host out of rotation for patching doesn't threaten capacity or durability — for a stateful service specifically, this usually means a replication or clustering layer (a database with replicas, a distributed store with quorum) where one replica going offline for patching is a normal, tolerated event rather than an incident. The patching sequence itself: drain traffic from one host (or one replica) gracefully, confirm the rest of the fleet has absorbed its load and the replication/quorum layer is still healthy, apply the patch, verify the host rejoins cleanly and catches up on replication lag if any, then move to the next host — never patching a second host until the first has fully rejoined and stabilized. I'd choose in-place patching versus reimage-and-replace (§108) based on how much I trust the host's exact configuration state — reimage-and-replace is generally safer at fleet scale because it guarantees the patched host matches the golden image exactly, whereas in-place patching can leave subtle per-host drift. Throughout, I'd want the same rollback discipline as any deployment — if a patched host or replica shows problems, the automation should be able to pull it back out and roll back rather than continuing to propagate the patch across the fleet on faith. The stateful-specific risk I'd be most careful about is data consistency during the rolling window — making sure the application layer correctly handles talking to a mixed-version fleet for the duration of the rollout, since a naive design that assumes all replicas are always running identical software will break the moment a rolling patch is in progress.
+_What this probes for:_ Understanding that zero-downtime patching for stateful services is fundamentally a redundancy-and-sequencing problem, not just "run the patch command," and that mixed-version operation during the rollout window is itself a real design constraint.
+
+_Key design decisions surfaced by this question:_
+
+- Redundancy built in ahead of time (N+2, replication/quorum) so patching one member is a tolerated event.
+- Strict one-at-a-time sequencing — never touch a second host until the first has fully rejoined and stabilized.
+- Reimage-and-replace preferred over in-place patching at fleet scale to avoid per-host configuration drift.
+- Explicit handling of mixed-version operation during the rollout window, not an assumption that all replicas match.
+
+## 4. Security and Multi-Tenancy
+
+**Question:** _"Design a secure multi-tenant Linux hosting platform where untrusted customer code runs alongside other tenants on shared infrastructure."_
+
+**Model answer:** The central design tension is that "untrusted code" and "shared infrastructure" together mean I have to assume any tenant's workload might attempt to escape its intended boundary, either through a bug or deliberately, and the architecture has to hold even under that assumption. At the isolation layer, I'd use namespaces and cgroups (§99) as the baseline containment mechanism — PID, network, mount, and user namespaces to give each tenant's workload its own apparent view of the system, and cgroups to enforce hard resource limits so one noisy or malicious tenant can't starve others of CPU, memory, or I/O. But container-level namespace isolation alone isn't a strong enough boundary for genuinely untrusted code sharing a kernel — I'd layer Mandatory Access Control (SELinux or AppArmor, §91) on top to constrain what even a compromised container process can touch on the host, and I'd want kernel-hardening sysctl parameters (§92) applied fleet-wide to reduce the attack surface of the shared kernel itself, since a container escape is fundamentally a kernel-vulnerability problem — the kernel is the one thing every tenant shares no matter how well-isolated the userspace layer is. For workloads with a genuinely higher risk tolerance requirement, I'd consider stronger isolation than shared-kernel containers entirely — a lightweight VM boundary per tenant, if the threat model justifies the overhead, precisely because it removes the shared-kernel attack surface that no amount of namespace/cgroup/MAC configuration fully eliminates. Beyond the kernel boundary, I'd design network isolation between tenants (so one tenant's workload can't reach another's), secrets management (§95) so no tenant's workload can read another's credentials, and auditing (§93) so that any attempted boundary violation leaves an evidence trail, both for incident response and because a serious multi-tenant platform is very likely operating under a compliance framework (§110) that requires exactly this kind of tamper-evident record.
+_What this probes for:_ Whether the candidate treats container/namespace isolation as sufficient on its own (a common gap) versus understanding that untrusted-code multi-tenancy demands defense in depth — MAC, kernel hardening, and possibly stronger-than-container isolation — because the shared kernel itself is the real attack surface.
+
+_Key design decisions surfaced by this question:_
+
+- Namespaces and cgroups as the baseline, never treated as sufficient on their own for genuinely untrusted code.
+- MAC (SELinux/AppArmor) and kernel-hardening sysctls layered on top to constrain a compromised container process.
+- Stronger-than-container isolation (lightweight VM per tenant) considered when the threat model justifies the overhead.
+- Network isolation, per-tenant secrets management, and audit logging of boundary violations as the surrounding controls.
+
+**Question:** _"How would you design host-level access control for a large engineering organization where hundreds of engineers need varying levels of production access, and access needs to be auditable and revocable at any time?"_
+
+**Model answer:** I'd avoid shared credentials or static SSH keys distributed broadly as the access model entirely — that pattern makes revocation and auditing nearly impossible at organization scale, since you can't cleanly answer "who accessed what, when" if multiple people share one key or one account. Instead I'd design around per-engineer identity that flows through to the host level: individual SSH keys tied to individual identities (§56), ideally issued through a short-lived certificate system rather than long-lived static keys, so access naturally expires and revocation doesn't require touching every host individually. Authorization would be role-based rather than all-or-nothing — `sudo`/`sudoers` (§28) scoped per role so an engineer gets exactly the privilege level their role requires, not blanket root, and PAM (§29) integrated with the organization's central identity provider so access can be revoked centrally the moment someone changes roles or leaves, instead of relying on someone remembering to clean up per-host accounts. Every privileged action needs to be captured by `auditd` (§93) tied to the real identity that performed it, feeding into the same centralized logging pipeline the rest of the fleet uses, both for incident investigation and because this is precisely the kind of tamper-evident, actor-attributed audit trail a compliance framework (§110) will expect to see evidence of. I'd also design bastion-host patterns (§90) so production access has a single, monitored chokepoint rather than every host being directly reachable from anywhere, which shrinks the attack surface and makes the audit trail simpler to reason about.
+_What this probes for:_ Whether the candidate designs for auditable, revocable, per-identity access at organizational scale, rather than a smaller-scale mental model (a handful of shared keys) that doesn't hold up once hundreds of engineers and real turnover are in the picture.
+
+_Key design decisions surfaced by this question:_
+
+- Per-identity, ideally short-lived-certificate-based access instead of shared or long-lived static credentials.
+- Role-scoped `sudo`/PAM authorization tied to a central identity provider for instant, fleet-wide revocation.
+- Every privileged action captured by `auditd` and tied to a real identity, feeding the centralized logging pipeline.
+- A bastion-host chokepoint so production access has one monitored entry point rather than every host being directly reachable.
+
+## 5. Cost and Compliance at Scale
+
+**Question:** _"Your Linux fleet's cloud bill has grown faster than your traffic. How do you diagnose and design for this, at the host level?"_
+
+**Model answer:** I'd start by breaking the bill down by what's actually driving it rather than guessing — compute (instance-hours by type), storage, network egress, and any managed-service overhead layered on top, since "the bill grew" is not yet a diagnosis (§109's cost-optimization framing). A common and very Linux-specific culprit is instance right-sizing drift: fleets provisioned for a peak that no longer reflects real usage, or instance types chosen once early on and never revisited as workload characteristics changed — I'd pull actual utilization data (CPU, memory, §81/§82) per host class over a real window, not just a snapshot, since a host that's idle at 2am and pegged at 2pm needs a different answer (autoscaling matched to the real diurnal pattern) than a host that's simply oversized around the clock (a smaller instance type, full stop). I'd also check for storage and snapshot sprawl — orphaned volumes from replaced hosts, backup retention (§79) configured more generously than the actual compliance or business requirement demands, and log/metric retention (§85) kept at full fidelity far longer than anyone actually queries it. On network egress specifically, I'd check whether cross-AZ or cross-region traffic that could be architected away (co-locating chatty services, §105) is quietly the largest line item, which is a common surprise in fleets that grew organically without deliberate placement decisions. Every cost change still has to respect the same constraints as any other production change — data-residency-constrained workloads (§110) can't be cost-optimized by simply moving them to a cheaper region if that region doesn't satisfy the jurisdictional requirement.
+_What this probes for:_ Whether the candidate treats cost as a measurable, decomposable engineering problem with real Linux-level levers (right-sizing, retention policy, placement) rather than a finance-team concern disconnected from infrastructure design, and whether they remember compliance constraints bound the available cost optimizations.
+
+_Key design decisions surfaced by this question:_
+
+- Cost broken down by driver (compute, storage, egress) before proposing any fix, rather than an undifferentiated "cut costs" response.
+- Right-sizing and autoscaling matched to real, measured utilization patterns rather than a one-time initial guess.
+- Storage, snapshot, and log/metric retention sprawl checked as a common, easily-overlooked cost source.
+- Cost optimizations still bounded by binding constraints like data residency — cheaper is not automatically viable.
+
+**Question:** _"Design the host provisioning and configuration pipeline for a fleet that must pass a compliance audit (§110) at any time, without a scramble beforehand."_
+
+**Model answer:** The design goal is that compliance evidence is a byproduct of normal operations, not a separate activity performed right before an audit. I'd start from a golden image (§102) built through an automated, version-controlled pipeline, so every host's baseline configuration is reproducible and provably consistent with what was reviewed and approved — this directly answers "prove every host meets the hardening baseline" without inspecting hosts individually. Every subsequent change to a running host would go through the same change-management workflow (§110) — a recorded, approved change request rather than an ad-hoc manual edit — with the approval and the actual applied change both captured as durable, retrievable evidence. I'd make sure `auditd` (§93) is part of the golden image itself, not something bolted on later, so every fleet host is generating the actor-attributed, tamper-evident audit trail a compliance framework expects from day one rather than from whenever someone remembered to enable it. I'd also build a continuous compliance-scanning job (a CIS-benchmark-style scan, §96, run on a schedule against the live fleet) rather than treating the golden image as a one-time guarantee, since configuration drift between "the image was compliant when built" and "the running host is still compliant six months later" is exactly the gap an auditor's sampling process (§110) is designed to find.
+_What this probes for:_ Whether the candidate designs compliance as a continuously-verified property of the pipeline itself, versus a manual, periodic, audit-triggered scramble — the difference between these two approaches is usually visible immediately to an experienced interviewer.
+
+_Key design decisions surfaced by this question:_
+
+- A version-controlled golden image as the reproducible, provable baseline every host starts from.
+- Change-management workflow enforced for every subsequent modification, with approval and applied change both retained as evidence.
+- `auditd` baked into the golden image from the start rather than enabled after the fact.
+- Continuous, scheduled compliance scanning to catch drift between "image was compliant" and "host is still compliant."
+
+## 6. Quick-Reference Cross-Index
+
+| #   | Question (short form)                              | Group                         | Primary roadmap ties                        |
+| --- | -------------------------------------------------- | ----------------------------- | ------------------------------------------- |
+| 1   | 10→10,000 req/s host fleet scaling                 | Compute and Scaling           | §65/§67, §81/§82, §105, §107, §108, §85/§86 |
+| 2   | Safe multi-times-a-day fleet deployment            | Compute and Scaling           | §36, §102, §108                             |
+| 3   | Instrumenting for a rare tail-latency outlier      | Compute and Scaling           | §37, §81, §83, §85                          |
+| 4   | Fast-local vs. durable-shared storage architecture | Storage and Data              | §17/§18, §73/§74, §75, §77, §79             |
+| 5   | Stateful-service backup/DR with compliance limits  | Storage and Data              | §79, §102, §106, §110                       |
+| 6   | 5,000-host logging/observability pipeline          | Reliability and Observability | §68, §85, §86                               |
+| 7   | Zero-downtime patching of a stateful fleet         | Reliability and Observability | §105, §108                                  |
+| 8   | Secure multi-tenant hosting for untrusted code     | Security and Multi-Tenancy    | §91, §92, §93, §95, §99, §110               |
+| 9   | Auditable, revocable org-scale access control      | Security and Multi-Tenancy    | §28, §29, §56, §90, §93, §110               |
+| 10  | Diagnosing and designing away runaway fleet cost   | Cost and Compliance at Scale  | §81/§82, §79, §85, §105, §109, §110         |
+| 11  | Always-audit-ready provisioning pipeline           | Cost and Compliance at Scale  | §93, §96, §102, §110                        |
+
+## 7. Key Takeaways
+
+- System-design questions at this tier are graded on whether Linux-level mechanics (ulimits, sysctls, namespaces, cgroups, systemd unit behavior, signal handling) are load-bearing parts of the answer, not decoration on top of a generic distributed-systems answer.
+- Scaling a fleet is a series of qualitatively different regimes (single host reliability → basic redundancy → capacity planning → fleet-as-a-fungible-unit), not a single linear "add more servers" story.
+- Storage design should separate ephemeral/local from durable/shared needs deliberately, and DR/backup design must treat compliance constraints like data residency (§110) as binding inputs, not afterthoughts.
+- Observability at fleet scale is fundamentally a centralization-and-self-monitoring problem — per-host investigation stops being viable well before 5,000 hosts.
+- Multi-tenant security for untrusted code requires defense in depth (namespaces/cgroups plus MAC plus kernel hardening, possibly stronger-than-container isolation) because the shared kernel itself, not just the container boundary, is the real attack surface.
+- Access-control design at organizational scale needs per-identity, auditable, centrally revocable mechanisms — shared credentials and static keys don't hold up once headcount and turnover are real.
+- Cost optimization at fleet scale has concrete Linux-level levers (instance right-sizing against real utilization data, retention-policy tuning, network-placement decisions) rather than being purely a finance-side concern, and every cost decision still has to respect binding constraints like data residency.
+- Compliance readiness should be an always-on property of the provisioning pipeline itself (golden image plus continuous scanning plus built-in audit trail) rather than a manual scramble performed right before an audit arrives.
+
+## 8. Related Concepts & What's Next
+
+This bank draws directly on §91/§99 (MAC and containers/namespaces), §102/§104/§105 (golden images, cloud deployment, HA architecture), §107/§108 (capacity planning and patch strategy), §85/§86 (logging and observability pipelines), §96/§109 (compliance benchmarks and cost optimization), and §110 (compliance and data residency) — treat any unfamiliar reference above as a signal to revisit that section before an actual system-design interview. §121 (next) moves from design-level questions to scenario-based live troubleshooting questions — a different skill (diagnosis under a broken production system) from the design-and-defend skill this section targets.
+
+**Next Section:** §121 — `Section-121-Part16-Scenario-Based-Production-Troubleshooting-Questions.md`

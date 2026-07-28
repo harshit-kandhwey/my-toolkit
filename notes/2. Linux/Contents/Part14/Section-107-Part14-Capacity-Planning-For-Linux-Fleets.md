@@ -1,0 +1,101 @@
+# Section 107 (Part 14): Capacity Planning for Linux Fleets
+
+## 1. Capacity Planning as a Forecasting Discipline
+
+§80–§84 (Part 11) taught how to measure CPU, memory, disk I/O, and network utilization on a running system — `top`, `mpstat`, `vmstat`, `free`, `iostat`, `iotop`, `iftop`, `nload`, `sar`, and the rest of that toolkit are fundamentally about answering "what is this system doing **right now**, or what did it do in the recent past." **Capacity planning is the forward-looking application of those exact same metrics** — the tools don't change, but the question does: instead of "what is utilization currently," capacity planning asks **"when will utilization become a problem, and how much lead time do I have to act before it does?"**
+
+This reframing matters because it means capacity planning isn't a separate toolset to learn — it's a discipline built entirely on data those Part 11 tools already produce, applied predictively rather than reactively. The skill capacity planning actually requires is **trending** that data over time and projecting it forward, not discovering new metrics to collect.
+
+## 2. Trending Historical Utilization Data
+
+Instantaneous tools like `top` or `vmstat` show a snapshot — useful for diagnosing an active problem, but useless on their own for spotting a slow, multi-week trend toward exhaustion. Capacity planning specifically needs **historical retention** of utilization data, which is exactly what §84's mention of `sar`'s historical data collection provides: `sar` (via `sysstat`'s background collection, typically `sadc` run periodically by cron/systemd timers) retains CPU, memory, disk, and network utilization samples over time, which can be reviewed later to answer "how has this metric moved over the last 30/60/90 days," not just "what is it right now."
+
+That retained history is the raw material for the entire forecasting exercise in this section: without it, capacity planning degrades into guesswork based on whatever the current snapshot happens to show, with no way to distinguish a genuine upward trend from ordinary day-to-day noise.
+
+> 💡 **Tip:** If a fleet doesn't already have `sysstat`'s historical collection enabled (or an equivalent metrics-retention pipeline such as a time-series monitoring stack), that's the actual first capacity-planning gap to close — before debating growth projections or thresholds, confirm there's enough historical data to project a trend from in the first place.
+
+## 3. Vertical vs. Horizontal Scaling
+
+When a forecast (2) indicates a resource will eventually run out, there are exactly two fundamental strategies for growing capacity, and they have meaningfully different trade-offs.
+
+### 3.1 Vertical Scaling
+
+**Vertical scaling** means making individual instances bigger — more CPU cores, more RAM, a larger/faster disk on the same machine (or its cloud equivalent, resizing to a larger instance type). Its defining limitation is a **hard ceiling**: at some point there is no larger instance size available, whether due to physical hardware limits on-prem or the largest instance type a cloud provider offers. It also frequently requires **downtime to resize** — many resize operations mean stopping the instance, changing its size, and restarting it, which is a real operational cost beyond just the resource itself.
+
+### 3.2 Horizontal Scaling
+
+**Horizontal scaling** means adding more instances rather than making existing ones bigger. It has no comparable hard ceiling — capacity grows by adding nodes, in principle indefinitely — but it requires the **application/architecture to actually support running multiple instances** in the first place. This is a direct tie to §105's active-active load-balanced fleet pattern: horizontal scaling is only straightforward for genuinely stateless tiers that can have traffic distributed across them arbitrarily; a service holding exclusive, single-writer state (the same category §105 flagged as needing active-passive clustering rather than active-active) often can't simply be "scaled out" by adding identical copies without a much deeper architectural change.
+
+The trade-off, stated plainly: vertical scaling is operationally simpler (no architecture changes required) but eventually hits a wall and often costs downtime to apply; horizontal scaling avoids the wall and can often be applied without downtime (new nodes join a pool without disturbing existing ones) but demands that the service was designed to support it.
+
+## 4. Headroom Planning
+
+**Headroom planning** means deliberately provisioning capacity above the current **peak** usage, not merely above the current **average** usage. This distinction matters because average utilization can look comfortably low while peak utilization — the actual moment a system is under the most load, whether a daily traffic spike, an end-of-month batch job, or a seasonal surge — is what actually determines whether the system falls over. Provisioning to the average and ignoring peaks is a common, avoidable planning mistake.
+
+Headroom exists for two related reasons: it absorbs genuine traffic spikes without degrading service, and it buys **reaction time** — the gap between "utilization crosses a concerning threshold" and "utilization actually exhausts the resource" is exactly the window in which someone can notice, investigate, and act (add capacity, mitigate a runaway process, throttle traffic) before an outage actually occurs. Zero headroom means that window doesn't exist — the first sign of a problem is the outage itself.
+
+Headroom planning is a genuine cost trade-off, not a free safety margin: **over-provisioning wastes money** on capacity that mostly sits idle, while **under-provisioning risks outages** during exactly the peak moments capacity matters most. Neither extreme is correct in general — the right amount of headroom is a deliberate decision informed by how spiky the actual workload is, how quickly additional capacity can be brought online if horizontal/auto-scaling (5) is available, and how costly an outage at peak would actually be.
+
+## 5. Capacity Ceiling and Forecasting Time-to-Exhaustion
+
+A **capacity ceiling** is the hard limit a resource cannot exceed — total disk size, total available memory, a network link's maximum throughput, or a cloud account's provisioned quota. Combined with the trended historical data from 2, the ceiling enables a specific, genuinely useful forecasting exercise: **given the current growth trend, project forward to estimate when the resource will actually be exhausted.**
+
+Concretely, this means taking a metric's trend over the retained history — disk usage growing at roughly X GB/week, for instance — and extrapolating that trend against the known ceiling to produce an estimated **time-to-exhaustion**: "at the current growth rate, this volume fills up in approximately 11 weeks." That estimate is what turns capacity planning into a genuinely proactive discipline rather than a reactive one — it gives concrete lead time to act (provision more storage, archive old data, scale out) well before the resource is actually exhausted, rather than discovering the problem only at the moment an application starts failing because a disk is full or memory is exhausted.
+
+⚠️ **Warning:** A naive linear extrapolation of a trend is a reasonable starting estimate, not a guarantee — growth trends can accelerate (a new feature drives faster data growth than history predicted), plateau, or even reverse (a cleanup effort, a customer churn event). Time-to-exhaustion forecasts should be recalculated regularly against fresh data, not computed once and treated as a fixed, permanent deadline.
+
+## 6. Cloud-Specific Nuances: Auto-Scaling Doesn't Eliminate the Need to Plan
+
+Cloud environments offer **auto-scaling** — automatically adding or removing capacity (commonly horizontal, tying directly back to 3.2 and to §105's load-balanced active-active fleet pattern) in response to real-time demand, rather than a human manually forecasting and provisioning ahead of time. This makes a meaningful slice of capacity management **dynamic and automatic** rather than purely predictive: instead of forecasting exact future load and pre-provisioning for it, the fleet can grow and shrink itself as actual demand fluctuates.
+
+The honest caveat is that auto-scaling does not eliminate the need for capacity planning — it changes what needs to be planned, not whether planning is needed at all:
+
+- **Scaling limits still exist.** Auto-scaling groups have configured minimums and maximums, and cloud accounts have quotas (a maximum number of instances of a given type, a maximum total vCPU count, an API rate limit) that a sufficiently large demand spike can hit regardless of how well auto-scaling itself is configured — those ceilings still need to be forecast against and raised proactively (via provider quota-increase requests) well ahead of when growth trends suggest they'll be needed.
+- **Cost implications still require forward planning.** Auto-scaling optimizes for meeting demand, not for cost — a fleet that scales out aggressively under sustained (not just spiky) growth can produce a steadily rising cloud bill that still needs the same trend-forecasting discipline (2, 5) applied to cost as a resource, not just to CPU/memory/disk.
+- **Not every resource can auto-scale.** Auto-scaling is most mature for stateless, horizontally-scalable compute (again tying to §105); storage capacity, database capacity, and genuinely stateful services often still require the same manual forecasting and provisioning discipline this section describes, even in an otherwise highly automated cloud environment.
+
+Auto-scaling is best understood as a tool that makes the _response_ to demand more dynamic — it does not remove the underlying forecasting work of understanding growth trends, setting sensible scaling limits, and planning for the resources and cost implications that auto-scaling itself will produce as it operates.
+
+## 7. Tying It Together: Capacity Planning Determines Fleet Size
+
+§105's HA architectures are described there mostly in terms of failure tolerance — how many nodes are needed to survive a failure. Capacity planning is what actually determines **how many nodes an HA fleet needs in absolute terms**: an active-active fleet sized only to survive losing one node, with no headroom (4) above current peak demand, is under-provisioned the moment normal peak traffic alone approaches what the remaining nodes can handle after that one loss. A properly capacity-planned HA fleet accounts for both dimensions together — enough nodes to absorb projected peak demand with adequate headroom, and enough additional nodes beyond that to still meet the same demand if the HA design's expected failure scenario (one node, one AZ) actually occurs.
+
+## 8. Common Misconceptions
+
+1. **"Capacity planning requires different tools than performance monitoring."** It uses the same metrics and largely the same tools as §80–§84 — the difference is applying them to historical trends and forward projection rather than a live snapshot, not a different toolset (1, 2).
+2. **"Provisioning for average utilization is safe enough."** Average utilization hides peak utilization, which is what actually determines whether a system falls over — headroom planning is explicitly about provisioning above peak, not average (4).
+3. **"Horizontal scaling is always better than vertical scaling."** Horizontal scaling avoids vertical's hard ceiling but requires the application to actually support running multiple instances — for genuinely stateful, single-writer services, vertical scaling (or a fundamentally different architecture) may be the only realistic option, echoing §105's stateful-vs-stateless distinction (3).
+4. **"Auto-scaling means capacity planning is no longer necessary."** Auto-scaling automates the _response_ to demand for scalable resources, but scaling limits/quotas, cost implications, and non-auto-scalable resources (storage, some databases) still require the same forward planning discipline this section describes (6).
+
+## 9. Tiered Interview Questions
+
+**🎯 Beginner:** _"What's the actual difference between performance monitoring and capacity planning?"_
+**Model answer:** They use the same underlying metrics and often the same tools — CPU, memory, disk, and network utilization data from tools like `top`, `vmstat`, `iostat`, and `sar`. Performance monitoring asks "what is utilization right now, and is something wrong currently" — a reactive, present-tense question. Capacity planning asks "given how utilization has trended over time, when will a resource become a bottleneck" — a forward-looking, predictive question built on the same data applied historically rather than just in the moment.
+_What the interviewer is probing for:_ Understanding that capacity planning isn't a separate skill set from performance monitoring, just a different (forward-looking) application of it.
+
+**🎯 Intermediate:** _"Explain headroom planning and why provisioning for average utilization isn't sufficient."_
+**Model answer:** Headroom planning means deliberately provisioning above current peak usage, not just current average usage. Average utilization can look comfortably low while masking sharp peaks — a daily traffic spike, an end-of-month batch job — and it's the peak, not the average, that determines whether a system actually falls over under load. Headroom also buys reaction time: the gap between crossing a concerning utilization threshold and actually exhausting the resource is the window in which someone can notice and act before an outage occurs. It's a real cost trade-off though — over-provisioning wastes money on mostly-idle capacity, while under-provisioning risks outages exactly when it matters most, so the right amount of headroom is a deliberate decision, not a fixed rule.
+_What the interviewer is probing for:_ Correctly distinguishing peak from average, and articulating headroom as a genuine cost/risk trade-off rather than an unlimited "more is always safer" default.
+
+**🎯 Senior:** _"How would you build a time-to-exhaustion forecast for a disk volume that's steadily filling up, and what would make you distrust that forecast?"_
+**Model answer:** I'd pull the volume's historical usage data — from `sar`'s retained history or an equivalent monitoring pipeline — over a long enough window to see a genuine trend rather than short-term noise, ideally weeks to months. I'd compute the growth rate over that window and extrapolate it linearly against the volume's total capacity to get an estimated exhaustion date, giving concrete lead time to act — provision more storage, archive old data, or address whatever's driving the growth. I'd distrust that forecast, or at least treat it as provisional, if the growth trend isn't actually linear — a recent feature launch or data-retention policy change could accelerate growth well beyond the historical rate, or a cleanup effort could flatten or reverse it. I'd recompute the forecast regularly against fresh data rather than treating a single calculation as a fixed deadline, and I'd specifically look for any recent step-changes in the growth rate that a naive long-window linear fit might average away and miss.
+_What the interviewer is probing for:_ A concrete, data-driven forecasting method plus healthy skepticism about linear extrapolation — recognizing that trends change and forecasts need regular recalculation, not one-time computation.
+
+**🎯 Architect:** _"Your team wants to rely entirely on cloud auto-scaling instead of doing manual capacity planning. How do you respond?"_
+**Model answer:** I'd push back on "entirely" specifically, not on using auto-scaling at all — auto-scaling is a genuinely good tool for making the response to demand dynamic for horizontally-scalable, stateless resources, and it should absolutely be used where it applies. But it doesn't eliminate the underlying planning work; it relocates some of it. Scaling limits and account quotas still need to be forecast against and proactively raised before a real demand spike hits them — discovering a quota ceiling during an actual traffic surge is exactly the kind of last-minute discovery capacity planning is supposed to prevent. Cost still needs the same trend-forecasting discipline applied to it, since aggressive auto-scaling under sustained (not just spiky) growth produces a steadily rising bill that benefits from the same time-to-exhaustion-style forecasting as any other resource, just applied to budget rather than CPU. And not every resource in the stack can auto-scale at all — storage capacity and genuinely stateful database tiers, tying back to the vertical/horizontal distinction and to which services can even run active-active per §105, often still need manual forecasting and provisioning regardless of how automated the compute tier is. So I'd frame it as: use auto-scaling for what it's good at, but keep the forecasting discipline for quotas, cost, and non-auto-scalable resources — the two aren't in tension, but treating auto-scaling as a full substitute for planning is the actual risk.
+_What the interviewer is probing for:_ Nuanced understanding that auto-scaling and capacity planning are complementary, not competing — and specific, concrete examples (quotas, cost, non-scalable resources) rather than a vague "you still need to plan" answer.
+
+## 10. Key Takeaways
+
+- Capacity planning applies the exact same metrics §80–§84 taught how to measure, but predictively — trending historical data to project when a resource will become a bottleneck, rather than just diagnosing current state (1, 2).
+- `sar`'s historical retention (§84) is a directly relevant capacity-planning input precisely because it provides the trend data instantaneous tools like `top` can't (2).
+- Vertical scaling (bigger instances) has a hard ceiling and often requires downtime; horizontal scaling (more instances) avoids the ceiling but requires the application to support running multiple instances — directly tied to which services can run active-active per §105 (3).
+- Headroom planning means provisioning above peak usage, not average usage, trading over-provisioning cost against under-provisioning outage risk (4).
+- Time-to-exhaustion forecasting extrapolates a trend against a known capacity ceiling to give concrete lead time to act — but should be recalculated regularly, since growth trends aren't guaranteed to stay linear (5).
+- Auto-scaling makes some capacity response dynamic and automatic, but doesn't eliminate the need to plan for scaling limits/quotas, cost implications, and resources that can't auto-scale at all (6).
+
+## 11. Related Concepts & What's Next
+
+This section is the direct forward-looking application of §80–§84's performance analysis toolkit (Part 11) — the same CPU/memory/disk/network metrics, trended and projected rather than read as a live snapshot. It also determines the concrete node counts behind §105's HA architectures: HA answers "how do we survive a failure," while capacity planning answers "how many nodes does that actually require given real demand and headroom" (7). This section closes the forecasting/scaling portion of Part 14; §108, next, turns to patch and upgrade strategies — blue/green, canary, and in-place-versus-reimage approaches — a different but related operational discipline for safely evolving a fleet once its size and architecture are established.
+
+**Next Section:** §108 — `Section-108-Part14-Patch-Upgrade-Strategies.md`
