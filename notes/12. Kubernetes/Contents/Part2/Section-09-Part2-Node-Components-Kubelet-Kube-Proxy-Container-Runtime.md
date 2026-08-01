@@ -4,13 +4,13 @@
 
 **Plain language:** If the control plane is the brain deciding what should happen, every worker node has its own small set of "hands" that actually make it happen — one that talks to the control plane and manages containers, one that manages network traffic rules, and one that actually starts and stops container processes.
 
-**Precise definition:** Every Kubernetes worker node runs three components that together implement the data-plane half of the architecture introduced in §3: **kubelet** (the primary node agent that registers the node with the control plane, watches for Pods assigned to it, and ensures their containers are running as specified), **kube-proxy** (maintains network rules on the node that implement Kubernetes' Service abstraction, covered fully in §51), and a **container runtime** (the actual software — containerd or CRI-O — that creates and manages container processes, communicating with the kubelet via the **Container Runtime Interface**, covered in §10).
+**Precise definition:** Every Kubernetes worker node runs three components that together implement the data-plane half of the architecture introduced in §3: **kubelet** (the primary node agent that registers the node with the control plane, watches for Pods assigned to it, and ensures their containers are running as specified), **kube-proxy** (maintains network rules on the node that implement Kubernetes' Service abstraction, covered fully in §51), and a **container runtime** (the actual software — containerd or CRI-O — that creates and manages container processes, communicating with the kubelet via the **Container Runtime Interface**, covered in §11).
 
 ## 2. Why Understanding Each Component Individually Matters
 
 - **The kubelet is the single point of contact between a node and the control plane.** If it crashes or loses connectivity, the node's existing Pods often keep running (their processes don't depend on continuous kubelet supervision to keep executing) but the node stops reporting status and can't accept new assignments — a specific, recognizable failure mode covered in §97 (Part 13).
 - **kube-proxy is invisible until Service networking breaks.** Most engineers never think about kube-proxy directly, but "a Service isn't routing traffic correctly" almost always traces back to kube-proxy's rules on the relevant node(s) — understanding what it actually does removes a huge amount of networking mystery (§51, Part 7).
-- **The container runtime split (kubelet talks CRI, not directly to Docker) explains the 2020s "dockershim removal" disruption** many teams experienced — understanding the CRI abstraction (§10) explains why that transition happened and what it actually changed operationally (mostly nothing, for workloads using standard container images).
+- **The container runtime split (kubelet talks CRI, not directly to Docker) explains the 2020s "dockershim removal" disruption** many teams experienced — understanding the CRI abstraction (§11) explains why that transition happened and what it actually changed operationally (mostly nothing, for workloads using standard container images).
 
 🔑 **Key Takeaway:** Every node runs exactly three components — kubelet (control-plane liaison and container supervisor), kube-proxy (Service networking rules), and a container runtime (actual container execution) — and node-side troubleshooting almost always starts by identifying which of these three is implicated.
 
@@ -86,7 +86,7 @@ Builds on §3 (control plane vs. data plane) and §8 (control-plane components t
 
 **Key characteristics:**
 
-- **containerd** and **CRI-O** are the two dominant CRI-compliant runtimes in modern Kubernetes; Docker Engine itself is no longer used directly (the "dockershim" compatibility shim was removed in Kubernetes 1.24 — §10 covers this transition and why it mattered far less than many teams feared).
+- **containerd** and **CRI-O** are the two dominant CRI-compliant runtimes in modern Kubernetes; Docker Engine itself is no longer used directly (the "dockershim" compatibility shim was removed in Kubernetes 1.24 — §11 covers this transition and why it mattered far less than many teams feared).
 - The CRI is a gRPC API — any runtime implementing it can be used interchangeably from the kubelet's perspective, which is what allows this pluggability.
 
 **Production usage example:** `crictl` (a CLI tool analogous to `docker` but talking directly to a CRI runtime) is the standard debugging tool for inspecting containers at the node level when `kubectl` alone doesn't provide enough detail — used heavily in real troubleshooting scenarios (§99, Part 13).
@@ -156,6 +156,6 @@ _What the interviewer is probing for:_ Whether the candidate understands the CRI
 
 ## 14. Related Concepts & What's Next
 
-§3 and §8 established the control-plane side this section's node components communicate with. §10 (next) covers the Container Runtime Interface and the dockershim transition referenced here in full technical depth. §51 (Part 7) covers kube-proxy's Service-routing mechanics (iptables vs. IPVS modes) completely. §97–§101 (Part 13) build the full node-level troubleshooting methodology this section's scenarios only previewed. §113 (Part 15) returns to the kubelet API security concern noted in §7 with full CKS-level hardening guidance.
+§3 and §8 established the control-plane side this section's node components communicate with. §11 covers the Container Runtime Interface and the dockershim transition referenced here in full technical depth. §51 (Part 7) covers kube-proxy's Service-routing mechanics (iptables vs. IPVS modes) completely. §97–§101 (Part 13) build the full node-level troubleshooting methodology this section's scenarios only previewed. §113 (Part 15) returns to the kubelet API security concern noted in §7 with full CKS-level hardening guidance.
 
-**Next Section:** §10 — `Section-10-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md`
+**Next Section:** §10 — `Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md`

@@ -1,4 +1,4 @@
-# Section 12 (Part 2): Controller Manager and the Controller Pattern (Reconciliation Loops)
+# Section 13 (Part 2): Controller Manager and the Controller Pattern (Reconciliation Loops)
 
 ## 1. Definition
 
@@ -169,4 +169,4 @@ _What the interviewer is probing for:_ Ability to extract the controller pattern
 
 §1 introduced the reconciliation loop conceptually; this section delivered its full mechanical detail. §8 covers kube-controller-manager's place among the five control-plane components. §65 (Part 9) covers kube-scheduler, the component that acts on newly-created Pods a controller like ReplicaSet's produces. §84–§85 (Part 11) cover Custom Resource Definitions and Operators, which generalize this exact pattern. §88 (Part 11) covers GitOps controllers, which apply the same pattern with Git as the desired-state source. §101 (Part 13) builds troubleshooting methodology specifically for diagnosing controller-level failures.
 
-**Next Section:** §13 — `Section-13-Part2-Scheduler-Internals-Preview-Filtering-Scoring.md`
+**Next Section:** §14 — `Section-14-Part2-Scheduler-Internals-Preview-Filtering-Scoring.md`

@@ -31,7 +31,7 @@ Builds on §6's roadmap-organization overview; this section is the certification
 
 ## 5. Full Domain Breakdown (Cross-Reference to This Roadmap)
 
-**CKA domains** (full detail already tabulated in the roadmap's `00-Roadmap.md`, §5.1):
+**CKA domains** (full detail already tabulated in the roadmap's `00-Roadmap.md`):
 
 - Cluster Architecture, Installation & Configuration (25%) → Parts 2, 3, 14
 - Workloads & Scheduling (15%) → Parts 4, 5, 9
@@ -39,7 +39,7 @@ Builds on §6's roadmap-organization overview; this section is the certification
 - Storage (10%) → Part 8
 - Troubleshooting (30%) → Part 13
 
-**CKAD domains** (`00-Roadmap.md`, §5.2):
+**CKAD domains** (see `00-Roadmap.md` for the full breakdown):
 
 - Application Design and Build (20%) → Parts 4, 11
 - Application Deployment (20%) → Parts 4, 5
@@ -47,14 +47,14 @@ Builds on §6's roadmap-organization overview; this section is the certification
 - Application Environment, Configuration and Security (25%) → Parts 6, 10
 - Services and Networking (20%) → Part 7
 
-**CKS domains** (`00-Roadmap.md`, §5.3 — requires active CKA):
+**CKS domains** (see `00-Roadmap.md` for the full breakdown — requires active CKA):
 
-- Cluster Setup (10%) → Part 15 (15.1)
-- Cluster Hardening (15%) → Parts 10, 15 (15.1)
-- System Hardening (15%) → Part 15 (15.2)
-- Minimize Microservice Vulnerabilities (20%) → Part 15 (15.3, 15.7, 15.8)
-- Supply Chain Security (20%) → Part 15 (15.4, 15.5)
-- Monitoring, Logging and Runtime Security (20%) → Parts 12, 15 (15.6, 15.9)
+- Cluster Setup (10%) → §113
+- Cluster Hardening (15%) → Part 10, §113
+- System Hardening (15%) → §114
+- Minimize Microservice Vulnerabilities (20%) → §115, §119, §120
+- Supply Chain Security (20%) → §116, §117
+- Monitoring, Logging and Runtime Security (20%) → Part 12, §118, §121
 
 ## 6. Hands-On: What "Performance-Based" Actually Means in Practice
 

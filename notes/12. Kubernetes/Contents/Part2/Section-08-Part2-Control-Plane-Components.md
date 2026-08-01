@@ -178,6 +178,6 @@ _What the interviewer is probing for:_ Whether the candidate can translate compo
 
 ## 14. Related Concepts & What's Next
 
-§3 introduced the control-plane/data-plane split this section fully unpacks on the control-plane side. §9 (next) does the same for the data-plane/node components (kubelet, kube-proxy, container runtime). §10 covers etcd's Raft consensus mechanics in full depth. §65 (Part 9) returns to kube-scheduler's filtering/scoring phases in complete detail. §73–§74 (Part 10) cover kube-apiserver's authentication/authorization enforcement introduced here at a summary level. §107 (Part 14) covers etcd backup/restore procedures referenced in §5.2.
+§3 introduced the control-plane/data-plane split this section fully unpacks on the control-plane side. §9 (next) does the same for the data-plane/node components (kubelet, kube-proxy, container runtime). §10 covers etcd's Raft consensus mechanics in full depth. §65 (Part 9) returns to kube-scheduler's filtering/scoring phases in complete detail. §73–§74 (Part 10) cover kube-apiserver's authentication/authorization enforcement introduced here at a summary level. §107 (Part 14) covers etcd backup/restore procedures referenced in the etcd discussion above.
 
 **Next Section:** §9 — `Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md`

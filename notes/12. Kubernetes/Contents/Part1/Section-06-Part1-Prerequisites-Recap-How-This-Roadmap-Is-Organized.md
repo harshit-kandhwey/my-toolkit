@@ -24,8 +24,8 @@ This section is itself a consolidation point — it depends on nothing new, but 
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
 | Linux fundamentals (processes, filesystem, users, services) | The kubelet, container runtime, and most troubleshooting techniques ultimately operate at the Linux level on each node                     | [[../../../2. Linux/00-Roadmap]] (125-section dedicated roadmap)             |
 | Container/Docker fundamentals (images, layers, runtime)     | A Pod is fundamentally a wrapper around one or more containers; without this, Part 4's Pod spec is opaque                                  | Brief recap here; deeper container mechanics in §99 (Part 13, Linux roadmap) |
-| YAML syntax                                                 | Every Kubernetes manifest, from Part 4 onward, is written in YAML — indentation and structure errors are a top source of early frustration | Deep dive arrives in §26 (Part 4, 4.2)                                       |
-| Core networking (IP addressing, DNS, TCP/UDP)               | Part 7's Services, Ingress, and NetworkPolicy content assumes these fundamentals as given                                                  | Briefly recapped in §48 (Part 7, 7.1)                                        |
+| YAML syntax                                                 | Every Kubernetes manifest, from Part 4 onward, is written in YAML — indentation and structure errors are a top source of early frustration | Deep dive arrives in §26                                                     |
+| Core networking (IP addressing, DNS, TCP/UDP)               | Part 7's Services, Ingress, and NetworkPolicy content assumes these fundamentals as given                                                  | Briefly recapped in §48                                                      |
 
 **Container fundamentals brief recap:** A container is a running instance of an image — a packaged filesystem plus metadata (entrypoint, environment) — isolated from the host and other containers using Linux kernel primitives (namespaces, cgroups — covered at the OS level in the Linux roadmap's §99). If `docker run nginx` and "an image is a filesystem snapshot plus instructions for how to start a process from it" both make sense already, this prerequisite is satisfied.
 
@@ -56,11 +56,11 @@ Phase 10 (P18)     — Wrap-Up
 
 ## 7. Common Troubleshooting Scenarios
 
-| Symptom                                                             | Likely Cause                                   | Resolution Path                                                                    |
-| ------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Part 4's Pod spec YAML feels unfamiliar and hard to parse           | YAML syntax prerequisite gap                   | Pause and work through §26 (4.2) before continuing, rather than pushing forward    |
-| Part 7's Service/networking content feels disconnected from reality | Core networking (IP/DNS/TCP) prerequisite gap  | Review §48 (7.1)'s recap, or the dedicated Networking topic if a deeper gap exists |
-| Struggling to place a new Part in context                           | Skipped this section's phase-structure preview | Re-reference §5's phase diagram to see how the current Part fits the overall arc   |
+| Symptom                                                             | Likely Cause                                   | Resolution Path                                                                  |
+| ------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| Part 4's Pod spec YAML feels unfamiliar and hard to parse           | YAML syntax prerequisite gap                   | Pause and work through §26 before continuing, rather than pushing forward        |
+| Part 7's Service/networking content feels disconnected from reality | Core networking (IP/DNS/TCP) prerequisite gap  | Review §48's recap, or the dedicated Networking topic if a deeper gap exists     |
+| Struggling to place a new Part in context                           | Skipped this section's phase-structure preview | Re-reference §5's phase diagram to see how the current Part fits the overall arc |
 
 ## 8. Best Practices
 

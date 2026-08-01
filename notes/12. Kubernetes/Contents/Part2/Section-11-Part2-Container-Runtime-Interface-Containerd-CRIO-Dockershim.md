@@ -1,4 +1,4 @@
-# Section 10 (Part 2): Container Runtime Interface (CRI): containerd, CRI-O, and the Dockershim Removal
+# Section 11 (Part 2): Container Runtime Interface (CRI): containerd, CRI-O, and the Dockershim Removal
 
 ## 1. Definition
 
@@ -164,4 +164,4 @@ _What the interviewer is probing for:_ Whether the candidate correctly scopes th
 
 §9 introduced the container runtime as one of three node components this section covers in full technical depth. §46 (Part 3) covers static Pods, which is how kubelet runs control-plane components directly from local manifests before a full api-server is available. §106 (Part 14) covers cluster upgrade mechanics, including scenarios where a lingering Docker Engine runtime configuration must be migrated first. §97–§101 (Part 13) build the full node-level troubleshooting methodology this section's `crictl` introduction supports directly.
 
-**Next Section:** §11 — `Section-11-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md`
+**Next Section:** §12 — `Section-12-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md`

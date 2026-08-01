@@ -1,4 +1,4 @@
-# Section 11 (Part 2): API Server Deep Dive: API Groups, Versioning, the Request Lifecycle and Admission Chain
+# Section 12 (Part 2): API Server Deep Dive: API Groups, Versioning, the Request Lifecycle and Admission Chain
 
 ## 1. Definition
 
@@ -210,4 +210,4 @@ _What the interviewer is probing for:_ Whether the candidate understands admissi
 
 §8 introduced kube-apiserver's role at a summary level; this section delivered its internal request-lifecycle mechanics in full. §73–§74 (Part 10) cover authentication and authorization — the first two stages of this section's lifecycle diagram — in complete depth. §76–§79 (Part 10) cover admission controllers, webhooks, and Pod Security Admission fully. §84 (Part 11) covers Custom Resource Definitions, which extend this same API-group-and-versioning model to user-defined resource types.
 
-**Next Section:** §12 — `Section-12-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md`
+**Next Section:** §13 — `Section-13-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md`
