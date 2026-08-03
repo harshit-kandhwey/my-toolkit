@@ -23,21 +23,25 @@ Precise: Amazon DynamoDB is a fully managed, serverless NoSQL key-value and docu
 ## 3. Core DynamoDB Concepts
 
 ### 3.1 Tables, Items, Attributes
+
 - A table is a collection of items (roughly rows, but genuinely schemaless beyond the key structure).
 - An item is a collection of attributes (roughly columns) - different items in the same table can have completely different attribute sets, no fixed schema.
 - Attributes can be simple (string, number, boolean) or complex (list, map, set).
 
 ### 3.2 Primary Keys - The Central Design Decision
+
 - Simple primary key (Partition Key only) - a single attribute uniquely identifying each item; DynamoDB hashes this to determine physical partition placement.
 - Composite primary key (Partition Key + Sort Key) - partition key groups items, sort key orders/uniquely identifies items within that group, enabling range queries and multiple items sharing a partition key.
 - The partition key determines physical data distribution; query efficiency is built around exact partition key match (optionally with sort key range) - querying by any other attribute is inefficient (a full scan) unless a secondary index is added (Section 5).
 
 ### 3.3 Access-Pattern-First Design Principle
+
 - Central, most heavily-tested concept: because efficient queries need an exact partition key match, table design must be based on how the application will actually query data - not on inherent data structure.
 - Example: "get all orders for a customer, most recent first" -> partition key CustomerID, sort key OrderDate - makes that query extremely efficient but makes "find all orders over $1000 across all customers" inefficient without extra infrastructure.
 - Practical consequence: DynamoDB modeling starts with listing required queries, then designs keys/indexes to make each efficient - inverted from relational normalization.
 
 ### 3.4 Query vs Scan
+
 - Query - exact partition key match (optional sort key condition) - efficient, targeted, performance doesn't degrade with table size.
 - Scan - examines every item, optionally filtering after - inefficient at scale, cost/latency grow with table size regardless of match count.
 - Needing a Scan for a routine access pattern signals the key design needs reconsidering or a secondary index (Section 5) is needed.
@@ -55,9 +59,11 @@ Precise: Amazon DynamoDB is a fully managed, serverless NoSQL key-value and docu
 ## 5. DynamoDB Capacity Modes
 
 ### 5.1 On-Demand Capacity
+
 Pay per request, no capacity planning, auto-scales to actual traffic - parallel to Lambda's "pay for what you use," applied to database throughput. Best for unpredictable/new/highly variable workloads.
 
 ### 5.2 Provisioned Capacity
+
 Specify Read Capacity Units (RCUs) and Write Capacity Units (WCUs) upfront - cheaper per-unit for predictable steady traffic, requires capacity planning, can throttle if exceeded (mitigated by Auto Scaling for provisioned capacity). Mirrors the On-Demand-vs-Reserved EC2 framework: On-Demand for unpredictable/new workloads, Provisioned (with Auto Scaling) once traffic patterns are established.
 
 ---
@@ -86,12 +92,12 @@ Specify Read Capacity Units (RCUs) and Write Capacity Units (WCUs) upfront - che
 
 ## 9. Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| Query pattern slow, gets slower as table grows | Using Scan instead of Query, access pattern doesn't match primary key | Redesign primary key, or add a secondary index (Section 5) |
-| Reads don't reflect a very recent write | Default eventually consistent reads | Request a strongly consistent read where genuinely needed |
-| Requests throttled under load | Provisioned capacity too low, no Auto Scaling | Enable Auto Scaling, or switch to On-Demand |
-| One partition key value is a bottleneck | Hot partition - disproportionate traffic | Consider write-sharding (calculated suffix on partition key) |
+| Symptom                                        | Cause                                                                 | Fix                                                          |
+| ---------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Query pattern slow, gets slower as table grows | Using Scan instead of Query, access pattern doesn't match primary key | Redesign primary key, or add a secondary index (Section 5)   |
+| Reads don't reflect a very recent write        | Default eventually consistent reads                                   | Request a strongly consistent read where genuinely needed    |
+| Requests throttled under load                  | Provisioned capacity too low, no Auto Scaling                         | Enable Auto Scaling, or switch to On-Demand                  |
+| One partition key value is a bottleneck        | Hot partition - disproportionate traffic                              | Consider write-sharding (calculated suffix on partition key) |
 
 ---
 
@@ -134,6 +140,6 @@ Senior - Table has UserID as partition key for "get all orders for a user," now 
 
 ## Related Concepts (forward links)
 
-- DynamoDB secondary indexes, streams, and advanced capacity/performance tuning -> Part 6, Section 5
-- ElastiCache as a caching layer sometimes paired with DynamoDB -> Part 6, Section 6
-- Choosing between RDS/Aurora and DynamoDB for a given workload -> Part 6, Section 9
+- DynamoDB secondary indexes, streams, and advanced capacity/performance tuning -> §53
+- ElastiCache as a caching layer sometimes paired with DynamoDB -> §54
+- Choosing between RDS/Aurora and DynamoDB for a given workload -> §57

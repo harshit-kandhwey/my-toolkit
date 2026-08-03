@@ -154,6 +154,6 @@ Senior - Leadership wants "the best possible DR" for all systems - how do you re
 
 ## Related Concepts (forward links)
 
-- Part 5 Wrap-Up and comprehensive Storage interview drill -> Part 5, Section 10 (final section)
+- Part 5 Wrap-Up and comprehensive Storage interview drill -> §48 (final section)
 - RDS's own backup/Multi-AZ mechanics building directly on these DR pattern concepts -> Part 6
 - The Well-Architected Framework's Reliability pillar, formalizing DR strategy selection -> Part 10

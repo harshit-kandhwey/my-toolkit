@@ -2,29 +2,29 @@
 
 ## 1. Definition
 
-**Plain language:** Part 13 §1 established that Control Tower's guardrails apply consistently to every account in a landing zone — but that consistency guarantee only holds if new accounts are actually created in a way that correctly applies those guardrails from day one. Account Factory is the specific Control Tower component that provisions new AWS accounts, baked from the start with the correct OU placement, guardrails, and baseline configuration, rather than accounts being created ad hoc and potentially inconsistently.
+**Plain language:** §115 established that Control Tower's guardrails apply consistently to every account in a landing zone — but that consistency guarantee only holds if new accounts are actually created in a way that correctly applies those guardrails from day one. Account Factory is the specific Control Tower component that provisions new AWS accounts, baked from the start with the correct OU placement, guardrails, and baseline configuration, rather than accounts being created ad hoc and potentially inconsistently.
 
 **Precise definition:** Account Factory is a Control Tower capability that automates the provisioning of new AWS accounts within a governed landing zone — applying a defined account **blueprint** (baseline network configuration, IAM Identity Center access assignments, and OU placement determining which guardrails apply) consistently to every new account, and optionally exposing this provisioning capability as a **self-service** request mechanism so authorized teams can request new, properly-governed accounts without requiring a central cloud team to manually build each one.
 
 ## 2. Why It Exists / Problem It Solves
 
-- Part 13 §1 established that OU-level guardrails automatically apply to any account within that OU — but an account still has to actually be _created_ correctly: placed in the right OU, given appropriate baseline network configuration, and connected to the organization's identity federation (Part 2 §4) — and doing this manually, account by account, reintroduces exactly the consistency risk and manual-effort burden Control Tower otherwise exists to remove.
+- §115 established that OU-level guardrails automatically apply to any account within that OU — but an account still has to actually be _created_ correctly: placed in the right OU, given appropriate baseline network configuration, and connected to the organization's identity federation (§12) — and doing this manually, account by account, reintroduces exactly the consistency risk and manual-effort burden Control Tower otherwise exists to remove.
 - Before automated account vending, provisioning a new AWS account for a team commonly meant a manual request to a central cloud/platform team, who would then manually create the account, configure its network, apply the intended guardrails, and set up access — a genuinely slow process (creating friction for teams needing a new account quickly) and one where manual, repeated execution of the same setup steps introduces exactly the inconsistency risk this Part has repeatedly flagged as a core multi-account governance problem.
 - Account Factory removes both problems: a defined blueprint captures "what a properly-configured new account looks like" once, and either the central team or, via self-service, individual authorized requesters can provision a new account that automatically and consistently matches that blueprint — turning account creation from a slow, manual, error-prone process into a fast, consistent, largely automated one.
-- 🔑 **Key takeaway:** Account Factory applies the exact same "define once, apply consistently and repeatably" principle established for CloudFormation/CDK/Terraform (Part 9 §1-4) and CI/CD pipelines (Part 9 §8), here specifically applied to the account-provisioning process itself — a genuinely different artifact (an AWS account, not application infrastructure) but the identical underlying discipline.
+- 🔑 **Key takeaway:** Account Factory applies the exact same "define once, apply consistently and repeatably" principle established for CloudFormation/CDK/Terraform (§79-82) and CI/CD pipelines (§86), here specifically applied to the account-provisioning process itself — a genuinely different artifact (an AWS account, not application infrastructure) but the identical underlying discipline.
 
 ## 3. Prerequisites and Dependencies
 
-- **AWS Control Tower and landing zone structure** (Part 13 §1): Account Factory is a Control Tower capability, provisioning accounts into the OU structure and guardrail model established there.
-- **IAM Identity Center** (Part 2 §4): account blueprints commonly include identity federation configuration, determining who gets access to a newly-provisioned account and with what permissions.
-- **VPC networking fundamentals** (Part 4 §1-2): account blueprints commonly include baseline VPC configuration, provisioned automatically as part of account creation.
+- **AWS Control Tower and landing zone structure** (§115): Account Factory is a Control Tower capability, provisioning accounts into the OU structure and guardrail model established there.
+- **IAM Identity Center** (§12): account blueprints commonly include identity federation configuration, determining who gets access to a newly-provisioned account and with what permissions.
+- **VPC networking fundamentals** (§29-30): account blueprints commonly include baseline VPC configuration, provisioned automatically as part of account creation.
 
 ## 4. Internal Working / Architecture & Components
 
 ### 4.1 Account Blueprints
 
-- A **blueprint** defines the baseline configuration applied to every account provisioned through it — commonly including default VPC/subnet configuration (following the public/private subnet patterns from Part 4 §2), default IAM Identity Center permission set assignments (who gets access and at what privilege level), and the target OU (determining which Control Tower guardrails, Part 13 §1 §4.2, apply).
-- Organizations can define multiple blueprints for different account purposes — a "standard workload account" blueprint versus a "sandbox account" blueprint versus a specialized blueprint for a particular compliance-sensitive business unit — each encoding the appropriate baseline configuration for that specific account category, directly mirroring the differentiated-guardrails-per-OU principle established in Part 13 §1's Architect answer.
+- A **blueprint** defines the baseline configuration applied to every account provisioned through it — commonly including default VPC/subnet configuration (following the public/private subnet patterns from §30), default IAM Identity Center permission set assignments (who gets access and at what privilege level), and the target OU (determining which Control Tower guardrails, §115 §4.2, apply).
+- Organizations can define multiple blueprints for different account purposes — a "standard workload account" blueprint versus a "sandbox account" blueprint versus a specialized blueprint for a particular compliance-sensitive business unit — each encoding the appropriate baseline configuration for that specific account category, directly mirroring the differentiated-guardrails-per-OU principle established in §115's Architect answer.
 
 ### 4.2 Self-Service Provisioning
 
@@ -41,8 +41,8 @@
 
 Account Factory's self-service capability (§4.2) is a specific, purpose-built application of two more general AWS governance services worth understanding in their own right, since both extend well beyond account provisioning specifically.
 
-- **AWS Service Catalog** is a general-purpose service for creating and managing a catalog of approved, self-service-provisionable "products" — pre-approved CloudFormation templates (Part 9 §1) for anything an organization wants to offer as a governed, self-service option, not only new accounts. A platform team can publish products for standard resource patterns (a pre-configured VPC, a standard RDS instance sizing, a compliant S3 bucket configuration) alongside the Account Factory product Control Tower itself publishes, giving requesters one consistent self-service experience across many different kinds of pre-approved infrastructure, not just accounts. Service Catalog's own access control (which users/roles can launch which products) is the same genuine governance decision §4.2's warning describes for account blueprints specifically — here generalized to any catalog product.
-- **AWS Resource Access Manager (RAM)** is a distinct, complementary service for securely **sharing** AWS resources that already exist in one account with other accounts in an Organization, without duplicating those resources — a Transit Gateway (Part 4 §4), a subnet, a Lattice Service Network (Part 4 §6a), or a Lake Formation-governed Glue Catalog table (Part 11 §1-2) can each be shared via RAM to specific accounts or an entire OU, letting those accounts use the shared resource directly rather than each account provisioning and paying for its own separate copy.
+- **AWS Service Catalog** is a general-purpose service for creating and managing a catalog of approved, self-service-provisionable "products" — pre-approved CloudFormation templates (§79) for anything an organization wants to offer as a governed, self-service option, not only new accounts. A platform team can publish products for standard resource patterns (a pre-configured VPC, a standard RDS instance sizing, a compliant S3 bucket configuration) alongside the Account Factory product Control Tower itself publishes, giving requesters one consistent self-service experience across many different kinds of pre-approved infrastructure, not just accounts. Service Catalog's own access control (which users/roles can launch which products) is the same genuine governance decision §4.2's warning describes for account blueprints specifically — here generalized to any catalog product.
+- **AWS Resource Access Manager (RAM)** is a distinct, complementary service for securely **sharing** AWS resources that already exist in one account with other accounts in an Organization, without duplicating those resources — a Transit Gateway (§32), a subnet, a Lattice Service Network (§34a), or a Lake Formation-governed Glue Catalog table (§99-100) can each be shared via RAM to specific accounts or an entire OU, letting those accounts use the shared resource directly rather than each account provisioning and paying for its own separate copy.
 - 🔑 **Key distinction:** Service Catalog governs _provisioning new instances_ of approved resource patterns (each requester gets their own new resource, created from a template); RAM governs _sharing already-existing_ resources across account boundaries (requesters use the _same_ underlying resource, not a new copy). Both are genuine self-service/governance mechanisms, but they solve opposite halves of the "how do multiple accounts get access to infrastructure without a central team manually provisioning or connecting everything by hand" problem — provisioning new (Service Catalog) versus reusing existing (RAM).
 - Practical example tying both together: a central networking team provisions one Transit Gateway in a dedicated networking account, then uses **RAM** to share specific Transit Gateway attachments with every VPC-owning account across the Organization (avoiding N separate Transit Gateways) — while that same networking team could separately use **Service Catalog** to publish a "standard compliant VPC" product, letting application teams self-service-provision new, correctly-configured VPCs that then attach to the shared Transit Gateway. One resource is shared (the Transit Gateway, via RAM); the other is provisioned fresh per request (the VPC, via Service Catalog) — both governed, both self-service, solving genuinely different problems.
 
@@ -51,7 +51,7 @@ Account Factory's self-service capability (§4.2) is a specific, purpose-built a
 1. A central cloud/platform team defines one or more account blueprints, encoding baseline network configuration, identity access assignments, and target OU per account category.
 2. Account Factory's self-service catalog is configured, specifying which blueprints are available and to which authorized requesters.
 3. An authorized requester (a team, or an individual for a sandbox account) submits a request for a new account, selecting the appropriate blueprint for their need.
-4. Account Factory provisions the new account automatically — creating it within AWS Organizations, placing it in the blueprint's target OU (immediately inheriting that OU's Control Tower guardrails, Part 13 §1), applying the baseline network configuration, and setting up identity access per the blueprint.
+4. Account Factory provisions the new account automatically — creating it within AWS Organizations, placing it in the blueprint's target OU (immediately inheriting that OU's Control Tower guardrails, §115), applying the baseline network configuration, and setting up identity access per the blueprint.
 5. The requester receives access to a fully-configured, appropriately-governed account, typically within minutes rather than the days a manual process might have taken.
 6. Over the account's lifecycle, its blueprint's baseline configuration can be updated to reflect evolving standards, and eventually, if no longer needed, the account is formally closed following a defined decommissioning process (§4.3).
 
@@ -80,9 +80,9 @@ aws servicecatalog provision-product \
                               Key=ManagedOrganizationalUnit,Value="Non-Production"
 ```
 
-- **Important arguments:** `ManagedOrganizationalUnit` determines the account's OU placement — and therefore, per Part 13 §1 §4.2, which guardrails automatically apply. `AccountEmail`/`AccountName` follow standard AWS account creation requirements, now issued through this governed, blueprint-driven workflow rather than manual account creation.
+- **Important arguments:** `ManagedOrganizationalUnit` determines the account's OU placement — and therefore, per §115 §4.2, which guardrails automatically apply. `AccountEmail`/`AccountName` follow standard AWS account creation requirements, now issued through this governed, blueprint-driven workflow rather than manual account creation.
 - **Common errors:** requesting an OU placement the requester isn't actually authorized for (§4.2's warning) — this should be prevented by the self-service catalog's own access control, not merely by convention; specifying an account email already in use elsewhere (a standard AWS account-creation constraint, unrelated to Control Tower specifically).
-- **Production usage:** in practice, most organizations expose this underlying API through a simpler internal request form or a chat-based workflow (Part 9 §8's GitOps/pipeline-triggered patterns are a reasonable analog) rather than requiring requesters to construct this API call directly — the API itself is more commonly what a platform team's own tooling calls under the hood.
+- **Production usage:** in practice, most organizations expose this underlying API through a simpler internal request form or a chat-based workflow (§86's GitOps/pipeline-triggered patterns are a reasonable analog) rather than requiring requesters to construct this API call directly — the API itself is more commonly what a platform team's own tooling calls under the hood.
 
 ## 8. Hands-On Example — Self-Service Sandbox Provisioning
 
@@ -95,7 +95,7 @@ aws servicecatalog provision-product \
 
 3. Account Factory automatically:
    - Creates a new AWS account
-   - Places it in the Sandbox OU (Part 13 §1 §8's example structure) --
+   - Places it in the Sandbox OU (§115 §8's example structure) --
      inheriting permissive-but-isolated, cost-capped guardrails
    - Configures baseline VPC/subnet setup
    - Grants the engineer's IAM Identity Center identity appropriate
@@ -118,8 +118,8 @@ This demonstrates directly how self-service provisioning (§4.2) resolves the ex
 ## 10. Security Considerations
 
 - Self-service catalog access control (§4.2's warning) is the primary security lever specific to this section — restricting who can provision accounts, and via which blueprints, prevents self-service from becoming an unintended path to bypassing intended governance (e.g., an unauthorized requester somehow provisioning a production-OU account with weaker controls than intended).
-- Because every account provisioned through Account Factory automatically inherits its target OU's guardrails (Part 13 §1), the security guarantee established there — including preventive SCP-based guardrails' unbypassable-ceiling property — extends automatically to every newly self-service-provisioned account, without depending on the requester (who may not be a security specialist) to correctly configure security controls themselves.
-- Abandoned, non-decommissioned accounts (§4.3) represent a genuine, easily-overlooked security surface — periodic account inventory review (similar in spirit to the periodic IAM access reviews established in Part 2 §1) should include checking for accounts that are no longer actively used and should be formally closed.
+- Because every account provisioned through Account Factory automatically inherits its target OU's guardrails (§115), the security guarantee established there — including preventive SCP-based guardrails' unbypassable-ceiling property — extends automatically to every newly self-service-provisioned account, without depending on the requester (who may not be a security specialist) to correctly configure security controls themselves.
+- Abandoned, non-decommissioned accounts (§4.3) represent a genuine, easily-overlooked security surface — periodic account inventory review (similar in spirit to the periodic IAM access reviews established in §9) should include checking for accounts that are no longer actively used and should be formally closed.
 
 ## 11. Performance Considerations
 
@@ -128,8 +128,8 @@ This demonstrates directly how self-service provisioning (§4.2) resolves the ex
 
 ## 12. Monitoring
 
-- Control Tower's landing-zone-wide compliance dashboard (Part 13 §1 §12) extends naturally to newly-provisioned accounts, since they inherit guardrails immediately upon creation — no separate monitoring setup is needed specifically for Account-Factory-provisioned accounts beyond the landing zone's existing compliance visibility.
-- Account provisioning activity itself (who requested which blueprint, when, and for what OU) should be logged and periodically reviewed — CloudTrail (Part 8 §5) captures the underlying Service Catalog/Control Tower API activity, providing this audit trail.
+- Control Tower's landing-zone-wide compliance dashboard (§115 §12) extends naturally to newly-provisioned accounts, since they inherit guardrails immediately upon creation — no separate monitoring setup is needed specifically for Account-Factory-provisioned accounts beyond the landing zone's existing compliance visibility.
+- Account provisioning activity itself (who requested which blueprint, when, and for what OU) should be logged and periodically reviewed — CloudTrail (§73) captures the underlying Service Catalog/Control Tower API activity, providing this audit trail.
 
 ## 13. Troubleshooting
 
@@ -175,16 +175,16 @@ This demonstrates directly how self-service provisioning (§4.2) resolves the ex
 
 ## 18. Key Takeaways
 
-🔑 Account Factory automates account provisioning via defined blueprints, ensuring every new account — however it's requested — consistently inherits correct baseline configuration and OU-level guardrails (Part 13 §1).
+🔑 Account Factory automates account provisioning via defined blueprints, ensuring every new account — however it's requested — consistently inherits correct baseline configuration and OU-level guardrails (§115).
 🔑 Self-service provisioning resolves the manual-process bottleneck and consistency risk of ad hoc account creation simultaneously, provided the self-service catalog's own access control (who can request which blueprints) is deliberately configured.
-🔑 Account blueprints encode baseline network, identity, and OU-placement configuration once, applied repeatably — the same "define once, apply consistently" discipline established for infrastructure as code (Part 9 §1-4) and CI/CD (Part 9 §8), now applied to account provisioning itself.
+🔑 Account blueprints encode baseline network, identity, and OU-placement configuration once, applied repeatably — the same "define once, apply consistently" discipline established for infrastructure as code (§79-82) and CI/CD (§86), now applied to account provisioning itself.
 🔑 Account decommissioning deserves the same deliberateness as account creation — an abandoned, non-decommissioned account is a genuine, easily-overlooked cost and security surface.
 🔑 A small number of well-designed standard blueprints, covering the majority of account needs, is preferable to a large number of highly-customized, one-off blueprints.
 
 ## 19. Related Concepts
 
-- **AWS Control Tower and landing zone structure** (Part 13 §1) — the OU/guardrail foundation Account Factory provisions accounts into.
+- **AWS Control Tower and landing zone structure** (§115) — the OU/guardrail foundation Account Factory provisions accounts into.
 - **AWS Service Catalog and AWS Resource Access Manager** (see §4.4 above) — the general-purpose provisioning and resource-sharing mechanisms underlying Account Factory's self-service model, applicable well beyond account provisioning.
-- **IAM Identity Center** (Part 2 §4) — the identity federation mechanism blueprints commonly configure for newly-provisioned accounts.
-- **CI/CD for Infrastructure** (Part 9 §8) — the directly analogous "define once, apply consistently, self-service where appropriate" discipline this section applies to account provisioning specifically.
-- **Centralized Logging & Audit Account Architecture** (Part 13 §3, next section) — the Log Archive/Audit account pattern every blueprint-provisioned account's logs ultimately feed into.
+- **IAM Identity Center** (§12) — the identity federation mechanism blueprints commonly configure for newly-provisioned accounts.
+- **CI/CD for Infrastructure** (§86) — the directly analogous "define once, apply consistently, self-service where appropriate" discipline this section applies to account provisioning specifically.
+- **Centralized Logging & Audit Account Architecture** (§117, next section) — the Log Archive/Audit account pattern every blueprint-provisioned account's logs ultimately feed into.

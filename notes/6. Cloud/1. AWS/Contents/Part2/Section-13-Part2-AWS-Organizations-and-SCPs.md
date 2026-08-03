@@ -14,9 +14,9 @@
 
 ## 2. Why It Exists
 
-- Many independent accounts (Part 1 §7) left ungoverned creates inconsistency — nothing stops one team's account from being insecure while another's is locked down.
+- Many independent accounts (§7) left ungoverned creates inconsistency — nothing stops one team's account from being insecure while another's is locked down.
 - Organizations adds a management layer above accounts — define guardrails once, apply automatically and unbypassably everywhere, without trusting every account owner individually.
-- Solves billing fragmentation (Part 1 §6) — one consolidated view instead of many separate bills, with per-account visibility preserved.
+- Solves billing fragmentation (§6) — one consolidated view instead of many separate bills, with per-account visibility preserved.
 
 > 🔑 Organizations turns "many independent accounts" into "one governed estate" — the foundation for Identity Center and Part 8's cross-account monitoring.
 
@@ -31,7 +31,7 @@
 
 ### 3.2 Member Accounts
 
-- Where actual workloads live. Each has its own root user (secure every account's root, not just management's — Part 1 §4). Subject to SCPs via their OU.
+- Where actual workloads live. Each has its own root user (secure every account's root, not just management's — §4). Subject to SCPs via their OU.
 
 ### 3.3 Organizational Units (OUs)
 
@@ -44,7 +44,7 @@
 
 ### 3.4 "Root" of the Organization vs Root User
 
-- ⚠️ "Root" in Organizations = the top node of the OU tree. Completely different from the **root user** (Part 1 §4), a credential/identity within a specific account. Context determines which is meant.
+- ⚠️ "Root" in Organizations = the top node of the OU tree. Completely different from the **root user** (§4), a credential/identity within a specific account. Context determines which is meant.
 
 ---
 
@@ -76,7 +76,7 @@
 
 - Deny leaving the Organization.
 - Deny disabling CloudTrail/GuardDuty/Config.
-- Region restriction (enforcing Part 1 §2's opt-in Region discussion).
+- Region restriction (enforcing §2's opt-in Region discussion).
 - Enforce root MFA / deny root access key creation org-wide.
 - Deny expensive resource types in non-production OUs (cost governance, enforced not just monitored).
 
@@ -92,7 +92,7 @@
 
 ## 6. Other Organizations Policy Types
 
-- **Tag Policies** — enforce consistent tagging standards org-wide (supports Part 1 §6's cost-allocation tagging, enforced).
+- **Tag Policies** — enforce consistent tagging standards org-wide (supports §6's cost-allocation tagging, enforced).
 - **Backup Policies** — centrally enforce AWS Backup plans (full depth Part 5).
 - **AI Services Opt-Out Policies** — control AWS's use of your data for AI/ML improvement — compliance-relevant.
 
@@ -102,7 +102,7 @@
 
 - All member usage rolls into one bill paid by the management account.
 - **Volume pricing/RI/Savings Plans discounts shared across the Organization** — many small accounts collectively crossing a threshold none would reach alone.
-- Per-account cost visibility preserved — layered on top of, not instead of, Cost Explorer/CUR (Part 1 §6).
+- Per-account cost visibility preserved — layered on top of, not instead of, Cost Explorer/CUR (§6).
 
 ---
 
@@ -176,6 +176,6 @@
 
 ## 🌐 Related Concepts (forward links)
 
-- KMS and encryption enforcement, often paired with SCPs → Part 2, Section 6
+- KMS and encryption enforcement, often paired with SCPs → §14
 - Control Tower, delegated administration, centralized logging/security accounts → Part 8
 - Backup Policies in depth → Part 5

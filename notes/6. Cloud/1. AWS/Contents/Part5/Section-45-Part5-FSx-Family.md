@@ -159,6 +159,6 @@ Senior - Design storage for a genomics pipeline needing high-throughput temporar
 
 ## Related Concepts (forward links)
 
-- AWS Storage Gateway and hybrid storage patterns -> Part 5, Section 8
-- AWS Backup unifying backup management across EBS/EFS/FSx/RDS -> Part 5, Section 9
+- AWS Storage Gateway and hybrid storage patterns -> §46
+- AWS Backup unifying backup management across EBS/EFS/FSx/RDS -> §47
 - Migration strategies (the 6 Rs) where FSx often supports lift-and-shift -> Part 10

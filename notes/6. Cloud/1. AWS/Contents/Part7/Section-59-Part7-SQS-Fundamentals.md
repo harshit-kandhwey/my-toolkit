@@ -20,7 +20,7 @@ SQS solves this by inserting a durable buffer between producer and consumer. The
 
 ## 3. Prerequisites and Dependencies
 
-- **IAM** (Part 2 §1–3): every SQS action (SendMessage, ReceiveMessage, DeleteMessage) is authorized through IAM policies or SQS-specific queue policies (a resource-based policy, conceptually similar to an S3 bucket policy — see Part 5 §3).
+- **IAM** (§9–11): every SQS action (SendMessage, ReceiveMessage, DeleteMessage) is authorized through IAM policies or SQS-specific queue policies (a resource-based policy, conceptually similar to an S3 bucket policy — see §41).
 - **Basic distributed-systems vocabulary**: this section defines "producer," "consumer," "at-least-once delivery," and "idempotency" from scratch below, so no prior knowledge is assumed.
 
 ## 4. Internal Working
@@ -47,7 +47,7 @@ Producer                     SQS (distributed, replicated)                Consum
    |                                   | (message permanently removed)      |
 ```
 
-**Why "at least once" and not "exactly once" for standard queues:** guaranteeing exactly-once delivery across a distributed, replicated store under network partitions and consumer crashes is provably expensive (it requires distributed consensus and dedup tracking on every message). SQS standard queues sacrifice exactly-once for massive scale and low latency; SQS **FIFO queues** (covered in Part 7 §2) add ordering and exactly-once processing at a throughput cost — a classic trade-off worth being able to explain in interviews.
+**Why "at least once" and not "exactly once" for standard queues:** guaranteeing exactly-once delivery across a distributed, replicated store under network partitions and consumer crashes is provably expensive (it requires distributed consensus and dedup tracking on every message). SQS standard queues sacrifice exactly-once for massive scale and low latency; SQS **FIFO queues** (covered in §60) add ordering and exactly-once processing at a throughput cost — a classic trade-off worth being able to explain in interviews.
 
 ## 5. Architecture & Components
 
@@ -58,7 +58,7 @@ Producer                     SQS (distributed, replicated)                Consum
 | **Producer**                | Any application, service, or AWS integration (S3 event notification, SNS subscription, EventBridge rule) that calls `SendMessage` / `SendMessageBatch`.               |
 | **Consumer**                | Any application or AWS service (EC2, Lambda, ECS task) that calls `ReceiveMessage`, processes, then `DeleteMessage`.                                                  |
 | **Receipt Handle**          | A unique, per-delivery token (not the same as the message ID) used to delete or change the visibility of that specific delivery.                                      |
-| **Dead-Letter Queue (DLQ)** | A separate queue that repeatedly-failing messages are redirected to after a configured number of receive attempts (`maxReceiveCount`) — full depth in Part 7 §2.      |
+| **Dead-Letter Queue (DLQ)** | A separate queue that repeatedly-failing messages are redirected to after a configured number of receive attempts (`maxReceiveCount`) — full depth in §60.            |
 | **Redrive Policy**          | The configuration on a source queue that points to its DLQ and sets the retry threshold.                                                                              |
 
 ## 6. Lifecycle / Workflow
@@ -143,8 +143,8 @@ Key queue attributes (all settable via Console, CLI `set-queue-attributes`, SDK,
   ```
 - **Production usage:** Application code typically uses the SDK (`boto3.client('sqs').send_message(...)` in Python, or the equivalent in Java/Node) rather than the CLI; the CLI form above is used for manual testing, runbooks, or debugging in a terminal/CloudShell session.
 - **Exit codes:** `0` success; non-zero on throttling, invalid queue URL, or oversized body.
-- **Common errors:** Sending a body >256KB without using the S3-extended-client pattern; forgetting `MessageGroupId` for a FIFO queue (required field, causes a `MissingParameter` error) — covered fully in Part 7 §2.
-- **Security impact:** Requires `sqs:SendMessage` IAM permission on the target queue ARN; if the queue policy also restricts source accounts/services, both must allow it (same union-vs-intersection reasoning as S3 bucket policies + IAM, Part 5 §3).
+- **Common errors:** Sending a body >256KB without using the S3-extended-client pattern; forgetting `MessageGroupId` for a FIFO queue (required field, causes a `MissingParameter` error) — covered fully in §60.
+- **Security impact:** Requires `sqs:SendMessage` IAM permission on the target queue ARN; if the queue policy also restricts source accounts/services, both must allow it (same union-vs-intersection reasoning as S3 bucket policies + IAM, §41).
 - **Performance impact:** Each `send-message` call is one API request; for high-throughput producers, use `SendMessageBatch` (up to 10 messages/call) to cut request count and cost roughly 10x.
 - **Troubleshooting tip:** If messages appear to "disappear," check you're looking at the right queue URL (dev vs prod queues are a classic copy-paste mistake) and check CloudWatch's `NumberOfMessagesSent` metric to confirm the send actually happened.
 
@@ -178,7 +178,7 @@ Key queue attributes (all settable via Console, CLI `set-queue-attributes`, SDK,
   }
   ```
   (If the queue is empty at the end of the wait window, `Messages` is simply absent from the response — this is normal, not an error.)
-- **Production usage:** A Lambda function configured with an SQS event source mapping does this polling for you automatically and invisibly (AWS manages the poller) — this is by far the most common enterprise pattern and is why Lambda + SQS appears constantly in real architectures (cross-reference: Part 3 §7).
+- **Production usage:** A Lambda function configured with an SQS event source mapping does this polling for you automatically and invisibly (AWS manages the poller) — this is by far the most common enterprise pattern and is why Lambda + SQS appears constantly in real architectures (cross-reference: §25).
 - **Exit codes:** `0` even when no messages are returned (empty is a valid, successful result, not a failure).
 - **Common errors:** Forgetting that `ReceiptHandle` is different every time the _same_ message is received (after a visibility timeout expiry and redelivery) — using a stale receipt handle to delete will silently fail to delete the _current_ copy.
 - **Security impact:** Requires `sqs:ReceiveMessage`; combined with `sqs:DeleteMessage` and `sqs:GetQueueAttributes` typically granted together via a least-privilege IAM policy scoped to the specific queue ARN.
@@ -284,22 +284,22 @@ This is the pattern used pervasively in production: AWS manages the poller, scal
 ## 10. Production & Enterprise Usage
 
 - **Startups** typically use a single standard queue per background job type (e.g., "send-email-queue," "resize-image-queue") consumed by a small Lambda or a lightweight worker process, often skipping DLQs early on — a corner-cutting habit that causes painful debugging later (see §16, Anti-Patterns).
-- **Enterprises** run SQS as one layer in a broader event-driven mesh: S3 upload → S3 event notification → SQS → Lambda → downstream SNS fan-out → multiple subscriber queues, each with its own DLQ, its own CloudWatch alarms, and its own IAM-scoped access — often provisioned entirely through CloudFormation StackSets or Terraform modules across dozens of AWS accounts (multi-account architecture recall: Part 2 §5, AWS Organizations).
+- **Enterprises** run SQS as one layer in a broader event-driven mesh: S3 upload → S3 event notification → SQS → Lambda → downstream SNS fan-out → multiple subscriber queues, each with its own DLQ, its own CloudWatch alarms, and its own IAM-scoped access — often provisioned entirely through CloudFormation StackSets or Terraform modules across dozens of AWS accounts (multi-account architecture recall: §13, AWS Organizations).
 - **Cloud integration:** SQS integrates natively as an event source for Lambda, as a target for EventBridge rules and SNS subscriptions, and as a destination for S3 event notifications — making it a common "glue" layer rather than a standalone product most teams reach for in isolation.
 - **Cost optimization:** SQS pricing is per-request (per batch of up to 64 KB counted as one "request" for API pricing purposes), so batching sends/receives/deletes (up to 10 at a time) is both a performance _and_ cost best practice — a single change that often cuts SQS costs substantially for chatty producers/consumers.
-- **Compliance & governance:** encryption at rest (SSE-SQS or SSE-KMS, see Part 2 §6 for KMS depth) is enabled per-queue; regulated industries (finance, healthcare) typically mandate SSE-KMS with customer-managed keys for full audit trail via CloudTrail (Part 8, to come) of every key usage.
+- **Compliance & governance:** encryption at rest (SSE-SQS or SSE-KMS, see §14 for KMS depth) is enabled per-queue; regulated industries (finance, healthcare) typically mandate SSE-KMS with customer-managed keys for full audit trail via CloudTrail (Part 8, to come) of every key usage.
 
 ## 11. Security Considerations
 
 - **Encryption in transit:** all SQS API calls are HTTPS by default — there is no plaintext option.
-- **Encryption at rest:** optional but strongly recommended; either SSE-SQS (AWS-managed key, no extra config) or SSE-KMS (customer-managed key, full audit trail, slightly higher latency and cost due to KMS API calls per operation — cross-reference Part 2 §6).
-- **Access control:** two layers, exactly analogous to S3 (Part 5 §3): the caller's **IAM identity policy** must allow the action, AND (if present) the queue's own **resource-based policy** must not deny it — both must permit for cross-account access to work.
+- **Encryption at rest:** optional but strongly recommended; either SSE-SQS (AWS-managed key, no extra config) or SSE-KMS (customer-managed key, full audit trail, slightly higher latency and cost due to KMS API calls per operation — cross-reference §14).
+- **Access control:** two layers, exactly analogous to S3 (§41): the caller's **IAM identity policy** must allow the action, AND (if present) the queue's own **resource-based policy** must not deny it — both must permit for cross-account access to work.
 - **Least privilege example:** grant `sqs:SendMessage` to a producer role and only `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes` to a consumer role — never grant a blanket `sqs:*` in production.
 - 🎯 **Interview tip:** a very common scenario question is "How would you allow an S3 bucket in Account A to send event notifications to an SQS queue in Account B?" — the answer requires a queue policy on the Account B queue explicitly trusting the S3 service principal and, ideally, conditioned on the specific bucket ARN via `aws:SourceArn` — a cross-account, cross-service resource policy pattern worth rehearsing.
 
 ## 12. Performance Considerations
 
-- **Throughput:** standard queues support (practically) unlimited transactions per second; FIFO queues are capped (3,000 messages/second with batching, 300/second without — covered fully in Part 7 §2).
+- **Throughput:** standard queues support (practically) unlimited transactions per second; FIFO queues are capped (3,000 messages/second with batching, 300/second without — covered fully in §60).
 - **Long polling vs short polling:** long polling (`WaitTimeSeconds` 1–20) reduces empty responses, API cost, and consumer CPU usage; short polling (`WaitTimeSeconds` 0, the historical default) checks a subset of servers immediately and may return empty even when messages exist elsewhere in the distributed backend — almost never the right choice in modern applications.
 - **Batching:** `SendMessageBatch`, `ReceiveMessage` with `MaxNumberOfMessages` up to 10, and `DeleteMessageBatch` all reduce request count and therefore both latency overhead and cost.
 - **Visibility timeout tuning:** too short causes duplicate processing (message becomes visible again mid-processing); too long delays retry of genuinely failed messages — tune to p99 processing time with margin, and consider using `ChangeMessageVisibility` dynamically for long-running jobs (heartbeat pattern) rather than setting one static large value.
@@ -324,7 +324,7 @@ Key CloudWatch metrics (CloudWatch full depth arrives in Part 8, but these are t
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Messages processed more than once           | Visibility timeout shorter than actual processing time, or consumer crash before `DeleteMessage` | Increase visibility timeout; ensure consumer logic is idempotent (see §16 misconceptions); use heartbeat/`ChangeMessageVisibility` for long jobs |
 | Messages never processed, queue depth grows | Consumer down, under-scaled, or throwing exceptions before delete                                | Check consumer logs/health; check `ApproximateNumberOfMessagesNotVisible` vs `Visible` split; scale consumers or Lambda concurrency              |
-| "Poison" messages stuck cycling forever     | No DLQ configured, or `maxReceiveCount` set too high/absent                                      | Configure a redrive policy with a DLQ (full depth in Part 7 §2)                                                                                  |
+| "Poison" messages stuck cycling forever     | No DLQ configured, or `maxReceiveCount` set too high/absent                                      | Configure a redrive policy with a DLQ (full depth in §60)                                                                                        |
 | `ReceiptHandleIsInvalid` errors on delete   | Using a stale receipt handle from an earlier, already-expired delivery                           | Always use the receipt handle from the _most recent_ `ReceiveMessage` call for that message                                                      |
 | High cost, low apparent traffic             | Short polling (`WaitTimeSeconds=0`) causing constant empty-receive API calls                     | Enable long polling; review `NumberOfEmptyReceives` metric                                                                                       |
 
@@ -339,11 +339,11 @@ Key CloudWatch metrics (CloudWatch full depth arrives in Part 8, but these are t
 
 ## 16. Anti-Patterns & Common Mistakes
 
-- ❌ Treating SQS like a strictly-ordered pipeline when using a **standard** queue — ordering is not guaranteed; if strict order matters, a FIFO queue (Part 7 §2) is required, with its throughput ceiling designed around.
+- ❌ Treating SQS like a strictly-ordered pipeline when using a **standard** queue — ordering is not guaranteed; if strict order matters, a FIFO queue (§60) is required, with its throughput ceiling designed around.
 - ❌ Writing non-idempotent consumers (e.g., "charge the customer's card" with no dedup check) against an at-least-once delivery system — this is a classic source of double-billing production incidents.
 - ❌ Skipping the DLQ "to keep things simple" — this consistently comes back as an on-call nightmare when a bad message loops forever, consuming consumer capacity and hiding real backlog growth.
 - ❌ Polling with `WaitTimeSeconds=0` in a tight loop — burns cost and CPU for no benefit over long polling.
-- **Common misconception:** "SQS guarantees exactly-once delivery." False for standard queues (at-least-once); even FIFO queues' "exactly-once processing" guarantee is about deduplication _within a 5-minute deduplication window_, not an unconditional system-wide guarantee — nuance covered fully in Part 7 §2.
+- **Common misconception:** "SQS guarantees exactly-once delivery." False for standard queues (at-least-once); even FIFO queues' "exactly-once processing" guarantee is about deduplication _within a 5-minute deduplication window_, not an unconditional system-wide guarantee — nuance covered fully in §60.
 
 ## 17. Interview Questions (Junior → Architect) with Model Answers
 
@@ -379,7 +379,7 @@ _What the interviewer is probing for:_ recognition that message-queue delivery g
 
 ## 20. Related Concepts
 
-- **SQS FIFO queues, DLQs in full depth, and visibility timeout at scale** → next section, Part 7 §2.
-- **SNS** (pub/sub fan-out, often paired with SQS in the "fan-out" pattern where one SNS topic delivers to multiple SQS queues) → Part 7 §3.
-- **Lambda event source mappings** (the managed way most production consumers actually poll SQS) → previously covered Part 3 §7.
-- **IAM resource policies** (the queue-policy mechanism underlying cross-account access) → previously covered Part 2 §1–2, Part 5 §3 (S3 analogue).
+- **SQS FIFO queues, DLQs in full depth, and visibility timeout at scale** → next section, §60.
+- **SNS** (pub/sub fan-out, often paired with SQS in the "fan-out" pattern where one SNS topic delivers to multiple SQS queues) → §61.
+- **Lambda event source mappings** (the managed way most production consumers actually poll SQS) → previously covered §25.
+- **IAM resource policies** (the queue-policy mechanism underlying cross-account access) → previously covered §9–10, §41 (S3 analogue).

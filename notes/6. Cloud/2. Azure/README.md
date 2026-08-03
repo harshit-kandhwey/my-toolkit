@@ -51,13 +51,20 @@ Advanced Topics (Parts 15–18): 26 sections
 - Browse part folders directly (e.g., `Contents/Part16/` for AI/ML topics)
 - Each section is self-contained with cross-references
 
-### 3. **Interview Prep** (Final stage)
+### 3. **Certification Prep** (AZ-104 / AZ-305 focus)
+
+- See the domain mapping below to identify which Parts matter most for your target exam
+- AZ-900 (Fundamentals) and SC-900 (Security/Compliance/Identity Fundamentals) candidates need only Part 1 plus a light pass of Parts 2 and 11
+- AZ-104 (Administrator Associate) and AZ-305 (Solutions Architect Expert) are both fully covered — see the two domain tables below
+- AZ-500 (Security Engineer Associate) candidates should focus on Part 2, Part 11, and Part 17
+
+### 4. **Interview Prep** (Final stage)
 
 - Study **Part 14 — Interview Preparation & Wrap-Up** for a consolidated question bank, system design questions, and hands-on labs
 - Each Part from 15–18 closes with its own dedicated interview drill section
 - Reference Part 13's Azure vs. AWS vs. GCP comparison and real-world case studies for architecture-level discussions
 
-### 4. **Specialization Paths**
+### 5. **Specialization Paths**
 
 - **Data & Analytics:** Parts 6 (Databases), 4 (Storage), 15 (Data Engineering & Analytics)
 - **AI/ML:** Parts 2 (Identity/Security), 9 (IaC), 16 (AI/ML & GenAI)
@@ -85,6 +92,7 @@ Azure/
 ✅ **Modular Organization** — Sections grouped by topic in `Contents/PartN/` folders
 ✅ **Cross-Referenced** — Sections link to related topics across parts
 ✅ **Interview-Focused** — Interview drills, system design, and best practices throughout
+✅ **Certification-Aware** — Content maps directly onto AZ-104 and AZ-305 exam domains, with AZ-900/SC-900/AZ-500 paths noted
 ✅ **Gap Coverage** — Data Engineering, AI/ML, Security Operations, and Resilience Testing added as dedicated Parts (15–18), plus Azure Virtual WAN, Service Mesh on AKS, Azure Container Apps, and Azure Bastion inserted in-place to close gaps identified against an equivalent AWS knowledge base
 ✅ **Production-Ready** — From hands-on labs to enterprise-scale patterns
 
@@ -108,6 +116,20 @@ Azure/
 - **All 100 sections are organized in `Contents/PartN/` folders** for modular, scalable structure
 - **Single navigation source:** INDEX.md is the master reference for all parts and sections
 
+## Certification Domain Mapping (AZ-104)
+
+This KB was not written against a single pinned exam-blueprint revision, so treat the mapping below as orientation rather than a guaranteed percentage breakdown — always cross-check current weights against Microsoft's published exam pages before scheduling.
+
+### AZ-104 (Azure Administrator Associate)
+
+| AZ-104 Domain (representative)            | Weight | Covered By                                                                                    |
+| ----------------------------------------- | ------ | --------------------------------------------------------------------------------------------- |
+| Manage Azure identities and governance    | 20–25% | Part 2 (Identity & Access Management), Part 11 (Security & Governance)                        |
+| Implement and manage storage              | 15–20% | Part 4 (Storage)                                                                              |
+| Deploy and manage Azure compute resources | 20–25% | Part 3 (Core Compute), Part 7 (Containers & Orchestration), Part 8 (Serverless & Integration) |
+| Implement and manage virtual networking   | 15–20% | Part 5 (Networking)                                                                           |
+| Monitor and maintain Azure resources      | 10–15% | Part 10 (Monitoring & Observability), Part 12 (HA, DR, Scaling & Cost)                        |
+
 ## Getting Started Now
 
 1. **Read [INDEX.md](./INDEX.md)** for a complete overview and detailed section index
@@ -117,5 +139,26 @@ Azure/
 5. **Complete interview drills** to self-assess understanding
 6. **Use cross-references** to explore related topics across parts
 
+## Expert & Specialty Certification Mapping
+
+Azure doesn't use "Professional" branding — its top generalist tier is called **Expert**, functionally equivalent to AWS Professional / GCP Professional. This KB was not written against a single pinned exam-blueprint revision, so treat the mappings below as orientation rather than a guaranteed percentage breakdown — always cross-check current weights against Microsoft's published exam pages before scheduling.
+
+### Expert Level
+
+**AZ-305 (Azure Solutions Architect Expert)**
+
+| AZ-305 Domain (representative)                        | Weight | Covered By                                                                                   |
+| ----------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| Design identity, governance, and monitoring solutions | 25–30% | Part 2, Part 11 (Security & Governance), Part 10 (Monitoring)                                |
+| Design data storage solutions                         | 20–25% | Part 4 (Storage), Part 6 (Databases & Data Services), Part 15 (Data Engineering & Analytics) |
+| Design business continuity solutions                  | 15–20% | Part 12 (HA, DR, Scaling & Cost), Part 18 (Resilience Testing)                               |
+| Design infrastructure solutions                       | 30–35% | Part 3 (Compute), Part 5 (Networking), Part 7 (Containers), Part 9 (DevOps & IaC)            |
+
+**AZ-400 (Azure DevOps Engineer Expert)** — domains (representative): configure processes/communications, implement CI, implement CD & release management, implement dependency management, implement application infrastructure, implement continuous feedback. Part 9 (DevOps & Infrastructure as Code) covers the Azure-native half; pair with the `9. CI-CD` KB (currently roadmap-only) and the `1. GIT` KB for the source-control and pipeline-tooling depth AZ-400 assumes but this KB doesn't re-teach.
+
+### Specialty Level
+
+Azure's Specialty certifications (Azure for SAP Workloads, Azure Virtual Desktop, Azure IoT Operations) target narrow verticals that this generalist "Zero-to-Enterprise" KB doesn't specifically cover — none of them map cleanly onto the Part structure above the way AWS's Security/Networking Specialty exams do. Candidates pursuing a Specialty cert should treat this KB as general Azure background only, and seek dedicated vertical-specific material for the exam itself.
+
 **Total Content:** 100 sections | Continuously updated
-**Last Updated:** July 25, 2026
+**Last Updated:** August 3, 2026

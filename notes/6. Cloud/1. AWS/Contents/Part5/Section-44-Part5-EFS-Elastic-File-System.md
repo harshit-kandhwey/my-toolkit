@@ -156,6 +156,6 @@ Senior - Design shared storage for a legacy CMS lifted-and-shifted onto a 3-AZ A
 
 ## Related Concepts (forward links)
 
-- AWS FSx family - purpose-built file systems for Windows/Lustre/NetApp/OpenZFS workloads -> Part 5, Section 7
-- AWS DataSync for migration between on-premises and EFS/S3 -> Part 5, Section 8
-- AWS Backup unifying EFS backup alongside EBS/RDS -> Part 5, Section 9
+- AWS FSx family - purpose-built file systems for Windows/Lustre/NetApp/OpenZFS workloads -> §45
+- AWS DataSync for migration between on-premises and EFS/S3 -> §46
+- AWS Backup unifying EFS backup alongside EBS/RDS -> §47

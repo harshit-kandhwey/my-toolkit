@@ -59,12 +59,12 @@
 ### 5.1 AMI Permissions
 
 - **Private (default)** — only your account.
-- **Shared with specific accounts** — explicit account ID grants, a simpler mechanism than a full IAM resource policy but the same cross-account spirit as Part 2 §5.2.
+- **Shared with specific accounts** — explicit account ID grants, a simpler mechanism than a full IAM resource policy but the same cross-account spirit as §13.2.
 - **Public** — anyone (how Marketplace/Community AMIs distribute).
 
 ### 5.2 Encrypted AMI Sharing
 
-- If the underlying snapshot is KMS-encrypted with a CMK, cross-account sharing **also requires** sharing key-usage permission via the KMS key policy — direct application of "key policy is the primary gate" (Part 2 §6) — a common real-world gotcha.
+- If the underlying snapshot is KMS-encrypted with a CMK, cross-account sharing **also requires** sharing key-usage permission via the KMS key policy — direct application of "key policy is the primary gate" (§14) — a common real-world gotcha.
 
 ### 5.3 Copying AMIs Across Regions
 
@@ -113,7 +113,7 @@ m6i.2xlarge
 ## 8. Graviton — AWS's Custom ARM Processor
 
 - **Graviton** = AWS's own custom ARM-architecture chips (not licensed Intel/AMD x86). `g` in the instance type name (`m7g`, `c7g`, `r7g`).
-- **Benefit:** meaningfully better price-performance for many workloads vs comparable x86 (Part 1 §6 cost optimization).
+- **Benefit:** meaningfully better price-performance for many workloads vs comparable x86 (§6 cost optimization).
 - **Trade-off:** software must be compiled for ARM (or be architecture-agnostic) — may require rebuilding container images/verifying dependency compatibility.
 
 ---
@@ -130,14 +130,14 @@ m6i.2xlarge
 ## 10. Production & Enterprise Usage
 
 - **EC2 Image Builder** — automates the golden-image pipeline (build, test, distribute updated AMIs on schedule/trigger).
-- **Standardized golden images across an Organization** — centrally-approved hardened images shared via AMI-sharing across accounts (mapped to Part 2 §5's OU structure), enforcing a consistent baseline.
+- **Standardized golden images across an Organization** — centrally-approved hardened images shared via AMI-sharing across accounts (mapped to §13's OU structure), enforcing a consistent baseline.
 - **Graviton migration** as an active cost-optimization initiative — a common real-world project.
 
 ---
 
 ## 11. Security Considerations
 
-- **Strip secrets/credentials before AMI creation** — a baked-in credential exists in every future instance launched from it, a much larger blast radius than a single leak (Part 2 §7 principle, applied to image-baking).
+- **Strip secrets/credentials before AMI creation** — a baked-in credential exists in every future instance launched from it, a much larger blast radius than a single leak (§15 principle, applied to image-baking).
 - **Vet Community/Marketplace AMIs** with the same scrutiny as any external dependency; prefer AWS-provided or custom AMIs for security-sensitive workloads.
 - **Encrypted cross-account AMI sharing requires KMS key policy alignment** (§5.2) — a common practical gotcha.
 
@@ -204,6 +204,6 @@ m6i.2xlarge
 
 ## 🌐 Related Concepts (forward links)
 
-- EC2 purchasing options (On-Demand, Reserved, Spot, Savings Plans) → Part 3, Section 3
+- EC2 purchasing options (On-Demand, Reserved, Spot, Savings Plans) → §21
 - EBS volumes underlying AMI snapshots, in full depth → Part 5
-- Auto Scaling launch templates referencing AMIs → Part 3, Section 5
+- Auto Scaling launch templates referencing AMIs → §23

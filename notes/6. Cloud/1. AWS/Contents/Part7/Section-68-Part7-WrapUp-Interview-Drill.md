@@ -17,22 +17,22 @@ Part 7, Application Integration & Streaming, covered nine core services/topics a
 ## 2. Progressive Hands-On Labs (Beginner → Production-Style)
 
 **Lab 1 (Beginner): Basic SQS Queue with DLQ**
-Create a standard SQS queue and a DLQ, set `maxReceiveCount` to 3, write a simple producer/consumer in Python using boto3, deliberately raise an exception in the consumer for one message and observe it move to the DLQ after 3 receive attempts. _Validates: Part 7 §1-2 core mechanics._
+Create a standard SQS queue and a DLQ, set `maxReceiveCount` to 3, write a simple producer/consumer in Python using boto3, deliberately raise an exception in the consumer for one message and observe it move to the DLQ after 3 receive attempts. _Validates: §59-60 core mechanics._
 
 **Lab 2 (Beginner-Intermediate): SNS Fan-Out to Two SQS Queues**
-Create an SNS topic and two SQS queues; subscribe both queues to the topic with correct queue policies; publish one message and confirm both queues independently receive a copy; add a filter policy to one subscription and confirm selective delivery. _Validates: Part 7 §3._
+Create an SNS topic and two SQS queues; subscribe both queues to the topic with correct queue policies; publish one message and confirm both queues independently receive a copy; add a filter policy to one subscription and confirm selective delivery. _Validates: §61._
 
 **Lab 3 (Intermediate): EventBridge Content-Based Routing**
-Create two EventBridge rules on a custom event bus — one matching a numeric threshold on a nested field, one matching all events of a given type — targeting different Lambda functions; publish events that satisfy each pattern combination and confirm correct routing. _Validates: Part 7 §4._
+Create two EventBridge rules on a custom event bus — one matching a numeric threshold on a nested field, one matching all events of a given type — targeting different Lambda functions; publish events that satisfy each pattern combination and confirm correct routing. _Validates: §62._
 
 **Lab 4 (Intermediate): Step Functions Order-Processing Workflow**
-Build the order-processing state machine from Part 7 §5 (retry, catch, parallel, choice), trigger it via `start-execution`, deliberately fail the payment validation Lambda to confirm the Catch path fires, and inspect the execution history to trace exactly what happened. _Validates: Part 7 §5._
+Build the order-processing state machine from §63 (retry, catch, parallel, choice), trigger it via `start-execution`, deliberately fail the payment validation Lambda to confirm the Catch path fires, and inspect the execution history to trace exactly what happened. _Validates: §63._
 
 **Lab 5 (Intermediate-Advanced): Kinesis Multi-Consumer Stream**
-Create a Kinesis stream with 2 shards, write records with a deliberately low-cardinality partition key and observe the resulting hot-shard throttling via CloudWatch, then redesign with a high-cardinality key and confirm even distribution; attach two independent consumers (a Lambda via event source mapping, and a Firehose delivery to S3) and confirm both receive the full stream independently. _Validates: Part 7 §6-7._
+Create a Kinesis stream with 2 shards, write records with a deliberately low-cardinality partition key and observe the resulting hot-shard throttling via CloudWatch, then redesign with a high-cardinality key and confirm even distribution; attach two independent consumers (a Lambda via event source mapping, and a Firehose delivery to S3) and confirm both receive the full stream independently. _Validates: §64-65._
 
 **Lab 6 (Production-Style, Capstone): Full E-Commerce Event Architecture**
-Build the complete architecture from Part 7 §9's senior-level interview scenario: order placement → SNS fan-out to inventory/email/fraud-screening SQS queues → EventBridge risk-score routing → Step Functions orchestrating the full sequence with retry/catch → full execution history reviewed for audit purposes. This lab deliberately combines every service from this Part into one coherent, defensible architecture. _Validates: Part 7 §1-9 in combination._
+Build the complete architecture from §67's senior-level interview scenario: order placement → SNS fan-out to inventory/email/fraud-screening SQS queues → EventBridge risk-score routing → Step Functions orchestrating the full sequence with retry/catch → full execution history reviewed for audit purposes. This lab deliberately combines every service from this Part into one coherent, defensible architecture. _Validates: §59-67 in combination._
 
 ## 3. Consolidated Key-Takeaways Checklist
 
@@ -49,7 +49,7 @@ Build the complete architecture from Part 7 §9's senior-level interview scenari
 - [ ] I can explain why Kinesis retains data regardless of consumption, and what `IteratorAgeMilliseconds` signals.
 - [ ] I can explain what Firehose adds on top of Kinesis Data Streams (managed delivery, no consumer code) and what it gives up (no replay, no multi-consumer model).
 - [ ] I can explain when MSK is the right choice over Kinesis, and specifically why "already using Kafka" is the deciding factor, not general preference.
-- [ ] I can walk through the five-service decision tree (Part 7 §9) from a cold requirement statement without prompting.
+- [ ] I can walk through the five-service decision tree (§67) from a cold requirement statement without prompting.
 - [ ] I can name at least three real production architectures that combine multiple of these services rather than using one in isolation.
 
 ## 4. Related Technologies (Beyond This Roadmap's Current Scope)
@@ -57,7 +57,7 @@ Build the complete architecture from Part 7 §9's senior-level interview scenari
 - **Amazon MQ** — a managed message broker service supporting ActiveMQ and RabbitMQ protocols specifically, for migrating existing applications that depend on those specific protocols rather than SQS/SNS's AWS-native APIs; a natural extension for anyone with an existing ActiveMQ/RabbitMQ investment analogous to MSK's role for Kafka.
 - **AWS AppSync** — managed GraphQL with built-in real-time subscriptions, a different (API-layer, not infrastructure-layer) approach to real-time data delivery, relevant for teams building client-facing real-time features rather than backend service integration.
 - **Amazon Managed Service for Apache Flink** — for complex stream processing (windowed aggregations, joins across streams) beyond what Lambda-based Kinesis/Firehose consumers typically handle, a natural next step after Kinesis Data Streams for teams needing genuine stream-processing (not just stream-delivery) capability.
-- **AWS Glue** — the ETL and Data Catalog service underlying Firehose's format-conversion feature (Part 7 §7), worth its own dedicated exploration for teams building broader data lake pipelines.
+- **AWS Glue** — the ETL and Data Catalog service underlying Firehose's format-conversion feature (§65), worth its own dedicated exploration for teams building broader data lake pipelines.
 - **Amazon Athena / Redshift Spectrum** — the query layer typically sitting on top of Firehose-delivered S3 data, completing the "ingest → store → query" data lake picture only partially covered here.
 
 ## 5. Recommended Next Topics (Learning Path)

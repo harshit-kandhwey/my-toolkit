@@ -17,7 +17,7 @@ CloudWatch solves this by being the **built-in, universal observability layer** 
 ## 3. Prerequisites and Dependencies
 
 - General familiarity with the AWS services already covered (EC2, Lambda, SQS, Kinesis, RDS, etc.) — CloudWatch's value is best understood in the context of monitoring specific resources you already know.
-- **IAM** (Part 2 §1-3): CloudWatch API actions (reading metrics, creating alarms, publishing custom metrics) are IAM-governed like any other AWS API.
+- **IAM** (§9-11): CloudWatch API actions (reading metrics, creating alarms, publishing custom metrics) are IAM-governed like any other AWS API.
 
 ## 4. Internal Working
 
@@ -46,8 +46,8 @@ Your Application ------+
 | **Dimension**        | A key-value pair further scoping a metric to a specific resource or category (e.g., `InstanceId`, `FunctionName`).                                                                                                   |
 | **Statistic**        | The aggregation applied over a time period when querying a metric — `Average`, `Sum`, `Minimum`, `Maximum`, `SampleCount`, or a specific `Percentile` (e.g., p99).                                                   |
 | **Period**           | The time granularity of aggregation for a given query or alarm evaluation (e.g., 60 seconds, 300 seconds).                                                                                                           |
-| **Alarm**            | A rule watching a metric against a threshold over a defined number of evaluation periods, triggering an action on state change (covered fully in Part 8 §3).                                                         |
-| **Dashboard**        | A customizable visual collection of metric graphs and other widgets (covered fully in Part 8 §3).                                                                                                                    |
+| **Alarm**            | A rule watching a metric against a threshold over a defined number of evaluation periods, triggering an action on state change (covered fully in §71).                                                               |
+| **Dashboard**        | A customizable visual collection of metric graphs and other widgets (covered fully in §71).                                                                                                                          |
 | **CloudWatch Agent** | An optional installable agent for EC2/on-premises servers that collects OS-level metrics (memory, disk usage, custom log files) not available from the default hypervisor-level metrics AWS publishes automatically. |
 
 ## 6. Lifecycle / Workflow
@@ -56,7 +56,7 @@ Your Application ------+
 2. Optionally, install the **CloudWatch Agent** on EC2 instances (or on-premises servers) to collect additional OS-level metrics AWS's hypervisor-level visibility doesn't natively provide (memory usage, disk space, custom application logs).
 3. Optionally, your application **publishes custom metrics** via `PutMetricData` for business/application-specific signals not covered by AWS-native metrics.
 4. **Query and visualize** metrics via the console, CLI (`get-metric-data`/`get-metric-statistics`), or dashboards.
-5. **Configure alarms** on any metric (full depth Part 8 §3) to trigger notifications or automated remediation actions.
+5. **Configure alarms** on any metric (full depth §71) to trigger notifications or automated remediation actions.
 6. Metrics **age out** of high-resolution storage over time per CloudWatch's tiered retention model, remaining available at coarser aggregation for longer historical analysis.
 
 ## 7. Configuration
@@ -204,7 +204,7 @@ This pattern — publishing both a count metric and a value metric per business 
 ## 13. Monitoring (Meta: Monitoring the Monitoring)
 
 - CloudWatch itself publishes service-level metrics about API usage/throttling (`cloudwatch` service-level throttling), worth being aware of for very high-volume custom-metric-publishing applications that could hit account-level API rate limits.
-- A "missing metric" is itself a signal worth monitoring for critical custom metrics — if an application that's supposed to publish a heartbeat metric every minute stops publishing, that absence (not just a bad value) can indicate the application itself has failed or stopped running entirely, a pattern sometimes called a "dead man's switch" alarm (full alarm mechanics in Part 8 §3).
+- A "missing metric" is itself a signal worth monitoring for critical custom metrics — if an application that's supposed to publish a heartbeat metric every minute stops publishing, that absence (not just a bad value) can indicate the application itself has failed or stopped running entirely, a pattern sometimes called a "dead man's switch" alarm (full alarm mechanics in §71).
 
 ## 14. Troubleshooting
 
@@ -259,6 +259,6 @@ This pattern — publishing both a count metric and a value metric per business 
 
 ## 20. Related Concepts
 
-- **CloudWatch Logs** (collecting and querying log data, the other major pillar of CloudWatch) → next section, Part 8 §2.
-- **CloudWatch Alarms & Dashboards** (acting on and visualizing the metrics covered here) → Part 8 §3.
+- **CloudWatch Logs** (collecting and querying log data, the other major pillar of CloudWatch) → next section, §70.
+- **CloudWatch Alarms & Dashboards** (acting on and visualizing the metrics covered here) → §71.
 - Every Part 7 service's metrics referenced throughout that Part (SQS queue depth, Kinesis iterator age, Step Functions execution counts) are concrete instances of exactly the metric model covered here.

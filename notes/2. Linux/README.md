@@ -148,5 +148,17 @@ After this knowledge base: Docker (containers as namespaces/cgroups made concret
 5. **Study the Interview Questions** throughout each part to self-assess understanding
 6. **Use `§N` cross-references** to explore related topics across parts
 
+## Professional & Specialty Certification Mapping
+
+LFCS/RHCSA above are Linux's entry-level administrator certs. This KB was not written against a single pinned exam-blueprint revision, so treat the note below as orientation, not a guarantee — always cross-check current requirements against the certifying body's published exam page before scheduling.
+
+### Professional Level
+
+**Red Hat Certified Engineer (RHCE)** — requires an active RHCSA first, and shifts focus from standalone administration to Ansible-driven automation at scale. Covered by Part 13 (Automation and DevOps Integration) for the automation mindset and shell/scripting foundations, but the exam itself is Ansible-playbook-heavy — pair this KB with the `8. Ansible` KB (currently roadmap-only) for the tool-specific depth RHCE actually tests.
+
+### Specialty Level
+
+**Red Hat Certified Architect (RHCA)** — requires RHCE plus five additional specialization exams (chosen from a pool spanning topics like OpenShift, Ansible automation architecture, security/identity management, and performance tuning). This is a multi-exam, multi-KB-spanning credential rather than a single domain this generalist Linux KB can map cleanly — treat RHCE as the practical ceiling of what this KB (plus Ansible) directly supports, and expect to draw on Kubernetes/OpenShift-adjacent and security-hardening material from elsewhere in this repo for individual RHCA specialization exams.
+
 **Total Content:** 125 sections | 17 parts | LFCS-aligned, RHCSA-adjacent
 **Last Updated:** August 3, 2026

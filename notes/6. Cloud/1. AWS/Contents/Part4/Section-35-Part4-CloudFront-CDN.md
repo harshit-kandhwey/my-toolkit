@@ -154,6 +154,6 @@ Senior - Design CloudFront for a marketing site (static), a REST API, and a subs
 
 ## Related Concepts (forward links)
 
-- AWS Certificate Manager for TLS certificates used by CloudFront (and ALB) -> Part 4, Section 8
-- API Gateway as an alternative/complementary API front door, sometimes behind CloudFront -> Part 4, Section 8
-- VPC Endpoints and Flow Logs for observing origin-side traffic -> Part 4, Section 9
+- AWS Certificate Manager for TLS certificates used by CloudFront (and ALB) -> §36
+- API Gateway as an alternative/complementary API front door, sometimes behind CloudFront -> §36
+- VPC Endpoints and Flow Logs for observing origin-side traffic -> §37

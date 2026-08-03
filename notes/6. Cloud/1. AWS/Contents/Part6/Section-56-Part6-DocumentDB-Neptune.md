@@ -146,6 +146,6 @@ Senior - Design database architecture for a social platform: profiles/posts, "pe
 
 ## Related Concepts (forward links)
 
-- Choosing the right database for a workload, and Database Migration Service -> Part 6, Section 9 (next, final content section)
+- Choosing the right database for a workload, and Database Migration Service -> §57 (next, final content section)
 - Neptune ML's integration with SageMaker for graph-specific machine learning -> Part 10
 - ETL/ELT pipelines potentially feeding multiple specialized databases from shared source data -> Part 7

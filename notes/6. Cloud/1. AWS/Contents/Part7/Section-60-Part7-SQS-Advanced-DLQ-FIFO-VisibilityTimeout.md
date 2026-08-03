@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** This section covers the mechanisms that turn basic SQS (Part 7 §1) into a production-grade messaging layer: dead-letter queues (a safety net for messages that keep failing), FIFO queues (strict ordering and exactly-once processing when you need them), and the deeper mechanics of visibility timeout and scaling behavior under real load.
+**Plain language:** This section covers the mechanisms that turn basic SQS (§59) into a production-grade messaging layer: dead-letter queues (a safety net for messages that keep failing), FIFO queues (strict ordering and exactly-once processing when you need them), and the deeper mechanics of visibility timeout and scaling behavior under real load.
 
 **Precise definition:** These are advanced SQS features layered on the base queue primitive — Dead-Letter Queues (DLQs) via redrive policies, FIFO queue semantics (ordering, message groups, deduplication), and operational patterns for tuning visibility timeout and throughput at production scale, including redrive-to-source and high-throughput FIFO mode.
 
@@ -15,8 +15,8 @@ Basic SQS (§1) guarantees at-least-once delivery on a best-effort, unordered ba
 
 ## 3. Prerequisites and Dependencies
 
-- **Part 7 §1** (SQS Fundamentals) — visibility timeout, receipt handles, and the send/receive/delete lifecycle are assumed knowledge here.
-- **Lambda** (Part 3 §7) — Lambda has its own DLQ-adjacent concept (on-failure destinations) that is related but distinct from SQS DLQs; distinguished below.
+- **§59** (SQS Fundamentals) — visibility timeout, receipt handles, and the send/receive/delete lifecycle are assumed knowledge here.
+- **Lambda** (§25) — Lambda has its own DLQ-adjacent concept (on-failure destinations) that is related but distinct from SQS DLQs; distinguished below.
 
 ## 4. Internal Working
 
@@ -110,7 +110,7 @@ MessageGroupId="customer-B"  ->  [msg1] -> [msg2]             (strict order with
 
 ### `aws sqs send-message` (FIFO-specific parameters)
 
-- **Purpose:** Same core send operation as Part 7 §1, but with FIFO-required parameters.
+- **Purpose:** Same core send operation as §59, but with FIFO-required parameters.
 - **Syntax:**
   ```
   aws sqs send-message --queue-url <fifo-queue-url> --message-body <text> \
@@ -232,7 +232,7 @@ for message in response.get('Messages', []):
 ## 11. Security Considerations
 
 - `RedriveAllowPolicy` on a DLQ is a security control, not just an operational one — without it, a compromised or misconfigured queue elsewhere in the account (or, if permissions are too broad, another account) could redirect large volumes of unrelated traffic into a shared DLQ, potentially as a cost-inflation or noise-injection vector; set it to `byQueue` with an explicit allow-list in security-sensitive environments.
-- DLQ messages often contain the same sensitive payload as the original message — encryption-at-rest and access-control requirements from Part 7 §1 apply equally, and DLQ access should be scoped separately (often more restrictively, since DLQ inspection is typically a human/ops activity rather than an automated service).
+- DLQ messages often contain the same sensitive payload as the original message — encryption-at-rest and access-control requirements from §59 apply equally, and DLQ access should be scoped separately (often more restrictively, since DLQ inspection is typically a human/ops activity rather than an automated service).
 
 ## 12. Performance Considerations
 
@@ -241,7 +241,7 @@ for message in response.get('Messages', []):
 
 ## 13. Monitoring
 
-Additional metrics beyond Part 7 §1's base set, specific to this section's features:
+Additional metrics beyond §59's base set, specific to this section's features:
 
 | Metric                                              | What it tells you                                                                                                                                                     |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -305,6 +305,6 @@ Additional metrics beyond Part 7 §1's base set, specific to this section's feat
 
 ## 20. Related Concepts
 
-- **SNS** (pub/sub, often paired with SQS to fan out one event to multiple queues) → next section, Part 7 §3.
-- **Lambda on-failure destinations** (a related but distinct DLQ-like concept specific to async Lambda invocations) → previously touched in Part 3 §7; worth contrasting explicitly with SQS DLQs.
+- **SNS** (pub/sub, often paired with SQS to fan out one event to multiple queues) → next section, §61.
+- **Lambda on-failure destinations** (a related but distinct DLQ-like concept specific to async Lambda invocations) → previously touched in §25; worth contrasting explicitly with SQS DLQs.
 - **CloudWatch alarms on queue metrics** → full depth in Part 8.

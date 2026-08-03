@@ -19,9 +19,9 @@ Step Functions solves this by making the workflow itself — the sequence, the b
 
 ## 3. Prerequisites and Dependencies
 
-- **Lambda** (Part 3 §7): the most common task type invoked from within a state machine.
-- **IAM** (Part 2 §1-3): a state machine's execution role needs permission to invoke every service it calls as part of the workflow.
-- **EventBridge** (Part 7 §4): commonly the trigger that starts a Step Functions execution.
+- **Lambda** (§25): the most common task type invoked from within a state machine.
+- **IAM** (§9-11): a state machine's execution role needs permission to invoke every service it calls as part of the workflow.
+- **EventBridge** (§62): commonly the trigger that starts a Step Functions execution.
 - **JSON** general literacy: state machine definitions and the data passed between states are JSON, assumed as prerequisite general knowledge.
 
 ## 4. Internal Working
@@ -108,7 +108,7 @@ State Machine Execution (Standard Workflow):
   ```
 - **Production usage:** almost universally deployed via CloudFormation/CDK/Terraform (Part 9), with the ASL definition itself frequently authored via the visual Workflow Studio and then exported/versioned as code.
 - **Common errors:** `InvalidDefinition` for malformed ASL JSON; `AccessDeniedException` if the execution role lacks trust policy allowing `states.amazonaws.com` to assume it, or lacks the specific service permissions the workflow's tasks require.
-- **Security impact:** the execution role is the single most important security boundary for a state machine — it should be scoped to only the specific actions/resources that workflow actually calls, not a broad `*` grant, following least privilege exactly as with any other IAM role (Part 2 §3).
+- **Security impact:** the execution role is the single most important security boundary for a state machine — it should be scoped to only the specific actions/resources that workflow actually calls, not a broad `*` grant, following least privilege exactly as with any other IAM role (§11).
 
 ### `aws stepfunctions start-execution`
 
@@ -129,7 +129,7 @@ State Machine Execution (Standard Workflow):
     "startDate": "2026-07-20T10:05:00Z"
   }
   ```
-- **Production usage:** in production, executions are most commonly started by an EventBridge rule reacting to a business event (Part 7 §4), rather than manually via CLI — the CLI form here is primarily for testing/debugging.
+- **Production usage:** in production, executions are most commonly started by an EventBridge rule reacting to a business event (§62), rather than manually via CLI — the CLI form here is primarily for testing/debugging.
 - **Common errors:** `ExecutionAlreadyExists` if an explicit `--name` is reused for a Standard workflow (Standard workflows enforce execution-name uniqueness within a short window, a mechanism that can be deliberately used for idempotent workflow triggering); Express workflows don't have this same uniqueness constraint.
 - **Performance impact:** Standard workflow starts are near-instant but the workflow itself may run for a long time; Express workflows are optimized for very high-throughput, short-duration invocation patterns.
 
@@ -304,7 +304,7 @@ Here, `RequestApprovalLambda` sends the approval request (e.g., an email/Slack m
 - ❌ Building one giant Lambda function to do everything a state machine could do instead — losing per-step visibility, hitting Lambda's execution time limits for long processes, and making partial-failure handling much harder to reason about.
 - ❌ Omitting `Retry`/`Catch` on tasks that call flaky external dependencies, causing entire multi-step executions to fail on a single transient blip that a simple retry would have resolved.
 - ❌ Choosing Standard workflows by default for very high-volume, short workloads without evaluating Express — resulting in unnecessarily high per-transition billing costs at scale.
-- **Common misconception:** "Step Functions Express workflows have the exact same reliability guarantees as Standard." False — Express is explicitly at-least-once, not exactly-once, which matters for idempotency design exactly as it does for SQS standard queues (Part 7 §1).
+- **Common misconception:** "Step Functions Express workflows have the exact same reliability guarantees as Standard." False — Express is explicitly at-least-once, not exactly-once, which matters for idempotency design exactly as it does for SQS standard queues (§59).
 
 ## 17. Interview Questions with Model Answers
 
@@ -335,7 +335,7 @@ Here, `RequestApprovalLambda` sends the approval request (e.g., an email/Slack m
 
 ## 20. Related Concepts
 
-- **Lambda** (the most common Task target) → Part 3 §7.
-- **EventBridge** (the most common trigger for starting executions in production) → Part 7 §4.
-- **IAM execution roles** (the security foundation for every state machine) → Part 2 §1-3.
-- **Kinesis Data Streams** (a different orchestration/data-flow paradigm, contrasted next) → next section, Part 7 §6.
+- **Lambda** (the most common Task target) → §25.
+- **EventBridge** (the most common trigger for starting executions in production) → §62.
+- **IAM execution roles** (the security foundation for every state machine) → §9-11.
+- **Kinesis Data Streams** (a different orchestration/data-flow paradigm, contrasted next) → next section, §64.

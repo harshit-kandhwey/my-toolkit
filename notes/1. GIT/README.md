@@ -126,4 +126,6 @@ No external topic must be studied before starting; every Git-specific prerequisi
 5. **Complete interview drills and the §35 hands-on labs** to self-assess understanding
 6. **Use `§N` cross-references** to explore related topics across parts
 
+**Professional & Specialty Certification Mapping:** Not applicable — no vendor or industry body offers a tiered Git-specific certification track (entry/professional/specialty), unlike AWS/Azure/GCP/Kubernetes/Linux. GitHub's own "GitHub Foundations" and "GitHub Actions" certifications are platform-specific, not Git-specific, and are tracked separately in `Certification-Map.md` alongside the `9. CI-CD` KB.
+
 **Total Content:** 36 sections | Continuously updated

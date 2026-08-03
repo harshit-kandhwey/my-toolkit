@@ -4,11 +4,11 @@
 
 **Plain language:** Kinesis Data Firehose is the "just get my streaming data into storage or an analytics tool" service — you point it at a source (a Kinesis Data Stream, or direct producer writes) and a destination (S3, Redshift, OpenSearch, Splunk, and others), and Firehose handles batching, buffering, format conversion, compression, and delivery, without you writing or operating any consumer code at all.
 
-**Precise definition:** Amazon Kinesis Data Firehose is a fully managed, serverless data delivery service that reliably loads streaming data into destination data stores and analytics services, buffering and batching records automatically, optionally transforming records in-flight via a Lambda function, and requiring zero consumer-side infrastructure or code — in contrast to Kinesis Data Streams (Part 7 §6), which requires you to build and run your own consumer application.
+**Precise definition:** Amazon Kinesis Data Firehose is a fully managed, serverless data delivery service that reliably loads streaming data into destination data stores and analytics services, buffering and batching records automatically, optionally transforming records in-flight via a Lambda function, and requiring zero consumer-side infrastructure or code — in contrast to Kinesis Data Streams (§64), which requires you to build and run your own consumer application.
 
 ## 2. Why It Exists / Problem It Solves
 
-Kinesis Data Streams (Part 7 §6) gives you a durable, ordered, replayable, multi-consumer log — but _you_ still have to write and operate the consumer application (using KCL, the SDK, or a Lambda event source mapping) that reads records and does something with them, such as writing them into S3 or a data warehouse. For the extremely common case of **"I just want this streaming data to reliably land in S3/Redshift/OpenSearch, batched and maybe format-converted, with no custom consumer logic required,"** building and operating a custom KDS consumer is unnecessary operational overhead.
+Kinesis Data Streams (§64) gives you a durable, ordered, replayable, multi-consumer log — but _you_ still have to write and operate the consumer application (using KCL, the SDK, or a Lambda event source mapping) that reads records and does something with them, such as writing them into S3 or a data warehouse. For the extremely common case of **"I just want this streaming data to reliably land in S3/Redshift/OpenSearch, batched and maybe format-converted, with no custom consumer logic required,"** building and operating a custom KDS consumer is unnecessary operational overhead.
 
 Firehose solves exactly this narrower, very common problem: it is purpose-built as a **delivery pipe**, not a general-purpose multi-consumer log. You configure a destination and some buffering/transformation options, and Firehose manages 100% of the delivery mechanics — retries, batching for efficient writes, format conversion (e.g., JSON to Parquet), and compression — with no servers, consumer code, or KCL to operate.
 
@@ -16,9 +16,9 @@ Firehose solves exactly this narrower, very common problem: it is purpose-built 
 
 ## 3. Prerequisites and Dependencies
 
-- **Kinesis Data Streams** (Part 7 §6): Firehose can read directly from a KDS stream as its source, and understanding KDS's log model clarifies what Firehose is (and isn't) — Firehose is delivery-only, with no multi-consumer replay capability of its own.
+- **Kinesis Data Streams** (§64): Firehose can read directly from a KDS stream as its source, and understanding KDS's log model clarifies what Firehose is (and isn't) — Firehose is delivery-only, with no multi-consumer replay capability of its own.
 - **S3** (Part 5): the single most common Firehose destination.
-- **Lambda** (Part 3 §7): the mechanism for Firehose's optional in-flight record transformation.
+- **Lambda** (§25): the mechanism for Firehose's optional in-flight record transformation.
 
 ## 4. Internal Working
 
@@ -53,24 +53,24 @@ Kinesis Data Stream --> Firehose Delivery Stream --> [optional: Transformation L
 
 ## 5a. Amazon Managed Service for Apache Flink — Stream _Processing_, Not Just Delivery
 
-Firehose (§1-5 above) and Kinesis Data Streams (Part 7 §6) both move data — durably logging it (KDS) or delivering it to a destination (Firehose) — but neither performs genuine **stream processing**: continuous computation over the data as it flows, such as running aggregations, joins across multiple streams, or detecting patterns within a sliding time window, before the result ever lands anywhere. Amazon Managed Service for Apache Flink is AWS's managed offering for exactly that missing piece — a fully managed runtime for **Apache Flink**, an open-source stream-processing framework, removing the operational burden of self-hosting and scaling a Flink cluster the same way EMR (Part 11 §4) removes the burden of self-hosting Spark.
+Firehose (§59-63 above) and Kinesis Data Streams (§64) both move data — durably logging it (KDS) or delivering it to a destination (Firehose) — but neither performs genuine **stream processing**: continuous computation over the data as it flows, such as running aggregations, joins across multiple streams, or detecting patterns within a sliding time window, before the result ever lands anywhere. Amazon Managed Service for Apache Flink is AWS's managed offering for exactly that missing piece — a fully managed runtime for **Apache Flink**, an open-source stream-processing framework, removing the operational burden of self-hosting and scaling a Flink cluster the same way EMR (§102) removes the burden of self-hosting Spark.
 
 ### 5a.1 Why This Differs From Firehose and KDS Consumers
 
 - Firehose's only "processing" capability is its optional transformation Lambda (§4) — invoked per buffered batch, essentially stateless, appropriate for per-record transformation (format conversion, redaction, filtering) but not for computation that needs to reason **across** many records over time, such as "compute a rolling 5-minute average of transaction amounts per customer" or "detect when the same IP address appears in more than 10 failed-login events within 1 minute."
 - A hand-built KDS consumer (via KCL or a Lambda event source mapping) _could_ implement this kind of stateful, windowed logic, but doing so correctly — managing state consistently, handling out-of-order or late-arriving records, checkpointing progress reliably — is genuinely difficult distributed-systems work that Flink, as a mature, purpose-built stream-processing framework, already solves; Managed Service for Apache Flink removes the additional burden of operating that framework's own cluster infrastructure.
-- 🔑 **Key takeaway:** the distinction directly mirrors Part 11 §4's Athena-vs-EMR framing — reach for Firehose (or a simple KDS consumer) when the need is per-record delivery/transformation; reach for Managed Service for Apache Flink specifically when the need is genuine, stateful, windowed computation _across_ records as they stream, a fundamentally different processing model.
+- 🔑 **Key takeaway:** the distinction directly mirrors §102's Athena-vs-EMR framing — reach for Firehose (or a simple KDS consumer) when the need is per-record delivery/transformation; reach for Managed Service for Apache Flink specifically when the need is genuine, stateful, windowed computation _across_ records as they stream, a fundamentally different processing model.
 
 ### 5a.2 Core Concepts
 
-- A Flink **application** in this managed service reads from one or more sources (commonly a Kinesis Data Stream or Amazon MSK, Part 7 §8), applies processing logic — expressed via Flink's SQL interface (Managed Service for Apache Flink Studio, appropriate for teams preferring a SQL-based, more accessible entry point) or the full Flink DataStream API (Java/Scala/Python, for more complex, custom processing logic) — and writes results to a **sink**, commonly another Kinesis stream, Firehose (chaining into this section's delivery pipeline), S3, or a database.
+- A Flink **application** in this managed service reads from one or more sources (commonly a Kinesis Data Stream or Amazon MSK, §66), applies processing logic — expressed via Flink's SQL interface (Managed Service for Apache Flink Studio, appropriate for teams preferring a SQL-based, more accessible entry point) or the full Flink DataStream API (Java/Scala/Python, for more complex, custom processing logic) — and writes results to a **sink**, commonly another Kinesis stream, Firehose (chaining into this section's delivery pipeline), S3, or a database.
 - **Windowing** is Flink's core mechanism for bounding "compute over records across time" into something tractable — a tumbling window (fixed, non-overlapping intervals, e.g., every 5 minutes), a sliding window (overlapping intervals, e.g., a 5-minute window recomputed every 1 minute), or a session window (grouping records by periods of activity separated by gaps of inactivity) — the specific windowing choice depends entirely on the actual analytical question being asked.
 - **State** is managed automatically by the service, including checkpointing that state durably so a failure/restart doesn't lose accumulated in-progress computation (e.g., a rolling aggregate that's been accumulating for 4 minutes of a 5-minute window shouldn't reset to zero on a transient failure) — this reliable, managed state handling is a substantial part of what self-hosting Flink would otherwise require significant operational expertise to get right.
 
 ### 5a.3 Where It Fits in a Streaming Architecture
 
 ```
-Kinesis Data Stream (durable, multi-consumer log, Part 7 §6)
+Kinesis Data Stream (durable, multi-consumer log, §64)
         |
         +--> Managed Service for Apache Flink
         |      (stateful, windowed processing: rolling aggregates,
@@ -80,7 +80,7 @@ Kinesis Data Stream (durable, multi-consumer log, Part 7 §6)
         |      Result written to: another Kinesis stream, Firehose,
         |      S3, or a database -- for downstream consumption
         |
-        +--> Firehose (§1-5 above)
+        +--> Firehose (§59-63 above)
         |      (simple per-record transform + durable delivery to S3/
         |       Redshift/OpenSearch, no cross-record computation)
         |
@@ -89,7 +89,7 @@ Kinesis Data Stream (durable, multi-consumer log, Part 7 §6)
                 machinery)
 ```
 
-This demonstrates that Flink, Firehose, and a direct KDS consumer are commonly **independent, simultaneous consumers of the same underlying stream** (following the multi-consumer model established in Part 7 §6), not competing, mutually-exclusive choices — a real-time fraud-scoring Flink application and a Firehose-to-S3 archival path frequently run side by side against the exact same source stream.
+This demonstrates that Flink, Firehose, and a direct KDS consumer are commonly **independent, simultaneous consumers of the same underlying stream** (following the multi-consumer model established in §64), not competing, mutually-exclusive choices — a real-time fraud-scoring Flink application and a Firehose-to-S3 archival path frequently run side by side against the exact same source stream.
 
 ### 5a.4 Key Takeaways
 
@@ -289,8 +289,8 @@ This single configuration handles: reading from an existing high-throughput Kine
 
 ## 20. Related Concepts
 
-- **Kinesis Data Streams** (the common upstream source for a Firehose delivery stream, and the multi-consumer model Firehose lacks) → Part 7 §6.
-- **Amazon Managed Service for Apache Flink** (genuine stateful, windowed stream processing, distinct from Firehose's per-record delivery model — see §5a above) → Part 7 §7 (this section).
-- **Amazon MSK** (managed Kafka, an alternative streaming backbone, also a supported Flink source) → next section, Part 7 §8.
+- **Kinesis Data Streams** (the common upstream source for a Firehose delivery stream, and the multi-consumer model Firehose lacks) → §64.
+- **Amazon Managed Service for Apache Flink** (genuine stateful, windowed stream processing, distinct from Firehose's per-record delivery model — see §5a above) → §65 (this section).
+- **Amazon MSK** (managed Kafka, an alternative streaming backbone, also a supported Flink source) → next section, §66.
 - **S3, Athena, Redshift Spectrum** (the typical downstream analytical consumers of Firehose-delivered data) — S3 covered in Part 5; Athena/Redshift Spectrum are natural extensions worth exploring as a recommended next topic beyond this roadmap.
 - **AWS Glue Data Catalog** (the schema registry underpinning Firehose's format conversion feature) — a natural extension topic alongside Athena/Redshift Spectrum.

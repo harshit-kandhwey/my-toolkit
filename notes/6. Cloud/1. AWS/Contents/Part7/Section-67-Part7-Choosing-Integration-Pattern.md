@@ -8,13 +8,13 @@
 
 ## 2. Why This Framework Exists / Problem It Solves
 
-Across Part 7 §1-8, five services that superficially all "move data from one place to another" turned out to have meaningfully different underlying models: SQS deletes on consumption (Part 7 §1-2), SNS pushes without retention (Part 7 §3), EventBridge routes on content (Part 7 §4), Kinesis retains an ordered, replayable, multi-consumer log (Part 7 §6), and MSK provides the same replayable-log model via genuine Kafka compatibility (Part 7 §8). Engineers who don't internalize these differences tend to default to whichever service they used last, or whichever is most familiar — which frequently produces architectures that technically work but fight the chosen service's actual model (e.g., building ordering logic on top of SNS, or building multi-consumer replay on top of SQS, both of which are the wrong tool for that specific job).
+Across §59-66, five services that superficially all "move data from one place to another" turned out to have meaningfully different underlying models: SQS deletes on consumption (§59-60), SNS pushes without retention (§61), EventBridge routes on content (§62), Kinesis retains an ordered, replayable, multi-consumer log (§64), and MSK provides the same replayable-log model via genuine Kafka compatibility (§66). Engineers who don't internalize these differences tend to default to whichever service they used last, or whichever is most familiar — which frequently produces architectures that technically work but fight the chosen service's actual model (e.g., building ordering logic on top of SNS, or building multi-consumer replay on top of SQS, both of which are the wrong tool for that specific job).
 
 This framework exists to make the decision criteria explicit and repeatable, rather than intuition-based.
 
 ## 3. Prerequisites and Dependencies
 
-- All of Part 7 §1-8 — this section is a synthesis, not new material, and assumes fluency with every service compared here.
+- All of §59-66 — this section is a synthesis, not new material, and assumes fluency with every service compared here.
 
 ## 4. The Core Decision Dimensions
 
@@ -46,7 +46,7 @@ This framework exists to make the decision criteria explicit and repeatable, rat
    - No → reconsider whether this is genuinely an integration/messaging problem at all.
 5. **Does the routing decision need to inspect the actual structure/content of the event (nested fields, numeric ranges), or do you need automatic ingestion of native AWS service events with zero producer wiring?**
    - Yes → EventBridge.
-   - No, simple flat-attribute filtering (or no filtering) is sufficient → SNS (commonly paired with SQS subscribers for the fan-out pattern, Part 7 §3).
+   - No, simple flat-attribute filtering (or no filtering) is sufficient → SNS (commonly paired with SQS subscribers for the fan-out pattern, §61).
 
 ## 5a. Additional Integration Services Worth Knowing — Amazon MQ, AppSync, EventBridge Pipes
 
@@ -69,9 +69,9 @@ The five services compared above cover the large majority of real AWS integratio
 
 ### 5a.3 Amazon EventBridge Pipes — Point-to-Point Integration With Built-In Transformation
 
-- **What it is:** A specific EventBridge feature (distinct from EventBridge's rule-based bus routing covered in Part 7 §4) that connects one specific source (commonly an SQS queue, a DynamoDB Stream, or a Kinesis stream) directly to one specific target, with optional **filtering**, **enrichment** (calling a Lambda function or API destination to transform the payload), and delivery — without needing to write a dedicated Lambda function purely to glue the source and target together.
+- **What it is:** A specific EventBridge feature (distinct from EventBridge's rule-based bus routing covered in §62) that connects one specific source (commonly an SQS queue, a DynamoDB Stream, or a Kinesis stream) directly to one specific target, with optional **filtering**, **enrichment** (calling a Lambda function or API destination to transform the payload), and delivery — without needing to write a dedicated Lambda function purely to glue the source and target together.
 - **Why it exists / problem it solves:** A very common pattern before Pipes existed was writing a small, purpose-built Lambda function whose entire job was "read from SQS, reshape the payload slightly, write to another destination" — functionally simple but adding a Lambda function (with its own deployment, monitoring, and cold-start considerations) purely as integration glue. Pipes provides this exact point-to-point-with-transformation pattern as managed configuration rather than custom code.
-- **Decision criterion:** Choose EventBridge Pipes when the requirement is **connecting one specific source to one specific target with optional lightweight filtering/transformation**, and a custom Lambda function would otherwise exist purely to perform that connection. If the requirement needs **content-based routing to multiple different possible targets** (the core EventBridge bus/rule use case), use standard EventBridge rules (Part 7 §4) instead — Pipes is deliberately narrower and point-to-point.
+- **Decision criterion:** Choose EventBridge Pipes when the requirement is **connecting one specific source to one specific target with optional lightweight filtering/transformation**, and a custom Lambda function would otherwise exist purely to perform that connection. If the requirement needs **content-based routing to multiple different possible targets** (the core EventBridge bus/rule use case), use standard EventBridge rules (§62) instead — Pipes is deliberately narrower and point-to-point.
 - ❌ **Common mistake:** writing a dedicated "glue" Lambda function for a simple source-to-target-with-transformation flow when EventBridge Pipes would provide the same outcome with less custom code to maintain and monitor.
 
 ### 5a.4 Updated Decision Tree Addition
@@ -86,14 +86,14 @@ Insert this check before step 3 of the §5 decision tree:
 
 In real production systems, these services are frequently **combined**, not chosen exclusively:
 
-- **SNS fan-out to SQS**: one event, multiple durable, independently-retryable queues (Part 7 §3) — combines SNS's broadcast model with SQS's durability.
+- **SNS fan-out to SQS**: one event, multiple durable, independently-retryable queues (§61) — combines SNS's broadcast model with SQS's durability.
 - **EventBridge → Step Functions / Lambda / SQS**: EventBridge's rich content-based routing decides _what_ should happen; the target does the actual work, often itself an SQS queue for durability or a Step Functions workflow for multi-step orchestration.
-- **Kinesis Data Streams → Firehose (one consumer) + Lambda (another consumer) + KCL app (a third consumer)**: the same durable stream feeding a low-latency real-time path, a batch analytics-lake delivery path, and a custom processing application, all independently, all from one source of truth (Part 7 §7).
+- **Kinesis Data Streams → Firehose (one consumer) + Lambda (another consumer) + KCL app (a third consumer)**: the same durable stream feeding a low-latency real-time path, a batch analytics-lake delivery path, and a custom processing application, all independently, all from one source of truth (§65).
 - **EventBridge → Kinesis / Firehose**: EventBridge can itself target Kinesis or Firehose, letting content-based routing decide which events even enter a streaming pipeline in the first place.
 
 ## 7. Common Mistakes in This Decision
 
-- ❌ Using SNS where SQS's durability and single-consumer buffering was actually needed — messages get lost during a subscriber outage because SNS isn't a durable store by default (Part 7 §3).
+- ❌ Using SNS where SQS's durability and single-consumer buffering was actually needed — messages get lost during a subscriber outage because SNS isn't a durable store by default (§61).
 - ❌ Using SQS where Kinesis's multi-consumer replay was actually needed — engineers awkwardly duplicate a message into several queues instead of using a naturally multi-consumer service.
 - ❌ Defaulting to EventBridge for everything because of its rich filtering, when a simpler SNS fan-out would have been sufficient and lower-overhead for a use case that doesn't need content-based routing.
 - ❌ Choosing MSK for a greenfield project with no Kafka-ecosystem requirement, taking on VPC networking and partition-planning overhead Kinesis would have avoided entirely.
@@ -128,6 +128,6 @@ In real production systems, these services are frequently **combined**, not chos
 
 ## 11. Related Concepts
 
-- Every service compared here: **SQS** (Part 7 §1-2), **SNS** (Part 7 §3), **EventBridge** (Part 7 §4), **Step Functions** (Part 7 §5, often the orchestration layer sitting on top of these messaging choices), **Kinesis Data Streams** (Part 7 §6), **Kinesis Data Firehose** (Part 7 §7), **MSK** (Part 7 §8).
+- Every service compared here: **SQS** (§59-60), **SNS** (§61), **EventBridge** (§62), **Step Functions** (§63, often the orchestration layer sitting on top of these messaging choices), **Kinesis Data Streams** (§64), **Kinesis Data Firehose** (§65), **MSK** (§66).
 - **Amazon MQ, AppSync, and EventBridge Pipes** (§5a) — additional specialized services for protocol-migration, client-facing GraphQL/real-time, and lightweight point-to-point integration needs, respectively.
-- **Part 7 §10** (next, and final section of this Part) will close out Application Integration & Streaming with a wrap-up and integration interview drill synthesizing all nine preceding sections.
+- **§68** (next, and final section of this Part) will close out Application Integration & Streaming with a wrap-up and integration interview drill synthesizing all nine preceding sections.

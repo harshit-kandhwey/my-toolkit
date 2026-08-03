@@ -57,7 +57,7 @@ An **ENI** is a virtual network card — gives an instance its IP address(es), M
 
 ---
 
-## 4. IAM Integration — Instance Profiles (reiterated from Part 2 §3.8)
+## 4. IAM Integration — Instance Profiles (reiterated from §11.8)
 
 - An instance holds an **instance profile** wrapping exactly one IAM role; the app retrieves temp credentials via IMDS.
 - **Attached at launch** or changeable on a running instance — **changing the role doesn't require a stop/start**; the instance just starts receiving different IMDS credentials.
@@ -91,7 +91,7 @@ A **Launch Template** is a saved, versioned configuration specifying everything 
 - **Multi-ENI architectures** common in network-appliance deployments (firewalls, VPN appliances on EC2) bridging subnets.
 - **EBS + instance store combined** — standard for self-managed databases: instance store for temp/cache, EBS for durable data files.
 - **Launch Templates as the IaC bridge** — Terraform/CloudFormation-managed fleets define Launch Templates as code (Part 9), version-controlling instance config like application code.
-- **Security group sprawl management** — standardize a small library of reusable, purpose-scoped groups ("web-tier-sg," "db-tier-sg") rather than ad hoc per-team groups — parallel to Part 2 §1's group-based IAM principle.
+- **Security group sprawl management** — standardize a small library of reusable, purpose-scoped groups ("web-tier-sg," "db-tier-sg") rather than ad hoc per-team groups — parallel to §9's group-based IAM principle.
 
 ---
 
@@ -166,4 +166,4 @@ A **Launch Template** is a saved, versioned configuration specifying everything 
 
 - EBS volume types, snapshots, lifecycle in full depth → Part 5
 - VPC, subnets, route tables, NACLs, ENIs in full networking depth → Part 4
-- Auto Scaling Groups consuming Launch Templates → Part 3, Section 5
+- Auto Scaling Groups consuming Launch Templates → §23

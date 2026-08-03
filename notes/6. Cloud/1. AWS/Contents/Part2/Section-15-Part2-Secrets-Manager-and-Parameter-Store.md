@@ -176,4 +176,4 @@ Part of Systems Manager (full depth Part 8) — a hierarchical, general-purpose 
 
 - Systems Manager's broader capabilities (Session Manager, Automation, Patch Manager) → Part 8
 - RDS/Aurora-specific rotation integration → Part 6
-- Threat detection against everything built so far → Part 2, Section 8 (next)
+- Threat detection against everything built so far → §16 (next)

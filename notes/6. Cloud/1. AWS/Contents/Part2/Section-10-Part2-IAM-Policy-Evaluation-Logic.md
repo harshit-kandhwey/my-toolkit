@@ -204,6 +204,6 @@ Explicit Deny that fires unless MFA was used — a "deny unless X" pattern, easi
 
 ## 🌐 Related Concepts (forward links)
 
-- SCPs in full depth (OU hierarchy, inheritance) → Part 2, Section 5
-- STS and session credential/session policy issuance → Part 2, Section 3
-- IAM Access Analyzer, Trusted Advisor IAM checks → Part 2, Section 8
+- SCPs in full depth (OU hierarchy, inheritance) → §13
+- STS and session credential/session policy issuance → §11
+- IAM Access Analyzer, Trusted Advisor IAM checks → §16

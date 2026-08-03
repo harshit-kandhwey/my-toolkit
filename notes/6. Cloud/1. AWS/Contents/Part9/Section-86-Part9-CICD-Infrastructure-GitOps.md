@@ -2,22 +2,22 @@
 
 ## 1. Definition
 
-**Plain language:** This section covers how the tools from Part 9 §1-4 (CloudFormation, CDK, Terraform) actually get run in a real organization — not manually from someone's laptop, but through an automated pipeline that validates, plans, requires review, and only then applies infrastructure changes, exactly like how application code goes through CI/CD before reaching production.
+**Plain language:** This section covers how the tools from §79-82 (CloudFormation, CDK, Terraform) actually get run in a real organization — not manually from someone's laptop, but through an automated pipeline that validates, plans, requires review, and only then applies infrastructure changes, exactly like how application code goes through CI/CD before reaching production.
 
 **Precise definition:** CI/CD for Infrastructure applies continuous integration and continuous delivery practices to infrastructure-as-code changes — automated pipelines that validate/lint IaC templates, compute and surface a plan/change-set for human review, require approval gates for sensitive environments, and execute the approved deployment — often following a **GitOps** model where the version-controlled repository state is the single source of truth driving automated, reconciled deployment, rather than deployment being triggered by manual, ad hoc commands.
 
 ## 2. Why It Exists / Problem It Solves
 
-Every one of Part 9 §1-4's tools provides the _mechanism_ for deploying infrastructure changes safely (change sets, `cdk diff`, `terraform plan`) — but mechanism alone doesn't guarantee the _process_ around using it is safe. If any engineer can run `terraform apply` or `aws cloudformation deploy` directly against production from their own laptop, with their own credentials, whenever they want, the organization has no consistent, enforced practice of change review, no reliable audit trail of who approved what, and no structural prevention of a mistake or malicious action reaching production unreviewed — undermining much of what IaC was supposed to provide in the first place (Part 9 §1's original motivation).
+Every one of §79-82's tools provides the _mechanism_ for deploying infrastructure changes safely (change sets, `cdk diff`, `terraform plan`) — but mechanism alone doesn't guarantee the _process_ around using it is safe. If any engineer can run `terraform apply` or `aws cloudformation deploy` directly against production from their own laptop, with their own credentials, whenever they want, the organization has no consistent, enforced practice of change review, no reliable audit trail of who approved what, and no structural prevention of a mistake or malicious action reaching production unreviewed — undermining much of what IaC was supposed to provide in the first place (§79's original motivation).
 
 CI/CD for infrastructure solves this the same way CI/CD solves it for application code: route every change through a **pipeline** — automated validation, a computed plan for review, an explicit approval gate for sensitive environments, and only then an automated (not manual) apply step — using a dedicated, appropriately-scoped service identity rather than individual engineer credentials, with every step logged and auditable.
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudFormation, CDK, and Terraform** (Part 9 §1-4): this section is about how to safely _operate_ these tools, not new tooling itself.
-- **AWS CodePipeline & CodeBuild, AWS CodeDeploy, Deployment Strategies** (Part 9 §5-7): this section's validate/plan/review/approve/apply pattern is the _infrastructure-specific_ application of the same general pipeline discipline covered generically for application deployment in those sections — CodePipeline/CodeBuild can equally well orchestrate the stages described here.
-- **CloudTrail** (Part 8 §5): pipeline-executed infrastructure changes are still recorded there, providing the audit trail of what the pipeline's service identity actually did.
-- **IAM** (Part 2 §1-3): the pipeline's deployment role/credentials are a genuinely high-value, carefully-scoped security asset, directly building on IAM's least-privilege principles.
+- **CloudFormation, CDK, and Terraform** (§79-82): this section is about how to safely _operate_ these tools, not new tooling itself.
+- **AWS CodePipeline & CodeBuild, AWS CodeDeploy, Deployment Strategies** (§83-85): this section's validate/plan/review/approve/apply pattern is the _infrastructure-specific_ application of the same general pipeline discipline covered generically for application deployment in those sections — CodePipeline/CodeBuild can equally well orchestrate the stages described here.
+- **CloudTrail** (§73): pipeline-executed infrastructure changes are still recorded there, providing the audit trail of what the pipeline's service identity actually did.
+- **IAM** (§9-11): the pipeline's deployment role/credentials are a genuinely high-value, carefully-scoped security asset, directly building on IAM's least-privilege principles.
 
 ## 4. Internal Working
 
@@ -84,11 +84,11 @@ Pull Request opened (infrastructure change)
 
 ## 8. Commands (Full Documentation)
 
-Since this section is about pipeline _process_ rather than new tool-specific commands, the relevant "commands" are how Part 9 §1-4's existing commands are sequenced within a pipeline definition (e.g., a GitHub Actions workflow, an AWS CodePipeline/CodeBuild definition, or similar).
+Since this section is about pipeline _process_ rather than new tool-specific commands, the relevant "commands" are how §79-82's existing commands are sequenced within a pipeline definition (e.g., a GitHub Actions workflow, an AWS CodePipeline/CodeBuild definition, or similar).
 
 ### Example CI Pipeline Stage Sequencing (Terraform, conceptual)
 
-- **Purpose:** Illustrates how `terraform` commands (Part 9 §4) are sequenced across pipeline stages, rather than run individually and manually.
+- **Purpose:** Illustrates how `terraform` commands (§82) are sequenced across pipeline stages, rather than run individually and manually.
 - **Practical example (pipeline YAML, illustrative):**
 
   ```yaml
@@ -111,7 +111,7 @@ Since this section is about pipeline _process_ rather than new tool-specific com
       run: terraform apply tfplan # applies the EXACT reviewed plan, not a freshly computed one
   ```
 
-- **Production usage:** this stage structure — validate, plan, review, gated approval, apply-the-reviewed-plan — is the general pattern applicable across CloudFormation, CDK, and Terraform pipelines alike, with the tool-specific commands from Part 9 §1-4 slotted into each stage.
+- **Production usage:** this stage structure — validate, plan, review, gated approval, apply-the-reviewed-plan — is the general pattern applicable across CloudFormation, CDK, and Terraform pipelines alike, with the tool-specific commands from §79-82 slotted into each stage.
 - **Common errors:** skipping the "apply the exact saved plan file" step (§7 warning) in favor of re-running `plan` immediately before `apply` reintroduces the review/apply consistency gap this pattern exists to close.
 - **Security impact:** the `apply` stage's execution identity is the pipeline's own scoped service role — never an individual engineer's personal credentials — making this the highest-privilege, most carefully protected step in the entire pipeline.
 
@@ -193,26 +193,26 @@ This structure directly embodies GitOps: the repository's `main` branch is the s
 ## 10. Production & Enterprise Usage
 
 - **Startups** often begin with a simple two-stage pipeline (validate + apply, perhaps with informal manual review) and add formal approval gates and environment promotion as the team and the stakes of a production mistake both grow.
-- **Enterprises** build extensive, standardized pipeline templates used consistently across many teams' infrastructure repositories, often with mandatory security scanning stages (checking IaC templates for known misconfiguration patterns — e.g., detecting an S3 bucket being created without encryption, before it's ever deployed) integrated directly into the validate stage, catching security issues before deployment rather than relying solely on Part 8 §6's Config Rules to catch them after the fact.
+- **Enterprises** build extensive, standardized pipeline templates used consistently across many teams' infrastructure repositories, often with mandatory security scanning stages (checking IaC templates for known misconfiguration patterns — e.g., detecting an S3 bucket being created without encryption, before it's ever deployed) integrated directly into the validate stage, catching security issues before deployment rather than relying solely on §74's Config Rules to catch them after the fact.
 - **Separation of duties** and formal approval-gate requirements are frequently driven directly by compliance requirements (SOC 2, PCI-DSS, and similar frameworks explicitly require change-management controls that a well-designed infrastructure pipeline directly satisfies) — infrastructure pipeline design is a genuine, common compliance-audit discussion point.
 - Large organizations with many independent teams often centralize the _pipeline pattern/tooling_ (a shared, reusable pipeline template) while allowing each team to own their own specific infrastructure repository/configuration — balancing organizational consistency with team autonomy.
 
 ## 11. Security Considerations
 
 - The pipeline's deployment service identity is one of the highest-value targets in the entire organization's AWS footprint, since it typically has broad infrastructure-provisioning permissions — protecting the CI/CD system itself (its own access controls, secret management, and the security of the pipeline configuration/scripts themselves) is as important as protecting the AWS credentials directly.
-- Pre-deployment security scanning of IaC templates (checking for known misconfiguration anti-patterns before deployment) shifts security left, catching issues cheaper and earlier than post-deployment detection (Config Rules, Part 8 §6) alone.
+- Pre-deployment security scanning of IaC templates (checking for known misconfiguration anti-patterns before deployment) shifts security left, catching issues cheaper and earlier than post-deployment detection (Config Rules, §74) alone.
 - GitOps' "repository as source of truth" model means source-repository access control and branch protection rules are themselves a critical security boundary — someone who can merge to the main branch of an infrastructure repository effectively has significant deployment power, even without direct AWS credentials.
 
 ## 12. Performance Considerations
 
 - Running full plan/apply cycles across multiple environments (dev, staging, production) sequentially adds real pipeline execution time — parallelizing independent stages where safe (e.g., validation and unrelated tests) while keeping genuinely sequential stages (staging must succeed before production) sequential is a common pipeline-design optimization.
-- Very large infrastructure changes (affecting many resources) naturally take longer to plan and apply regardless of pipeline design — this is the underlying tool's characteristic (Part 9 §1-4), not something pipeline design alone can eliminate, though splitting into smaller, more frequent changes is a common mitigation.
+- Very large infrastructure changes (affecting many resources) naturally take longer to plan and apply regardless of pipeline design — this is the underlying tool's characteristic (§79-82), not something pipeline design alone can eliminate, though splitting into smaller, more frequent changes is a common mitigation.
 
 ## 13. Monitoring
 
 - Pipeline execution history/logs are the primary "did this deployment succeed, and what exactly happened" signal, complementing (not replacing) the underlying tool's own signals — CloudFormation stack events, Terraform apply output.
-- CloudTrail (Part 8 §5) records what the pipeline's service identity actually did at the AWS API level, providing an independent, tamper-resistant cross-check against the pipeline's own self-reported logs.
-- Failed pipeline runs (especially at the approval-gate or apply stage) are worth alerting on, following the same CloudWatch Alarms → SNS pattern (Part 8 §3, Part 7 §3) used throughout this roadmap for other operational failure signals.
+- CloudTrail (§73) records what the pipeline's service identity actually did at the AWS API level, providing an independent, tamper-resistant cross-check against the pipeline's own self-reported logs.
+- Failed pipeline runs (especially at the approval-gate or apply stage) are worth alerting on, following the same CloudWatch Alarms → SNS pattern (§71, §61) used throughout this roadmap for other operational failure signals.
 
 ## 14. Troubleshooting
 
@@ -250,7 +250,7 @@ This structure directly embodies GitOps: the repository's `main` branch is the s
 **Model answer:** This defeats the actual purpose of an approval gate, which is to have a second, independent set of eyes catch mistakes or issues the original author might have missed or been too close to the change to notice — self-approval provides essentially no additional safety beyond the original authoring, even though it looks like a gate exists on paper. Configure the pipeline or repository's branch protection rules to technically enforce separation of duties — requiring an approver who is not the PR's author — rather than relying on informal team norms, since informal norms are exactly what led to this gap in the first place. Also use this as an opportunity to check whether this pattern exists elsewhere in the organization's other pipelines, since a single-person infrastructure-change bottleneck like this is often symptomatic of a broader team-scaling or on-call coverage issue worth addressing directly, not just a pipeline configuration bug.
 
 **🎯 Architect:** _"Design a CI/CD architecture for infrastructure changes across a 50-team organization, balancing organizational consistency (shared security standards, audit requirements) with each team's need for autonomy and fast iteration on their own infrastructure."_
-**Model answer:** Build and centrally maintain a shared, reusable pipeline template — encoding the organization's mandatory stages (validate, security-scan, plan, review, gated production approval) and using appropriately scoped, per-team service identities — that every team's infrastructure repository consumes rather than each team building their own pipeline from scratch. This gives organizational consistency on the things that matter for audit and security (every team's production changes go through the same rigor, using the same underlying pipeline logic, so a compliance audit can point to one well-understood, centrally-owned pipeline definition rather than 50 different bespoke implementations) while still letting each team own their own actual infrastructure code, their own dev/staging environment iteration speed, and their own team-specific approvers for their own production gate, preserving genuine autonomy over their own domain. Version the shared pipeline template itself, so improvements (a new security scan, a process refinement) roll out to all 50 teams through a controlled update to the shared template rather than requiring 50 separate manual updates, and track a small set of central compliance metrics (approval-gate enforcement, service-identity scoping) across all teams' pipelines to catch drift from the intended standard, similar in spirit to the drift-detection and Conformance Pack governance patterns covered in Part 9 §2 and Part 8 §6.
+**Model answer:** Build and centrally maintain a shared, reusable pipeline template — encoding the organization's mandatory stages (validate, security-scan, plan, review, gated production approval) and using appropriately scoped, per-team service identities — that every team's infrastructure repository consumes rather than each team building their own pipeline from scratch. This gives organizational consistency on the things that matter for audit and security (every team's production changes go through the same rigor, using the same underlying pipeline logic, so a compliance audit can point to one well-understood, centrally-owned pipeline definition rather than 50 different bespoke implementations) while still letting each team own their own actual infrastructure code, their own dev/staging environment iteration speed, and their own team-specific approvers for their own production gate, preserving genuine autonomy over their own domain. Version the shared pipeline template itself, so improvements (a new security scan, a process refinement) roll out to all 50 teams through a controlled update to the shared template rather than requiring 50 separate manual updates, and track a small set of central compliance metrics (approval-gate enforcement, service-identity scoping) across all teams' pipelines to catch drift from the intended standard, similar in spirit to the drift-detection and Conformance Pack governance patterns covered in §80 and §74.
 
 ## 18. Common Misconceptions
 
@@ -267,8 +267,8 @@ This structure directly embodies GitOps: the repository's `main` branch is the s
 
 ## 20. Related Concepts
 
-- **CloudFormation, CDK, Terraform** (the tools whose commands are sequenced within these pipelines) → Part 9 §1-4.
+- **CloudFormation, CDK, Terraform** (the tools whose commands are sequenced within these pipelines) → §79-82.
 - **AWS CodeArtifact & supply chain security** (§8a) — the closely related question of how build pipelines source and verify software package dependencies, alongside how they deploy infrastructure.
-- **CloudTrail** (the independent audit trail of what the pipeline's service identity actually did) → Part 8 §5.
-- **AWS Config** (post-deployment compliance detection, complementary to pre-deployment pipeline security scanning) → Part 8 §6.
-- **Choosing the Right IaC Tool** (the final synthesis comparison, informed by everything in Part 9 §1-8) → next section, Part 9 §9.
+- **CloudTrail** (the independent audit trail of what the pipeline's service identity actually did) → §73.
+- **AWS Config** (post-deployment compliance detection, complementary to pre-deployment pipeline security scanning) → §74.
+- **Choosing the Right IaC Tool** (the final synthesis comparison, informed by everything in §79-86) → next section, §87.

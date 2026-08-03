@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-SQS (Part 7 §1-2) is fundamentally **point-to-point**: one message is consumed by exactly one consumer of that queue (even with multiple consumer instances polling the same queue, each individual message goes to only one of them). This is the wrong model when the same event needs to trigger multiple, independent, unrelated downstream actions — for example, "an order was placed" might need to simultaneously: (a) update inventory, (b) send a confirmation email, (c) notify the fulfillment system, and (d) feed an analytics pipeline. Building this with SQS alone would require the producer to know about and explicitly send to four separate queues — tightly coupling the producer to every consumer that might ever exist, and requiring producer code changes every time a new consumer is added.
+SQS (§59-60) is fundamentally **point-to-point**: one message is consumed by exactly one consumer of that queue (even with multiple consumer instances polling the same queue, each individual message goes to only one of them). This is the wrong model when the same event needs to trigger multiple, independent, unrelated downstream actions — for example, "an order was placed" might need to simultaneously: (a) update inventory, (b) send a confirmation email, (c) notify the fulfillment system, and (d) feed an analytics pipeline. Building this with SQS alone would require the producer to know about and explicitly send to four separate queues — tightly coupling the producer to every consumer that might ever exist, and requiring producer code changes every time a new consumer is added.
 
 SNS solves this with the **publish/subscribe pattern**: the producer publishes once, to one topic, with zero knowledge of who (or how many subscribers) will receive it. New consumers can subscribe to the topic at any time without any change to the producer whatsoever — this is a materially different, more scalable form of decoupling than SQS alone provides.
 
@@ -16,9 +16,9 @@ SNS solves this with the **publish/subscribe pattern**: the producer publishes o
 
 ## 3. Prerequisites and Dependencies
 
-- **SQS** (Part 7 §1-2): the most common SNS subscriber type is an SQS queue; the "fan-out" pattern (SNS -> multiple SQS queues) is one of the most frequently tested architecture patterns in interviews and is covered fully below.
-- **IAM** (Part 2 §1-3): topic access policies follow the same resource-policy model as SQS queue policies and S3 bucket policies.
-- **Lambda** (Part 3 §7): a common direct SNS subscriber type.
+- **SQS** (§59-60): the most common SNS subscriber type is an SQS queue; the "fan-out" pattern (SNS -> multiple SQS queues) is one of the most frequently tested architecture patterns in interviews and is covered fully below.
+- **IAM** (§9-11): topic access policies follow the same resource-policy model as SQS queue policies and S3 bucket policies.
+- **Lambda** (§25): a common direct SNS subscriber type.
 
 ## 4. Internal Working
 
@@ -60,7 +60,7 @@ SNS solves this with the **publish/subscribe pattern**: the producer publishes o
 3. **Confirm** subscriptions where required (email/HTTP) — SNS sends a confirmation request; the endpoint must respond/click before it starts receiving actual messages.
 4. **Publish** a message to the topic, optionally with message attributes used for filtering and/or a subject (used by email subscriptions).
 5. SNS **fans out** the message in parallel to every confirmed, filter-matching subscription.
-6. Each subscriber processes the message using its own protocol-appropriate mechanism (SQS: the message lands in the queue and is later received/deleted per Part 7 §1; Lambda: the function is invoked directly; HTTP: SNS POSTs to the endpoint and expects a 200-series response).
+6. Each subscriber processes the message using its own protocol-appropriate mechanism (SQS: the message lands in the queue and is later received/deleted per §59; Lambda: the function is invoked directly; HTTP: SNS POSTs to the endpoint and expects a 200-series response).
 
 ## 7. Configuration
 
@@ -177,7 +177,7 @@ aws sns publish --topic-arn <OrderEvents-arn> \
   --message '{"orderId":"A4002","status":"created"}'
 ```
 
-This single publish results in one message landing in `inventory-queue` and an independent copy landing in `analytics-queue` — each queue's consumers process their own copy completely independently, with their own visibility timeouts, DLQs, and retry behavior (per Part 7 §1-2), fully decoupled from each other despite originating from the same event.
+This single publish results in one message landing in `inventory-queue` and an independent copy landing in `analytics-queue` — each queue's consumers process their own copy completely independently, with their own visibility timeouts, DLQs, and retry behavior (per §59-60), fully decoupled from each other despite originating from the same event.
 
 **Filtering example — only "paid" events go to the email-notification Lambda:**
 
@@ -196,7 +196,7 @@ Now, publishing a message with `status: "created"` does not invoke this Lambda a
 ## 10. Production & Enterprise Usage
 
 - **Startups** commonly use a single SNS topic to fan out to a small number of Lambda functions for lightweight event-driven glue (e.g., "user signed up" → welcome email Lambda + analytics Lambda).
-- **Enterprises** build large fan-out topologies where one topic serves dozens of subscribers across many teams and even multiple AWS accounts (cross-account SNS subscriptions are supported and common in large orgs using AWS Organizations, Part 2 §5), each team subscribing independently to the events relevant to them without any coordination with or code change from the publishing team — a genuine organizational decoupling benefit, not just a technical one.
+- **Enterprises** build large fan-out topologies where one topic serves dozens of subscribers across many teams and even multiple AWS accounts (cross-account SNS subscriptions are supported and common in large orgs using AWS Organizations, §13), each team subscribing independently to the events relevant to them without any coordination with or code change from the publishing team — a genuine organizational decoupling benefit, not just a technical one.
 - SNS is the standard mechanism behind many AWS-native **operational alerting** patterns: CloudWatch Alarms publish to an SNS topic, which fans out to email, SMS, and a Lambda that posts to Slack/PagerDuty simultaneously (full CloudWatch depth in Part 8).
 - **Mobile push** subscriptions (protocol `application`) integrate with Apple APNs, Google FCM, and other platform-specific push services, letting SNS serve as the backend fan-out layer for mobile notification systems in consumer apps.
 
@@ -204,7 +204,7 @@ Now, publishing a message with `status: "created"` does not invoke this Lambda a
 
 - Same two-layer model as SQS/S3: the publisher's IAM policy must allow `sns:Publish`, and the topic's resource policy must not deny it; for cross-account or cross-service publishing, an explicit topic policy statement is required.
 - **Message attribute-based filtering happens after fan-out routing decisions but does not encrypt or restrict message _content_ from a subscriber** — filtering controls which subscribers receive a message at all, not what part of the message body they can see; this is a common point of confusion when teams assume filter policies provide data-level access control (they don't).
-- SNS supports server-side encryption of a topic using KMS (cross-reference Part 2 §6), protecting message content at rest within SNS's transient storage during delivery.
+- SNS supports server-side encryption of a topic using KMS (cross-reference §14), protecting message content at rest within SNS's transient storage during delivery.
 
 ## 12. Performance Considerations
 
@@ -272,7 +272,7 @@ Now, publishing a message with `status: "created"` does not invoke this Lambda a
 
 ## 20. Related Concepts
 
-- **EventBridge** (a more advanced event-routing service with richer filtering and a schema registry, often compared directly against SNS) → next section, Part 7 §4.
-- **SQS** (the most common SNS subscriber type, and the basis of the fan-out pattern) → Part 7 §1-2.
+- **EventBridge** (a more advanced event-routing service with richer filtering and a schema registry, often compared directly against SNS) → next section, §62.
+- **SQS** (the most common SNS subscriber type, and the basis of the fan-out pattern) → §59-60.
 - **CloudWatch Alarms → SNS** (the standard AWS-native alerting pipeline) → previewed here, full depth Part 8.
-- **KMS encryption for SNS topics** → Part 2 §6.
+- **KMS encryption for SNS topics** → §14.

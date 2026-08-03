@@ -4,18 +4,18 @@
 
 **Plain language:** Part 11 built the pipeline that turns raw data into curated, queryable data lake tables. Machine learning is one of the most demanding consumers of that curated data — training a model requires large volumes of well-prepared training data, substantial compute (often specialized hardware like GPUs), and an entirely different operational lifecycle (train, evaluate, deploy, monitor, retrain) than a SQL query or a BI dashboard. Amazon SageMaker is AWS's purpose-built, managed platform for that entire machine learning lifecycle.
 
-**Precise definition:** Amazon SageMaker is a fully managed machine learning platform providing purpose-built tools and managed infrastructure for every stage of the ML lifecycle — data preparation, model building, training (including distributed, multi-instance training and hyperparameter tuning), deployment (real-time and batch inference), and ongoing monitoring — removing the substantial undifferentiated infrastructure-management burden that self-managing ML infrastructure (comparable to what Part 11 §4 described for self-managed Spark/Hadoop before EMR) would otherwise require.
+**Precise definition:** Amazon SageMaker is a fully managed machine learning platform providing purpose-built tools and managed infrastructure for every stage of the ML lifecycle — data preparation, model building, training (including distributed, multi-instance training and hyperparameter tuning), deployment (real-time and batch inference), and ongoing monitoring — removing the substantial undifferentiated infrastructure-management burden that self-managing ML infrastructure (comparable to what §102 described for self-managed Spark/Hadoop before EMR) would otherwise require.
 
 ## 2. Why It Exists / Problem It Solves
 
-- Before managed ML platforms existed, a team building a machine learning model had to handle a large amount of infrastructure work entirely separate from the actual modeling problem: provisioning and managing training compute (often GPU instances, which have their own availability, driver, and cost considerations distinct from standard EC2, Part 3 §1), building a deployment/serving infrastructure capable of handling real-time inference requests at low latency and appropriate scale, and building custom tooling for experiment tracking, model versioning, and ongoing model-quality monitoring.
-- This mirrors the exact problem EMR (Part 11 §4) solves for big-data processing generally, but for the ML lifecycle specifically — SageMaker removes the undifferentiated infrastructure burden (provisioning training clusters, building a low-latency serving layer, managing GPU driver compatibility) while preserving the genuine flexibility a data scientist or ML engineer needs (custom training code, model architecture choice, framework choice — TensorFlow, PyTorch, scikit-learn, and others).
+- Before managed ML platforms existed, a team building a machine learning model had to handle a large amount of infrastructure work entirely separate from the actual modeling problem: provisioning and managing training compute (often GPU instances, which have their own availability, driver, and cost considerations distinct from standard EC2, §19), building a deployment/serving infrastructure capable of handling real-time inference requests at low latency and appropriate scale, and building custom tooling for experiment tracking, model versioning, and ongoing model-quality monitoring.
+- This mirrors the exact problem EMR (§102) solves for big-data processing generally, but for the ML lifecycle specifically — SageMaker removes the undifferentiated infrastructure burden (provisioning training clusters, building a low-latency serving layer, managing GPU driver compatibility) while preserving the genuine flexibility a data scientist or ML engineer needs (custom training code, model architecture choice, framework choice — TensorFlow, PyTorch, scikit-learn, and others).
 - 🔑 **Key takeaway:** SageMaker's core value proposition is the same pattern as EMR and Athena — removing operational burden that isn't the actual value-add work (the specific ML modeling problem), while preserving control where genuine flexibility matters, rather than being an opinionated, fully black-box "AI product."
 
 ## 3. Prerequisites and Dependencies
 
-- **Amazon S3** (Part 5 §1) and the **data lake / Glue Catalog pattern** (Part 11 §1): training data commonly lives in and is prepared via this Part 11 pipeline before being consumed by SageMaker.
-- **IAM** (Part 2 §1-3): SageMaker training jobs and endpoints run under IAM roles/permissions, following the same least-privilege principles applied throughout this course.
+- **Amazon S3** (§39) and the **data lake / Glue Catalog pattern** (§99): training data commonly lives in and is prepared via this Part 11 pipeline before being consumed by SageMaker.
+- **IAM** (§9-11): SageMaker training jobs and endpoints run under IAM roles/permissions, following the same least-privilege principles applied throughout this course.
 - General familiarity with the basic machine learning concept of "train a model on data, then use it to make predictions" — this section explains SageMaker's specific mechanics, not general ML theory.
 
 ## 4. Internal Working / Architecture & Components
@@ -27,20 +27,20 @@
 | **Data preparation** | Cleaning, transforming, and feature-engineering training data | SageMaker Data Wrangler, SageMaker Processing (running custom preprocessing scripts on managed infrastructure) |
 | **Model building**   | Writing and experimenting with model code/architecture        | SageMaker Studio (an integrated notebook/IDE environment), SageMaker Notebook Instances                        |
 | **Training**         | Running the actual training process against prepared data     | SageMaker Training Jobs (§4.2)                                                                                 |
-| **Tuning**           | Searching for the best hyperparameters                        | SageMaker Automatic Model Tuning (hyperparameter optimization, Part 12 §2)                                     |
-| **Deployment**       | Serving the trained model for predictions                     | SageMaker Endpoints (real-time) and Batch Transform (batch), Part 12 §2                                        |
-| **Monitoring**       | Tracking deployed model quality/drift over time               | SageMaker Model Monitor, Part 12 §3                                                                            |
+| **Tuning**           | Searching for the best hyperparameters                        | SageMaker Automatic Model Tuning (hyperparameter optimization, §109)                                           |
+| **Deployment**       | Serving the trained model for predictions                     | SageMaker Endpoints (real-time) and Batch Transform (batch), §109                                              |
+| **Monitoring**       | Tracking deployed model quality/drift over time               | SageMaker Model Monitor, §110                                                                                  |
 
 ### 4.2 SageMaker Training Jobs
 
-- A **Training Job** is SageMaker's managed unit of model training work — you specify the training code (a script using a supported framework, or a custom Docker container), the training data's S3 location, the instance type/count to train on, and SageMaker provisions the specified compute, runs the training code against the data, saves the resulting model artifact to S3, and tears the training infrastructure back down — the same "transient, job-oriented, pay only for what's used" pattern established for EMR transient clusters (Part 11 §4) and Glue Jobs (Part 11 §1), now applied to model training specifically.
+- A **Training Job** is SageMaker's managed unit of model training work — you specify the training code (a script using a supported framework, or a custom Docker container), the training data's S3 location, the instance type/count to train on, and SageMaker provisions the specified compute, runs the training code against the data, saves the resulting model artifact to S3, and tears the training infrastructure back down — the same "transient, job-oriented, pay only for what's used" pattern established for EMR transient clusters (§102) and Glue Jobs (§99), now applied to model training specifically.
 - SageMaker provides **built-in algorithms** (pre-implemented, optimized implementations of common ML algorithms — XGBoost, linear learner, and others) for common use cases, alongside full support for **bring-your-own-script** training using standard frameworks (TensorFlow, PyTorch, scikit-learn) via SageMaker's framework-specific pre-built training containers, and full **bring-your-own-container** support for entirely custom training environments.
 - **Distributed training**: for large models or datasets exceeding what a single instance can handle efficiently, SageMaker supports distributing a training job across multiple instances — a genuinely more complex undertaking that SageMaker's managed infrastructure significantly simplifies compared to self-managing distributed training infrastructure directly.
 
 ### 4.3 Where Training Data Comes From
 
-- Training data is most commonly staged in S3, frequently as the direct output of this Part's data lake curation pipeline (Part 11 §1) — meaning the same partitioning, format, and quality discipline established in Part 11 directly benefits ML training data preparation, not just SQL query performance.
-- SageMaker Processing jobs (a managed way to run custom data preparation/feature-engineering scripts, using the same job-oriented, transient-compute model as Training Jobs) commonly sit between the raw/curated data lake and the final training-ready dataset, handling ML-specific preparation (feature scaling, train/validation/test splitting) that goes beyond the more general-purpose curation Part 11 §1 covers.
+- Training data is most commonly staged in S3, frequently as the direct output of this Part's data lake curation pipeline (§99) — meaning the same partitioning, format, and quality discipline established in Part 11 directly benefits ML training data preparation, not just SQL query performance.
+- SageMaker Processing jobs (a managed way to run custom data preparation/feature-engineering scripts, using the same job-oriented, transient-compute model as Training Jobs) commonly sit between the raw/curated data lake and the final training-ready dataset, handling ML-specific preparation (feature scaling, train/validation/test splitting) that goes beyond the more general-purpose curation §99 covers.
 
 ## 5. Lifecycle / Workflow
 
@@ -48,17 +48,17 @@
 2. A SageMaker Processing job (optional but common) performs ML-specific data preparation — feature engineering, train/validation/test splitting — producing a training-ready dataset in S3.
 3. A SageMaker Training Job runs, using either a built-in algorithm or custom training code, against the prepared data, on specified compute (potentially distributed across multiple instances), producing a trained model artifact saved to S3.
 4. The trained model is evaluated (commonly using a held-out validation/test dataset from step 2) to assess whether it's ready for deployment.
-5. The model is deployed — as a real-time SageMaker Endpoint for low-latency, on-demand predictions, or via Batch Transform for large-scale, offline batch prediction jobs (Part 12 §2 covers deployment in depth).
-6. Once deployed, SageMaker Model Monitor (Part 12 §3) can track the deployed model's ongoing prediction quality and data drift, informing when retraining is needed — closing the loop back to step 1 with updated data.
+5. The model is deployed — as a real-time SageMaker Endpoint for low-latency, on-demand predictions, or via Batch Transform for large-scale, offline batch prediction jobs (§109 covers deployment in depth).
+6. Once deployed, SageMaker Model Monitor (§110) can track the deployed model's ongoing prediction quality and data drift, informing when retraining is needed — closing the loop back to step 1 with updated data.
 
 ## 6. Configuration
 
-| Setting                            | Purpose                                                                                                                                                                                                        |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Instance type/count for training   | The compute (including whether GPU instances are needed) allocated to a Training Job — directly analogous to EMR/EC2 sizing decisions (Part 11 §4, Part 3 §1), now applied to training workloads specifically. |
-| IAM execution role                 | The role a Training Job or Endpoint runs under, determining what S3 data/other AWS resources it can access — standard least-privilege scoping applies.                                                         |
-| Framework/algorithm selection      | Which built-in algorithm, framework container, or custom container the training job uses.                                                                                                                      |
-| Distributed training configuration | How a training job's workload is split across multiple instances, for workloads exceeding single-instance capacity.                                                                                            |
+| Setting                            | Purpose                                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Instance type/count for training   | The compute (including whether GPU instances are needed) allocated to a Training Job — directly analogous to EMR/EC2 sizing decisions (§102, §19), now applied to training workloads specifically. |
+| IAM execution role                 | The role a Training Job or Endpoint runs under, determining what S3 data/other AWS resources it can access — standard least-privilege scoping applies.                                             |
+| Framework/algorithm selection      | Which built-in algorithm, framework container, or custom container the training job uses.                                                                                                          |
+| Distributed training configuration | How a training job's workload is split across multiple instances, for workloads exceeding single-instance capacity.                                                                                |
 
 ## 7. Commands / API (Full Documentation)
 
@@ -79,14 +79,14 @@ aws sagemaker create-training-job \
 ```
 
 - **Important arguments:** `--algorithm-specification` specifies the training container/algorithm image being used (a built-in algorithm image, or a custom/framework container). `--input-data-config` points at the S3 training data — typically the output of Part 11's curation pipeline or a subsequent SageMaker Processing job. `--resource-config` is the training compute sizing decision (§6). `--stopping-condition` caps maximum training duration, a cost-control guardrail.
-- **Common errors:** insufficient IAM permissions on the training role for the S3 data location; under-sized instance type causing out-of-memory failures for larger datasets/models, conceptually similar to the EMR out-of-memory troubleshooting pattern (Part 11 §4 §13).
+- **Common errors:** insufficient IAM permissions on the training role for the S3 data location; under-sized instance type causing out-of-memory failures for larger datasets/models, conceptually similar to the EMR out-of-memory troubleshooting pattern (§102 §13).
 - **Security impact:** the training role is the actual permission boundary for what data a training job can access — scope it to exactly the S3 training data location needed, following least-privilege.
-- **Troubleshooting tip:** `describe-training-job` returns detailed status, including CloudWatch Logs (Part 8 §2) links for the training process's actual output — the primary place to investigate a failed or underperforming training job.
+- **Troubleshooting tip:** `describe-training-job` returns detailed status, including CloudWatch Logs (§70) links for the training process's actual output — the primary place to investigate a failed or underperforming training job.
 
 ## 8. Hands-On Example — End-to-End Training Flow
 
 ```text
-1. Curated customer transaction data in S3 (Part 11 §1's pipeline output):
+1. Curated customer transaction data in S3 (§99's pipeline output):
    s3://ml-data-bucket/curated/transactions/ (partitioned Parquet)
 
 2. SageMaker Processing job:
@@ -101,7 +101,7 @@ aws sagemaker create-training-job \
    - Produces model artifact: s3://ml-data-bucket/models/churn-model-v3/model.tar.gz
 
 4. Model evaluated against the held-out test set --> if performance
-   meets the bar, proceed to deployment (Part 12 §2)
+   meets the bar, proceed to deployment (§109)
 ```
 
 This demonstrates directly how Part 11's data lake curation and Part 12's ML training connect into one pipeline — the same partitioned, curated data this course has emphasized throughout Part 11 becomes the direct input to a SageMaker training job, not a separate, disconnected data source.
@@ -115,34 +115,34 @@ This demonstrates directly how Part 11's data lake curation and Part 12's ML tra
 ## 10. Security Considerations
 
 - Training jobs and endpoints run under IAM execution roles — scoping these roles to exactly the S3 data and other resources genuinely needed follows the same least-privilege principle applied throughout this course.
-- Training and inference infrastructure can be deployed within a VPC (Part 4 §1), keeping training data and model artifacts within a private network boundary rather than traversing the public internet — a standard practice for training on sensitive data.
-- Encryption at rest (for training data and model artifacts in S3, following Part 5 §3 patterns) and in transit should be enabled for any training pipeline handling sensitive data.
+- Training and inference infrastructure can be deployed within a VPC (§29), keeping training data and model artifacts within a private network boundary rather than traversing the public internet — a standard practice for training on sensitive data.
+- Encryption at rest (for training data and model artifacts in S3, following §41 patterns) and in transit should be enabled for any training pipeline handling sensitive data.
 
 ## 11. Performance Considerations
 
-- Instance type selection — including whether GPU instances are needed — is the primary training performance lever, directly analogous to EMR/EC2 sizing decisions (Part 11 §4, Part 3 §1) but specific to ML workloads' often GPU-bound compute profile.
+- Instance type selection — including whether GPU instances are needed — is the primary training performance lever, directly analogous to EMR/EC2 sizing decisions (§102, §19) but specific to ML workloads' often GPU-bound compute profile.
 - Distributed training (§4.2) is the primary lever for training on datasets/models too large for a single instance to handle efficiently within a reasonable time, at the cost of genuinely more complex training-job configuration.
-- The same data-quality and format principles from Part 11 apply to training data preparation — well-prepared, appropriately-sized training data (avoiding an excessive number of small files, similar to Part 11 §1 §11's compaction discussion) improves training job efficiency.
+- The same data-quality and format principles from Part 11 apply to training data preparation — well-prepared, appropriately-sized training data (avoiding an excessive number of small files, similar to §99 §11's compaction discussion) improves training job efficiency.
 
 ## 12. Monitoring
 
-- CloudWatch Logs (Part 8 §2) capture a Training Job's actual execution output (training progress, loss metrics over epochs), the primary signal for whether training is proceeding as expected.
-- CloudWatch Metrics (Part 8 §1) track training job resource utilization (GPU/CPU, memory) — useful for right-sizing future training jobs based on actual observed utilization, the same sizing-optimization principle applied to EMR (Part 11 §4 §11) and EC2 (Part 3 §1) elsewhere in this course.
+- CloudWatch Logs (§70) capture a Training Job's actual execution output (training progress, loss metrics over epochs), the primary signal for whether training is proceeding as expected.
+- CloudWatch Metrics (§69) track training job resource utilization (GPU/CPU, memory) — useful for right-sizing future training jobs based on actual observed utilization, the same sizing-optimization principle applied to EMR (§102 §11) and EC2 (§19) elsewhere in this course.
 
 ## 13. Troubleshooting
 
-| Symptom                                             | Cause                                                                                                        | Fix                                                                                                                                   |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Training job fails with out-of-memory error         | Instance type under-sized for the dataset/model, or batch size too large                                     | Increase instance size, use distributed training, or reduce batch size                                                                |
-| Training job succeeds but model performs poorly     | Insufficient/poor-quality training data, inappropriate algorithm choice, or inadequate hyperparameter tuning | Review training data quality (tying back to Part 11 §1's curation principles); consider SageMaker Automatic Model Tuning (Part 12 §2) |
-| Training job fails immediately with an access error | IAM training role lacks permission on the S3 training data location                                          | Review and correct the training role's IAM permissions                                                                                |
-| Training takes far longer than expected             | Under-provisioned instance type, or data not efficiently formatted/partitioned for training-time reads       | Review instance sizing; apply Part 11 §1's curation best practices to training data                                                   |
+| Symptom                                             | Cause                                                                                                        | Fix                                                                                                                      |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Training job fails with out-of-memory error         | Instance type under-sized for the dataset/model, or batch size too large                                     | Increase instance size, use distributed training, or reduce batch size                                                   |
+| Training job succeeds but model performs poorly     | Insufficient/poor-quality training data, inappropriate algorithm choice, or inadequate hyperparameter tuning | Review training data quality (tying back to §99's curation principles); consider SageMaker Automatic Model Tuning (§109) |
+| Training job fails immediately with an access error | IAM training role lacks permission on the S3 training data location                                          | Review and correct the training role's IAM permissions                                                                   |
+| Training takes far longer than expected             | Under-provisioned instance type, or data not efficiently formatted/partitioned for training-time reads       | Review instance sizing; apply §99's curation best practices to training data                                             |
 
 ## 14. Best Practices
 
 - Feed SageMaker training jobs from the same curated, partitioned, well-formatted data lake output established in Part 11, rather than maintaining a separate, less-disciplined ML-specific data path.
 - Use SageMaker Processing jobs for ML-specific data preparation (feature engineering, splitting) as a distinct, managed step, rather than embedding that logic ad hoc inside training scripts.
-- Set explicit `MaxRuntimeInSeconds` stopping conditions on training jobs as a cost-control guardrail, mirroring the Athena Workgroup data-scan-limit pattern (Part 11 §3 §9) applied to training cost specifically.
+- Set explicit `MaxRuntimeInSeconds` stopping conditions on training jobs as a cost-control guardrail, mirroring the Athena Workgroup data-scan-limit pattern (§101 §9) applied to training cost specifically.
 - Right-size training instance types based on observed utilization (§12), rather than defaulting to an oversized instance "to be safe."
 
 ## 15. Anti-Patterns and Common Mistakes
@@ -164,7 +164,7 @@ This demonstrates directly how Part 11's data lake curation and Part 12's ML tra
 **Model answer:** This is exactly the undifferentiated infrastructure-management burden SageMaker Training Jobs exist to remove — I'd recommend migrating this workflow to SageMaker: package the existing training script into a SageMaker-compatible training job (either using a framework's pre-built container if they're using a standard framework like TensorFlow/PyTorch, or a custom container if their setup is more bespoke), pointing at the same S3 training data, with SageMaker handling instance provisioning, running the training, saving the model artifact to S3 automatically, and tearing the compute down afterward — the same transient, job-oriented, pay-only-for-actual-training-time model established for EMR and Glue Jobs in Part 11. This removes the manual provisioning/SSH/copy workflow entirely, reduces the risk of manual-process errors (forgetting to terminate an instance, inconsistent artifact-saving), and gives the team standard tooling (CloudWatch Logs integration, `describe-training-job` status tracking) they'd otherwise have to build themselves.
 
 **🎯 Architect:** _"Design the ML training infrastructure for an organization running 50 different model training pipelines with widely varying compute needs — some small, fast, CPU-only models retrained daily, and a few large, GPU-intensive models retrained weekly — while keeping cost predictable and avoiding one pipeline's resource needs affecting another's."_
-**Model answer:** Leverage SageMaker Training Jobs' inherently per-job, transient compute model as the foundation — since each of the 50 pipelines' training jobs provisions its own specified compute independently and tears it down after completion, there's no shared, persistent infrastructure where one pipeline's resource needs could directly starve another's, unlike a shared, persistent cluster model would risk. Size each pipeline's training job instance type/count specifically to its own actual needs (small CPU instances for the daily lightweight models, GPU instances specifically for the few large weekly models) rather than a one-size-fits-all default, directly following §14's right-sizing best practice at the portfolio level. For cost predictability specifically, set appropriate `MaxRuntimeInSeconds` stopping conditions on every pipeline as a guardrail against any single runaway job, and track per-pipeline training cost (taggable per job) to give clear cost attribution across the 50 pipelines, similar in spirit to the per-team Athena Workgroup cost-tracking pattern from Part 11 §3's Architect answer. For the daily-vs-weekly cadence difference, orchestrate each pipeline's schedule independently (via Step Functions or EventBridge scheduled rules, Part 7) rather than forcing all 50 onto one shared scheduling/infrastructure pattern, since their actual operational needs are genuinely different — the correct architecture here is 50 independently-sized, independently-scheduled, transient training jobs, not one shared, persistent training infrastructure serving all of them.
+**Model answer:** Leverage SageMaker Training Jobs' inherently per-job, transient compute model as the foundation — since each of the 50 pipelines' training jobs provisions its own specified compute independently and tears it down after completion, there's no shared, persistent infrastructure where one pipeline's resource needs could directly starve another's, unlike a shared, persistent cluster model would risk. Size each pipeline's training job instance type/count specifically to its own actual needs (small CPU instances for the daily lightweight models, GPU instances specifically for the few large weekly models) rather than a one-size-fits-all default, directly following §14's right-sizing best practice at the portfolio level. For cost predictability specifically, set appropriate `MaxRuntimeInSeconds` stopping conditions on every pipeline as a guardrail against any single runaway job, and track per-pipeline training cost (taggable per job) to give clear cost attribution across the 50 pipelines, similar in spirit to the per-team Athena Workgroup cost-tracking pattern from §101's Architect answer. For the daily-vs-weekly cadence difference, orchestrate each pipeline's schedule independently (via Step Functions or EventBridge scheduled rules, Part 7) rather than forcing all 50 onto one shared scheduling/infrastructure pattern, since their actual operational needs are genuinely different — the correct architecture here is 50 independently-sized, independently-scheduled, transient training jobs, not one shared, persistent training infrastructure serving all of them.
 
 ## 17. Common Misconceptions
 
@@ -176,14 +176,14 @@ This demonstrates directly how Part 11's data lake curation and Part 12's ML tra
 
 🔑 SageMaker removes the undifferentiated infrastructure-management burden of the ML lifecycle (training compute, serving infrastructure, monitoring tooling) while preserving genuine modeling flexibility — the same pattern EMR applies to big-data processing generally.
 🔑 SageMaker Training Jobs follow the same transient, job-oriented, pay-for-what's-used compute model established for EMR transient clusters and Glue Jobs in Part 11.
-🔑 ML training data commonly flows directly from the same curated, partitioned data lake pipeline (Part 11 §1) serving every other analytics consumer in this course — not a separate, disconnected data path.
+🔑 ML training data commonly flows directly from the same curated, partitioned data lake pipeline (§99) serving every other analytics consumer in this course — not a separate, disconnected data path.
 🔑 SageMaker supports built-in algorithms, bring-your-own-script with standard frameworks, and full bring-your-own-container flexibility — a spectrum of control, not a single fixed approach.
 🔑 Right-sizing training compute and setting explicit runtime guardrails are the primary cost/performance levers, directly mirroring principles already established for EMR and EC2 elsewhere in this course.
 
 ## 19. Related Concepts
 
-- **AWS Glue Data Catalog and data lake curation** (Part 11 §1) — the common upstream data source for SageMaker training pipelines.
-- **Amazon EMR** (Part 11 §4) — the closest architectural analog for "managed, transient, job-oriented big compute," applied here specifically to ML training.
-- **SageMaker Deep Dive — Training, Tuning, Deployment, Pipelines** (Part 12 §2, next section) — covers hyperparameter tuning, real-time/batch deployment, and multi-step ML pipelines in depth.
-- **Model Monitoring & MLOps on AWS** (Part 12 §3) — the ongoing operational lifecycle after a model is deployed, closing the loop back to retraining.
-- **Amazon Bedrock** (Part 12 §4) — a contrasting, higher-level approach for generative AI specifically, using pre-trained foundation models rather than training custom models from scratch as covered in this section.
+- **AWS Glue Data Catalog and data lake curation** (§99) — the common upstream data source for SageMaker training pipelines.
+- **Amazon EMR** (§102) — the closest architectural analog for "managed, transient, job-oriented big compute," applied here specifically to ML training.
+- **SageMaker Deep Dive — Training, Tuning, Deployment, Pipelines** (§109, next section) — covers hyperparameter tuning, real-time/batch deployment, and multi-step ML pipelines in depth.
+- **Model Monitoring & MLOps on AWS** (§110) — the ongoing operational lifecycle after a model is deployed, closing the loop back to retraining.
+- **Amazon Bedrock** (§111) — a contrasting, higher-level approach for generative AI specifically, using pre-trained foundation models rather than training custom models from scratch as covered in this section.

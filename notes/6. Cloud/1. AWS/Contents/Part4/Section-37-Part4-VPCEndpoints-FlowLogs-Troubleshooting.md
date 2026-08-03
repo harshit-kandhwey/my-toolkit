@@ -15,26 +15,29 @@ Precise: A VPC Endpoint provides private connectivity between a VPC and supporte
 ## 2. VPC Endpoints - Full Depth
 
 ### 2.1 Why They Exist
+
 - A request from a private-subnet instance to S3, without a VPC Endpoint, travels instance -> NAT Gateway -> IGW -> internet -> S3 - even though both endpoints are within AWS's own infrastructure. Wasteful (NAT data processing charges) and unnecessary path length for AWS-to-AWS traffic.
 
 ### 2.2 Gateway Endpoints
+
 - Support ONLY S3 and DynamoDB - a specific, narrow, frequently-tested limitation.
 - Mechanism: a route table target - add a route sending S3/DynamoDB traffic to the Gateway Endpoint instead of NAT/IGW. No ENI involved.
 - Free - no hourly charge, no per-GB charge - a pure cost win with no downside, worth enabling by default wherever applicable.
 
 ### 2.3 Interface Endpoints (PrivateLink)
+
 - Support a much broader range of AWS services plus any custom VPC Endpoint Service - the general-purpose mechanism.
 - Mechanism: an ENI with a private IP placed in your subnet - traffic goes to this ENI instead of over the internet path.
 - Cost: hourly charge per endpoint per AZ plus per-GB data processing - not free, though typically cheaper than equivalent NAT Gateway charges at scale.
 
 ### 2.4 Gateway vs Interface Decision
 
-| | Gateway Endpoint | Interface Endpoint |
-|---|---|---|
-| Supported services | S3 and DynamoDB only | Broad AWS services + custom services |
-| Mechanism | Route table target | ENI with private IP |
-| Cost | Free | Hourly + per-GB |
-| DNS | No special change needed | Typically needs private DNS enabled |
+|                    | Gateway Endpoint         | Interface Endpoint                   |
+| ------------------ | ------------------------ | ------------------------------------ |
+| Supported services | S3 and DynamoDB only     | Broad AWS services + custom services |
+| Mechanism          | Route table target       | ENI with private IP                  |
+| Cost               | Free                     | Hourly + per-GB                      |
+| DNS                | No special change needed | Typically needs private DNS enabled  |
 
 Clean rule: for S3/DynamoDB, always use a Gateway Endpoint - free, no reason not to. For anything else, use an Interface Endpoint, accepting the charge as the cost of avoiding NAT/internet path entirely.
 
@@ -43,16 +46,20 @@ Clean rule: for S3/DynamoDB, always use a Gateway Endpoint - free, no reason not
 ## 3. VPC Flow Logs
 
 ### 3.1 Definition and What They Capture
+
 - Capture metadata - source/destination IP and port, protocol, packet/byte counts, and whether traffic was ACCEPTed or REJECTed (by an SG or NACL) - NOT actual packet contents/payload.
 - The direct network-layer parallel to CloudTrail - CloudTrail logs API calls, Flow Logs log network traffic.
 
 ### 3.2 Publishing Destinations
+
 - CloudWatch Logs (real-time viewing/alerting), S3 (long-term storage), or Kinesis Data Firehose (streaming to further processing) - the same destination-flexibility pattern seen elsewhere (e.g., WAF logging).
 
 ### 3.3 Capture Scope
+
 - Enabled at VPC level, subnet level, or individual ENI level - progressively narrower scopes.
 
 ### 3.4 The ACCEPT/REJECT Field
+
 - The single most practically valuable field for this Part's troubleshooting workflows - a REJECT entry confirms empirically that a security group or NACL blocked specific traffic, narrowing investigation far faster than blind trial-and-error.
 - What Flow Logs do NOT tell you: which SPECIFIC rule caused the REJECT - still need to cross-reference logged traffic against actual SG/NACL configs to find the exact rule, but knowing a rejection occurred (and roughly where) narrows things enormously.
 
@@ -104,12 +111,12 @@ Key idea: the same systematic, layer-by-layer discipline as IAM policy evaluatio
 
 ## 9. Troubleshooting - Applying This Section's Tools
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| Suspect SG/NACL blocking traffic, unsure which | Manual review slow/inconclusive | Enable Flow Logs, look for REJECT entries matching source/destination/port |
-| Private-subnet S3 traffic shows NAT Gateway data charges | No Gateway Endpoint for S3 | Add a free Gateway Endpoint, update route table |
-| Need to verify a planned change won't break connectivity | No way to test without real traffic | Use VPC Reachability Analyzer against the planned config |
-| Interface Endpoint exists but a principal still can't use it | Endpoint's own resource-based policy restricts access | Review/update the endpoint's policy, not just the consumer's SG |
+| Symptom                                                      | Cause                                                 | Fix                                                                        |
+| ------------------------------------------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| Suspect SG/NACL blocking traffic, unsure which               | Manual review slow/inconclusive                       | Enable Flow Logs, look for REJECT entries matching source/destination/port |
+| Private-subnet S3 traffic shows NAT Gateway data charges     | No Gateway Endpoint for S3                            | Add a free Gateway Endpoint, update route table                            |
+| Need to verify a planned change won't break connectivity     | No way to test without real traffic                   | Use VPC Reachability Analyzer against the planned config                   |
+| Interface Endpoint exists but a principal still can't use it | Endpoint's own resource-based policy restricts access | Review/update the endpoint's policy, not just the consumer's SG            |
 
 ---
 
@@ -154,6 +161,6 @@ Senior - Design network observability for 30 VPCs across multiple accounts, need
 
 ## Related Concepts (forward links)
 
-- Part 4 Wrap-Up and comprehensive Networking interview drill -> Part 4, Section 10 (final section)
+- Part 4 Wrap-Up and comprehensive Networking interview drill -> §38 (final section)
 - CloudTrail, GuardDuty, Security Hub as the broader detective-controls ecosystem Flow Logs feeds into -> Part 8
 - Storage services (S3, EBS, EFS) that Gateway Endpoints and NAT Gateway traffic ultimately connect to -> Part 5

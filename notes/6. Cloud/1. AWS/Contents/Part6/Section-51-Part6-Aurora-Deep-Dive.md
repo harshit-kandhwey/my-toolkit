@@ -152,6 +152,6 @@ Senior - Design Aurora architecture for sub-minute Regional-outage recovery plus
 
 ## Related Concepts (forward links)
 
-- DynamoDB as the genuinely non-relational alternative, with its own distinct consistency model -> Part 6, Section 4
-- ElastiCache as an additional caching layer often paired with RDS/Aurora -> Part 6, Section 6
+- DynamoDB as the genuinely non-relational alternative, with its own distinct consistency model -> §52
+- ElastiCache as an additional caching layer often paired with RDS/Aurora -> §54
 - Well-Architected Reliability pillar formalizing when Aurora Global Database's DR profile fits -> Part 10

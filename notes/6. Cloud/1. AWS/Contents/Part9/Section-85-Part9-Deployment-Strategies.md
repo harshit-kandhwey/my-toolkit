@@ -2,19 +2,19 @@
 
 ## 1. Definition
 
-**Plain language:** Once you have a built artifact (Part 9 §5) and a mechanism to deploy it (CodeDeploy, Part 9 §6), there's still a genuine design decision left: exactly _how_ does traffic move from the old version to the new one? This section covers the actual patterns — all-at-once, rolling, blue/green, and canary — as conceptual strategies, independent of which specific AWS service implements them, since the same underlying trade-offs apply whether you're deploying via CodeDeploy, a Kubernetes rollout, or a hand-rolled script.
+**Plain language:** Once you have a built artifact (§83) and a mechanism to deploy it (CodeDeploy, §84), there's still a genuine design decision left: exactly _how_ does traffic move from the old version to the new one? This section covers the actual patterns — all-at-once, rolling, blue/green, and canary — as conceptual strategies, independent of which specific AWS service implements them, since the same underlying trade-offs apply whether you're deploying via CodeDeploy, a Kubernetes rollout, or a hand-rolled script.
 
 **Precise definition:** A deployment strategy defines how traffic or workload transitions from an existing application version to a new one during a release, with the major patterns — all-at-once, rolling, blue/green, and canary — differing in their trade-offs between deployment speed, resource cost during the transition, blast radius of a bad release, and rollback speed, each appropriate for different combinations of risk tolerance, traffic volume, and infrastructure cost sensitivity.
 
 ## 2. Why It Exists / Problem It Solves
 
-Deploying a new version of an application is inherently risky — even with thorough testing (Part 9 §5's build/test stages), a new version can still fail in production in ways tests didn't catch (a configuration difference, a scale-dependent bug, an unexpected interaction with production data). The question every deployment strategy answers differently is: **how much of your traffic is exposed to that risk, for how long, before you're confident enough to commit fully** — and each strategy makes a different, explicit trade-off between minimizing that exposure and minimizing deployment complexity/cost.
+Deploying a new version of an application is inherently risky — even with thorough testing (§83's build/test stages), a new version can still fail in production in ways tests didn't catch (a configuration difference, a scale-dependent bug, an unexpected interaction with production data). The question every deployment strategy answers differently is: **how much of your traffic is exposed to that risk, for how long, before you're confident enough to commit fully** — and each strategy makes a different, explicit trade-off between minimizing that exposure and minimizing deployment complexity/cost.
 
 ## 3. Prerequisites and Dependencies
 
-- **AWS CodeDeploy** (Part 9 §6): the AWS-native mechanism most directly implementing these patterns for EC2/Lambda/ECS deployments.
+- **AWS CodeDeploy** (§84): the AWS-native mechanism most directly implementing these patterns for EC2/Lambda/ECS deployments.
 - **Elastic Load Balancing and Auto Scaling** (Part 3): the underlying traffic-routing and capacity mechanisms several of these strategies depend on.
-- **CloudWatch Alarms** (Part 8 §3): the health-signal mechanism that makes any of these strategies' automated rollback meaningful.
+- **CloudWatch Alarms** (§71): the health-signal mechanism that makes any of these strategies' automated rollback meaningful.
 
 ## 4. The Deployment Strategies, In Depth
 
@@ -29,21 +29,21 @@ Deploying a new version of an application is inherently risky — even with thor
 - Instances/tasks are updated in **batches** (e.g., 25% at a time, or one at a time), with each batch verified healthy before the next batch proceeds.
 - **Moderate risk** — a bad deployment is caught after the first batch (assuming reasonable health checking) and only affects that batch's portion of traffic, not the whole fleet, though the affected batch's users do experience the issue.
 - **No additional infrastructure cost** (no parallel environment; the existing fleet is updated in place, batch by batch), but the fleet runs at **reduced capacity** during the rollout, since some fraction of instances are always mid-update, unless additional temporary capacity is provisioned.
-- Directly corresponds to CodeDeploy's in-place `HalfAtATime`/`OneAtATime`/custom deployment configurations (Part 9 §6).
+- Directly corresponds to CodeDeploy's in-place `HalfAtATime`/`OneAtATime`/custom deployment configurations (§84).
 
 ### Blue/Green
 
 - A completely separate, parallel **"green" environment** is provisioned running the new version, validated for health, and traffic is then **cut over** from "blue" (current) to "green" — either instantly (all at once) or gradually.
 - **Near-zero downtime**, and critically, **extremely fast rollback** — since "blue" is still fully running and available, reverting is simply routing traffic back to it, not redeploying anything.
 - **Requires double the compute capacity** during the transition window (both environments running simultaneously), a direct, real cost trade-off for the availability/rollback-speed benefit.
-- Directly corresponds to CodeDeploy's blue/green deployment type (Part 9 §6).
+- Directly corresponds to CodeDeploy's blue/green deployment type (§84).
 
 ### Canary
 
 - A **small percentage** of traffic (e.g., 5%) is routed to the new version first, monitored closely, and — if healthy — the percentage is gradually increased (either in defined steps, or linearly over time) until 100% of traffic is on the new version.
 - **Lowest blast radius** of any strategy if something is wrong — only the small canary percentage of users are ever exposed to a bad release before it's caught and rolled back.
 - Requires genuinely meaningful health monitoring at each traffic-percentage step, since the strategy's entire safety value depends on actually detecting a problem in the canary population before expanding further — a canary strategy with no real health checking provides false confidence, not actual risk reduction.
-- Often implemented as a specific _mode_ of blue/green traffic-shifting (CodeDeploy's canary and linear traffic-shifting configurations for Lambda/ECS, Part 9 §6) rather than a wholly separate mechanism.
+- Often implemented as a specific _mode_ of blue/green traffic-shifting (CodeDeploy's canary and linear traffic-shifting configurations for Lambda/ECS, §84) rather than a wholly separate mechanism.
 
 ## 5. Comparison Table
 
@@ -83,7 +83,7 @@ Deploying a new version of an application is inherently risky — even with thor
 
 ## 9. Related Concepts
 
-- **AWS CodeDeploy** (the AWS-native mechanism implementing these patterns) → Part 9 §6.
-- **AWS CodePipeline & CodeBuild** (the pipeline stages preceding a strategy-driven deployment) → Part 9 §5.
-- **CloudWatch Alarms** (the health-signal foundation every strategy's safety depends on) → Part 8 §3.
-- **Well-Architected Framework** (the Reliability/Cost trade-off language directly applicable to strategy selection) → Part 10 §1.
+- **AWS CodeDeploy** (the AWS-native mechanism implementing these patterns) → §84.
+- **AWS CodePipeline & CodeBuild** (the pipeline stages preceding a strategy-driven deployment) → §83.
+- **CloudWatch Alarms** (the health-signal foundation every strategy's safety depends on) → §71.
+- **Well-Architected Framework** (the Reliability/Cost trade-off language directly applicable to strategy selection) → §89.

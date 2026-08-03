@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-In a monolithic application, when a request is slow, you look at one application's logs and profiler — there's only one place to look. In a distributed, microservice or serverless architecture — exactly the kind of architecture Parts 3 and 7 have been building toward, with Lambda functions, SQS queues, Step Functions workflows, and multiple downstream services all potentially involved in serving one logical request — a single slow or failed request might have passed through five, ten, or more separate components. Metrics (Part 8 §1) can tell you that _a_ service's average latency went up; logs (Part 8 §2) can tell you what happened _within_ one component, if you know which component and log group to look at. Neither, on its own, easily answers "for this one specific slow request, which of the many hops it took was actually the slow one, and why."
+In a monolithic application, when a request is slow, you look at one application's logs and profiler — there's only one place to look. In a distributed, microservice or serverless architecture — exactly the kind of architecture Parts 3 and 7 have been building toward, with Lambda functions, SQS queues, Step Functions workflows, and multiple downstream services all potentially involved in serving one logical request — a single slow or failed request might have passed through five, ten, or more separate components. Metrics (§69) can tell you that _a_ service's average latency went up; logs (§70) can tell you what happened _within_ one component, if you know which component and log group to look at. Neither, on its own, easily answers "for this one specific slow request, which of the many hops it took was actually the slow one, and why."
 
 X-Ray solves this by stitching together the individual pieces of telemetry from every component a request touches into one coherent, visual, end-to-end trace — turning "the checkout API is slow sometimes" into "this specific slow request spent 340ms in the payment Lambda, 12ms in DynamoDB, and 2.1 seconds waiting on a downstream fraud-check API call" — a fundamentally different, request-centric view than metrics or logs alone provide.
 
@@ -16,8 +16,8 @@ X-Ray solves this by stitching together the individual pieces of telemetry from 
 
 ## 3. Prerequisites and Dependencies
 
-- **Lambda** (Part 3 §7): X-Ray has particularly deep, low-friction integration with Lambda (often just a toggle to enable "Active Tracing").
-- **CloudWatch** (Part 8 §1-3): traces complement metrics and logs as the third pillar of observability; X-Ray data and CloudWatch data are commonly correlated during investigation.
+- **Lambda** (§25): X-Ray has particularly deep, low-friction integration with Lambda (often just a toggle to enable "Active Tracing").
+- **CloudWatch** (§69-71): traces complement metrics and logs as the third pillar of observability; X-Ray data and CloudWatch data are commonly correlated during investigation.
 - General familiarity with the concept of a distributed/microservice architecture, since X-Ray's value is specifically about multi-component request flows.
 
 ## 4. Internal Working
@@ -165,13 +165,13 @@ This shows both instrumentation types in practice: `put_annotation` for values y
 ## 10. Production & Enterprise Usage
 
 - **Startups** with a handful of Lambda functions often enable Active Tracing broadly (given its low friction) primarily to get the automatic service map and quick "which hop was slow" visibility during debugging, without heavy custom annotation instrumentation initially.
-- **Enterprises** with large microservice fleets invest in comprehensive, consistent annotation/metadata conventions across services (similar to the metric-naming standardization discussed in Part 8 §1), enabling org-wide trace filtering (e.g., "find all traces across any service where `customerId` = X" for a specific customer's support investigation) and use the service map as a genuine, continuously-updated architecture documentation source, since it's derived from real traffic rather than manually maintained diagrams that drift out of date.
+- **Enterprises** with large microservice fleets invest in comprehensive, consistent annotation/metadata conventions across services (similar to the metric-naming standardization discussed in §69), enabling org-wide trace filtering (e.g., "find all traces across any service where `customerId` = X" for a specific customer's support investigation) and use the service map as a genuine, continuously-updated architecture documentation source, since it's derived from real traffic rather than manually maintained diagrams that drift out of date.
 - X-Ray is frequently used specifically during **performance optimization initiatives** — identifying the actual highest-latency-contributing hop across a complex request path is far more precise and evidence-based than guessing which service to optimize first based on intuition alone.
-- **Cross-account tracing** is supported for organizations with distributed microservices across multiple AWS accounts, letting a single trace span services owned by different teams/accounts — mirroring the same cross-account patterns seen with EventBridge (Part 7 §4) and centralized logging (Part 8 §2).
+- **Cross-account tracing** is supported for organizations with distributed microservices across multiple AWS accounts, letting a single trace span services owned by different teams/accounts — mirroring the same cross-account patterns seen with EventBridge (§62) and centralized logging (§70).
 
 ## 11. Security Considerations
 
-- Annotations and metadata should avoid embedding sensitive data (PII, secrets) directly into trace data, exactly as with log content (Part 8 §2) — trace data is visible to anyone with X-Ray read permissions and isn't designed as a secure data store.
+- Annotations and metadata should avoid embedding sensitive data (PII, secrets) directly into trace data, exactly as with log content (§70) — trace data is visible to anyone with X-Ray read permissions and isn't designed as a secure data store.
 - IAM permissions for `xray:GetTraceSummaries`/`xray:BatchGetTraces` (read access to trace data, which may reveal internal architecture and request-level detail) should be scoped appropriately, not broadly granted by default.
 
 ## 12. Performance Considerations
@@ -237,6 +237,6 @@ This shows both instrumentation types in practice: `put_annotation` for values y
 
 ## 20. Related Concepts
 
-- **CloudWatch Metrics, Logs, Alarms** (the other observability pillars, complementary to tracing) → Part 8 §1-3.
-- **Lambda** (X-Ray's most frictionless integration point) → Part 3 §7.
-- **CloudTrail** (a distinctly different, API-activity-audit-focused service, not to be confused with X-Ray's request-tracing focus) → next section, Part 8 §5.
+- **CloudWatch Metrics, Logs, Alarms** (the other observability pillars, complementary to tracing) → §69-71.
+- **Lambda** (X-Ray's most frictionless integration point) → §25.
+- **CloudTrail** (a distinctly different, API-activity-audit-focused service, not to be confused with X-Ray's request-tracing focus) → next section, §73.

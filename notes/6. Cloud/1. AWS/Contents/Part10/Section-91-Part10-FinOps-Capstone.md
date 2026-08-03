@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** Part 10 §2 covered the individual levers — pricing models, right-sizing, tagging, the tools. This section is the capstone: what does it actually look like to run FinOps as a real, ongoing organizational practice across dozens of teams and hundreds of accounts, not just as a list of techniques one person applies to one bill? It's the "how do you actually operationalize this at scale" companion to §2's "what are the levers."
+**Plain language:** §90 covered the individual levers — pricing models, right-sizing, tagging, the tools. This section is the capstone: what does it actually look like to run FinOps as a real, ongoing organizational practice across dozens of teams and hundreds of accounts, not just as a list of techniques one person applies to one bill? It's the "how do you actually operationalize this at scale" companion to §2's "what are the levers."
 
-**Precise definition:** A FinOps capstone architecture combines the technical levers from Part 10 §2 (pricing models, right-sizing, tagging, native tooling) with organizational structures — a FinOps team or function, cost allocation and chargeback/showback processes, governance gates embedded in IaC pipelines, and a recurring cross-functional operating cadence — to sustain cost efficiency continuously across a large, multi-team, multi-account AWS estate, rather than as a one-time optimization project that decays once attention moves elsewhere.
+**Precise definition:** A FinOps capstone architecture combines the technical levers from §90 (pricing models, right-sizing, tagging, native tooling) with organizational structures — a FinOps team or function, cost allocation and chargeback/showback processes, governance gates embedded in IaC pipelines, and a recurring cross-functional operating cadence — to sustain cost efficiency continuously across a large, multi-team, multi-account AWS estate, rather than as a one-time optimization project that decays once attention moves elsewhere.
 
 ## 2. Why It Exists / Problem It Solves
 
-Part 10 §2 established the individual cost levers, but knowing the levers and actually sustaining disciplined spend across an organization with dozens of independently-shipping teams are different problems. A single engineer applying right-sizing recommendations to their own service is straightforward; getting 40 teams to consistently tag every resource, to review Compute Optimizer recommendations regularly, to choose appropriate pricing models for their workloads, and to treat cost as a genuine design constraint (a Well-Architected pillar, Part 10 §1) rather than an afterthought requires organizational structure — accountability, visibility, and process — not just technical knowledge.
+§90 established the individual cost levers, but knowing the levers and actually sustaining disciplined spend across an organization with dozens of independently-shipping teams are different problems. A single engineer applying right-sizing recommendations to their own service is straightforward; getting 40 teams to consistently tag every resource, to review Compute Optimizer recommendations regularly, to choose appropriate pricing models for their workloads, and to treat cost as a genuine design constraint (a Well-Architected pillar, §89) rather than an afterthought requires organizational structure — accountability, visibility, and process — not just technical knowledge.
 
 This capstone section exists to answer the "how do you make this stick" question directly, since a cost-optimization initiative that produces a one-time savings spike followed by gradual cost creep back to baseline (because nothing structurally changed) is a very common, very avoidable failure pattern.
 
 ## 3. Prerequisites and Dependencies
 
-- **Cost Optimization on AWS — FinOps Fundamentals** (Part 10 §2): this capstone directly builds on and operationalizes every lever covered there.
-- **CI/CD for Infrastructure** (Part 9 §8): governance gates in this capstone are implemented as pipeline stages, directly reusing that section's validate/plan/review/approve/apply discipline.
-- **AWS Organizations** (Part 2 §5): multi-account cost visibility and consolidated billing are foundational to any organization-wide FinOps practice.
+- **Cost Optimization on AWS — FinOps Fundamentals** (§90): this capstone directly builds on and operationalizes every lever covered there.
+- **CI/CD for Infrastructure** (§86): governance gates in this capstone are implemented as pipeline stages, directly reusing that section's validate/plan/review/approve/apply discipline.
+- **AWS Organizations** (§13): multi-account cost visibility and consolidated billing are foundational to any organization-wide FinOps practice.
 
 ## 4. The Capstone Architecture
 
@@ -27,8 +27,8 @@ This capstone section exists to answer the "how do you make this stick" question
 
 ### Technical Enforcement (Tagging as a Governance Gate)
 
-- Tagging compliance is enforced **at the IaC pipeline level** (Part 9 §8) — a CloudFormation/CDK/Terraform deployment missing required cost-allocation tags fails the pipeline's validate stage, rather than relying on after-the-fact manual audits to catch untagged resources once they're already running and costing money.
-- **AWS Config Rules** (Part 8 §6) provide a second, detective-layer check for resources that somehow bypass the pipeline (a legitimate emergency manual change, or a gap in pipeline coverage), flagging untagged or non-compliant resources for remediation.
+- Tagging compliance is enforced **at the IaC pipeline level** (§86) — a CloudFormation/CDK/Terraform deployment missing required cost-allocation tags fails the pipeline's validate stage, rather than relying on after-the-fact manual audits to catch untagged resources once they're already running and costing money.
+- **AWS Config Rules** (§74) provide a second, detective-layer check for resources that somehow bypass the pipeline (a legitimate emergency manual change, or a gap in pipeline coverage), flagging untagged or non-compliant resources for remediation.
 
 ### Visibility Layer
 
@@ -38,16 +38,16 @@ This capstone section exists to answer the "how do you make this stick" question
 ### Operating Cadence (the FinOps Inform-Optimize-Operate Loop, at Scale)
 
 - A **regular (typically monthly) cross-functional review** brings together FinOps/finance leads and representative engineering leads to review the now-visible cost data collectively, identify the highest-leverage optimization opportunities (informed by Trusted Advisor, Compute Optimizer, and CUR analysis), and track progress against prior recommendations — turning cost optimization into an ongoing operating rhythm rather than a one-off project.
-- **Savings Plans/Reserved Instance purchasing decisions** are made centrally by the FinOps function based on aggregated, cross-team usage data (Part 10 §2's discussion of committing to _stable baseline_ usage), since a central view of aggregate steady-state demand across the whole organization produces better-informed, lower-risk commitment decisions than each team purchasing commitments independently and inconsistently.
+- **Savings Plans/Reserved Instance purchasing decisions** are made centrally by the FinOps function based on aggregated, cross-team usage data (§90's discussion of committing to _stable baseline_ usage), since a central view of aggregate steady-state demand across the whole organization produces better-informed, lower-risk commitment decisions than each team purchasing commitments independently and inconsistently.
 
 ```
-IaC Pipeline (Part 9 §8) ──▶ Tagging enforcement at validate stage (mandatory gate)
+IaC Pipeline (§86) ──▶ Tagging enforcement at validate stage (mandatory gate)
         │
         ▼
 Resources deployed, tagged ──▶ CUR → S3 → Athena ──▶ Per-team cost dashboards (showback)
         │                                                        │
         ▼                                                        ▼
-Config Rules (Part 8 §6) ──▶ detective backstop for       Monthly FinOps review (Inform → Optimize → Operate)
+Config Rules (§74) ──▶ detective backstop for       Monthly FinOps review (Inform → Optimize → Operate)
    untagged/non-compliant resources                       cross-functional, tracks progress over time
 ```
 
@@ -67,7 +67,7 @@ Config Rules (Part 8 §6) ──▶ detective backstop for       Monthly FinOps 
 
 ## 6. Key Takeaways
 
-🔑 A real FinOps practice requires organizational structure (a FinOps function, a recurring review cadence) on top of the individual technical levers covered in Part 10 §2 — levers alone don't sustain themselves.
+🔑 A real FinOps practice requires organizational structure (a FinOps function, a recurring review cadence) on top of the individual technical levers covered in §90 — levers alone don't sustain themselves.
 🔑 Mandatory, pipeline-enforced tagging (not voluntary guidance) is the foundation every other FinOps capability depends on for accurate data.
 🔑 Showback before chargeback is the standard, lower-friction rollout sequence, since visibility alone often changes behavior significantly before any formal budget accountability is introduced.
 🔑 Centralized Reserved Instance/Savings Plan purchasing, informed by aggregated cross-team usage data, produces better-calibrated commitment decisions than fragmented per-team purchasing.
@@ -75,7 +75,7 @@ Config Rules (Part 8 §6) ──▶ detective backstop for       Monthly FinOps 
 
 ## 7. Related Concepts
 
-- **Cost Optimization on AWS — FinOps Fundamentals** (the individual levers this capstone operationalizes) → Part 10 §2.
-- **CI/CD for Infrastructure** (the pipeline mechanism implementing tagging enforcement) → Part 9 §8.
-- **AWS Config** (the detective-layer backstop for tagging compliance) → Part 8 §6.
-- **Disaster Recovery Strategy Capstone** (the next capstone, applying similar organization-wide operationalization thinking to reliability rather than cost) → next section, Part 10 §4.
+- **Cost Optimization on AWS — FinOps Fundamentals** (the individual levers this capstone operationalizes) → §90.
+- **CI/CD for Infrastructure** (the pipeline mechanism implementing tagging enforcement) → §86.
+- **AWS Config** (the detective-layer backstop for tagging compliance) → §74.
+- **Disaster Recovery Strategy Capstone** (the next capstone, applying similar organization-wide operationalization thinking to reliability rather than cost) → next section, §92.

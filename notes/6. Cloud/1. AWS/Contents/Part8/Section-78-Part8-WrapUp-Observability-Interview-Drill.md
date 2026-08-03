@@ -17,28 +17,28 @@ Part 8, Observability & Monitoring, covered the full operational visibility and 
 ## 2. Progressive Hands-On Labs (Beginner → Production-Style)
 
 **Lab 1 (Beginner): Custom Metric and Basic Alarm**
-Publish a custom business metric (e.g., "OrdersProcessed") from a simple script, then create a CloudWatch alarm on it with a 2-out-of-3 evaluation period, wired to an SNS topic; deliberately stop publishing the metric and confirm the alarm's behavior under `TreatMissingData`. _Validates: Part 8 §1 and §3._
+Publish a custom business metric (e.g., "OrdersProcessed") from a simple script, then create a CloudWatch alarm on it with a 2-out-of-3 evaluation period, wired to an SNS topic; deliberately stop publishing the metric and confirm the alarm's behavior under `TreatMissingData`. _Validates: §69 and §3._
 
 **Lab 2 (Beginner-Intermediate): Logs Insights and Metric Filter**
-Generate application logs with a mix of INFO/ERROR lines from a Lambda function; write Logs Insights queries to aggregate error types; create a metric filter turning a specific error pattern into an alarmable metric; confirm the metric increments correctly. _Validates: Part 8 §2._
+Generate application logs with a mix of INFO/ERROR lines from a Lambda function; write Logs Insights queries to aggregate error types; create a metric filter turning a specific error pattern into an alarmable metric; confirm the metric increments correctly. _Validates: §70._
 
 **Lab 3 (Intermediate): X-Ray Trace Across Multiple Services**
-Build a simple Lambda-to-Lambda (or Lambda-to-DynamoDB-to-downstream-API) call chain with Active Tracing enabled on every hop; introduce a deliberate slow subsegment; use the resulting trace's timeline to identify the bottleneck without looking at any logs first. _Validates: Part 8 §4._
+Build a simple Lambda-to-Lambda (or Lambda-to-DynamoDB-to-downstream-API) call chain with Active Tracing enabled on every hop; introduce a deliberate slow subsegment; use the resulting trace's timeline to identify the bottleneck without looking at any logs first. _Validates: §72._
 
 **Lab 4 (Intermediate): CloudTrail Investigation**
-Perform several deliberate account changes (create/modify/delete a security group, an S3 bucket policy change), then use `lookup-events` to reconstruct exactly what happened, who did it, and in what order, purely from CloudTrail data. _Validates: Part 8 §5._
+Perform several deliberate account changes (create/modify/delete a security group, an S3 bucket policy change), then use `lookup-events` to reconstruct exactly what happened, who did it, and in what order, purely from CloudTrail data. _Validates: §73._
 
 **Lab 5 (Intermediate-Advanced): Config Rule and Remediation**
-Enable a Config Managed Rule (e.g., S3 encryption required); deliberately create a non-compliant bucket; observe the compliance status change and the resulting EventBridge event; optionally attach an automated remediation action and confirm it corrects the violation. _Validates: Part 8 §6._
+Enable a Config Managed Rule (e.g., S3 encryption required); deliberately create a non-compliant bucket; observe the compliance status change and the resulting EventBridge event; optionally attach an automated remediation action and confirm it corrects the violation. _Validates: §74._
 
 **Lab 6 (Intermediate): Systems Manager Fleet Operations**
-Register a small fleet of EC2 instances with SSM, connect to one via Session Manager (no SSH key), push a Run Command to all instances simultaneously, and use Patch Manager to scan for missing patches; store a database connection string in Parameter Store and retrieve it from a script. _Validates: Part 8 §7._
+Register a small fleet of EC2 instances with SSM, connect to one via Session Manager (no SSH key), push a Run Command to all instances simultaneously, and use Patch Manager to scan for missing patches; store a database connection string in Parameter Store and retrieve it from a script. _Validates: §75._
 
 **Lab 7 (Beginner): Trusted Advisor and Health Dashboard Review**
-Review Trusted Advisor's cost-optimization and security checks for a sandbox account; identify at least one real finding; check the AWS Health Dashboard for any open account-specific or public service events. _Validates: Part 8 §8._
+Review Trusted Advisor's cost-optimization and security checks for a sandbox account; identify at least one real finding; check the AWS Health Dashboard for any open account-specific or public service events. _Validates: §76._
 
 **Lab 8 (Production-Style, Capstone): Full Multi-Pillar Incident Simulation**
-Recreate the Part 8 §9 worked example end to end: trigger a composite alarm, use metrics to confirm scope, use logs to find the specific error, use an X-Ray trace to isolate the responsible downstream hop, use Config to find a recent configuration change to that resource, and use CloudTrail to attribute that change to a specific identity — practicing the complete cross-pillar investigation flow under realistic (simulated) incident conditions. _Validates: Part 8 §1-9 in combination._
+Recreate the §77 worked example end to end: trigger a composite alarm, use metrics to confirm scope, use logs to find the specific error, use an X-Ray trace to isolate the responsible downstream hop, use Config to find a recent configuration change to that resource, and use CloudTrail to attribute that change to a specific identity — practicing the complete cross-pillar investigation flow under realistic (simulated) incident conditions. _Validates: §69-77 in combination._
 
 ## 3. Consolidated Key-Takeaways Checklist
 
@@ -56,7 +56,7 @@ Recreate the Part 8 §9 worked example end to end: trigger a composite alarm, us
 - [ ] I can explain why Config Rules are detective, not preventive, controls.
 - [ ] I can explain why Session Manager is preferred over SSH/bastion hosts for EC2 access.
 - [ ] I can explain the difference between Trusted Advisor (self-diagnostic checks) and the Health Dashboard (service-status awareness).
-- [ ] I can walk through the multi-pillar incident investigation flow (Part 8 §9) from a cold alarm-fired starting point without prompting.
+- [ ] I can walk through the multi-pillar incident investigation flow (§77) from a cold alarm-fired starting point without prompting.
 - [ ] I can explain why consistent correlation keys (trace ID, request ID) are a genuine, worthwhile upfront instrumentation investment.
 
 ## 4. Related Technologies (Beyond This Roadmap's Current Scope)

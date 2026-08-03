@@ -77,7 +77,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ### 6.2 Why It Exists
 
 - Extends Section 7's "not managing servers" value to containers — a middle ground between Lambda's function-level abstraction and EC2-based ECS/EKS's instance-level control.
-- **Trade-off (parallel to Provisioned Concurrency, Section 7 §3.3):** Fargate typically costs more per unit of compute than equivalent EC2 capacity, in exchange for eliminated instance management — the recurring "pay more for less operational burden" pattern from Part 1 §5.
+- **Trade-off (parallel to Provisioned Concurrency, Section 7 §3.3):** Fargate typically costs more per unit of compute than equivalent EC2 capacity, in exchange for eliminated instance management — the recurring "pay more for less operational burden" pattern from §5.
 
 ### 6.3 Fargate vs EC2-Based Containers
 
@@ -89,7 +89,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ## 7. Container Registries — Amazon ECR
 
 - **ECR** — AWS's managed container image registry, storing/versioning images pulled at task/pod launch — analogous to AMIs (Section 2) but for container images.
-- **Image scanning** — integrates with vulnerability scanning (Part 2 §8 Inspector), extending supply-chain-security to the container image layer.
+- **Image scanning** — integrates with vulnerability scanning (§16 Inspector), extending supply-chain-security to the container image layer.
 - **Private by default**, IAM-based access control; a repository resource-based policy can grant cross-account pull access — same pattern as S3/KMS/Secrets Manager sharing (Part 2).
 
 ---
@@ -114,7 +114,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ## 10. Security Considerations
 
 - **Task/pod-level least privilege** (§8) is meaningfully more granular than instance-level IAM — default for multi-tenant clusters with varied permission needs.
-- **ECR scanning should gate deployment** — block deployment of images with unresolved critical/high vulnerabilities, connecting Part 2 §8's Inspector theme to the deployment pipeline.
+- **ECR scanning should gate deployment** — block deployment of images with unresolved critical/high vulnerabilities, connecting §16's Inspector theme to the deployment pipeline.
 - **Fargate's shared-nothing-per-task isolation** generally offers stronger isolation than co-locating many containers on one self-managed instance's shared kernel — a security consideration alongside the cost/control trade-off.
 
 ---
@@ -180,7 +180,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 
 ## 🌐 Related Concepts (forward links)
 
-- Elastic Beanstalk, Batch, Lightsail — higher-abstraction/specialized compute → Part 3, Section 9 (next)
+- Elastic Beanstalk, Batch, Lightsail — higher-abstraction/specialized compute → §27 (next)
 - CI/CD pipelines building/deploying container images → Part 9
 - VPC networking for ECS/EKS (awsvpc mode, private subnets) → Part 4
 - Step Functions and event-driven patterns triggering ECS tasks → Part 7

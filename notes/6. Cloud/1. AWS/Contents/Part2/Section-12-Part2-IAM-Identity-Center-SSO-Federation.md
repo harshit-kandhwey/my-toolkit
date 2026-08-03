@@ -84,7 +84,7 @@
 
 ## 7. Recommended Access Hierarchy
 
-1. **Root** — locked away, MFA-protected, root-only actions (Part 1 §4).
+1. **Root** — locked away, MFA-protected, root-only actions (§4).
 2. **IAM Identity Center federated to corporate IdP** — primary, default human access.
 3. **Standalone IAM users** — narrow exceptions: break-glass, legacy systems, very small setups.
 4. **IAM roles for non-human access** (service roles, OIDC CI/CD) — separate from human access (Section 3).
@@ -163,6 +163,6 @@
 
 ## 🌐 Related Concepts (forward links)
 
-- AWS Organizations structure, OUs, SCPs → Part 2, Section 5
+- AWS Organizations structure, OUs, SCPs → §13
 - CloudTrail monitoring of Identity Center admin actions and AssumeRole calls → Part 8
 - Amazon Cognito for customer-facing identity → Part 10

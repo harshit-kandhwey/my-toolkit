@@ -10,14 +10,14 @@
 
 Every service covered in this roadmap has its own individual durability story — S3's eleven-nines durability, RDS Multi-AZ failover, DynamoDB's multi-AZ replication by default. But **DR strategy is a system-level concern**, not a per-service one: even if every individual component is internally durable, an entire region becoming unavailable, a catastrophic operational mistake deleting production data, or a security incident requiring full environment reconstruction all require a coordinated, tested, organization-level recovery plan — not just trusting that each service's own internal redundancy will somehow add up to genuine system-level recoverability.
 
-This capstone exists to synthesize the individual durability/backup/automation patterns from across this roadmap into the specific, named DR strategies AWS itself defines, and to make explicit the RPO/RTO/cost trade-off that should drive the choice between them — directly extending the Well-Architected Reliability pillar (Part 10 §1) and the cost-trade-off thinking from §2-3 into a concrete, interview-common architecture topic.
+This capstone exists to synthesize the individual durability/backup/automation patterns from across this roadmap into the specific, named DR strategies AWS itself defines, and to make explicit the RPO/RTO/cost trade-off that should drive the choice between them — directly extending the Well-Architected Reliability pillar (§89) and the cost-trade-off thinking from §90-91 into a concrete, interview-common architecture topic.
 
 ## 3. Prerequisites and Dependencies
 
-- **Well-Architected Framework** (Part 10 §1): DR strategy selection is a direct, concrete application of the Reliability-vs-Cost pillar trade-off.
+- **Well-Architected Framework** (§89): DR strategy selection is a direct, concrete application of the Reliability-vs-Cost pillar trade-off.
 - **Multi-AZ/Multi-Region architecture concepts** (Part 3, Part 4, Part 6): the underlying redundancy mechanisms every DR strategy builds on.
 - **Backup services and Route 53** (Part 5, Part 4): the specific mechanisms (AWS Backup, DNS failover) commonly implementing DR strategies in practice.
-- **CloudFormation/CDK/Terraform** (Part 9 §1-4): DR strategies at the Pilot Light/Warm Standby/Active-Active end of the spectrum depend on IaC to reliably and quickly stand up or scale a secondary environment.
+- **CloudFormation/CDK/Terraform** (§79-82): DR strategies at the Pilot Light/Warm Standby/Active-Active end of the spectrum depend on IaC to reliably and quickly stand up or scale a secondary environment.
 
 ## 4. RPO and RTO — The Two Numbers That Drive Everything
 
@@ -29,7 +29,7 @@ This capstone exists to synthesize the individual durability/backup/automation p
 
 ### 1. Backup & Restore
 
-- Data is regularly backed up (AWS Backup, Part 5, or service-native snapshots) to a separate location (often a different region); in a disaster, infrastructure is provisioned from scratch (ideally via IaC, Part 9 §1-4) and data restored from backup.
+- Data is regularly backed up (AWS Backup, Part 5, or service-native snapshots) to a separate location (often a different region); in a disaster, infrastructure is provisioned from scratch (ideally via IaC, §79-82) and data restored from backup.
 - **Highest RPO/RTO** (slowest recovery, most potential data loss since the last backup) but **lowest cost** — no standby infrastructure running at all between backups.
 - Appropriate for: lower-criticality workloads where hours-to-a-day of downtime and data loss up to the last backup interval are genuinely tolerable.
 
@@ -82,15 +82,15 @@ This capstone exists to synthesize the individual durability/backup/automation p
 ## 9. Key Takeaways
 
 🔑 RPO (acceptable data loss) and RTO (acceptable downtime) are business-determined numbers that should drive DR architecture selection, not the other way around.
-🔑 The four AWS DR strategies — Backup & Restore, Pilot Light, Warm Standby, Multi-Site Active/Active — represent increasing RPO/RTO improvement at increasing ongoing cost, a direct Reliability-vs-Cost Well-Architected trade-off (Part 10 §1).
+🔑 The four AWS DR strategies — Backup & Restore, Pilot Light, Warm Standby, Multi-Site Active/Active — represent increasing RPO/RTO improvement at increasing ongoing cost, a direct Reliability-vs-Cost Well-Architected trade-off (§89).
 🔑 Pilot Light keeps only the data tier warm; Warm Standby keeps the full stack running at reduced scale — the key RTO improvement comes from not needing to provision compute from scratch during the actual disaster.
 🔑 A DR strategy that's never been tested is unproven — periodic failover drills are a genuine, necessary part of any real DR practice, not an optional afterthought.
 🔑 Different services within one organization legitimately warrant different DR strategies based on their actual criticality — a uniform, one-size-fits-all DR posture either overspends on low-stakes services or underprotects high-stakes ones.
 
 ## 10. Related Concepts
 
-- **Well-Architected Framework** (the Reliability-vs-Cost trade-off this entire capstone directly applies) → Part 10 §1.
+- **Well-Architected Framework** (the Reliability-vs-Cost trade-off this entire capstone directly applies) → §89.
 - **AWS Backup and backup strategies** (the mechanism underlying Backup & Restore and the data-tier replication in Pilot Light) → Part 5.
 - **Route 53 DNS failover** (the traffic-redirection mechanism commonly implementing failover across all four strategies) → Part 4.
-- **CloudFormation/CDK/Terraform** (the IaC foundation Pilot Light and Warm Standby depend on for rapid, reliable secondary-environment provisioning) → Part 9 §1-4.
-- **Migration Strategies** (the next section — a different kind of organization-wide, workload-by-workload AWS strategy framework) → next section, Part 10 §5.
+- **CloudFormation/CDK/Terraform** (the IaC foundation Pilot Light and Warm Standby depend on for rapid, reliable secondary-environment provisioning) → §79-82.
+- **Migration Strategies** (the next section — a different kind of organization-wide, workload-by-workload AWS strategy framework) → next section, §93.

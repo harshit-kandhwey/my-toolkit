@@ -115,7 +115,7 @@ DECRYPT: App→KMS: Decrypt(Encrypted DK) → KMS→App: [Plaintext DK]
 - **In transit** — TLS/HTTPS, a separate mechanism from KMS (certificate-based key exchange), often discussed together as a complete data-protection story.
 - **Client-side encryption** — app encrypts data before sending to AWS (AWS Encryption SDK, often using KMS underneath) — strongest model, AWS never sees plaintext, more implementation complexity.
 
-> 🔑 Recall Part 1 §5 (Shared Responsibility Model): encryption **enablement** is always a customer responsibility across every service tier — AWS provides the tooling, you must turn it on and configure it.
+> 🔑 Recall §5 (Shared Responsibility Model): encryption **enablement** is always a customer responsibility across every service tier — AWS provides the tooling, you must turn it on and configure it.
 
 ---
 
@@ -197,6 +197,6 @@ DECRYPT: App→KMS: Decrypt(Encrypted DK) → KMS→App: [Plaintext DK]
 
 ## 🌐 Related Concepts (forward links)
 
-- Secrets Manager and Parameter Store (use KMS under the hood) → Part 2, Section 7
+- Secrets Manager and Parameter Store (use KMS under the hood) → §15
 - Service-specific encryption (S3 SSE, EBS, RDS) → Parts 5 and 6
 - TLS/certificate management via AWS Certificate Manager → Part 4

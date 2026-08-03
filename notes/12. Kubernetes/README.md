@@ -168,5 +168,9 @@ After this knowledge base: Terraform (infrastructure-as-code alongside Kubernete
 5. **Study the Interview Questions** at the end of each section to self-assess understanding
 6. **Use cross-references** to explore related topics across parts
 
+## Professional & Specialty Certification Mapping
+
+CKA/CKAD/CKS above are the full CNCF Kubernetes certification catalog — CNCF does not layer a separate "Professional" or "Specialty" tier on top of them the way AWS/Azure/GCP do; CKS (which itself requires an active CKA) is the practical ceiling for Kubernetes-specific credentials. The only lower-tier CNCF cert not yet covered is KCNA (Kubernetes and Cloud Native Associate), which additionally needs the `4. Docker` KB (currently roadmap-only) — see `Certification-Map.md` for current status.
+
 **Total Content:** 141 sections | 18 parts | CKA/CKAD/CKS certification-aligned
-**Last Updated:** August 1, 2026
+**Last Updated:** August 3, 2026

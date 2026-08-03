@@ -164,6 +164,6 @@ Senior - Design storage/retention for medical imaging (rare access but must be i
 
 ## Related Concepts (forward links)
 
-- S3 encryption, Block Public Access, and access control in full depth -> Part 5, Section 3
-- Versioning's interaction with lifecycle expiration (non-current version expiration) -> Part 5, Section 4
-- AWS Backup's use of Glacier-tier storage for long-term backup retention -> Part 5, Section 9
+- S3 encryption, Block Public Access, and access control in full depth -> §41
+- Versioning's interaction with lifecycle expiration (non-current version expiration) -> §42
+- AWS Backup's use of Glacier-tier storage for long-term backup retention -> §47

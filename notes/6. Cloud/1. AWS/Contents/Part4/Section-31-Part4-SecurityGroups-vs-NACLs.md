@@ -180,6 +180,6 @@ Architect - Walk through precisely what happens to an inbound HTTPS request and 
 
 ## Related Concepts (forward links)
 
-- VPC Peering, Transit Gateway, PrivateLink for cross-VPC traffic (still passing through these firewall layers) -> Part 4, Section 4
-- WAF as the application-layer complement to these network-layer firewalls -> Part 2, Section 9 (already covered)
-- VPC Flow Logs for observing exactly what these layers allowed/denied -> Part 4, Section 9
+- VPC Peering, Transit Gateway, PrivateLink for cross-VPC traffic (still passing through these firewall layers) -> §32
+- WAF as the application-layer complement to these network-layer firewalls -> §17 (already covered)
+- VPC Flow Logs for observing exactly what these layers allowed/denied -> §37

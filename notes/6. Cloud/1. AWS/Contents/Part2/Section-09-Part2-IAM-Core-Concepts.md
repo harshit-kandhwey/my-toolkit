@@ -16,7 +16,7 @@
 
 ## 2. Why It Exists
 
-- Root can't be safely scoped down (Part 1 §4); IAM lets you create identities with exactly the permissions a task requires — least privilege in practice.
+- Root can't be safely scoped down (§4); IAM lets you create identities with exactly the permissions a task requires — least privilege in practice.
 - Without IAM, access is all-or-nothing. Real orgs need graduated, precise, revocable access (DBA ≠ billing analyst ≠ CI/CD pipeline).
 - IAM also provides identity for non-human actors (EC2, Lambda, other AWS accounts) without a human typing a password.
 
@@ -186,7 +186,7 @@ A JSON document defining allowed/denied actions on resources, optionally under c
 | Inline               | A single user/group/role  | You                      | One-off, non-reusable policy                      |
 | Resource-based       | The resource itself       | You                      | S3 bucket policy, role trust policy               |
 | Permissions boundary | A user/role, as ceiling   | You                      | Caps max permissions regardless of other policies |
-| SCP                  | Org OU/account            | You (management account) | Org-wide guardrail (Part 2 §5)                    |
+| SCP                  | Org OU/account            | You (management account) | Org-wide guardrail (§13)                          |
 | Session policy       | Passed at role-assumption | You                      | Further restricts a single session                |
 
 > 🔑 **Identity-based** policies attach to a principal ("what can this identity do?"). **Resource-based** policies attach to a resource ("who can access this, and how?"). Both evaluated together — underpins cross-account access.
@@ -283,7 +283,7 @@ IAM gathers every applicable policy — identity-based, resource-based, permissi
 
 ## 🌐 Related Concepts (forward links)
 
-- Full policy evaluation logic → Part 2, Section 2
-- STS mechanics and trust-policy deep dive → Part 2, Section 3
-- IAM Identity Center and federation → Part 2, Section 4
-- Service Control Policies → Part 2, Section 5
+- Full policy evaluation logic → §10
+- STS mechanics and trust-policy deep dive → §11
+- IAM Identity Center and federation → §12
+- Service Control Policies → §13

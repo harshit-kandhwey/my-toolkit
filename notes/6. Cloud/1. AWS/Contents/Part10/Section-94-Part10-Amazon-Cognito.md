@@ -8,13 +8,13 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Part 2's IAM model is built around a fundamentally different problem than most applications actually have: IAM users, roles, and policies are for controlling access to _AWS itself_ — engineers, services, and automation calling AWS APIs. But a consumer-facing web or mobile application has a completely different identity problem: it needs to let potentially millions of _end users_ — people who have no AWS account, no IAM presence, and shouldn't need either — sign up, log in, verify their email, reset a forgotten password, and optionally use MFA, all through a secure, standards-compliant authentication flow that the application itself shouldn't have to build and maintain from scratch (password hashing, secure token issuance, MFA delivery, and all of the security-critical detail that goes with a home-built authentication system are exactly the kind of "undifferentiated heavy lifting" the Well-Architected Performance Efficiency pillar, Part 10 §1, argues against building yourself).
+Part 2's IAM model is built around a fundamentally different problem than most applications actually have: IAM users, roles, and policies are for controlling access to _AWS itself_ — engineers, services, and automation calling AWS APIs. But a consumer-facing web or mobile application has a completely different identity problem: it needs to let potentially millions of _end users_ — people who have no AWS account, no IAM presence, and shouldn't need either — sign up, log in, verify their email, reset a forgotten password, and optionally use MFA, all through a secure, standards-compliant authentication flow that the application itself shouldn't have to build and maintain from scratch (password hashing, secure token issuance, MFA delivery, and all of the security-critical detail that goes with a home-built authentication system are exactly the kind of "undifferentiated heavy lifting" the Well-Architected Performance Efficiency pillar, §89, argues against building yourself).
 
 Cognito solves this with User Pools as a fully managed, standards-based (OAuth 2.0/OpenID Connect) user directory and authentication service — and, since some applications also need their end users to directly and securely access specific AWS resources (uploading a photo directly to S3 from a mobile app, for example), Identity Pools solve the second, related problem of converting "this user is authenticated" into "this user has temporary, appropriately scoped AWS credentials."
 
 ## 3. Prerequisites and Dependencies
 
-- **IAM** (Part 2 §1-3): Identity Pools issue temporary credentials via STS by assuming an IAM role — directly building on the role/trust-policy model from Part 2, but for application end users rather than AWS principals.
+- **IAM** (§9-11): Identity Pools issue temporary credentials via STS by assuming an IAM role — directly building on the role/trust-policy model from Part 2, but for application end users rather than AWS principals.
 - **API Gateway** (a Part 4 topic): commonly integrates directly with Cognito User Pools as an authorizer, validating a user's JWT before allowing an API call through.
 - General familiarity with OAuth 2.0/OpenID Connect concepts is helpful but not assumed.
 
@@ -28,7 +28,7 @@ Cognito solves this with User Pools as a fully managed, standards-based (OAuth 2
 
 ### Identity Pools
 
-- An Identity Pool takes an already-authenticated identity — from a Cognito User Pool, a supported social/enterprise provider, or even an unauthenticated guest — and **exchanges it for temporary AWS credentials** via AWS STS (the same token-vending mechanism underlying IAM role assumption, Part 2 §3), by mapping the identity to a specific IAM role.
+- An Identity Pool takes an already-authenticated identity — from a Cognito User Pool, a supported social/enterprise provider, or even an unauthenticated guest — and **exchanges it for temporary AWS credentials** via AWS STS (the same token-vending mechanism underlying IAM role assumption, §11), by mapping the identity to a specific IAM role.
 - Critically, Identity Pools support **role mapping rules**, allowing different authenticated users to be granted different IAM roles (and therefore different AWS permissions) based on attributes of their identity — for example, users in a "premium" user group getting a role with broader S3 access than users in a "free" tier.
 - This is the mechanism that lets a mobile app's end user **directly and securely upload a file to a specific S3 prefix**, or **write directly to a specific DynamoDB table row scoped to their own user ID**, without the application's own backend needing to proxy every such request — genuinely useful for reducing backend load and latency for exactly this class of user-scoped, direct-to-AWS-resource access pattern.
 
@@ -79,7 +79,7 @@ API Gateway Authorizer      Cognito Identity Pool
 | Identity Pool role mapping rules          | Determines which IAM role (and therefore AWS permissions) an authenticated user receives                                                               |
 | Federated identity provider configuration | Connects external IdPs (Google, SAML, etc.) to the User Pool                                                                                           |
 
-⚠️ **Warning:** Identity Pool role mapping is a genuine, direct security boundary — a role mapping rule that's too permissive (e.g., every authenticated user getting a role with broad S3 access rather than access scoped to just their own user-prefixed objects) can let one user access another user's data; role mapping should be designed with the same least-privilege discipline as any other IAM role (Part 2 §3), commonly using policy variables (like `${cognito-identity.amazonaws.com:sub}`) to scope permissions dynamically to each specific user's own identity.
+⚠️ **Warning:** Identity Pool role mapping is a genuine, direct security boundary — a role mapping rule that's too permissive (e.g., every authenticated user getting a role with broad S3 access rather than access scoped to just their own user-prefixed objects) can let one user access another user's data; role mapping should be designed with the same least-privilege discipline as any other IAM role (§11), commonly using policy variables (like `${cognito-identity.amazonaws.com:sub}`) to scope permissions dynamically to each specific user's own identity.
 
 ## 8. Interview Questions with Model Answers
 
@@ -110,7 +110,7 @@ API Gateway Authorizer      Cognito Identity Pool
 
 ## 11. Related Concepts
 
-- **IAM** (the role/trust-policy/STS model Identity Pools directly build on) → Part 2 §1-3.
+- **IAM** (the role/trust-policy/STS model Identity Pools directly build on) → §9-11.
 - **API Gateway** (commonly integrates with User Pools as a request authorizer) — a Part 4 topic.
 - **S3** (a common direct-access target for Identity Pool-issued credentials) → Part 5.
-- **Neptune & Graph ML Tie-In** (the next section, a different specialized-service deep dive) → next section, Part 10 §7.
+- **Neptune & Graph ML Tie-In** (the next section, a different specialized-service deep dive) → next section, §95.

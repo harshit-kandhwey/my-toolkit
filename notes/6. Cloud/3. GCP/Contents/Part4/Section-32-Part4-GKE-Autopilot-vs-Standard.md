@@ -10,7 +10,7 @@
 
 In Standard mode, someone still has to answer questions Kubernetes doesn't answer for you: how big should each node be, how many nodes per pool, when to scale the pool, how to avoid paying for idle capacity sitting between Pod resource requests and actual node capacity. Getting this right — bin-packing Pods efficiently onto right-sized nodes — is a genuine, ongoing operational skill, and getting it wrong either wastes money (over-provisioned, mostly-idle nodes) or causes scheduling failures (under-provisioned capacity).
 
-Autopilot exists to remove that skill requirement entirely: Google observes the aggregate resource requests of scheduled Pods and provisions exactly the node capacity needed to satisfy them, continuously, without the customer ever choosing a machine type or sizing a node pool. This mirrors the same "IaaS vs. more-managed" trade-off explored for compute broadly (GCP Part 1, Section 10) — Autopilot moves GKE further toward the PaaS end of that spectrum without leaving Kubernetes' API surface.
+Autopilot exists to remove that skill requirement entirely: Google observes the aggregate resource requests of scheduled Pods and provisions exactly the node capacity needed to satisfy them, continuously, without the customer ever choosing a machine type or sizing a node pool. This mirrors the same "IaaS vs. more-managed" trade-off explored for compute broadly (§10) — Autopilot moves GKE further toward the PaaS end of that spectrum without leaving Kubernetes' API surface.
 
 ## 3. Standard Mode: Node-Pool Control
 
@@ -141,4 +141,4 @@ True
 
 ## 13. Related Concepts
 
-GKE architecture and node pools (Section 30), GKE networking and storage (Section 31), GKE security and Workload Identity (Section 33), Cluster Autoscaler and node auto-provisioning (Section 34), and the compute service decision matrix (GCP Part 1, Section 10) all inform the mode choice covered here.
+GKE architecture and node pools (Section 30), GKE networking and storage (Section 31), GKE security and Workload Identity (Section 33), Cluster Autoscaler and node auto-provisioning (Section 34), and the compute service decision matrix (§10) all inform the mode choice covered here.

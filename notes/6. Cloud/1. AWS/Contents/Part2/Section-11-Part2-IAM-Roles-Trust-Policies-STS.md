@@ -211,7 +211,7 @@ For Account A's user to assume a role in Account B:
 
 ## 🌐 Related Concepts (forward links)
 
-- IAM Identity Center and SAML/OIDC federation for humans → Part 2, Section 4
-- SCPs interacting with cross-account role assumption → Part 2, Section 5
+- IAM Identity Center and SAML/OIDC federation for humans → §12
+- SCPs interacting with cross-account role assumption → §13
 - CloudTrail monitoring of AssumeRole events → Part 8
 - EC2 instance profiles and IMDSv2 configuration in depth → Part 3

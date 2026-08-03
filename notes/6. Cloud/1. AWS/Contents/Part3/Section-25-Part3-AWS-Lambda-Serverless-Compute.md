@@ -14,9 +14,9 @@
 
 ## 2. Why It Exists
 
-- The concrete realization of FaaS (Part 1 §5) — AWS manages everything except your function's code, the logical endpoint of the "less operational burden" trend from EC2 through ASG automation.
+- The concrete realization of FaaS (§5) — AWS manages everything except your function's code, the logical endpoint of the "less operational burden" trend from EC2 through ASG automation.
 - Even a perfectly-tuned ASG still means thinking about instance types, AMIs, patching, capacity — pure waste for event-driven/intermittent/unpredictable workloads. Lambda removes it entirely.
-- Extends Part 1 §6's consumption-based pricing to its logical extreme — paying for actual execution time at sub-second granularity, not provisioned (even elastic) capacity.
+- Extends §6's consumption-based pricing to its logical extreme — paying for actual execution time at sub-second granularity, not provisioned (even elastic) capacity.
 
 ---
 
@@ -80,13 +80,13 @@
 - **Ephemeral by design** — no guaranteed persistent state between invocations (a warm environment _may_ retain `/tmp`/globals, but never reliably).
 - **`/tmp` storage** — ephemeral local disk for one invocation (or opportunistically across warm ones), never a persistence substitute.
 - **Statelessness implication:** persistent/shared data must live externally (S3, DynamoDB, ElastiCache) — extends Section 6 §9's "externalize state" principle to serverless.
-- **Environment variables** for non-secret config; **secrets pulled from Secrets Manager/Parameter Store at runtime** (Part 2 §7), never hardcoded.
+- **Environment variables** for non-secret config; **secrets pulled from Secrets Manager/Parameter Store at runtime** (§15), never hardcoded.
 
 ---
 
 ## 8. IAM Integration — Execution Role
 
-- Every function has an **execution role** (IAM role, Part 2 §1/§3) with `lambda.amazonaws.com` as trusted principal.
+- Every function has an **execution role** (IAM role, §9/§11) with `lambda.amazonaws.com` as trusted principal.
 - Least privilege applies fully — scoped per function, arguably more important here given how many small single-purpose functions a serverless architecture accumulates, each a distinct blast-radius boundary.
 
 ---
@@ -102,7 +102,7 @@
 
 - **Lambda behind API Gateway/ALB** — standard serverless REST/HTTP API pattern, no server layer to manage.
 - **Event-driven data pipelines** — S3 upload → Lambda → DynamoDB, or SQS → batch Lambda — common production pattern (full depth Part 7).
-- **Lambda as operational glue** — many automated-remediation patterns (Part 2 §8 GuardDuty/Config remediation, §6 KMS rotation) are themselves Lambda functions.
+- **Lambda as operational glue** — many automated-remediation patterns (§16 GuardDuty/Config remediation, §14 KMS rotation) are themselves Lambda functions.
 - **Compute Savings Plans apply to Lambda** — relevant cost lever for high-volume steady-state usage.
 
 ---
@@ -111,7 +111,7 @@
 
 - **Execution role least privilege** — the primary Lambda-specific control, higher-stakes given function count.
 - **VPC vs non-VPC Lambda** — VPC access for private resources (RDS) vs default internet/AWS-service access outside a VPC — a real architectural decision (full detail Part 4).
-- **Supply-chain risk applies** — vulnerable dependencies in deployment packages/container images; Amazon Inspector (Part 2 §8) scans Lambda functions.
+- **Supply-chain risk applies** — vulnerable dependencies in deployment packages/container images; Amazon Inspector (§16) scans Lambda functions.
 
 ---
 
@@ -178,7 +178,7 @@
 
 ## 🌐 Related Concepts (forward links)
 
-- Containers — ECS, EKS, Fargate for workloads exceeding Lambda's constraints → Part 3, Section 8 (next)
+- Containers — ECS, EKS, Fargate for workloads exceeding Lambda's constraints → §26 (next)
 - Step Functions and event-driven architecture patterns → Part 7
 - VPC-Lambda networking integration → Part 4
 - DynamoDB, S3, and other Lambda-adjacent data stores → Parts 5-6

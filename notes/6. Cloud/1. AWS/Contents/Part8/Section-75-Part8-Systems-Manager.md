@@ -10,13 +10,13 @@
 
 Managing a fleet of EC2 instances (or hybrid on-premises servers) the traditional way — SSH keys distributed to every engineer, bastion hosts as a single point of both access and risk, manually running the same patch command on every server one at a time, configuration drift because nobody has a systematic way to verify every instance still matches its intended state — is both operationally painful at any real scale and a persistent security liability (every open SSH port and distributed key is an attack surface).
 
-Systems Manager solves this by providing **centralized, auditable, agent-based management** — an SSM Agent running on each managed instance communicates outbound to the Systems Manager service (no inbound ports needed at all), letting AWS-authenticated, IAM-permissioned operators run commands, check compliance, retrieve configuration, and patch software across an entire fleet from one console/API, with every action recorded (and visible in CloudTrail, Part 8 §5) rather than happening invisibly through an SSH session with no built-in audit trail.
+Systems Manager solves this by providing **centralized, auditable, agent-based management** — an SSM Agent running on each managed instance communicates outbound to the Systems Manager service (no inbound ports needed at all), letting AWS-authenticated, IAM-permissioned operators run commands, check compliance, retrieve configuration, and patch software across an entire fleet from one console/API, with every action recorded (and visible in CloudTrail, §73) rather than happening invisibly through an SSH session with no built-in audit trail.
 
 ## 3. Prerequisites and Dependencies
 
 - **EC2** (Part 3): the primary managed-resource type; instances need the SSM Agent installed (present by default on most modern AMIs) and an IAM instance profile granting SSM permissions.
-- **IAM** (Part 2 §1-3): every SSM capability is IAM-governed — who can run commands, on which instances, is controlled by policy exactly like any other AWS action.
-- **CloudTrail** (Part 8 §5): every SSM action is itself a recorded API call, directly reusable for auditing exactly what commands were run against which instances, by whom.
+- **IAM** (§9-11): every SSM capability is IAM-governed — who can run commands, on which instances, is controlled by policy exactly like any other AWS action.
+- **CloudTrail** (§73): every SSM action is itself a recorded API call, directly reusable for auditing exactly what commands were run against which instances, by whom.
 
 ## 4. Internal Working
 
@@ -24,9 +24,9 @@ Systems Manager solves this by providing **centralized, auditable, agent-based m
 - **Session Manager** uses this same outbound channel to provide an interactive shell session directly in the browser console or via the AWS CLI, with every session's full command history optionally logged to S3/CloudWatch Logs — giving both the operational convenience of shell access and a complete audit trail neither raw SSH nor a bastion host provides by default.
 - **Run Command** executes a specified command (or a pre-built or custom **SSM Document**, a JSON/YAML-defined action) against a targeted set of instances — targeting by explicit instance ID, or more powerfully, by **tags** (e.g., "run this against every instance tagged `environment=production`"), letting operational actions scale to fleets without per-instance manual work.
 - **Patch Manager** automates OS and software patch scanning and installation, against **patch baselines** (rules defining which patches are approved, and after what delay following release — a common pattern: auto-approve security patches after 7 days, giving a window to catch any patch quality issues via AWS/vendor community reports before wide rollout) and **maintenance windows** (scheduled time periods when patching is permitted to run, avoiding patching during peak business hours).
-- **State Manager** continuously (on a defined schedule) enforces a desired configuration state across managed instances — conceptually the EC2-instance-level analogue of CloudFormation's desired-state model (Part 9 §1), but for the *contents/configuration* of a running instance (e.g., "this specific software package must always be installed and this specific version") rather than the AWS resource itself.
+- **State Manager** continuously (on a defined schedule) enforces a desired configuration state across managed instances — conceptually the EC2-instance-level analogue of CloudFormation's desired-state model (§79), but for the _contents/configuration_ of a running instance (e.g., "this specific software package must always be installed and this specific version") rather than the AWS resource itself.
 - **Parameter Store** is a hierarchical key-value store for configuration data and secrets, supporting plain-text and KMS-encrypted **SecureString** parameters — a lighter-weight alternative to Secrets Manager for configuration values (with fewer built-in secret-rotation features but no additional service cost for standard parameters), commonly used for application configuration, feature flags, and simple credentials referenced by name from application code or other AWS services (including directly from CloudFormation/CDK/Terraform templates, Part 9).
-- **Automation** runs **SSM Automation runbooks** — multi-step, potentially cross-service operational workflows (e.g., "create an AMI from this instance, launch a replacement, verify health, terminate the old instance") — the mechanism underlying many of AWS Config's automated remediation actions (Part 8 §6) referenced earlier in this Part.
+- **Automation** runs **SSM Automation runbooks** — multi-step, potentially cross-service operational workflows (e.g., "create an AMI from this instance, launch a replacement, verify health, terminate the old instance") — the mechanism underlying many of AWS Config's automated remediation actions (§74) referenced earlier in this Part.
 
 ```
 Managed EC2 Instance (SSM Agent, outbound-only connection)
@@ -43,17 +43,17 @@ Parameter Store (hierarchical config/secrets, referenced by name from anywhere)
 
 ## 5. Architecture & Components
 
-| Component | Explanation |
-|---|---|
-| **SSM Agent** | Software running on each managed instance, maintaining the outbound connection to the SSM service. |
-| **Managed Instance** | Any EC2 instance (or on-premises/hybrid server) with the SSM Agent installed and appropriate IAM permissions. |
-| **Session Manager** | Browser/CLI interactive shell access with no inbound ports and optional full session logging. |
-| **Run Command** | Ad hoc or scheduled remote command/document execution against tag- or ID-targeted instance sets. |
-| **SSM Document** | A JSON/YAML-defined action (AWS-provided or custom) that Run Command, State Manager, or Automation executes. |
-| **Patch Manager / Patch Baseline / Maintenance Window** | Automated patching engine, its approval-rule configuration, and its scheduled execution window. |
-| **State Manager** | Continuous, scheduled desired-configuration-state enforcement. |
-| **Parameter Store** | Hierarchical configuration/secrets store, with plain-text and KMS-encrypted SecureString parameter types. |
-| **Automation Runbook** | A multi-step, potentially cross-service orchestrated operational workflow. |
+| Component                                               | Explanation                                                                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **SSM Agent**                                           | Software running on each managed instance, maintaining the outbound connection to the SSM service.            |
+| **Managed Instance**                                    | Any EC2 instance (or on-premises/hybrid server) with the SSM Agent installed and appropriate IAM permissions. |
+| **Session Manager**                                     | Browser/CLI interactive shell access with no inbound ports and optional full session logging.                 |
+| **Run Command**                                         | Ad hoc or scheduled remote command/document execution against tag- or ID-targeted instance sets.              |
+| **SSM Document**                                        | A JSON/YAML-defined action (AWS-provided or custom) that Run Command, State Manager, or Automation executes.  |
+| **Patch Manager / Patch Baseline / Maintenance Window** | Automated patching engine, its approval-rule configuration, and its scheduled execution window.               |
+| **State Manager**                                       | Continuous, scheduled desired-configuration-state enforcement.                                                |
+| **Parameter Store**                                     | Hierarchical configuration/secrets store, with plain-text and KMS-encrypted SecureString parameter types.     |
+| **Automation Runbook**                                  | A multi-step, potentially cross-service orchestrated operational workflow.                                    |
 
 ## 6. Lifecycle / Workflow
 
@@ -66,13 +66,13 @@ Parameter Store (hierarchical config/secrets, referenced by name from anywhere)
 
 ## 7. Configuration
 
-| Setting | Purpose |
-|---|---|
+| Setting                                                                    | Purpose                                                            |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | IAM instance profile (`AmazonSSMManagedInstanceCore` or scoped equivalent) | Grants the instance permission to communicate with the SSM service |
-| Patch baseline approval rules | Defines which patches are auto-approved and after what delay |
-| Maintenance window schedule | When patching/automation is permitted to execute |
-| Session Manager logging destination (S3/CloudWatch Logs) | Where full interactive session transcripts are stored for audit |
-| Parameter Store parameter type (`String`, `StringList`, `SecureString`) | Determines whether the value is encrypted at rest via KMS |
+| Patch baseline approval rules                                              | Defines which patches are auto-approved and after what delay       |
+| Maintenance window schedule                                                | When patching/automation is permitted to execute                   |
+| Session Manager logging destination (S3/CloudWatch Logs)                   | Where full interactive session transcripts are stored for audit    |
+| Parameter Store parameter type (`String`, `StringList`, `SecureString`)    | Determines whether the value is encrypted at rest via KMS          |
 
 ⚠️ **Warning:** Session Manager access is governed entirely by IAM — a role with `ssm:StartSession` permission on a target instance can open a shell on it, so this permission is exactly as sensitive as SSH key distribution was in the traditional model, and should be scoped and reviewed with the same rigor, not treated as inherently safer just because it doesn't require managing SSH keys.
 
@@ -109,7 +109,7 @@ Parameter Store (hierarchical config/secrets, referenced by name from anywhere)
   ```
   **Expected output:**
   ```json
-  { "Command": {"CommandId": "8f14e45f-1234-...", "Status": "Pending"} }
+  { "Command": { "CommandId": "8f14e45f-1234-...", "Status": "Pending" } }
   ```
 - **Important arguments:** `--targets` using `Key=tag:...` rather than explicit instance IDs is what enables true fleet-wide, scale-independent operations — the same command runs against every currently-tagged instance regardless of how many there are.
 - **Production usage:** commonly used for fleet-wide diagnostic commands, ad hoc operational tasks, and as the execution mechanism behind many custom automation scripts; results per-instance are retrievable via `get-command-invocation`.
@@ -156,19 +156,20 @@ aws ssm create-maintenance-window --name "WeeklyPatchWindow" \
 # Retrieve a securely stored configuration value at application runtime
 aws ssm get-parameter --name /myapp/production/db-connection-string --with-decryption
 ```
+
 This demonstrates the standard pattern: define an approval policy once (the baseline), scan fleet-wide for compliance without yet making changes, then apply patches within a controlled, scheduled window — directly avoiding the anti-pattern of patching production instances at unpredictable times with no governing policy.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** commonly adopt Session Manager early specifically to eliminate bastion-host operational overhead and SSH key management, even before adopting the more advanced patch/state-management capabilities.
-- **Enterprises** build extensive Patch Manager and State Manager governance across large EC2 fleets, often tied directly into Config Rules (Part 8 §6) that check patch compliance status, and into the same organization-wide deployment patterns (StackSets, Part 9 §2) for consistent baseline configuration across many accounts.
+- **Enterprises** build extensive Patch Manager and State Manager governance across large EC2 fleets, often tied directly into Config Rules (§74) that check patch compliance status, and into the same organization-wide deployment patterns (StackSets, §80) for consistent baseline configuration across many accounts.
 - Parameter Store is frequently the **lower-cost default** for application configuration, with Secrets Manager reserved specifically for credentials genuinely needing automatic rotation — a real, common cost/feature trade-off decision.
-- SSM Automation runbooks are the underlying mechanism for many AWS Config automated remediation actions (Part 8 §6), directly connecting this section's content to that Part's compliance-automation discussion.
+- SSM Automation runbooks are the underlying mechanism for many AWS Config automated remediation actions (§74), directly connecting this section's content to that Part's compliance-automation discussion.
 
 ## 11. Security Considerations
 
 - Session Manager's elimination of inbound SSH ports is a genuine security improvement (reduced network attack surface), but `ssm:StartSession` IAM permission itself becomes the new access-control boundary requiring the same careful scoping SSH key distribution once required.
-- Session logging to S3/CloudWatch Logs provides audit visibility SSH sessions traditionally lack, directly supporting the same investigative patterns covered in Part 8 §5 (CloudTrail) and Part 8 §7's own action logging.
+- Session logging to S3/CloudWatch Logs provides audit visibility SSH sessions traditionally lack, directly supporting the same investigative patterns covered in §73 (CloudTrail) and §75's own action logging.
 - SecureString Parameter Store values require both SSM read permission and KMS decrypt permission — a genuine layered access control, but one that must be deliberately configured (defaulting to plain `String` type provides no encryption at all).
 
 ## 12. Performance Considerations
@@ -178,20 +179,20 @@ This demonstrates the standard pattern: define an approval policy once (the base
 
 ## 13. Monitoring
 
-| Signal | What it tells you |
-|---|---|
-| Managed instance "Ping Status" | Whether an instance's SSM Agent is actively communicating — a "ConnectionLost" status is the first sign of an instance that's become unmanageable via SSM. |
-| Patch compliance summary (per instance/fleet) | Current patch state versus the defined baseline — directly feeds Config Rules or dashboards tracking fleet-wide patch posture. |
-| Run Command / Automation execution history | Per-invocation success/failure detail, the primary troubleshooting signal for a specific failed fleet-wide operation. |
+| Signal                                        | What it tells you                                                                                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Managed instance "Ping Status"                | Whether an instance's SSM Agent is actively communicating — a "ConnectionLost" status is the first sign of an instance that's become unmanageable via SSM. |
+| Patch compliance summary (per instance/fleet) | Current patch state versus the defined baseline — directly feeds Config Rules or dashboards tracking fleet-wide patch posture.                             |
+| Run Command / Automation execution history    | Per-invocation success/failure detail, the primary troubleshooting signal for a specific failed fleet-wide operation.                                      |
 
 ## 14. Troubleshooting
 
-| Symptom | Likely Root Cause | Fix |
-|---|---|---|
-| Instance doesn't appear as "Managed" | Missing/misconfigured IAM instance profile, or SSM Agent not running/outdated | Verify the instance profile grants SSM permissions and the agent is running; update the agent if very outdated |
-| Session Manager connection fails | Instance not registered, or required VPC endpoint/internet path for SSM communication missing in a private-subnet instance | Verify managed status; for fully private subnets with no NAT, ensure SSM VPC endpoints are configured |
-| Run Command succeeds on some instances, fails on others | Normal at scale — transient connectivity, instance-specific state differences | Check per-instance invocation detail rather than assuming a uniform fleet-wide result |
-| Patch Manager reports non-compliance that manual inspection disputes | Patch baseline scan is stale, or baseline approval rules don't match the actual expected patch set | Re-run a scan; review baseline approval-rule configuration against actual policy intent |
+| Symptom                                                              | Likely Root Cause                                                                                                          | Fix                                                                                                            |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Instance doesn't appear as "Managed"                                 | Missing/misconfigured IAM instance profile, or SSM Agent not running/outdated                                              | Verify the instance profile grants SSM permissions and the agent is running; update the agent if very outdated |
+| Session Manager connection fails                                     | Instance not registered, or required VPC endpoint/internet path for SSM communication missing in a private-subnet instance | Verify managed status; for fully private subnets with no NAT, ensure SSM VPC endpoints are configured          |
+| Run Command succeeds on some instances, fails on others              | Normal at scale — transient connectivity, instance-specific state differences                                              | Check per-instance invocation detail rather than assuming a uniform fleet-wide result                          |
+| Patch Manager reports non-compliance that manual inspection disputes | Patch baseline scan is stale, or baseline approval rules don't match the actual expected patch set                         | Re-run a scan; review baseline approval-rule configuration against actual policy intent                        |
 
 ## 15. Best Practices
 
@@ -210,17 +211,17 @@ This demonstrates the standard pattern: define an approval policy once (the base
 
 ## 17. Interview Questions with Model Answers
 
-**🎯 Junior:** *"What is AWS Systems Manager, and what problem does Session Manager specifically solve?"*
+**🎯 Junior:** _"What is AWS Systems Manager, and what problem does Session Manager specifically solve?"_
 **Model answer:** Systems Manager is AWS's operational management service for fleets of EC2 (and hybrid) instances — running commands, patching, enforcing configuration, and storing configuration data centrally rather than doing it manually per instance. Session Manager specifically solves the problem of needing SSH access without opening inbound SSH ports or managing bastion hosts and distributed SSH keys — it uses the SSM Agent's outbound-only connection to give an interactive shell directly through the AWS console or CLI, with the option to fully log every session for audit purposes.
 
-**🎯 Intermediate:** *"Explain how tag-based targeting in Run Command lets an operational action scale independently of fleet size."*
+**🎯 Intermediate:** _"Explain how tag-based targeting in Run Command lets an operational action scale independently of fleet size."_
 **Model answer:** Instead of specifying a list of explicit instance IDs, which would need to be manually updated every time instances are added or removed, Run Command can target instances by tag — for example, every instance tagged Environment=production. This means the same command definition automatically applies to however many instances currently carry that tag, whether that's five or five thousand, without any change to the command itself. It also means routine fleet growth doesn't require remembering to update some separate operational target list, since the tag is the only thing that needs to be correctly applied when an instance is created.
 
-**🎯 Senior:** *"Your organization wants to move away from SSH-key-based EC2 access to Session Manager, but the security team is concerned this could actually reduce auditability compared to traditional SSH with a bastion host's own logging. How would you address this?"*
+**🎯 Senior:** _"Your organization wants to move away from SSH-key-based EC2 access to Session Manager, but the security team is concerned this could actually reduce auditability compared to traditional SSH with a bastion host's own logging. How would you address this?"_
 **Model answer:** The concern is addressable but requires deliberate configuration, not just flipping to Session Manager by default — Session Manager supports full session logging to S3 and/or CloudWatch Logs, capturing the complete command history of every interactive session, which in practice is often more complete and centrally queryable than typical bastion-host SSH logging, which frequently only captures connection metadata rather than the actual commands run inside the session. I'd configure session logging as a mandatory requirement before rolling out Session Manager broadly, verify the logs are actually being captured correctly during a pilot phase, and demonstrate to the security team specifically how a Session Manager transcript compares favorably in completeness to what SSH logging was actually providing — addressing the concern with concrete evidence rather than just asserting Session Manager is more secure.
 
-**🎯 Architect:** *"Design a patching strategy for a 2,000-instance fleet spanning multiple environments (dev, staging, production), balancing patch currency (security) against deployment risk (accidental service disruption from an unexpected patch side effect)."*
-**Model answer:** I'd use separate patch baselines per environment with different approval-delay windows — dev might auto-approve security patches almost immediately to surface any patch-quality issues as early as possible, staging with a moderate delay (a few days) acting as a genuine pre-production canary, and production with the longest delay (a week or more), specifically so any patch-quality problems have already surfaced and been caught in dev/staging before reaching production. I'd define maintenance windows scoped to each environment's actual low-traffic period, and use tag-based targeting so the fleet's environment tag alone determines which baseline and window applies, requiring no manual per-instance patch-list maintenance as the fleet grows or changes. I'd also integrate Patch Manager's compliance reporting with a Config Rule (Part 8 §6) alerting when instances fall meaningfully behind their baseline's expected patch level, giving an independent, automated check that the patching pipeline itself is actually working as intended, rather than only trusting Patch Manager's own self-reported success.
+**🎯 Architect:** _"Design a patching strategy for a 2,000-instance fleet spanning multiple environments (dev, staging, production), balancing patch currency (security) against deployment risk (accidental service disruption from an unexpected patch side effect)."_
+**Model answer:** I'd use separate patch baselines per environment with different approval-delay windows — dev might auto-approve security patches almost immediately to surface any patch-quality issues as early as possible, staging with a moderate delay (a few days) acting as a genuine pre-production canary, and production with the longest delay (a week or more), specifically so any patch-quality problems have already surfaced and been caught in dev/staging before reaching production. I'd define maintenance windows scoped to each environment's actual low-traffic period, and use tag-based targeting so the fleet's environment tag alone determines which baseline and window applies, requiring no manual per-instance patch-list maintenance as the fleet grows or changes. I'd also integrate Patch Manager's compliance reporting with a Config Rule (§74) alerting when instances fall meaningfully behind their baseline's expected patch level, giving an independent, automated check that the patching pipeline itself is actually working as intended, rather than only trusting Patch Manager's own self-reported success.
 
 ## 18. Common Misconceptions
 
@@ -233,11 +234,11 @@ This demonstrates the standard pattern: define an approval policy once (the base
 🔑 Session Manager, Run Command, Patch Manager, State Manager, Parameter Store, and Automation are distinct capabilities — SSM is not just a patching tool.
 🔑 Tag-based targeting lets operational actions scale independently of fleet size, without manual instance-list maintenance.
 🔑 `ssm:StartSession`/`ssm:SendCommand` IAM permissions are exactly as security-sensitive as SSH key distribution was, and should be scoped and monitored with equal rigor.
-🔑 SSM Automation runbooks are the orchestration mechanism underlying many AWS Config automated remediation actions (Part 8 §6).
+🔑 SSM Automation runbooks are the orchestration mechanism underlying many AWS Config automated remediation actions (§74).
 
 ## 20. Related Concepts
 
 - **EC2** (the primary managed-resource type) → Part 3.
-- **IAM** (the permission model governing every SSM capability) → Part 2 §1-3.
-- **AWS Config** (remediation actions frequently implemented as SSM Automation runbooks) → Part 8 §6.
-- **Trusted Advisor & AWS Health Dashboard** (complementary operational-awareness tooling) → next section, Part 8 §8.
+- **IAM** (the permission model governing every SSM capability) → §9-11.
+- **AWS Config** (remediation actions frequently implemented as SSM Automation runbooks) → §74.
+- **Trusted Advisor & AWS Health Dashboard** (complementary operational-awareness tooling) → next section, §76.

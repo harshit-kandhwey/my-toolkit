@@ -151,6 +151,6 @@ Senior - Design networking/connection management for RDS PostgreSQL serving both
 
 ## Related Concepts (forward links)
 
-- RDS High Availability (Multi-AZ), Read Replicas, and backup mechanics in full depth -> Part 6, Section 2
-- Amazon Aurora as RDS's own architecturally distinct engine -> Part 6, Section 3
-- DynamoDB as the genuinely different, non-relational alternative -> Part 6, Section 4
+- RDS High Availability (Multi-AZ), Read Replicas, and backup mechanics in full depth -> §50
+- Amazon Aurora as RDS's own architecturally distinct engine -> §51
+- DynamoDB as the genuinely different, non-relational alternative -> §52

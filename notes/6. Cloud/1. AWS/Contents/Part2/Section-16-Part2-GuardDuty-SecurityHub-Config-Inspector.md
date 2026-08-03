@@ -78,7 +78,7 @@ Without it, findings scatter across many consoles/formats — hard to get a sing
 
 ### 5.1 Definition
 
-Continuously records the configuration state of resources, evaluates against rules, flags noncompliant resources — operationalizes "configuration drift" (Part 1 §5).
+Continuously records the configuration state of resources, evaluates against rules, flags noncompliant resources — operationalizes "configuration drift" (§5).
 
 ### 5.2 Core Capabilities
 
@@ -148,7 +148,7 @@ GuardDuty   Inspector   Config   Access Analyzer   3rd-party
 ## 9. Production & Enterprise Usage
 
 - **Delegated administration is standard** for all four services — a dedicated Security account manages/views findings org-wide.
-- **Compliance evidence generation:** Security Hub's standards checks + Config's historical record together generate actual auditor evidence (operationalizing Part 1 §3's "compliance inheritance has limits").
+- **Compliance evidence generation:** Security Hub's standards checks + Config's historical record together generate actual auditor evidence (operationalizing §3's "compliance inheritance has limits").
 - **SOAR-style automation:** EventBridge-triggered playbooks — auto-quarantine compromised instances, revoke compromised sessions, open tickets — reducing MTTR from hours to seconds for well-understood findings.
 
 ---
@@ -217,4 +217,4 @@ GuardDuty   Inspector   Config   Access Analyzer   3rd-party
 
 - CloudTrail and VPC Flow Logs as underlying GuardDuty data sources → Part 8
 - EventBridge-driven automated remediation in full depth → Part 7
-- Network-layer edge security (WAF, Shield) → Part 2, Section 9 (next)
+- Network-layer edge security (WAF, Shield) → §17 (next)

@@ -8,11 +8,11 @@
 
 ## 2. Why This Framework Exists / Problem It Solves
 
-Across Part 9 §1-4, three genuinely different tools emerged for what superficially looks like the same job — "manage AWS infrastructure as code." But CloudFormation is AWS-native with AWS-managed state; CDK is a code-based authoring layer that still ultimately deploys via CloudFormation; and Terraform is a fully independent, multi-cloud tool with its own separately-managed state. Engineers who don't internalize these architectural differences tend to default to whichever tool they learned first or whichever is currently fashionable, rather than evaluating the decision against the organization's actual requirements — multi-cloud needs, team programming background, existing tooling investment, and state-management risk tolerance.
+Across §79-82, three genuinely different tools emerged for what superficially looks like the same job — "manage AWS infrastructure as code." But CloudFormation is AWS-native with AWS-managed state; CDK is a code-based authoring layer that still ultimately deploys via CloudFormation; and Terraform is a fully independent, multi-cloud tool with its own separately-managed state. Engineers who don't internalize these architectural differences tend to default to whichever tool they learned first or whichever is currently fashionable, rather than evaluating the decision against the organization's actual requirements — multi-cloud needs, team programming background, existing tooling investment, and state-management risk tolerance.
 
 ## 3. Prerequisites and Dependencies
 
-- All of Part 9 §1-8 — this section is a synthesis, assuming fluency with every tool and practice compared here.
+- All of §79-86 — this section is a synthesis, assuming fluency with every tool and practice compared here.
 
 ## 4. The Core Decision Dimensions
 
@@ -40,16 +40,16 @@ Across Part 9 §1-4, three genuinely different tools emerged for what superficia
 
 ## 6. The State Management Distinction, In Depth
 
-This is the single most consequential _architectural_ (not just stylistic) difference covered across Part 9 §1-4, worth restating explicitly here:
+This is the single most consequential _architectural_ (not just stylistic) difference covered across §79-82, worth restating explicitly here:
 
 - **CloudFormation and CDK**: AWS itself is the durable source of truth for what's deployed (the stack). There is no separate state file for you to protect, back up, or worry about losing.
-- **Terraform**: Terraform's own state file is the source of truth for what it manages. AWS has zero awareness of Terraform's bookkeeping. Losing or corrupting this file is a genuine operational incident requiring careful remote-backend and locking discipline (Part 9 §4) to prevent and recover from.
+- **Terraform**: Terraform's own state file is the source of truth for what it manages. AWS has zero awareness of Terraform's bookkeeping. Losing or corrupting this file is a genuine operational incident requiring careful remote-backend and locking discipline (§82) to prevent and recover from.
 
 This isn't a minor implementation detail — it's a fundamentally different risk profile that should factor directly into the tool decision, particularly for organizations without strong existing operational discipline around remote state management.
 
 ## 7. Common Combined/Hybrid Approaches (Not Always Either/Or)
 
-- **CDK for application-adjacent infrastructure, CloudFormation/StackSets for organization-wide baseline governance**: some organizations use CDK for team-owned application infrastructure while keeping centrally-managed security/compliance baselines (Part 8 §5-6, Part 9 §2) in more directly-authored CloudFormation/StackSets, since that governance layer benefits from AWS's native state-tracking simplicity and doesn't need CDK's programming-language flexibility.
+- **CDK for application-adjacent infrastructure, CloudFormation/StackSets for organization-wide baseline governance**: some organizations use CDK for team-owned application infrastructure while keeping centrally-managed security/compliance baselines (§73-74, §80) in more directly-authored CloudFormation/StackSets, since that governance layer benefits from AWS's native state-tracking simplicity and doesn't need CDK's programming-language flexibility.
 - **Terraform for multi-cloud/shared infrastructure, CDK/CloudFormation for AWS-specific application teams**: a platform team might manage foundational multi-cloud networking/shared services in Terraform, while individual AWS-only application teams use CDK for their own application-level resources, each tool used where its strengths actually apply.
 - **Gradual migration in either direction**: since CDK generates standard CloudFormation, and CloudFormation/CDK-managed resources can in some cases be imported into Terraform (and vice versa via Terraform's import capability), organizations aren't permanently locked into an all-or-nothing choice, though migration between tools is real, nontrivial work, not a trivial switch.
 
@@ -72,7 +72,7 @@ This isn't a minor implementation detail — it's a fundamentally different risk
 **Model answer:** This is exactly the scenario that shifts the calculus toward Terraform, at least for anything spanning both clouds going forward — post-acquisition, the organization now genuinely has multi-cloud infrastructure, which is Terraform's core differentiating strength that CloudFormation structurally cannot address at all, since it has no path to managing GCP resources. I wouldn't necessarily recommend an immediate, wholesale rewrite of the existing, working CloudFormation estate — that's real switching cost with limited immediate benefit for infrastructure that isn't touching GCP at all. Instead, likely adopt Terraform specifically for any new infrastructure that spans both clouds, or for genuinely shared/foundational services (like a cross-cloud networking setup, if one is needed), while letting existing AWS-only CloudFormation infrastructure continue as-is unless there's a specific reason to migrate a given piece of it, treating this as a gradual, requirement-driven convergence rather than a forced, immediate, organization-wide tool switch.
 
 **🎯 Architect:** _"Design an IaC tooling strategy for a large enterprise with: a legacy CloudFormation estate that's stable and rarely touched, an actively developed set of AWS-native microservices where the team wants strong testing practices, and a separate platform team managing shared infrastructure across AWS and Azure."_
-**Model answer:** I wouldn't force a single tool across all three of these genuinely different situations, since each has a different best fit given what's already been covered. The legacy, stable, rarely-touched CloudFormation estate should generally be left alone — migrating working, low-change-frequency infrastructure to a different tool for its own sake is unlikely to justify the real switching cost and risk, absent some other concrete driver. For the actively developed AWS-native microservices where the team specifically wants strong testing practices, CDK is the clear fit — it stays fully AWS-native (no separate state-management burden) while giving the team real-language testability that directly serves their stated priority. For the platform team managing shared AWS-plus-Azure infrastructure, Terraform is the clear fit, since this is precisely the multi-cloud scenario Terraform's provider-agnostic architecture exists for, and neither CloudFormation nor CDK have any path to managing Azure resources at all. Document each of these three tool choices deliberately with its rationale, so future engineers understand this is an intentional, requirement-driven multi-tool strategy rather than accidental inconsistency, and ensure each tool's respective CI/CD pipeline (Part 9 §8) independently implements the same underlying safety discipline — validate, plan, review, gated approval, apply-the-reviewed-plan — regardless of which specific tool it's built around.
+**Model answer:** I wouldn't force a single tool across all three of these genuinely different situations, since each has a different best fit given what's already been covered. The legacy, stable, rarely-touched CloudFormation estate should generally be left alone — migrating working, low-change-frequency infrastructure to a different tool for its own sake is unlikely to justify the real switching cost and risk, absent some other concrete driver. For the actively developed AWS-native microservices where the team specifically wants strong testing practices, CDK is the clear fit — it stays fully AWS-native (no separate state-management burden) while giving the team real-language testability that directly serves their stated priority. For the platform team managing shared AWS-plus-Azure infrastructure, Terraform is the clear fit, since this is precisely the multi-cloud scenario Terraform's provider-agnostic architecture exists for, and neither CloudFormation nor CDK have any path to managing Azure resources at all. Document each of these three tool choices deliberately with its rationale, so future engineers understand this is an intentional, requirement-driven multi-tool strategy rather than accidental inconsistency, and ensure each tool's respective CI/CD pipeline (§86) independently implements the same underlying safety discipline — validate, plan, review, gated approval, apply-the-reviewed-plan — regardless of which specific tool it's built around.
 
 ## 10. Common Misconceptions
 
@@ -89,7 +89,7 @@ This isn't a minor implementation detail — it's a fundamentally different risk
 
 ## 12. Related Concepts
 
-- Every tool compared here: **CloudFormation Fundamentals & Advanced** (Part 9 §1-2), **AWS CDK** (Part 9 §3), **Terraform on AWS** (Part 9 §4).
-- **AWS CodePipeline & CodeBuild, AWS CodeDeploy, Deployment Strategies** (the application-deployment CI/CD tooling this decision framework's infrastructure-deployment pipelines commonly run within) → Part 9 §5-7.
-- **CI/CD for Infrastructure** (the deployment-safety discipline applicable regardless of which tool is chosen) → Part 9 §8.
-- **Part 9 §10** (next, final section of this Part) closes out Infrastructure as Code with a wrap-up and IaC interview drill synthesizing all nine preceding sections.
+- Every tool compared here: **CloudFormation Fundamentals & Advanced** (§79-80), **AWS CDK** (§81), **Terraform on AWS** (§82).
+- **AWS CodePipeline & CodeBuild, AWS CodeDeploy, Deployment Strategies** (the application-deployment CI/CD tooling this decision framework's infrastructure-deployment pipelines commonly run within) → §83-85.
+- **CI/CD for Infrastructure** (the deployment-safety discipline applicable regardless of which tool is chosen) → §86.
+- **§88** (next, final section of this Part) closes out Infrastructure as Code with a wrap-up and IaC interview drill synthesizing all nine preceding sections.

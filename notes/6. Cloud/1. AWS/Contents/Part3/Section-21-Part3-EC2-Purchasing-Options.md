@@ -141,7 +141,7 @@ Is the workload interruption-tolerant?
 ## 9. Production & Enterprise Usage
 
 - **Layered purchasing strategy at scale:** Savings-Plans-covered baseline + On-Demand for spikes + Spot for fault-tolerant/batch — three models simultaneously across one fleet.
-- **Savings Plans decisions driven by Cost Explorer analysis** of actual historical steady-state usage (Part 1 §6).
+- **Savings Plans decisions driven by Cost Explorer analysis** of actual historical steady-state usage (§6).
 - **RI/Savings Plans utilization tracked via Budgets** — alerts on under-utilization of a commitment, just as important as overspend alerts.
 - **Spot for CI/CD and batch** — widely-cited case study, often 60-90% cost reduction for interruption-tolerant workloads.
 
@@ -149,14 +149,14 @@ Is the workload interruption-tolerant?
 
 ## 10. Cost Considerations
 
-- **Unused RI/Savings Plans commitment is wasted money** — "reserved is always cheaper" is false if unused (Part 1 §6 misconception, applies with full force here).
+- **Unused RI/Savings Plans commitment is wasted money** — "reserved is always cheaper" is false if unused (§6 misconception, applies with full force here).
 - **Spot's savings are real but variable** — architecting for interruption tolerance is what makes savings reliably capturable, not the discount percentage alone.
 
 ---
 
 ## 11. Security Considerations
 
-- **Dedicated Hosts and licensing compliance** — some enterprise license compliance is a customer responsibility (Part 1 §3) that Dedicated Host purchasing satisfies.
+- **Dedicated Hosts and licensing compliance** — some enterprise license compliance is a customer responsibility (§3) that Dedicated Host purchasing satisfies.
 - **Spot interruption handling should be graceful** — an app not properly draining in-flight requests on the 2-minute notice (Section 6 load balancer deregistration) causes real user-facing errors, not just a cost issue.
 
 ---
@@ -215,7 +215,7 @@ Is the workload interruption-tolerant?
 
 ## 🌐 Related Concepts (forward links)
 
-- Auto Scaling Groups and mixed instances policies → Part 3, Section 5
-- EC2 storage/networking details → Part 3, Section 4
+- Auto Scaling Groups and mixed instances policies → §23
+- EC2 storage/networking details → §22
 - Fargate/Lambda pricing and Compute Savings Plans → Part 3, Sections 7-8
 - Cost Explorer/Budgets workflow for RI/SP decisions in full depth → Part 10 FinOps

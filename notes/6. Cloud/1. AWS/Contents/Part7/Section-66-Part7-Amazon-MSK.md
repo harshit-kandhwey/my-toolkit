@@ -8,9 +8,9 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Apache Kafka is the dominant open-source, self-hostable equivalent of what Kinesis Data Streams (Part 7 §6) provides — a durable, ordered, partitioned, replayable log supporting multiple independent consumers. Many organizations already run substantial Kafka-based infrastructure, have deep existing Kafka operational expertise, use Kafka-ecosystem tools (Kafka Connect, Kafka Streams, ksqlDB, Schema Registry) that assume genuine Kafka compatibility, or need to migrate an existing on-premises Kafka deployment to AWS with minimal application-code changes.
+Apache Kafka is the dominant open-source, self-hostable equivalent of what Kinesis Data Streams (§64) provides — a durable, ordered, partitioned, replayable log supporting multiple independent consumers. Many organizations already run substantial Kafka-based infrastructure, have deep existing Kafka operational expertise, use Kafka-ecosystem tools (Kafka Connect, Kafka Streams, ksqlDB, Schema Registry) that assume genuine Kafka compatibility, or need to migrate an existing on-premises Kafka deployment to AWS with minimal application-code changes.
 
-Self-hosting Kafka is operationally demanding: managing broker instances, handling ZooKeeper (or newer KRaft) consensus, capacity planning partitions and replication, patching for security vulnerabilities, and handling broker failure/replacement — all significant, ongoing operational burden, directly analogous to the burden SQS eliminated for point-to-point queuing (Part 7 §1) and Kinesis eliminated for AWS-native streaming.
+Self-hosting Kafka is operationally demanding: managing broker instances, handling ZooKeeper (or newer KRaft) consensus, capacity planning partitions and replication, patching for security vulnerabilities, and handling broker failure/replacement — all significant, ongoing operational burden, directly analogous to the burden SQS eliminated for point-to-point queuing (§59) and Kinesis eliminated for AWS-native streaming.
 
 MSK solves this specifically for organizations that need **genuine Kafka protocol compatibility** — not just "a similar streaming service," but the actual Kafka wire protocol and ecosystem — while removing the operational burden of running the cluster yourself. This is a different value proposition from Kinesis: Kinesis is AWS's own native streaming primitive with deep native integration into other AWS services (Lambda event source mappings, Firehose, etc.); MSK is "Kafka, but AWS runs it for you."
 
@@ -18,8 +18,8 @@ MSK solves this specifically for organizations that need **genuine Kafka protoco
 
 ## 3. Prerequisites and Dependencies
 
-- **Kinesis Data Streams** (Part 7 §6): the direct conceptual analogue and most common point of comparison; understanding KDS's shard/partition model transfers directly to understanding Kafka's partition model.
-- General **networking/VPC** knowledge (Part 4 §1): MSK clusters run within your VPC, requiring subnet, security group, and connectivity planning distinct from Kinesis's fully serverless, no-VPC-footprint model.
+- **Kinesis Data Streams** (§64): the direct conceptual analogue and most common point of comparison; understanding KDS's shard/partition model transfers directly to understanding Kafka's partition model.
+- General **networking/VPC** knowledge (§29): MSK clusters run within your VPC, requiring subnet, security group, and connectivity planning distinct from Kinesis's fully serverless, no-VPC-footprint model.
 - Basic familiarity that Kafka itself (independent of MSK) is a pre-existing, widely adopted open-source technology, assumed here as background context rather than taught from scratch.
 
 ## 4. Internal Working
@@ -255,7 +255,7 @@ This is deliberately, meaningfully identical in structure to code that would run
 
 ## 20. Related Concepts
 
-- **Kinesis Data Streams** (the direct AWS-native conceptual analogue, compared throughout this section) → Part 7 §6; full head-to-head decision framework → next section, Part 7 §9.
-- **VPC networking** (required background for MSK's real network presence) → Part 4 §1.
-- **IAM** (for MSK's IAM-based authentication option) → Part 2 §1-3.
+- **Kinesis Data Streams** (the direct AWS-native conceptual analogue, compared throughout this section) → §64; full head-to-head decision framework → next section, §67.
+- **VPC networking** (required background for MSK's real network presence) → §29.
+- **IAM** (for MSK's IAM-based authentication option) → §9-11.
 - **MSK Connect / Kafka Connect ecosystem** — a natural extension topic beyond this roadmap for anyone building substantial MSK-based data integration pipelines.

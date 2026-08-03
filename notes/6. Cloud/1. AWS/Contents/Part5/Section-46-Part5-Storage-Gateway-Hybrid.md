@@ -156,6 +156,6 @@ Senior - Design hybrid storage for: legacy tape-based compliance backup, a large
 ## Related Concepts (forward links)
 
 - AWS DataSync, AWS Transfer Family, and AWS Snow Family - the transfer-job-oriented complements to Storage Gateway's ongoing hybrid access model (see Section 4a above)
-- AWS Backup - unifying backup management across EBS, EFS, FSx, RDS -> Part 5, Section 9 (next, final content section)
-- Migration strategies (the 7 Rs) building on Storage Gateway's and DataSync's staged-migration capability -> Part 10, Section 5
-- VPN/Direct Connect as the underlying hybrid connectivity Storage Gateway depends on -> Part 4, Section 5
+- AWS Backup - unifying backup management across EBS, EFS, FSx, RDS -> §47 (next, final content section)
+- Migration strategies (the 7 Rs) building on Storage Gateway's and DataSync's staged-migration capability -> §93
+- VPN/Direct Connect as the underlying hybrid connectivity Storage Gateway depends on -> §33

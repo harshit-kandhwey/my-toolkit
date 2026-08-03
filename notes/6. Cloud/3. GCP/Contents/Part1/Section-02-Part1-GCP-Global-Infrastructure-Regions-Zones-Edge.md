@@ -77,7 +77,7 @@ Beyond full regions, Google operates many more **edge locations** — smaller fa
 
 - **Zonal resources:** Some resources must be created in a specific zone and only exist there — e.g., a Compute Engine VM instance, or a zonal Persistent Disk. If the zone fails, the resource is unavailable until you provision it elsewhere.
 - **Regional resources:** Some resources are regional — e.g., a regional Managed Instance Group, or a Regional Persistent Disk, which synchronously replicates data across two zones within the same region for higher availability.
-- **Multi-regional / global resources:** Some resources span multiple regions or are global by nature — e.g., a Cloud Storage multi-region bucket, a global HTTP(S) Load Balancer, or a VPC network itself (VPC networks in GCP are global resources, a distinctive design choice versus other clouds — covered in depth in Part 3, Section 19).
+- **Multi-regional / global resources:** Some resources span multiple regions or are global by nature — e.g., a Cloud Storage multi-region bucket, a global HTTP(S) Load Balancer, or a VPC network itself (VPC networks in GCP are global resources, a distinctive design choice versus other clouds — covered in depth in §19).
 
 > ⚠️ **Interview-relevant nuance:** In GCP, a VPC network is a **global** resource, and its **subnets** are **regional** resources (not zonal). This is a well-known distinction from AWS (where VPCs are regional and subnets are zonal), and interviewers frequently probe this specific difference. It is covered in full in Sections 19–20.
 
