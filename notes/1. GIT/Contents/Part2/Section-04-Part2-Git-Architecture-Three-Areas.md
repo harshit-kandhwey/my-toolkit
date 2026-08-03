@@ -52,7 +52,7 @@ your-project/
 
 - **What:** the checked-out files you edit with your editor/IDE.
 - **State relative to history:** reflects one commit's content, _plus_ any uncommitted edits you've made on top.
-- **Git's view of it:** Git compares working-directory file content against the index to classify files as unmodified/modified (§3.3), using file modification-time and size as a fast pre-check before falling back to full content hashing — this is why `git status` is fast even on large repos (it usually avoids re-hashing unchanged files).
+- **Git's view of it:** Git compares working-directory file content against the index to classify files as unmodified/modified (as introduced in §3's file-state vocabulary), using file modification-time and size as a fast pre-check before falling back to full content hashing — this is why `git status` is fast even on large repos (it usually avoids re-hashing unchanged files).
 
 ### 4.2 The Index (Staging Area)
 
@@ -150,7 +150,7 @@ At this exact point: working directory has _two_ lines, the index and the last c
 
 ## 9. Production & Enterprise Usage Notes
 
-- **Bare repositories** (§3.2, detailed §20) exist _only_ as an object database plus refs — no working directory, no index in the normal sense. This is the correct shape for any repo that lives purely as a shared hub (a self-hosted Git server, or the backing store behind GitHub/GitLab) since nobody edits files directly there.
+- **Bare repositories** (defined in §3, detailed in §20) exist _only_ as an object database plus refs — no working directory, no index in the normal sense. This is the correct shape for any repo that lives purely as a shared hub (a self-hosted Git server, or the backing store behind GitHub/GitLab) since nobody edits files directly there.
 - **CI runners** typically perform a shallow or full checkout (materializing working directory from objects) fresh per job — understanding that checkout is "reconstruct working dir from the object DB via a tree walk" explains why large repos with deep history make shallow clones (`--depth`, §26) a meaningful CI speed optimization.
 - **Pre-commit hooks** (§24) operate on the **index**, not the working directory — a hook that lints "what's staged" must read from the index, not just re-scan working-directory files, or it will incorrectly flag/pass content that isn't actually about to be committed (a common real bug in home-grown hook scripts).
 

@@ -312,10 +312,10 @@ $ cp config.{yaml,yaml.bak}
 
 ## 9. Common Misconceptions
 
-1. **"`cp -r` is a complete, faithful copy of a directory."** It copies content and structure, but not ownership, exact permissions, timestamps, or hard-link relationships by default — `cp -a` (4) is the flag that actually delivers a faithful copy; plain `cp -r` silently reassigns ownership to the invoking user and stamps fresh timestamps.
-2. **"`mv` is always instant regardless of file size."** True only within a single filesystem, where it's a metadata-only rename. Across filesystems it degrades to copy-then-delete, losing both the speed and the atomicity guarantee that scripts often unconsciously depend on (5).
-3. **"`rm -rf` is safe as long as I don't literally type `rm -rf /`."** `--preserve-root` protects the exact literal `/` target in modern coreutils, but does nothing for the far more common real-world failure mode: a script-constructed path that _evaluates_ to something dangerously broad (an unset variable, a wildcard expanding unexpectedly) — the danger is in argument construction, not just the command name (6.1).
-4. **"An unmatched glob just disappears, so it's safe to assume `for f in *.ext` skips the loop when there are no matches."** Default bash passes the literal, unexpanded pattern through when nothing matches — `nullglob` is required to get the "vanishes when empty" behavior scripts often assume (7).
+1. **"`cp -r` is a complete, faithful copy of a directory."** It copies content and structure, but not ownership, exact permissions, timestamps, or hard-link relationships by default — `cp -a`, covered in the copying section above, is the flag that actually delivers a faithful copy; plain `cp -r` silently reassigns ownership to the invoking user and stamps fresh timestamps.
+2. **"`mv` is always instant regardless of file size."** True only within a single filesystem, where it's a metadata-only rename. Across filesystems it degrades to copy-then-delete, losing both the speed and the atomicity guarantee that scripts often unconsciously depend on, as the moving-and-renaming section above covers.
+3. **"`rm -rf` is safe as long as I don't literally type `rm -rf /`."** `--preserve-root` protects the exact literal `/` target in modern coreutils, but does nothing for the far more common real-world failure mode: a script-constructed path that _evaluates_ to something dangerously broad (an unset variable, a wildcard expanding unexpectedly) — the danger is in argument construction, not just the command name, per the `rm` discussion above.
+4. **"An unmatched glob just disappears, so it's safe to assume `for f in *.ext` skips the loop when there are no matches."** Default bash passes the literal, unexpanded pattern through when nothing matches — `nullglob` is required to get the "vanishes when empty" behavior scripts often assume, as the globbing section above covers.
 
 ## 10. Tiered Interview Questions
 

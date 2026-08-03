@@ -21,11 +21,11 @@ The standard distribution is **Git for Windows** (`git-scm.com`), which bundles 
 - **Git itself** — the `git` command available from any shell.
 - **Git Bash** — a MinGW/MSYS2-based Unix-like shell, so Windows users get a bash environment with familiar Unix commands (`ls`, `grep`, `ssh`) rather than being limited to `cmd.exe` semantics. Most Git tutorials assume this shell.
 - **Git GUI / gitk** — basic bundled graphical tools (rarely anyone's daily driver today, but present).
-- **Windows Credential Manager integration** — the installer offers to configure `credential.helper` to `manager` (formerly `manager-core`), which stores HTTPS credentials/tokens securely in the Windows Credential Store instead of a plaintext file (8.7).
+- **Windows Credential Manager integration** — the installer offers to configure `credential.helper` to `manager` (formerly `manager-core`), which stores HTTPS credentials/tokens securely in the Windows Credential Store instead of a plaintext file (see the credential helpers discussion below).
 
 Installer choices worth understanding rather than clicking through blindly:
 
-- **Line-ending conversion** (the "Checkout Windows-style, commit Unix-style" prompt) sets `core.autocrlf` — full treatment of why this matters is §11.5; the safe modern default on Windows is `autocrlf=true`, though a `.gitattributes` policy (§11) is the more robust fix.
+- **Line-ending conversion** (the "Checkout Windows-style, commit Unix-style" prompt) sets `core.autocrlf` — full treatment of why this matters is §11; the safe modern default on Windows is `autocrlf=true`, though a `.gitattributes` policy (§11) is the more robust fix.
 - **Default editor** — the installer lets you pick Vim, Notepad, VS Code, or others for `core.editor`; this only matters for operations that open an editor (commit messages without `-m`, interactive rebase in §14, `git config -e`).
 - **PATH environment** — "Git from the command line and also from 3rd-party software" is the recommended option so `git` works from any terminal, not just Git Bash.
 
@@ -285,7 +285,7 @@ $ git config --global push.default simple
 # Purpose: color output in terminals that support it
 $ git config --global color.ui auto
 
-# Purpose: control line-ending conversion (full depth in §11.5)
+# Purpose: control line-ending conversion (full depth in §11)
 $ git config --global core.autocrlf true    # Windows
 $ git config --global core.autocrlf input   # Mac/Linux
 ```
@@ -332,4 +332,4 @@ $ git config --list --show-origin | grep gitconfig
 
 ## 14. Related Concepts & What's Next
 
-Configuration set up here — identity, credential helpers, SSH keys — becomes load-bearing the moment you touch a remote, and §20 (Remotes in Depth) revisits authentication with full push/fetch/pull mechanics, multiple-remote setups, and per-host SSH config for juggling multiple accounts. The merge tool configured in 8.8 becomes practically necessary once §13 (Merging) introduces real conflict resolution. With Git installed and configured, §9 moves to actually creating and cloning your first repositories.
+Configuration set up here — identity, credential helpers, SSH keys — becomes load-bearing the moment you touch a remote, and §20 (Remotes in Depth) revisits authentication with full push/fetch/pull mechanics, multiple-remote setups, and per-host SSH config for juggling multiple accounts. The merge tool configured earlier in this section (the external diff/merge tool setup) becomes practically necessary once §13 (Merging) introduces real conflict resolution. With Git installed and configured, §9 moves to actually creating and cloning your first repositories.

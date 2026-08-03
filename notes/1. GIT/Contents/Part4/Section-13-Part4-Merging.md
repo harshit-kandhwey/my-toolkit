@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-§12 gave you cheap, instant branches — the natural consequence is that work constantly diverges. Merging is the half of the branch lifecycle that reunites it: without a reliable, automatic way to combine parallel lines of development, branching would be a one-way trip, and the entire copy-modify-merge philosophy from §1.5.2 that Git is built on would collapse back into manual, error-prone reconciliation.
+§12 gave you cheap, instant branches — the natural consequence is that work constantly diverges. Merging is the half of the branch lifecycle that reunites it: without a reliable, automatic way to combine parallel lines of development, branching would be a one-way trip, and the entire copy-modify-merge philosophy from §1's distributed-model discussion that Git is built on would collapse back into manual, error-prone reconciliation.
 
 ## 3. Fast-Forward Merges — Mechanics
 
@@ -47,7 +47,7 @@ Fast-forward
 
 No new commit object is created. `main` now points at exactly the same commit `feature-notes` points at — indistinguishable, at the ref level, from having committed those changes directly on `main`.
 
-> ⚠️ **Common confusion to preempt:** fast-forward is not something you request — it's something Git _chooses_ automatically whenever the ancestry allows it. If you want a merge commit to exist regardless, you must explicitly suppress fast-forwarding with `--no-ff` (13.5).
+> ⚠️ **Common confusion to preempt:** fast-forward is not something you request — it's something Git _chooses_ automatically whenever the ancestry allows it. If you want a merge commit to exist regardless, you must explicitly suppress fast-forwarding with `--no-ff` (the forcing-a-merge-commit section below).
 
 ## 4. Three-Way Merges — Mechanics
 
@@ -57,7 +57,7 @@ When both branches have unique commits since they diverged, there is no single p
 2. **Ours** — the tree at the tip of the current branch.
 3. **Theirs** — the tree at the tip of the branch being merged in.
 
-For each file, Git compares what changed from the base to _ours_ and from the base to _theirs_. If only one side changed a given region, that side's version wins automatically — this is the vast majority of real-world merges and requires no human involvement at all. Only when **both sides changed the same region** does Git produce a **conflict** (13.7).
+For each file, Git compares what changed from the base to _ours_ and from the base to _theirs_. If only one side changed a given region, that side's version wins automatically — this is the vast majority of real-world merges and requires no human involvement at all. Only when **both sides changed the same region** does Git produce a **conflict** (see the conflict anatomy section below).
 
 ```
              C1 (merge base)
@@ -83,7 +83,7 @@ Merge made by the 'ort' strategy.
  1 file changed, 12 insertions(+)
 ```
 
-The resulting merge commit `M4` is structurally ordinary except for one thing: its commit object (§5.5.3) lists **two** `parent` lines instead of one. Everything else about it — a root tree, author/committer, a message — is identical in shape to any other commit.
+The resulting merge commit `M4` is structurally ordinary except for one thing: its commit object (§5's commit-object coverage) lists **two** `parent` lines instead of one. Everything else about it — a root tree, author/committer, a message — is identical in shape to any other commit.
 
 > 💡 **Tip:** `git merge-base main feature-payments` prints the exact commit Git is using as the common ancestor — genuinely useful when you need to understand _why_ a merge behaved the way it did, or to manually diff "what changed on this branch since it diverged" (`git diff $(git merge-base main feature) feature`).
 
@@ -216,7 +216,7 @@ Expected output:
 [main 7c2a9f1] Merge branch 'feature-pricing'
 ```
 
-> 💡 **Tip:** For multi-file conflicts, a configured mergetool (§8.8) turns this into a guided visual workflow — `git mergetool` launches your registered tool per conflicted file and stages each one automatically once you close it with a resolution saved.
+> 💡 **Tip:** For multi-file conflicts, a configured mergetool (§8's mergetool configuration) turns this into a guided visual workflow — `git mergetool` launches your registered tool per conflicted file and stages each one automatically once you close it with a resolution saved.
 
 ## 9. `git merge --abort` — Backing Out Entirely
 
@@ -286,7 +286,7 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 
 ## 12. Production & Enterprise Usage
 
-- Hosting platforms' pull-request "Merge" button typically offers three modes mapping directly onto this section: **Merge commit** (ordinary/`--no-ff`), **Squash and merge** (13.10), and **Rebase and merge** (§14) — the platform-level names for exactly the mechanics taught here.
+- Hosting platforms' pull-request "Merge" button typically offers three modes mapping directly onto this section: **Merge commit** (ordinary/`--no-ff`), **Squash and merge** (the squash-merges section above), and **Rebase and merge** (§14) — the platform-level names for exactly the mechanics taught here.
 - Branch protection rules (§23) commonly require PR checks (CI, review approval) to pass before the merge button is even enabled, but the underlying `git merge` mechanics are identical whether triggered by a human locally or by the platform's merge button.
 - Large teams frequently standardize on one merge mode repo-wide specifically to keep `git log --graph` legible and consistent — mixing all three freely produces a genuinely confusing history over time.
 

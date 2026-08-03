@@ -28,7 +28,7 @@ chmod u+s file          # symbolic
 chmod 4755 file          # octal — leading 4 is the SUID bit
 ```
 
-**Important mechanical detail:** SUID has no effect on a **directory** — it's meaningful only on executable files. Setting it on a directory is either silently ignored in practice or simply doesn't do what a naive reading of "set owner ID" might suggest; the behavior that matters for directories belongs to SGID (3.2), not SUID.
+**Important mechanical detail:** SUID has no effect on a **directory** — it's meaningful only on executable files. Setting it on a directory is either silently ignored in practice or simply doesn't do what a naive reading of "set owner ID" might suggest; the behavior that matters for directories belongs to SGID, covered in the SGID-on-a-directory section below, not SUID.
 
 > ⚠️ **Warning:** A SUID-root binary is one of the highest-value targets an attacker can find on a compromised host — any exploitable bug in that binary (buffer overflow, unsafe environment-variable handling, a shell escape, a symlink race) potentially hands the attacker root, because the process was already running with root's effective UID before the bug was ever triggered. This is why hardening guidance is consistently "minimize the SUID-root inventory," not "audit it occasionally" — every SUID-root binary is permanent, standing attack surface, not a one-time review item. §89–§96 (Part 12) cover the broader security-hardening posture this feeds into.
 
@@ -49,7 +49,7 @@ The `s` in the group execute position marks SGID. `wall` (broadcasts a message t
 
 ### 3.2 SGID on a Directory: New Files Inherit the Directory's Group
 
-This is the behavior that actually matters most in day-to-day system administration, and it's a **different mechanism entirely** from 3.1 — not a process-privilege transfer at all. When SGID is set on a **directory**, any new file or subdirectory created inside it automatically inherits that directory's **group ownership**, rather than the creating user's primary group (which is the standard-model default §27 established).
+This is the behavior that actually matters most in day-to-day system administration, and it's a **different mechanism entirely** from SGID-on-a-file above — not a process-privilege transfer at all. When SGID is set on a **directory**, any new file or subdirectory created inside it automatically inherits that directory's **group ownership**, rather than the creating user's primary group (which is the standard-model default §27 established).
 
 ```bash
 $ mkdir /srv/teamshare
@@ -123,7 +123,7 @@ An **uppercase** `S` or `T` is a strong signal something is misconfigured or at 
 
 ## 6. Auditing SUID/SGID Binaries System-Wide
 
-Because every SUID-root binary is standing attack surface (2), a real, recurring security-hardening task — not a one-off — is enumerating exactly which binaries on a host carry these bits, so the inventory can be reviewed against what's actually expected for that host's role.
+Because every SUID-root binary is standing attack surface, as the SUID section above covers, a real, recurring security-hardening task — not a one-off — is enumerating exactly which binaries on a host carry these bits, so the inventory can be reviewed against what's actually expected for that host's role.
 
 ```bash
 find / -xdev -perm -4000 -type f 2>/dev/null    # SUID binaries
@@ -143,10 +143,10 @@ find / -xdev -perm -6000 -type f 2>/dev/null    # both SUID and SGID
 
 ## 7. Common Misconceptions
 
-1. **"SGID is basically SUID for groups — same behavior, different identity."** True only for SGID-on-files (3.1). SGID-on-directories (3.2) is a completely different mechanism — group inheritance for newly created files — with no SUID analog at all. Treating SGID as "just SUID with group instead of owner" misses its most commonly used behavior in real system administration.
-2. **"The sticky bit keeps programs faster by pinning them in swap."** That was its original historical meaning; it's obsolete on modern Linux kernels. Its only meaningful modern use is the directory-deletion restriction (4) — if someone mentions the swap-pinning behavior as current, they're describing 1990s Unix, not a production Linux host today.
-3. **"An uppercase `S` or `T` in `ls -l` is just a stylistic variant of lowercase."** It's a distinct, meaningful signal — it means the execute bit underlying that position is absent, so the special bit as set currently has no effect. It's frequently a configuration mistake worth investigating, not a cosmetic detail (5).
-4. **"SUID/SGID bits are dangerous, so they should never be used."** They're a necessary, standard mechanism — `passwd`, `sudo` itself in some implementations, `wall`, `ping` on some distributions, and countless legitimate shared-directory setups depend on them. The actual operational discipline isn't "avoid special bits" — it's "keep the SUID-root inventory minimal and audited" (2, 6), which is a very different, more nuanced posture than blanket avoidance.
+1. **"SGID is basically SUID for groups — same behavior, different identity."** True only for SGID-on-files, covered above. SGID-on-directories, covered just after it, is a completely different mechanism — group inheritance for newly created files — with no SUID analog at all. Treating SGID as "just SUID with group instead of owner" misses its most commonly used behavior in real system administration.
+2. **"The sticky bit keeps programs faster by pinning them in swap."** That was its original historical meaning; it's obsolete on modern Linux kernels. Its only meaningful modern use is the directory-deletion restriction, per the sticky-bit section above — if someone mentions the swap-pinning behavior as current, they're describing 1990s Unix, not a production Linux host today.
+3. **"An uppercase `S` or `T` in `ls -l` is just a stylistic variant of lowercase."** It's a distinct, meaningful signal — it means the execute bit underlying that position is absent, so the special bit as set currently has no effect. It's frequently a configuration mistake worth investigating, not a cosmetic detail, as the notation section above covers.
+4. **"SUID/SGID bits are dangerous, so they should never be used."** They're a necessary, standard mechanism — `passwd`, `sudo` itself in some implementations, `wall`, `ping` on some distributions, and countless legitimate shared-directory setups depend on them. The actual operational discipline isn't "avoid special bits" — it's "keep the SUID-root inventory minimal and audited," per the SUID and auditing sections above, which is a very different, more nuanced posture than blanket avoidance.
 
 ## 8. Tiered Interview Questions
 
@@ -177,6 +177,6 @@ _What the interviewer is probing for:_ Correctly reaching for SGID-on-directory 
 
 ## 10. Related Concepts & What's Next
 
-This section builds directly on §27's standard `rwx`/owner-group-other model — every special bit here layers on top of that model rather than replacing it. §29 (next) covers `umask` and default permissions, which determines the baseline permissions new files get before any special bits are ever considered. §89–§96 (Part 12, security hardening) is where the SUID-root audit introduced in 6 becomes an operational, recurring practice — CIS benchmark baselines, compliance scanning, and the broader threat model special bits contribute to. §30's ACLs are the tool to reach for when SGID-on-directory's single-group model isn't expressive enough for a real access-control requirement.
+This section builds directly on §27's standard `rwx`/owner-group-other model — every special bit here layers on top of that model rather than replacing it. §29 (next) covers `umask` and default permissions, which determines the baseline permissions new files get before any special bits are ever considered. §89–§96 (Part 12, security hardening) is where the SUID-root audit introduced in the auditing section above becomes an operational, recurring practice — CIS benchmark baselines, compliance scanning, and the broader threat model special bits contribute to. §30's ACLs are the tool to reach for when SGID-on-directory's single-group model isn't expressive enough for a real access-control requirement.
 
 **Next Section:** §29 — `Section-29-Part4-umask-and-Default-Permissions.md`

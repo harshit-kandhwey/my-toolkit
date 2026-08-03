@@ -4,11 +4,11 @@
 
 **Plain language:** A branching strategy is a team-wide agreement about which branches exist, what each one means, how long branches live, and exactly when and how they merge into each other — the policy layer sitting on top of the mechanical branch commands from §12.
 
-**Precise:** Formally, a branching strategy specifies: (1) the set of **long-lived** branches and their roles, (2) the rules for creating **short-lived** branches from them, (3) the merge direction and method (§21.6) permitted between each pair, and (4) how releases and hotfixes are cut. None of this is enforced by Git itself — it's convention, optionally backed by platform tooling like protected branches (§23).
+**Precise:** Formally, a branching strategy specifies: (1) the set of **long-lived** branches and their roles, (2) the rules for creating **short-lived** branches from them, (3) the merge direction and method (§21) permitted between each pair, and (4) how releases and hotfixes are cut. None of this is enforced by Git itself — it's convention, optionally backed by platform tooling like protected branches (§23).
 
 ## 2. Why It Exists / Problem It Solves
 
-Branches are cheap (§12.2) — that's exactly the problem a strategy solves. Cheap branches mean a team of twenty can easily end up with two hundred branches, no shared understanding of which ones are safe to build on, which are stale, which represent what's actually in production versus what's merely "done," and no consistent process for cutting a release or an emergency hotfix. A branching strategy answers, in advance and for the whole team: where do I branch from to start new work, where does my work go when it's done, and how does a fix reach production. Different strategies answer these questions differently because different teams have genuinely different constraints — release cadence, number of concurrently supported versions, team size, and deployment model all push toward different answers.
+Branches are cheap (§12) — that's exactly the problem a strategy solves. Cheap branches mean a team of twenty can easily end up with two hundred branches, no shared understanding of which ones are safe to build on, which are stale, which represent what's actually in production versus what's merely "done," and no consistent process for cutting a release or an emergency hotfix. A branching strategy answers, in advance and for the whole team: where do I branch from to start new work, where does my work go when it's done, and how does a fix reach production. Different strategies answer these questions differently because different teams have genuinely different constraints — release cadence, number of concurrently supported versions, team size, and deployment model all push toward different answers.
 
 ## 3. Git Flow
 
@@ -64,7 +64,7 @@ main  ●───●───────●───────●───�
 1. Branch off `main` for anything — feature, fix, experiment. Name it descriptively.
 2. Commit and push regularly.
 3. Open a PR early, even in draft form, for visibility and CI.
-4. Discuss and review (§21.5–21.7).
+4. Discuss and review (§21).
 5. Deploy from the branch for final validation, or merge to `main` and deploy from there — the model is explicit that `main` is _always_ deployable, so merging is not a scary event.
 6. Merge, then deploy (if not already validated pre-merge).
 
@@ -136,7 +136,7 @@ Trunk-based development's central problem is obvious: if everyone merges to `mai
 
 - **Merge conflict cost grows with branch lifetime and divergence**, roughly proportional to how much both `main` and the branch have changed since they diverged — short-lived branches keep this cost small and constant; long-lived branches accumulate it exponentially, culminating in the dreaded multi-day "integration merge" that Git Flow's `develop`-then-`release` model is especially prone to at scale.
 - **Continuous integration is only meaningful with frequent integration.** CI (§25) is designed to catch problems the moment code is combined; a team that branches for weeks before merging is running CI on isolated code that hasn't actually been "integrated" until the final merge, defeating much of CI's purpose.
-- **Large organizations, huge monorepos, thousands of daily commits** (§1.8's Google/Meta/Microsoft examples) make long-lived divergent branches operationally unworkable at scale — the coordination cost of many teams each holding weeks-old branches against a fast-moving trunk compounds badly.
+- **Large organizations, huge monorepos, thousands of daily commits** (§1's Google/Meta/Microsoft examples) make long-lived divergent branches operationally unworkable at scale — the coordination cost of many teams each holding weeks-old branches against a fast-moving trunk compounds badly.
 
 ## 7. Decision Framework
 

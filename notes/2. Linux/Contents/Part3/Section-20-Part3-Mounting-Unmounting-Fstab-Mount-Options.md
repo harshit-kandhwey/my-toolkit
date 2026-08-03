@@ -10,7 +10,7 @@ Mounting does three things at once: it tells the kernel which **filesystem drive
 
 ## 2. The `mount` Command
 
-**Purpose:** Attach a filesystem to a mount point, either using values already declared in `/etc/fstab` (3) or by specifying everything explicitly on the command line.
+**Purpose:** Attach a filesystem to a mount point, either using values already declared in `/etc/fstab` (covered in the persistent-mount-table section below) or by specifying everything explicitly on the command line.
 
 **Syntax:**
 
@@ -25,7 +25,7 @@ mount -a                  # mount everything listed in /etc/fstab that isn't alr
 | Flag                 | Meaning                                                                                          |
 | -------------------- | ------------------------------------------------------------------------------------------------ |
 | `-t <fstype>`        | Filesystem type (`ext4`, `xfs`, `nfs`, `vfat`, ...) — often auto-detected if omitted             |
-| `-o <options>`       | Comma-separated mount options (4) — e.g. `-o ro,noatime`                                         |
+| `-o <options>`       | Comma-separated mount options, detailed in the common mount options section below — e.g. `-o ro,noatime` |
 | `-a`                 | Mount all filesystems in `/etc/fstab` (except those marked `noauto`) that aren't already mounted |
 | `-r` / `--read-only` | Shortcut for `-o ro`                                                                             |
 | `-v`                 | Verbose — show each step taken                                                                   |
@@ -66,10 +66,10 @@ UUID=1a2b3c4d-...      /data           ext4       defaults,noatime   0        2
 
 **Field-by-field breakdown:**
 
-1. **Device** — what to mount. Can be a raw device path (`/dev/sdb1`), a `UUID=`, a `LABEL=`, or (for network filesystems) a host:path pair. See 3.1 for why UUID is strongly preferred over the raw path.
+1. **Device** — what to mount. Can be a raw device path (`/dev/sdb1`), a `UUID=`, a `LABEL=`, or (for network filesystems) a host:path pair. See the UUID-vs-device-name discussion below for why UUID is strongly preferred over the raw path.
 2. **Mount point** — the absolute directory the filesystem attaches to. Must already exist as a directory before `mount -a` can succeed against it. `swap` is a special-case placeholder for swap space, which has no directory mount point.
 3. **Filesystem type** — `ext4`, `xfs`, `nfs`, `vfat`, `swap`, or `auto` to let the kernel detect it.
-4. **Options** — comma-separated, no spaces (4 covers the common ones in depth). `defaults` expands to a standard baseline (`rw,suid,dev,exec,auto,nouser,async`).
+4. **Options** — comma-separated, no spaces (the common mount options section below covers these in depth). `defaults` expands to a standard baseline (`rw,suid,dev,exec,auto,nouser,async`).
 5. **Dump** — legacy field for the `dump` backup utility; `0` means "don't back up with `dump`," `1` means "do." In practice almost every modern system sets this to `0` — `dump` itself is rarely used today (§79 covers modern backup tooling).
 6. **Pass** — controls `fsck` order at boot. `0` means never `fsck` this filesystem (correct for swap, network filesystems, and anything that shouldn't be checked at boot). `1` is reserved for the root filesystem specifically. `2` means check it, but after root, and filesystems with the same pass number can be checked in parallel. XFS ignores this field in practice (it doesn't use traditional `fsck` the way ext4 does — §77 covers filesystem-specific check/repair tools).
 
@@ -88,7 +88,7 @@ $ blkid /dev/sdb1
 $ lsblk -f
 ```
 
-> ⚠️ **Warning:** Editing `/etc/fstab` incorrectly can leave a system **unable to boot to a usable state** — a bad entry for a non-`nofail` filesystem can drop the boot process into an emergency shell waiting for a root password at the console. Always test new entries with `sudo mount -a` before rebooting, and know the `nofail` option (4) for anything that isn't strictly required for the system to function.
+> ⚠️ **Warning:** Editing `/etc/fstab` incorrectly can leave a system **unable to boot to a usable state** — a bad entry for a non-`nofail` filesystem can drop the boot process into an emergency shell waiting for a root password at the console. Always test new entries with `sudo mount -a` before rebooting, and know the `nofail` option, covered in the common mount options section below, for anything that isn't strictly required for the system to function.
 
 ## 4. Common Mount Options
 
@@ -155,7 +155,7 @@ $ sudo fuser -vm /mnt/data       # list processes using the mount point
 
 1. **"Mounting deletes whatever was already in the mount point directory."** It hides it, not deletes it — the original contents reappear once the filesystem is unmounted. This trips people up when they mount onto a non-empty directory by mistake and think data was lost.
 2. **"`umount -l` is a safe, routine way to unmount something that's busy."** It defers releasing the device rather than resolving the underlying cause — the correct first step is identifying the offending process with `lsof`/`fuser` and stopping it, reserving `-l` for cases where the mount point must be freed immediately and the process truly can't be stopped in time.
-3. **"Device paths like `/dev/sdb1` are a stable, safe way to reference disks in `/etc/fstab`."** Device enumeration order can shift across boots or hardware changes; `UUID=` (or `LABEL=`) is the durable reference, not the device path (3.1).
+3. **"Device paths like `/dev/sdb1` are a stable, safe way to reference disks in `/etc/fstab`."** Device enumeration order can shift across boots or hardware changes; `UUID=` (or `LABEL=`) is the durable reference, not the device path, as the UUID-vs-device-name discussion above explains.
 4. **"The `pass` field in `/etc/fstab` matters equally for every filesystem type."** XFS doesn't use traditional boot-time `fsck` the way ext4 does, so the field is effectively inert for XFS entries even though it's still conventionally set.
 5. **"`noatime` breaks anything that depends on access times."** Very few things actually depend on `atime` in practice (some mail delivery agents and a handful of niche tools are the classic exceptions) — for the overwhelming majority of servers, `noatime`'s I/O savings are a safe, standard-practice win, and `relatime` is the still-safer modern default even without specifying it.
 

@@ -9,8 +9,8 @@
 ## 2. Why It Exists / Problem It Solves
 
 1. **Deduplication for free.** If two commits, two branches, or two files anywhere in the repo have byte-identical content, they hash to the same value and are stored **once**, physically. Renaming a file, or two unrelated files happening to contain the same text, costs zero extra storage.
-2. **Free integrity checking.** Because an object's address _is_ the hash of its content, any corruption changes the hash — meaning the object literally cannot be retrieved by its old name anymore, and `git fsck` (§29–30) can detect this systematically. This is the concrete mechanism behind the integrity guarantee promised conceptually in §2.4.4.
-3. **Fast, unambiguous identity with no central authority.** As established in §1.10 Q3, no counter-based ID scheme works without a central server. Content hashing lets any two independent clones compute the _same_ ID for the _same_ content with zero coordination.
+2. **Free integrity checking.** Because an object's address _is_ the hash of its content, any corruption changes the hash — meaning the object literally cannot be retrieved by its old name anymore, and `git fsck` (§29–30) can detect this systematically. This is the concrete mechanism behind the integrity guarantee promised conceptually in §2's design-philosophy discussion.
+3. **Fast, unambiguous identity with no central authority.** As established in §1's interview-question discussion, no counter-based ID scheme works without a central server. Content hashing lets any two independent clones compute the _same_ ID for the _same_ content with zero coordination.
 4. **Efficient snapshots, not diffs.** Storing a full tree-of-blobs per commit, rather than a diff against the previous commit, means retrieving _any_ historical version of the whole project is a direct graph walk from one commit object — not a replay of every change since the beginning. (Compression via delta-encoding still happens, but only inside packfiles as a storage optimization — §7 — and is completely invisible at this logical layer.)
 
 ## 3. Prerequisites and Dependencies
@@ -49,7 +49,7 @@ Git has historically used **SHA-1**, producing a 40-character hexadecimal digest
   - **0 parents** → a **root commit** (the very first commit in a repository's history).
   - **1 parent** → an ordinary commit.
   - **2+ parents** → a **merge commit** (§13), recording that this point in history unites multiple prior lines of development.
-- **Why hashing a commit chains all of history:** a commit's hash is computed over its _own content_, which includes its parent's hash as literal text. Change anything about an old commit — its message, its tree, its parent — and its hash changes; anything that pointed to it (its child commit) now has different content, so _its_ hash changes too, cascading forward through every subsequent commit. This is the literal mechanism behind "history is cryptographically chained" from §2.4.4.
+- **Why hashing a commit chains all of history:** a commit's hash is computed over its _own content_, which includes its parent's hash as literal text. Change anything about an old commit — its message, its tree, its parent — and its hash changes; anything that pointed to it (its child commit) now has different content, so _its_ hash changes too, cascading forward through every subsequent commit. This is the literal mechanism behind "history is cryptographically chained" from §2's design-philosophy discussion.
 
 **Inspecting a real commit object** (`git cat-file -p <commit-hash>`):
 
@@ -100,7 +100,7 @@ Note precisely what's _absent_: no filenames, no diff, no per-file changes — a
                                                              BLOB "test_utils.py"
 ```
 
-Walking this diagram: one commit → one root tree → that tree's entries point to blobs (files at the top level) and further trees (subdirectories), recursively, until every entry is a blob. **This structure is identical, conceptually, to how a filesystem represents directories and files** — precisely the "model it on filesystem thinking" design choice noted in §2.4.2.
+Walking this diagram: one commit → one root tree → that tree's entries point to blobs (files at the top level) and further trees (subdirectories), recursively, until every entry is a blob. **This structure is identical, conceptually, to how a filesystem represents directories and files** — precisely the "model it on filesystem thinking" design choice noted in §2.
 
 Now the crucial second half of the picture — **how commits chain together across history**:
 
@@ -184,7 +184,7 @@ If you amended this commit's message right now (`git commit --amend -m "changed 
   $ echo "hello" | git hash-object --stdin
   ce013625030ba8dba906f756967f9e9ca394464
   ```
-  This matches exactly the blob hash seen in §5.7 — proving the hash is a pure function of content, computable independent of any repository state.
+  This matches exactly the blob hash seen in the worked example above — proving the hash is a pure function of content, computable independent of any repository state.
 - **Production usage:** rare in day-to-day work; appears in custom tooling that pre-computes object identity (e.g., deduplication checks, custom sync tools) or in teaching/demonstration contexts like this one.
 - **Common errors:** forgetting `--stdin` when piping input leads to Git trying to interpret the pipe as a filename argument.
 - **Security impact:** none (read/compute only, unless `-w` is used, in which case it writes a loose object — still low risk, just disk usage).
@@ -194,7 +194,7 @@ If you amended this commit's message right now (`git commit --amend -m "changed 
 
 - **Purpose:** resolve any human-friendly reference (branch name, tag name, `HEAD`, a shortened hash, relative expressions like `HEAD~2`) down to its full, unambiguous 40-character (or 64, under SHA-256) object hash.
 - **Syntax:** `git rev-parse <ref-expression>`
-- **Key options:** `--short` prints an abbreviated hash instead of the full one; `HEAD^{tree}` (seen in §5.7) resolves to the _tree_ a commit points to, rather than the commit itself.
+- **Key options:** `--short` prints an abbreviated hash instead of the full one; `HEAD^{tree}` (seen in the worked example above) resolves to the _tree_ a commit points to, rather than the commit itself.
 - **Practical example:**
   ```bash
   $ git rev-parse HEAD
@@ -243,7 +243,7 @@ The third commit's tree entry for `file.txt` points to the **identical blob hash
 
 ## 12. Performance Considerations
 
-- Loose objects (one file per object, as shown in §4.3) are simple but inefficient at scale — many small files, each individually zlib-compressed. Git periodically consolidates them into **packfiles** with delta compression between similar objects, a purely storage-layer optimization covered in full in §7 that never changes the logical model taught in this section.
+- Loose objects (one file per object, as shown in §4's repository anatomy) are simple but inefficient at scale — many small files, each individually zlib-compressed. Git periodically consolidates them into **packfiles** with delta compression between similar objects, a purely storage-layer optimization covered in full in §7 that never changes the logical model taught in this section.
 - Hash computation itself is fast (SHA-1/SHA-256 are designed for speed), so hashing overhead on `git add`/`git commit` is not a practical bottleneck even for large files — I/O (reading the file, writing the compressed object) dominates any real-world timing.
 
 ## 13. Troubleshooting

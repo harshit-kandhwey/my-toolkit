@@ -20,7 +20,7 @@ A shell script run interactively at a terminal has a human watching it — if so
 
 Together these three flags convert a pipeline script from "keeps running unless something catastrophically breaks the shell itself" into "stops at the first sign that anything is wrong" — which is exactly the posture an unattended, deploy-capable script needs.
 
-⚠️ **Warning:** `set -e` has real, well-documented edge cases where it does _not_ trigger — inside a condition being tested (`if some_command; then`), inside a command substitution assigned in certain contexts, and inside functions called from within an `&&`/`||` chain. Don't treat `set -euo pipefail` as an unconditional safety net that makes explicit error checking unnecessary in a pipeline script's most critical steps (2, 4) — verify the actual exit path for any step where a silent failure would be expensive.
+⚠️ **Warning:** `set -e` has real, well-documented edge cases where it does _not_ trigger — inside a condition being tested (`if some_command; then`), inside a command substitution assigned in certain contexts, and inside functions called from within an `&&`/`||` chain. Don't treat `set -euo pipefail` as an unconditional safety net that makes explicit error checking unnecessary in a pipeline script's most critical steps, covered further below — verify the actual exit path for any step where a silent failure would be expensive.
 
 ## 3. Idempotent Script Design at the Shell Level
 
@@ -45,7 +45,7 @@ some_deploy_step
 echo "Deploy step finished"
 ```
 
-If `some_deploy_step` fails and `set -e` isn't active (or is active but the failure happens inside a context `-e` doesn't cover, per 2's Warning), the script prints a reassuring "finished" message and continues — or worse, exits with whatever code the `echo` returns (`0`, always), masking the real failure from anything checking the pipeline's exit status afterward. Explicitly checking and acting on a critical step's result, rather than trusting ambient script-wide flags alone, is worth the extra lines for the highest-stakes steps in a deploy script:
+If `some_deploy_step` fails and `set -e` isn't active (or is active but the failure happens inside a context `-e` doesn't cover, per the warning above), the script prints a reassuring "finished" message and continues — or worse, exits with whatever code the `echo` returns (`0`, always), masking the real failure from anything checking the pipeline's exit status afterward. Explicitly checking and acting on a critical step's result, rather than trusting ambient script-wide flags alone, is worth the extra lines for the highest-stakes steps in a deploy script:
 
 ```bash
 if ! some_deploy_step; then
@@ -76,10 +76,10 @@ The safer pattern is pulling secrets from whatever secrets store or injected-env
 
 ## 7. Conceptual Structure of a Realistic Deploy Script
 
-Tying 2 through 6 together, a production-grade deploy script run from within a CI/CD pipeline (the runner environment §100 covers) typically follows a three-phase shape, conceptually:
+Tying the strict-hygiene, idempotency, error-handling, logging, and secrets discipline covered above together, a production-grade deploy script run from within a CI/CD pipeline (the runner environment §100 covers) typically follows a three-phase shape, conceptually:
 
-1. **Pre-flight checks** — verify preconditions before touching anything: is the target reachable, is the expected previous version actually what's currently running (catching an unexpected drift before compounding it), are required environment variables and secrets actually present (exploiting `set -u` from 2 to fail fast here rather than mid-deploy).
-2. **Deployment steps** — the actual change, written idempotently (3) so a retry is safe, with each critical step's result explicitly checked (4) rather than trusted to `set -e` alone, and with clear, timestamped, greppable output at each stage (5).
+1. **Pre-flight checks** — verify preconditions before touching anything: is the target reachable, is the expected previous version actually what's currently running (catching an unexpected drift before compounding it), are required environment variables and secrets actually present (exploiting the `set -u` behavior described above to fail fast here rather than mid-deploy).
+2. **Deployment steps** — the actual change, written idempotently as described above so a retry is safe, with each critical step's result explicitly checked per the error-handling discussion above rather than trusted to `set -e` alone, and with clear, timestamped, greppable output at each stage per the logging conventions above.
 3. **Post-deployment verification** — confirm the deploy actually achieved its intended effect rather than just "the commands didn't error" — a health-check endpoint returning success, the expected process actually running, the expected version string reported back by the running service. A script that exits `0` because every command it ran happened to exit `0`, without ever confirming the _actual resulting state_ matches intent, has verified the wrong thing.
 
 This structure isn't a rigid template to copy verbatim — it's the shape that emerges naturally from applying §45–§47's shell fundamentals under the specific discipline this section has laid out: strict failure handling, idempotent steps, explicit error propagation, pipeline-legible logging, and careful secrets handling, all because the audience for this script's behavior is an automated system and a future on-call engineer reading logs, not a person watching it run.
@@ -111,13 +111,13 @@ TARGET_HOST="${2:?usage: deploy.sh <host>}"
 
 That last pattern — `${1:?message}` — is itself worth recognizing: it's bash's built-in way of failing immediately with a clear message if a required positional argument is missing, which is a cheap, idiomatic complement to `set -u`'s protection against unset variables generally.
 
-**Common errors:** Finding `set -e` alone, without `-u` or `-o pipefail` — a partial header gives a false sense of safety; each flag closes a genuinely distinct failure mode (2), and a script audit should check for all three, not just the presence of `set -e`.
+**Common errors:** Finding `set -e` alone, without `-u` or `-o pipefail` — a partial header gives a false sense of safety; each flag closes a genuinely distinct failure mode, as described above, and a script audit should check for all three, not just the presence of `set -e`.
 
 **Troubleshooting:** If the header exists but appears after several lines of setup code (variable assignments, sourcing another file), treat those preceding lines as unprotected — move the header to the true first line unless there's a specific, documented reason it can't be (rare, but occasionally a script needs to detect its own shell first).
 
 ### 8.2 Grep for likely secrets-exposure patterns before trusting a script
 
-**Purpose:** Quickly surface the two most common accidental-secrets-leak patterns from 6 — a hardcoded credential and an enabled trace mode — before running an unfamiliar script against production.
+**Purpose:** Quickly surface the two most common accidental-secrets-leak patterns described above — a hardcoded credential and an enabled trace mode — before running an unfamiliar script against production.
 
 **Syntax:**
 
@@ -132,19 +132,19 @@ $ grep -nE 'set -x|password=|token=|api[_-]?key' deploy.sh
 42: set -x
 ```
 
-A hit on `set -x` at line 42 is exactly the pattern 6's Warning flags — worth opening the file at that line and confirming no secret-bearing command runs afterward before the script (implicitly or explicitly) turns tracing back off.
+A hit on `set -x` at line 42 is exactly the pattern the secrets-handling warning above flags — worth opening the file at that line and confirming no secret-bearing command runs afterward before the script (implicitly or explicitly) turns tracing back off.
 
 **Production usage example:** Before onboarding a third-party or vendor-supplied deploy script into a pipeline that has access to production credentials, running this kind of grep pass as a mandatory pre-adoption check is a cheap way to catch the most common, highest-impact hygiene failures before they run once against real infrastructure.
 
-**Common errors:** Treating a clean grep result as proof the script is safe — this check only catches the specific, common patterns searched for; it's a fast first pass, not a substitute for actually reading the script's deployment steps (7) in full.
+**Common errors:** Treating a clean grep result as proof the script is safe — this check only catches the specific, common patterns searched for; it's a fast first pass, not a substitute for actually reading the script's deployment steps, per the conceptual structure described above, in full.
 
 ## 9. Common Misconceptions
 
-1. **"Higher-level pipeline tools make raw shell scripting skill obsolete."** The opposite is closer to true — CI/CD YAML, Ansible modules, and Terraform provisioners all shell out to run real commands, so shell scripting competence is the substrate every one of these tools is built on, not a skill they replace (1).
-2. **"`set -euo pipefail` makes a script safe to leave otherwise unchecked."** It closes several important, common failure modes, but has real edge cases (`-e` inside conditionals, certain command-substitution contexts) where it doesn't trigger — critical steps still warrant explicit result checking (2's Warning, 4).
-3. **"A script only needs to be idempotent if it's explicitly a 'configuration management' tool."** Any pipeline script that might be retried — which is effectively all of them, given flaky infrastructure and human re-triggers — benefits from idempotent design, whether or not it's framed as a config-management task (3).
-4. **"Hardcoded secrets are the main leak risk in pipeline scripts."** In practice, accidentally logging a secret via `set -x` debug tracing or overly verbose output is at least as common a leak path, and easier to miss in review than an obviously hardcoded credential (6's Warning).
-5. **"A clean output of `head -n 5 script.sh` showing `set -euo pipefail` means the script is well-hardened."** The header being present and first is a necessary check (8.1), not a sufficient one — a script can have a perfect header and still swallow a failing step's exit code deeper in (4), or leak a secret via a later `set -x` (8.2). Treat the header check as the first item on an audit checklist, not the whole checklist.
+1. **"Higher-level pipeline tools make raw shell scripting skill obsolete."** The opposite is closer to true — CI/CD YAML, Ansible modules, and Terraform provisioners all shell out to run real commands, so shell scripting competence is the substrate every one of these tools is built on, not a skill they replace.
+2. **"`set -euo pipefail` makes a script safe to leave otherwise unchecked."** It closes several important, common failure modes, but has real edge cases (`-e` inside conditionals, certain command-substitution contexts) where it doesn't trigger — critical steps still warrant explicit result checking, as covered above.
+3. **"A script only needs to be idempotent if it's explicitly a 'configuration management' tool."** Any pipeline script that might be retried — which is effectively all of them, given flaky infrastructure and human re-triggers — benefits from idempotent design, whether or not it's framed as a config-management task, as described above.
+4. **"Hardcoded secrets are the main leak risk in pipeline scripts."** In practice, accidentally logging a secret via `set -x` debug tracing or overly verbose output is at least as common a leak path, and easier to miss in review than an obviously hardcoded credential, per the secrets-handling warning above.
+5. **"A clean output of `head -n 5 script.sh` showing `set -euo pipefail` means the script is well-hardened."** The header being present and first is a necessary check, as described above, not a sufficient one — a script can have a perfect header and still swallow a failing step's exit code deeper in, or leak a secret via a later `set -x` covered in the grep audit above. Treat the header check as the first item on an audit checklist, not the whole checklist.
 
 ## 10. Tiered Interview Questions
 
@@ -166,13 +166,13 @@ _What the interviewer is probing for:_ Pragmatic, risk-prioritized remediation o
 
 ## 11. Key Takeaways
 
-- Shell is the lowest common denominator every pipeline tool — CI/CD YAML, Ansible, Terraform provisioners — ultimately shells out to; shell competence isn't superseded by these tools, it's what they're built on (1).
-- `set -euo pipefail` (§45) matters more in pipeline scripts than interactive ones because there's no human watching to catch a silent failure — but it has real edge cases and doesn't replace explicit checking on critical steps (2).
-- Idempotent shell scripting — checking before acting rather than assuming linear one-time execution — matters because pipeline retries are routine, not exceptional (3, tying to §98's idempotency concept).
-- A failing step's exit code must genuinely propagate to the script's final result; swallowing it via unchecked continuation or a masking downstream command is a common, dangerous pipeline bug (4).
-- Pipeline script output should be timestamped, greppable, and clearly separate errors from normal progress, since its real audience is a log viewer read later, not a live terminal (5).
-- Secrets leak from pipeline scripts most commonly via accidental logging (`set -x`, verbose output) rather than obvious hardcoding — never enable command tracing in a script handling secrets (6).
-- A realistic deploy script follows a pre-flight / deploy / post-deployment-verification shape, with each phase applying this section's discipline on top of §45–§47's shell fundamentals (7).
+- Shell is the lowest common denominator every pipeline tool — CI/CD YAML, Ansible, Terraform provisioners — ultimately shells out to; shell competence isn't superseded by these tools, it's what they're built on.
+- `set -euo pipefail` (§45) matters more in pipeline scripts than interactive ones because there's no human watching to catch a silent failure — but it has real edge cases and doesn't replace explicit checking on critical steps.
+- Idempotent shell scripting — checking before acting rather than assuming linear one-time execution — matters because pipeline retries are routine, not exceptional, tying to §98's idempotency concept.
+- A failing step's exit code must genuinely propagate to the script's final result; swallowing it via unchecked continuation or a masking downstream command is a common, dangerous pipeline bug.
+- Pipeline script output should be timestamped, greppable, and clearly separate errors from normal progress, since its real audience is a log viewer read later, not a live terminal.
+- Secrets leak from pipeline scripts most commonly via accidental logging (`set -x`, verbose output) rather than obvious hardcoding — never enable command tracing in a script handling secrets.
+- A realistic deploy script follows a pre-flight / deploy / post-deployment-verification shape, with each phase applying this section's discipline on top of §45–§47's shell fundamentals.
 
 ## 12. Related Concepts & What's Next
 

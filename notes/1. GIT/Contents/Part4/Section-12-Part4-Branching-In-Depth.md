@@ -4,13 +4,13 @@
 
 **Plain language:** A branch is an independent, named line of development that lets you work on something — a feature, a fix, an experiment — without disturbing anyone else's work or the stable line you branched from.
 
-**Precise:** Mechanically, a Git branch is nothing more than a movable ref: a small file under `.git/refs/heads/` holding a single commit hash, which advances automatically each time you commit while that branch is checked out. Everything in this section is about the _commands_ that create, inspect, switch between, and remove those pointers — the underlying mechanics were already established in §6.3.
+**Precise:** Mechanically, a Git branch is nothing more than a movable ref: a small file under `.git/refs/heads/` holding a single commit hash, which advances automatically each time you commit while that branch is checked out. Everything in this section is about the _commands_ that create, inspect, switch between, and remove those pointers — the underlying mechanics were already established in §6.
 
-## 2. Recap — Why Branches Are "Free" (Brief; See §6.3 for the Full Mechanics)
+## 2. Recap — Why Branches Are "Free" (Brief; See §6 for the Full Mechanics)
 
-§6.3 already proved the core fact this whole section leans on: creating a branch writes one small file containing a hash — no file copying, no history duplication, no dependency on repository size. That's _why_ Git culture treats branches as disposable, cheap, and constantly created, in sharp contrast to centralized systems (§1.7) where branching was a heavyweight, discouraged event. This section doesn't re-derive that; it builds the full command vocabulary on top of it.
+§6 already proved the core fact this whole section leans on: creating a branch writes one small file containing a hash — no file copying, no history duplication, no dependency on repository size. That's _why_ Git culture treats branches as disposable, cheap, and constantly created, in sharp contrast to centralized systems (§1) where branching was a heavyweight, discouraged event. This section doesn't re-derive that; it builds the full command vocabulary on top of it.
 
-> 💡 **Tip:** If any of "ref", "movable pointer", or "HEAD resolves through the branch" feels shaky, re-read §6.3–§6.4 before continuing — this section assumes that mental model as settled.
+> 💡 **Tip:** If any of "ref", "movable pointer", or "HEAD resolves through the branch" feels shaky, re-read §6 before continuing — this section assumes that mental model as settled.
 
 ## 3. `git branch` — Listing, Creating, Deleting
 
@@ -35,12 +35,12 @@ Key listing flags:
 | Flag                     | Effect                                                                     |
 | ------------------------ | -------------------------------------------------------------------------- |
 | _(none)_                 | List local branches only                                                   |
-| `-a`                     | List local **and** remote-tracking branches (§12.9)                        |
+| `-a`                     | List local **and** remote-tracking branches (the local/remote-tracking/remote distinction below) |
 | `-r`                     | List remote-tracking branches only                                         |
 | `-v`                     | Show each branch's latest commit hash + subject line                       |
 | `-vv`                    | Also show the upstream (tracked) branch and ahead/behind counts            |
-| `--merged [<commit>]`    | List branches already merged into the given commit (default HEAD) — §12.11 |
-| `--no-merged [<commit>]` | List branches **not** merged into the given commit — §12.11                |
+| `--merged [<commit>]`    | List branches already merged into the given commit (default HEAD) — see the merged/unmerged listing section below |
+| `--no-merged [<commit>]` | List branches **not** merged into the given commit — see the merged/unmerged listing section below                |
 
 ```bash
 $ git branch -vv
@@ -48,7 +48,7 @@ $ git branch -vv
   feature-payments a3f8e21 Add payments skeleton
 ```
 
-> ⚠️ **Common confusion to preempt:** `git branch <name>` creates a branch but leaves you checked out on whatever you were already on. Beginners routinely run this expecting to now be "on" the new branch, then are confused why their commits land on the old one. Use `git switch -c <name>` (§12.7) when you want create-and-switch in one step.
+> ⚠️ **Common confusion to preempt:** `git branch <name>` creates a branch but leaves you checked out on whatever you were already on. Beginners routinely run this expecting to now be "on" the new branch, then are confused why their commits land on the old one. Use `git switch -c <name>` (see the create-and-switch section below) when you want create-and-switch in one step.
 
 ## 4. Deleting Branches: `-d` vs `-D`
 
@@ -64,8 +64,8 @@ $ git branch -D feature-payments
 Deleted branch feature-payments (was 7c2a9f1).
 ```
 
-- **`-d`** (safe delete) checks whether the branch's commits are reachable from another ref (typically its upstream or the branch you're currently on). If not, Git refuses — this is exactly the protection described in §6.3's `git branch` documentation, preventing you from silently discarding unmerged work.
-- **`-D`** is shorthand for `--delete --force`: it deletes unconditionally. The branch _ref_ disappears immediately, but the commit objects it pointed at are untouched in `.git/objects` and remain recoverable through the reflog (§6.6) until garbage collection — deleting a branch is not the same operation as deleting its commits.
+- **`-d`** (safe delete) checks whether the branch's commits are reachable from another ref (typically its upstream or the branch you're currently on). If not, Git refuses — this is exactly the protection described in §6's `git branch` documentation, preventing you from silently discarding unmerged work.
+- **`-D`** is shorthand for `--delete --force`: it deletes unconditionally. The branch _ref_ disappears immediately, but the commit objects it pointed at are untouched in `.git/objects` and remain recoverable through the reflog (§6's reflog coverage) until garbage collection — deleting a branch is not the same operation as deleting its commits.
 - Deleting a **remote-tracking** branch (`git branch -d -r origin/old-feature`) only removes your local bookkeeping copy; it does not touch anything on the remote server. Deleting the actual branch on the remote is a separate operation (`git push origin --delete <branch>`, §20).
 
 > 💡 **Tip:** After a feature branch is merged via pull request and the remote branch is deleted by the hosting platform, `git fetch --prune` (§20) cleans up your now-stale local remote-tracking refs, and `git branch -d` then cleanly removes your local branch since it's provably merged.
@@ -95,7 +95,7 @@ Git 2.23 split the responsibilities into two new, single-purpose commands:
 | ------------------------ | ------------------------------ | ------------------------------------------------- |
 | `git checkout <branch>`  | `git switch <branch>`          | Change which branch HEAD points to                |
 | `git checkout -- <file>` | `git restore <file>`           | Discard working-directory changes to a file (§15) |
-| `git checkout <commit>`  | `git switch --detach <commit>` | Enter detached HEAD (§6.4.2)                      |
+| `git checkout <commit>`  | `git switch --detach <commit>` | Enter detached HEAD (§6's detached HEAD coverage) |
 | `git checkout -b <name>` | `git switch -c <name>`         | Create a branch and switch to it                  |
 
 `git checkout` was **not** deprecated or removed — it still does everything it always did, and you will see it constantly in existing tutorials, CI scripts, Stack Overflow answers, and muscle memory predating 2019. `switch` and `restore` are narrower, safer, and harder to misuse by accident, which is why they're the recommended default for new work and new scripts, while recognizing `checkout` remains essential reading-comprehension for any real codebase.
@@ -126,7 +126,7 @@ $ git switch -c hotfix-1 v2.3.0
 $ git checkout -b hotfix-1 v2.3.0
 ```
 
-Both forms are exactly `git branch <name> [<start-point>]` followed immediately by switching to it — no new mechanic, just a convenience combining two of §12.3's and §12.6's operations into one command.
+Both forms are exactly `git branch <name> [<start-point>]` followed immediately by switching to it — no new mechanic, just a convenience combining the branch-creation and switch operations described earlier in this section into one command.
 
 ## 8. Tracking a Remote Branch on Creation: `--track`
 
@@ -156,7 +156,7 @@ Full push/pull/fetch mechanics and the remote side of tracking are §20's subjec
 
 ## 9. Local vs Remote-Tracking vs Remote Branches — The Three-Way Distinction
 
-This is one of the most consistently confused areas for people coming from centralized systems, so it's worth stating precisely — it was previewed in §6.7's tip and is fully earned here.
+This is one of the most consistently confused areas for people coming from centralized systems, so it's worth stating precisely — it was previewed in §6's tip on tracking branches and is fully earned here.
 
 ```
                          (only exists on the SERVER)
@@ -230,7 +230,7 @@ $ git branch --no-merged
 $ git branch --merged main | grep -v '^\*\|main' | xargs -r git branch -d
 ```
 
-This is precisely the mechanism `git branch -d`'s safety check (§12.4) relies on internally — `--merged`/`--no-merged` just exposes that same reachability check as a queryable listing.
+This is precisely the mechanism `git branch -d`'s safety check (the deleting-branches section above) relies on internally — `--merged`/`--no-merged` just exposes that same reachability check as a queryable listing.
 
 ## 12. Orphan Branches: `--orphan`
 
@@ -311,7 +311,7 @@ Deleted branch feature-search (was 9f2c1a4).
 
 ## 16. 🔑 Key Takeaways
 
-- A branch is a movable pointer file; every command in this section (`branch`, `switch`, `checkout -b`) ultimately manipulates that one small fact from §6.3.
+- A branch is a movable pointer file; every command in this section (`branch`, `switch`, `checkout -b`) ultimately manipulates that one small fact from §6's ref mechanics.
 - `git switch` and `git restore` (Git 2.23+) split `checkout`'s two historically overloaded jobs into single-purpose commands; `checkout` still works and remains common in the wild.
 - `-d` is the safe branch delete (reachability-checked); `-D` forces it — neither immediately destroys the underlying commits.
 - Local branches, remote-tracking branches, and remote branches are three distinct things; remote-tracking branches are read-only, locally cached snapshots updated only by `fetch`/`pull`.
@@ -320,4 +320,4 @@ Deleted branch feature-search (was 9f2c1a4).
 
 ## 17. Related Concepts & What's Next
 
-This section assumed the ref mechanics from §6.3–§6.4 and built the full command surface on top of them. Branches you create here become meaningful once you need to combine their work back together — §13 covers exactly that: fast-forward and three-way merges, conflict resolution, and merge strategies. Later, §22 revisits the naming conventions introduced in 12.10 as part of full branching-strategy models (Git Flow, trunk-based development, and others) at the team-workflow level.
+This section assumed the ref mechanics from §6 and built the full command surface on top of them. Branches you create here become meaningful once you need to combine their work back together — §13 covers exactly that: fast-forward and three-way merges, conflict resolution, and merge strategies. Later, §22 revisits the naming conventions introduced earlier in this section (see the branch naming conventions section above) as part of full branching-strategy models (Git Flow, trunk-based development, and others) at the team-workflow level.

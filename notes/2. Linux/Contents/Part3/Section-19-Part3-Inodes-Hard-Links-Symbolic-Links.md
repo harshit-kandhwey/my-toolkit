@@ -11,10 +11,10 @@ An inode stores:
 - **Ownership** — owning UID and GID
 - **Size** in bytes
 - **Timestamps** — mtime (content modified), ctime (metadata/inode changed), atime (last accessed) — full detail in §22 later in this Part
-- **Link count** — how many directory entries currently point at this inode (see 3)
-- **Pointers to the actual data blocks** on disk holding the file's contents (or, for a symlink, the target path string itself — see 4)
+- **Link count** — how many directory entries currently point at this inode, covered in the hard links section below
+- **Pointers to the actual data blocks** on disk holding the file's contents (or, for a symlink, the target path string itself, as covered in the symbolic links section below)
 
-What an inode explicitly does **not** store is the filename. The filename lives in the **directory entry** — a directory is itself just a special kind of file whose content is a table mapping names to inode numbers. Looking up `/etc/hosts` means: read the `/etc` directory's data, find the entry named `hosts`, get its inode number, then read that inode to find the actual data blocks. This separation — name-to-inode mapping in the directory, everything else in the inode — is the entire mechanism that makes hard links possible (3).
+What an inode explicitly does **not** store is the filename. The filename lives in the **directory entry** — a directory is itself just a special kind of file whose content is a table mapping names to inode numbers. Looking up `/etc/hosts` means: read the `/etc` directory's data, find the entry named `hosts`, get its inode number, then read that inode to find the actual data blocks. This separation — name-to-inode mapping in the directory, everything else in the inode — is the entire mechanism that makes hard links possible, as the hard links section below explains.
 
 Every inode is identified by an **inode number**, unique within a single filesystem (not globally unique across the whole machine — a file on `/` and a file on a separate `/data` mount can share the same inode number without being related, because inode numbers are only meaningful relative to the filesystem that issued them).
 
@@ -41,7 +41,7 @@ $ ls -i /etc/hosts
 
 ### 2.2 `stat` — Full Inode Metadata
 
-**Purpose:** Print the complete metadata an inode holds — everything listed in 1 — in one command. This is the tool for actually inspecting what an inode contains, not just its number.
+**Purpose:** Print the complete metadata an inode holds — everything listed in the inode-contents overview above — in one command. This is the tool for actually inspecting what an inode contains, not just its number.
 
 **Syntax:**
 
@@ -68,7 +68,7 @@ Change: 2026-06-15 14:02:11.000000000 +0000
 | Field                      | Meaning                                                                                                                 |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Inode`                    | The inode number (matches `ls -i`)                                                                                      |
-| `Links`                    | The hard link count (3) — how many directory entries point at this inode                                                |
+| `Links`                    | The hard link count, covered in the hard links section below — how many directory entries point at this inode          |
 | `Access`/`Modify`/`Change` | atime/mtime/ctime — three distinct timestamps, frequently confused (§22)                                                |
 | `Device`                   | Identifies which filesystem/mount this inode belongs to — relevant because inode numbers are only unique per-filesystem |
 
@@ -121,7 +121,7 @@ Note the `Links` count (`%h` in `stat`'s format syntax) is now `2` — the inode
 
 **Hard link constraints — both are structural, not arbitrary policy:**
 
-- **Cannot cross filesystems.** A hard link is a pointer to an inode number, and inode numbers are only meaningful within the filesystem that assigned them — `ln /mnt/diskA/file /mnt/diskB/link` fails with "Invalid cross-device link" because there is no inode `diskB` could point at that means the same thing on `diskA`. Symlinks don't have this restriction (4).
+- **Cannot cross filesystems.** A hard link is a pointer to an inode number, and inode numbers are only meaningful within the filesystem that assigned them — `ln /mnt/diskA/file /mnt/diskB/link` fails with "Invalid cross-device link" because there is no inode `diskB` could point at that means the same thing on `diskA`. Symlinks don't have this restriction, as the symbolic links section below explains.
 - **Cannot (normally) point to a directory.** Hard-linking directories is disallowed on virtually every Linux filesystem in practice, because it would let the directory tree contain cycles (a directory could become its own ancestor), which breaks the assumption that directory traversal always terminates — tools like `find`, backup utilities, and `du` all rely on the tree having no cycles. (The kernel does use directory hard links internally for `.` and `..`, but that's a controlled special case, not something available to `ln` for ordinary use.)
 
 **Production usage example:** Backup tools like `rsync --link-dest` and utilities like `cp -al` exploit hard links to implement space-efficient incremental snapshots — each snapshot directory hard-links to files unchanged since the previous snapshot rather than copying them, so N nightly snapshots of a mostly-static filesystem cost roughly one full copy's worth of disk space, not N copies, while still presenting N independently browsable directory trees.
@@ -173,7 +173,7 @@ cat: danglink: No such file or directory
 
 1. **"A hard link is like a shortcut, similar to a symlink."** They are not similar mechanisms — a hard link is a second name for the _same_ inode (no indirection, no target path, no way to tell which name is "the real one"), while a symlink is an independent file containing a path string that gets re-resolved on each access. Confusing the two leads to wrong assumptions about cross-filesystem behavior, dangling states, and what happens when the "original" is deleted.
 2. **"Deleting a file frees its space immediately."** `rm` decrements a link count and removes one directory entry; the inode and its data blocks are only freed once the link count reaches zero _and_ no process still holds the file open. This is exactly why a deleted log file a running process still has open keeps consuming disk space until that process closes it or restarts (a routine incident-response gotcha, diagnosable via `lsof | grep deleted`).
-3. **"Running out of disk space always means running out of bytes."** ext4-family filesystems allocate a fixed inode count at format time, entirely separate from space capacity — a filesystem can report abundant free space in `df -h` while `df -i` shows 100% inode usage, and writes will still fail with `ENOSPC` (2.3).
+3. **"Running out of disk space always means running out of bytes."** ext4-family filesystems allocate a fixed inode count at format time, entirely separate from space capacity — a filesystem can report abundant free space in `df -h` while `df -i` shows 100% inode usage, and writes will still fail with `ENOSPC`, as the `df -i` discussion above covers.
 4. **"Symlinks are strictly worse/riskier than hard links, so prefer hard links when possible."** They solve different problems — symlinks are the only option across filesystems or to directories, and their explicit, visible indirection (`ls -l` always shows the target) is arguably safer than a hard link's silent, indistinguishable duplication of a name. Neither is categorically superior; the right choice depends on whether you need cross-filesystem/directory linking (symlink) or true single-inode identity (hard link).
 
 ## 6. Tiered Interview Questions
@@ -204,6 +204,6 @@ _What the interviewer is probing for:_ Ability to apply inode/symlink mechanics 
 
 ## 8. Related Concepts & What's Next
 
-This section builds directly on §18's filesystem-type coverage — ext4's fixed-at-format-time inode allocation vs. XFS's more dynamic behavior (2.3) is a concrete consequence of the filesystem design choices §18 introduced. §17's FHS coverage is where these mechanics show up structurally in practice — `/proc` and `/dev` entries, and the pervasive use of symlinks throughout a standard Linux tree (e.g., `/etc/mtab`, `/sbin -> usr/sbin` conventions on some distros). §20 (next) moves to mounting and `/etc/fstab` — the layer that determines which filesystem (and therefore which independent inode namespace) a given path actually belongs to, which is the direct prerequisite for correctly reasoning about when hard links will and won't work across a real host's mount layout.
+This section builds directly on §18's filesystem-type coverage — ext4's fixed-at-format-time inode allocation vs. XFS's more dynamic behavior, covered in the `df -i` discussion above, is a concrete consequence of the filesystem design choices §18 introduced. §17's FHS coverage is where these mechanics show up structurally in practice — `/proc` and `/dev` entries, and the pervasive use of symlinks throughout a standard Linux tree (e.g., `/etc/mtab`, `/sbin -> usr/sbin` conventions on some distros). §20 (next) moves to mounting and `/etc/fstab` — the layer that determines which filesystem (and therefore which independent inode namespace) a given path actually belongs to, which is the direct prerequisite for correctly reasoning about when hard links will and won't work across a real host's mount layout.
 
 **Next Section:** §20 — `Section-20-Part3-Mounting-fstab.md`

@@ -11,7 +11,7 @@
 1. **Human usability over raw hashes.** Nobody wants to type `git checkout a3f8e21bc9d4f5e6...` daily. `main`, `develop`, `v2.3.1` are memorable, meaningful names layered over the anonymous hash-addressed object graph from §5.
 2. **Movable pointers enable "current state" tracking.** A branch ref is _designed_ to move forward automatically as you commit — this is precisely what lets "main" always mean "the latest commit on the main line" without you manually updating anything.
 3. **Fixed pointers enable permanent markers.** Tags are designed to _not_ move, giving you a stable, permanent name for one exact point in history — essential for releases (§18).
-4. **A safety net independent of the shared graph.** The reflog (6.6) records ref movements locally, so mistakes that seem to "lose" commits are almost always recoverable — a deliberate design response to the fact that history rewriting (§14, §15) is a first-class, encouraged operation in Git, and needs a safety net to be usable without fear.
+4. **A safety net independent of the shared graph.** The reflog (covered in depth later in this section) records ref movements locally, so mistakes that seem to "lose" commits are almost always recoverable — a deliberate design response to the fact that history rewriting (§14, §15) is a first-class, encouraged operation in Git, and needs a safety net to be usable without fear.
 
 ## 3. Branch Refs — Full Mechanics
 
@@ -30,7 +30,7 @@ That's the _entire_ implementation of a branch. Nothing else exists — no metad
 
 1. Git creates a new commit object whose `parent` field is the _current_ commit that the active branch points to.
 2. Git overwrites the branch's ref file with the new commit's hash.
-3. HEAD (pointing at the branch, not directly at the commit — see 6.4) automatically reflects the new commit, because it resolves through the branch.
+3. HEAD (pointing at the branch, not directly at the commit — detailed in the HEAD section below) automatically reflects the new commit, because it resolves through the branch.
 
 This is why committing "moves the branch forward" — literally, one text file's content is rewritten to a new hash.
 
@@ -63,7 +63,7 @@ This is a **symbolic ref** — a pointer to another ref, not directly to a commi
 
 ### 4.1 Why the indirection matters
 
-Because HEAD points at the _branch name_, not directly at a commit, committing automatically "carries HEAD forward" — you never have to manually update HEAD yourself. Git updates the branch ref (6.3.2), and HEAD, still pointing at that branch name, transparently resolves to the new commit.
+Because HEAD points at the _branch name_, not directly at a commit, committing automatically "carries HEAD forward" — you never have to manually update HEAD yourself. Git updates the branch ref (as detailed above, in "what happens when you commit"), and HEAD, still pointing at that branch name, transparently resolves to the new commit.
 
 ### 4.2 Detached HEAD — the direct-pointer case
 
@@ -96,7 +96,7 @@ Detached HEAD committing:
   completely unaware C_new exists.
 ```
 
-> ⚠️ **This is not silent data loss** — the commit object physically still exists in `.git/objects` and is recoverable via the reflog (6.6) for a retention window (default 90 days for reachable-losing entries, though exact defaults are configurable and worth verifying against current documentation) — but it is genuinely easy to lose track of casually, which is why the standard advice is: the moment you want to keep work made in detached HEAD, immediately run `git switch -c <new-branch-name>` to attach a real branch pointer to it.
+> ⚠️ **This is not silent data loss** — the commit object physically still exists in `.git/objects` and is recoverable via the reflog (covered later in this section) for a retention window (default 90 days for reachable-losing entries, though exact defaults are configurable and worth verifying against current documentation) — but it is genuinely easy to lose track of casually, which is why the standard advice is: the moment you want to keep work made in detached HEAD, immediately run `git switch -c <new-branch-name>` to attach a real branch pointer to it.
 
 ### 4.3 When you deliberately want detached HEAD
 
@@ -104,7 +104,7 @@ Legitimate uses: inspecting an old release's exact state without disturbing any 
 
 ## 5. Tag Refs
 
-Covered structurally in §5.5.4; here we cover them purely as **refs**.
+Covered structurally in §5's object-model coverage of the tag object; here we cover them purely as **refs**.
 
 - **Physical form:** `.git/refs/tags/<tag-name>`, containing either a commit hash directly (lightweight tag) or the hash of a tag _object_ (annotated tag), which in turn points to a commit.
 - **Key behavioral difference from branches:** nothing in Git prevents you from moving a tag (`git tag -f`), but doing so on a tag anyone else may have already fetched is a serious foot-gun — anyone who built or deployed something referencing that tag now silently gets different content if they re-fetch, breaking the entire "tags are permanent" assumption the ecosystem relies on. Full discipline in §18.
@@ -186,7 +186,7 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
   * main           a3f8e21 Fix pagination bug
     feature-login  a3f8e21 Fix pagination bug
   ```
-  Expected output: both branches point at the identical commit immediately after creation, exactly as the mechanics in 6.3.3 predict.
+  Expected output: both branches point at the identical commit immediately after creation, exactly as the branch-creation mechanics described above predict.
 - **Production usage:** naming conventions for branches (`feature/*`, `bugfix/*`, `release/*`) are a core part of branching-strategy discipline, covered fully in §22; `git branch -d` is the routine cleanup step after a feature branch is merged via pull request.
 - **Common errors:** `error: the branch 'feature-x' is not fully merged` when running `-d` on a branch with unmerged unique commits — this is Git protecting you; either merge it first or consciously use `-D` if you're certain you want to discard those commits.
 - **Security impact:** none directly; branch names sometimes leak information (e.g., a branch named `hotfix-customer-acme-breach`) — a minor information-disclosure consideration in public repositories.
@@ -272,18 +272,18 @@ $ git log --oneline
 a3f8e21 commit A
 ```
 
-This walkthrough demonstrates, concretely: detached HEAD committing, the commit becoming invisible to normal branch-based navigation, and full recovery via the reflog — exactly the safety-net property described in 6.6.3.
+This walkthrough demonstrates, concretely: detached HEAD committing, the commit becoming invisible to normal branch-based navigation, and full recovery via the reflog — exactly the safety-net property described earlier in the reflog section above.
 
 ## 10. Production & Enterprise Usage
 
 - **CI/CD systems deliberately use detached HEAD.** Most CI runners check out a specific commit (not a branch) for a build job — this is intentional: the job should build _exactly_ the commit that triggered it, immune to the branch moving forward mid-build. Understanding detached HEAD demystifies why CI logs often show "You are in 'detached HEAD' state" without it being an error.
-- **Branch protection rules** (§23) operate on branch refs specifically — a platform like GitHub enforces "no force-push, no deletion, required reviews" on the `refs/heads/main` ref, which is exactly the physical object described in 6.3.1.
+- **Branch protection rules** (§23) operate on branch refs specifically — a platform like GitHub enforces "no force-push, no deletion, required reviews" on the `refs/heads/main` ref, which is exactly the physical object described in the branch-refs section above.
 - **Reflog retention as an operational policy consideration:** some enterprises shorten or extend `gc.reflogExpire` settings depending on their balance between disk usage and desired local-recovery window — a minor but real operational tuning knob covered further in §29.
 
 ## 11. Security Considerations
 
 - Tags and branches are **not** access-control boundaries by themselves — anyone with push access can create, move, or delete any ref unless the hosting platform's branch/tag protection rules (§23) explicitly restrict it.
-- As flagged in 6.8, the reflog can retain sensitive content (e.g., a secret committed and then "removed" via amend/rebase) locally even after it disappears from visible branch history — full remediation workflow in §28.
+- As flagged in the `git reflog` command notes above, the reflog can retain sensitive content (e.g., a secret committed and then "removed" via amend/rebase) locally even after it disappears from visible branch history — full remediation workflow in §28.
 - Force-moving a tag that others have already fetched is a supply-chain integrity risk: if `v2.3.1` is retagged to point at different content, systems that pin to `v2.3.1` by name (rather than by exact hash) will silently receive different code on their next fetch — a real, documented category of software supply-chain attack.
 
 ## 12. Performance Considerations
@@ -303,7 +303,7 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 ## 14. Best Practices
 
 - The instant you make a commit you want to keep while in detached HEAD, run `git switch -c <descriptive-name>` before doing anything else — don't rely on remembering to check the reflog later.
-- Always use annotated tags for releases (§5.5.4, §18) and treat tags as immutable once published — never force-move a tag that may already have been fetched by anyone else.
+- Always use annotated tags for releases (per §5's tag-object coverage and §18) and treat tags as immutable once published — never force-move a tag that may already have been fetched by anyone else.
 - Use `git branch -d` (safe delete) as your default; reserve `-D` (force delete) for cases where you've deliberately confirmed the branch's unique commits are disposable.
 
 ## 15. Anti-Patterns & Common Mistakes
@@ -345,4 +345,4 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 
 ## 19. Related Concepts & What's Next
 
-Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** (§4.3's `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part 3's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.
+Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** (§4's `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part 3's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.

@@ -4,12 +4,12 @@
 
 **Plain language:** This is the loop you run dozens of times a day: look at what changed (`status`), decide what goes into the next snapshot (`add`), record it (`commit`), and later look back at what happened (`diff`, `log`). Everything else in Git is either preparation for this loop or a variation on it.
 
-**Precise:** `git status` reports the working directory and index state relative to `HEAD`'s tree; `git add` copies content into a blob object and updates the index (§4.4.2); `git commit` builds a tree object from the index and a new commit object pointing at it, then advances the current branch ref (§4.5); `git diff` compares two of {working directory, index, a commit} depending on flags; `git log` walks the commit graph from a starting point (default `HEAD`) following parent links. None of these commands introduce new concepts beyond the three-areas model from §4 — this section is about fluency with their day-to-day surface, not new architecture.
+**Precise:** `git status` reports the working directory and index state relative to `HEAD`'s tree; `git add` copies content into a blob object and updates the index (§4); `git commit` builds a tree object from the index and a new commit object pointing at it, then advances the current branch ref (§4); `git diff` compares two of {working directory, index, a commit} depending on flags; `git log` walks the commit graph from a starting point (default `HEAD`) following parent links. None of these commands introduce new concepts beyond the three-areas model from §4 — this section is about fluency with their day-to-day surface, not new architecture.
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **You need constant visibility into "what's different right now."** Without a fast, cheap status check, every commit would be a leap of faith. `git status` answers "what have I touched?" in local, near-instant time (§4.10).
-2. **Not every edit belongs in the next commit.** `git add` exists so you can curate — stage exactly the changes that form one coherent unit of work, even down to individual hunks, and leave the rest for later (10.4.3).
+1. **You need constant visibility into "what's different right now."** Without a fast, cheap status check, every commit would be a leap of faith. `git status` answers "what have I touched?" in local, near-instant time (§4).
+2. **Not every edit belongs in the next commit.** `git add` exists so you can curate — stage exactly the changes that form one coherent unit of work, even down to individual hunks, and leave the rest for later (the hunk-level staging walkthrough below).
 3. **A commit needs a permanent, reviewable boundary.** `git commit` is the moment uncommitted, mutable work becomes an immutable, addressable point in history (§5) — everything before it can still be freely changed; everything after requires deliberate history-rewriting tools (§15).
 4. **You need to inspect before and after committing.** `git diff` in its various forms answers "what exactly am I about to stage/commit/have I already committed" — the single most common source of "wait, what did I just do" confusion is not knowing which of these three comparisons you're looking at.
 5. **History is only useful if you can navigate it.** `git log` and its flags turn the commit graph (§5, §6) from an abstract DAG into something a human can actually scan, search, and reason about day to day.
@@ -144,7 +144,7 @@ Key responses at the prompt:
 | `a` | Stage this hunk and all remaining hunks in this file                                                            |
 | `d` | Skip this hunk and all remaining hunks in this file                                                             |
 
-This is exactly the scenario from §4.2: a real bug fix and an unrelated debug `print()` sitting in the same file. `git add -p`, answer `y` to the bug fix hunk and `n` (or `s` then selectively `y`/`n`) to the debug line, produces a commit containing only the fix, while the `print()` stays unstaged and uncommitted, ready to be deleted or committed separately.
+This is exactly the scenario from §4: a real bug fix and an unrelated debug `print()` sitting in the same file. `git add -p`, answer `y` to the bug fix hunk and `n` (or `s` then selectively `y`/`n`) to the debug line, produces a commit containing only the fix, while the `print()` stays unstaged and uncommitted, ready to be deleted or committed separately.
 
 > 💡 **Tip:** `git add -p` operates per-file by default when you name a file, or walks every modified tracked file if you run it with no path. `git add -i` is the broader interactive menu `-p` is one mode of — rarely used directly, since `-p` covers the common case.
 
@@ -155,7 +155,7 @@ This is exactly the scenario from §4.2: a real bug fix and an unrelated debug `
 $ git restore --staged src/app.py
 ```
 
-Covered fully as part of the three-areas command table in §4.7; the modern `git restore` subcommand replaced the older, more overloaded `git reset <file>` for this specific purpose (both still work).
+Covered fully as part of the three-areas command table in §4; the modern `git restore` subcommand replaced the older, more overloaded `git reset <file>` for this specific purpose (both still work).
 
 ## 5. `git commit` — Recording a Snapshot
 
@@ -165,7 +165,7 @@ Covered fully as part of the three-areas command table in §4.7; the modern `git
 # Purpose: commit with an inline message
 $ git commit -m "Fix auth token refresh race condition"
 
-# Purpose: commit with no -m opens your configured core.editor (§8.5) for a longer message
+# Purpose: commit with no -m opens your configured core.editor (§8) for a longer message
 $ git commit
 ```
 
@@ -182,9 +182,9 @@ $ git commit
 $ git commit -am "Update config defaults"
 ```
 
-`-a` is shorthand for "run `git add -u` first, then commit" — it stages modifications and deletions to files Git already tracks, but it **never** picks up new untracked files, exactly like `-u` in 10.4.2. This is a frequent point of confusion: `-am` feels like "commit everything," but a brand-new file you forgot to `git add` at least once will silently stay untracked and uncommitted.
+`-a` is shorthand for "run `git add -u` first, then commit" — it stages modifications and deletions to files Git already tracks, but it **never** picks up new untracked files, exactly like `-u` in the add-variants comparison above. This is a frequent point of confusion: `-am` feels like "commit everything," but a brand-new file you forgot to `git add` at least once will silently stay untracked and uncommitted.
 
-> ⚠️ **Common confusion to preempt:** `git commit -am` skips the review step entirely — there is no chance to inspect a diff before it's committed, unlike the deliberate `add` then `diff --staged` then `commit` sequence. It's a legitimate convenience for small, obviously-correct changes to files you're already tracking, but reaching for it as a default habit reintroduces exactly the "committed something I didn't mean to" risk the index was built to prevent (§4.2).
+> ⚠️ **Common confusion to preempt:** `git commit -am` skips the review step entirely — there is no chance to inspect a diff before it's committed, unlike the deliberate `add` then `diff --staged` then `commit` sequence. It's a legitimate convenience for small, obviously-correct changes to files you're already tracking, but reaching for it as a default habit reintroduces exactly the "committed something I didn't mean to" risk the index was built to prevent (§4).
 
 ### 5.3 `--amend` — a preview
 
@@ -321,7 +321,7 @@ $ git log --pretty=format:"%h %ad %s (%an)" --date=short
 8e9f0a1 2026-07-22 Update config defaults (Harshit Kandhwey)
 ```
 
-Common placeholders: `%h` (abbreviated hash), `%H` (full hash), `%an` (author name), `%ad` (author date), `%s` (subject line), `%b` (body). This is the mechanism behind the `lg` alias built in §8.6 (`log --oneline --graph --all --decorate`) — `--decorate` is what prints branch/tag names like `(HEAD -> main)` next to the commits that carry them.
+Common placeholders: `%h` (abbreviated hash), `%H` (full hash), `%an` (author name), `%ad` (author date), `%s` (subject line), `%b` (body). This is the mechanism behind the `lg` alias built in §8 (`log --oneline --graph --all --decorate`) — `--decorate` is what prints branch/tag names like `(HEAD -> main)` next to the commits that carry them.
 
 > 💡 **Tip:** Reach for `git log --oneline --graph --all` constantly while learning branching (§12) and merging (§13) — it's the fastest way to build an accurate mental picture of the actual commit graph, rather than guessing at it.
 
@@ -391,7 +391,7 @@ $ git status --short
  M src/app.py
 ```
 
-This is the loop in full: `status` for orientation, `add -p` for deliberate curation, `diff --staged` for a final pre-commit review, `commit` to make it permanent, `log` to confirm, and `status` again showing the leftover debug line was never swept in by accident — exactly the outcome §4.2 promised the index would enable.
+This is the loop in full: `status` for orientation, `add -p` for deliberate curation, `diff --staged` for a final pre-commit review, `commit` to make it permanent, `log` to confirm, and `status` again showing the leftover debug line was never swept in by accident — exactly the outcome §4 promised the index would enable.
 
 ## 9. Troubleshooting
 

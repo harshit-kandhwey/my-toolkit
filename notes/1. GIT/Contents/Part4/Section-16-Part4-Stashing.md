@@ -8,11 +8,11 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-You're mid-edit on a feature when an urgent bug report arrives, or you need to `git pull` but have local changes that would conflict, or you simply want to switch branches without committing half-finished work. Committing "WIP, don't look at this" just to switch away is a common workaround, but it pollutes history with meaningless commits and requires cleanup later (an interactive rebase to squash them away, §14.5). The stash gives you a genuine, purpose-built "shelf" for uncommitted work that isn't part of your permanent history at all.
+You're mid-edit on a feature when an urgent bug report arrives, or you need to `git pull` but have local changes that would conflict, or you simply want to switch branches without committing half-finished work. Committing "WIP, don't look at this" just to switch away is a common workaround, but it pollutes history with meaningless commits and requires cleanup later (an interactive rebase to squash them away, §14). The stash gives you a genuine, purpose-built "shelf" for uncommitted work that isn't part of your permanent history at all.
 
 ## 3. Mechanics — What a Stash Actually Is
 
-When you run `git stash`, Git creates up to three commit objects (the exact count depends on whether you have staged changes, unstaged changes, and untracked files) and a special **stash commit** with **multiple parents** tying them together — structurally similar to a merge commit (§13.4), except its parents are "HEAD at the time," "the index's state," and optionally "untracked files' state," rather than two diverged branches.
+When you run `git stash`, Git creates up to three commit objects (the exact count depends on whether you have staged changes, unstaged changes, and untracked files) and a special **stash commit** with **multiple parents** tying them together — structurally similar to a merge commit (§13), except its parents are "HEAD at the time," "the index's state," and optionally "untracked files' state," rather than two diverged branches.
 
 ```
 refs/stash ──► stash commit
@@ -23,7 +23,7 @@ refs/stash ──► stash commit
 
 Each stash you create doesn't overwrite the last — Git maintains a **stack**, referenced via `refs/stash`'s own reflog (`git stash list` reads exactly this), so multiple stashes coexist, addressable as `stash@{0}`, `stash@{1}`, and so on, most recent first.
 
-> 💡 **Tip:** Because a stash is just commits plus a ref, everything you already know about commits applies — `git show stash@{0}` shows its diff like any commit, `git log --oneline -1 stash@{0}` shows a one-line summary, and the objects are just as reflog-recoverable (§6.6) as any other commit if you accidentally drop one.
+> 💡 **Tip:** Because a stash is just commits plus a ref, everything you already know about commits applies — `git show stash@{0}` shows its diff like any commit, `git log --oneline -1 stash@{0}` shows a one-line summary, and the objects are just as reflog-recoverable (§6) as any other commit if you accidentally drop one.
 
 ## 4. Creating a Stash: `push` vs Bare `stash`
 
@@ -113,7 +113,7 @@ $ git stash apply stash@{1}
 | Removes the stash if a conflict occurs during reapply | **No** — a conflicted pop leaves the stash entry intact specifically so you don't lose it | N/A, never removes                                                                                                                 |
 | Typical use                                           | The common case — you're done with this stash, one-shot use                               | Reapplying the same stash to multiple branches, or when you want to keep a safety copy until you're certain the reapply is correct |
 
-> ⚠️ **Critical clarification:** if `git stash pop` produces a merge conflict, Git deliberately does **not** drop the stash entry, precisely because you might still need to re-attempt the pop after resolving, or abandon the attempt and try elsewhere. In that specific case, resolve the conflict as usual (§13.7-13.8), `git add` the resolved files, and then manually run `git stash drop` yourself once you're confident the reapply is correct — `pop`'s automatic drop only happens on a clean, conflict-free application.
+> ⚠️ **Critical clarification:** if `git stash pop` produces a merge conflict, Git deliberately does **not** drop the stash entry, precisely because you might still need to re-attempt the pop after resolving, or abandon the attempt and try elsewhere. In that specific case, resolve the conflict as usual (§13), `git add` the resolved files, and then manually run `git stash drop` yourself once you're confident the reapply is correct — `pop`'s automatic drop only happens on a clean, conflict-free application.
 
 ## 8. Removing Stashes: `drop`, `clear`
 
@@ -125,7 +125,7 @@ $ git stash drop stash@{1}
 $ git stash clear
 ```
 
-Because a stash is built from ordinary commit objects (16.3), `drop`/`clear` behave exactly like any other ref removal — the underlying commits aren't immediately destroyed, and are recoverable via `git fsck --unreachable` or the reflog on `refs/stash` for a window, until garbage collection actually prunes them. In practice this is a narrower, less convenient recovery path than the branch reflog most people are used to, so treat `stash drop`/`clear` as effectively permanent for planning purposes.
+Because a stash is built from ordinary commit objects, as described in the mechanics section above, `drop`/`clear` behave exactly like any other ref removal — the underlying commits aren't immediately destroyed, and are recoverable via `git fsck --unreachable` or the reflog on `refs/stash` for a window, until garbage collection actually prunes them. In practice this is a narrower, less convenient recovery path than the branch reflog most people are used to, so treat `stash drop`/`clear` as effectively permanent for planning purposes.
 
 ## 9. Applying a Specific Stash — Stash Isn't Strictly LIFO-Only
 
@@ -152,7 +152,7 @@ This checks out a new branch at the exact commit the stash was based on, applies
 
 ## 11. Stash Conflicts
 
-Applying a stash uses the same three-way-merge machinery as `git merge`/`git rebase` — if the stash's changes overlap with edits made to the working directory or committed since the stash was taken, you get ordinary conflict markers (§13.7).
+Applying a stash uses the same three-way-merge machinery as `git merge`/`git rebase` — if the stash's changes overlap with edits made to the working directory or committed since the stash was taken, you get ordinary conflict markers (§13).
 
 ```bash
 $ git stash pop
@@ -160,7 +160,7 @@ Auto-merging pricing.js
 CONFLICT (content): Merge conflict in pricing.js
 ```
 
-Resolve exactly as in §13.8: edit out the markers, `git add` the resolved file. As noted in 16.7, a conflicted `pop` deliberately leaves the stash entry in place; run `git stash drop` manually once you've confirmed the resolution is correct.
+Resolve exactly as in §13: edit out the markers, `git add` the resolved file. As noted above in the discussion of `pop` vs `apply`, a conflicted `pop` deliberately leaves the stash entry in place; run `git stash drop` manually once you've confirmed the resolution is correct.
 
 ## 12. Hands-On — Full Stash Lifecycle
 
@@ -205,7 +205,7 @@ Dropped stash@{0} (a1b2c3d...)
 | Symptom                                                                      | Likely cause                                                                                                    | Fix                                                                                                                                                                                  |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | New files "vanished" after `git stash`                                       | Forgot `-u`/`--include-untracked`; untracked files aren't captured by default                                   | `git stash pop` won't help if they were never stashed — check they weren't accidentally left behind or gitignored; going forward, always use `-u` when new files are part of the WIP |
-| `git stash pop` fails with a conflict and you're unsure what state you're in | Normal — the stash entry is intentionally preserved on a conflicted pop                                         | Resolve conflicts (§13.8), `git add`, then manually `git stash drop` once satisfied                                                                                                  |
+| `git stash pop` fails with a conflict and you're unsure what state you're in | Normal — the stash entry is intentionally preserved on a conflicted pop                                         | Resolve conflicts (§13), `git add`, then manually `git stash drop` once satisfied                                                                                                  |
 | Applied a stash to the wrong branch                                          | Stash isn't branch-scoped — `refs/stash` is a single, repo-wide stack, applicable from any branch               | If unwanted, `git restore`/`git reset` to undo the application (§15); the stash itself is untouched unless you popped it                                                             |
 | `git stash list` is empty but you're sure you stashed something              | Possibly `git stash clear` or `drop` ran (intentionally or via a script/alias), or the stash was already popped | Check `git fsck --unreachable` for a dangling commit matching the expected content, as a last-resort recovery attempt                                                                |
 

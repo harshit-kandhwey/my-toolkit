@@ -8,14 +8,14 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **Loose objects don't scale.** One file per object is simple and exactly what you see immediately after a commit (§4.3), but a repository with hundreds of thousands of commits accumulates hundreds of thousands of tiny files — filesystem overhead (inode allocation, directory traversal, per-file open/close costs) becomes a real performance and disk-usage problem at scale.
-2. **Related content compresses far better together than individually.** Two commits a day apart typically share the overwhelming majority of their content (most files unchanged). Compressing each object in isolation (as loose objects do) misses this; compressing similar objects _together_, storing one as a base and others as small deltas against it, is dramatically more space-efficient — directly reusing the "delta storage" idea from Generation 1 VCS (§1.4), but purely as a storage trick invisible above this layer.
+1. **Loose objects don't scale.** One file per object is simple and exactly what you see immediately after a commit (as shown in §4's repository anatomy), but a repository with hundreds of thousands of commits accumulates hundreds of thousands of tiny files — filesystem overhead (inode allocation, directory traversal, per-file open/close costs) becomes a real performance and disk-usage problem at scale.
+2. **Related content compresses far better together than individually.** Two commits a day apart typically share the overwhelming majority of their content (most files unchanged). Compressing each object in isolation (as loose objects do) misses this; compressing similar objects _together_, storing one as a base and others as small deltas against it, is dramatically more space-efficient — directly reusing the "delta storage" idea from Generation 1 VCS (as covered in §1), but purely as a storage trick invisible above this layer.
 3. **Network transfer efficiency.** When you clone or fetch, Git transmits packfiles, not thousands of individual loose objects — hugely reducing both the number of network round trips and total bytes transferred.
-4. **Reclaiming space from abandoned work.** Commits made in detached HEAD and later abandoned (§6.4.2), amended commits' old versions (§5.7), and other objects that become unreachable still physically occupy disk until `gc` prunes them — necessary periodic cleanup.
+4. **Reclaiming space from abandoned work.** Commits made in detached HEAD and later abandoned (per §6's detached-HEAD coverage), amended commits' old versions (per §5's amend discussion), and other objects that become unreachable still physically occupy disk until `gc` prunes them — necessary periodic cleanup.
 
 ## 3. Loose Objects — Physical Detail
 
-As established in §4.3 and §5, every new object Git creates (from `add`, `commit`, etc.) is initially written as a **loose object**: an individual file, zlib-deflate-compressed, named by its own hash, split into a 2-character directory prefix and a 38-character filename purely to avoid having tens of thousands of files in one flat directory (a filesystem performance consideration, not a Git-logical one).
+As established in §4's repository anatomy and §5, every new object Git creates (from `add`, `commit`, etc.) is initially written as a **loose object**: an individual file, zlib-deflate-compressed, named by its own hash, split into a 2-character directory prefix and a 38-character filename purely to avoid having tens of thousands of files in one flat directory (a filesystem performance consideration, not a Git-logical one).
 
 ```bash
 $ echo "hello" | git hash-object -w --stdin
@@ -76,7 +76,7 @@ BEFORE gc (loose objects):                  AFTER gc (packed):
 
 **Precise mechanism:** Git's packing algorithm looks for objects with similar content (often by comparing objects of similar size and type, and using name/path similarity as a heuristic hint) and computes a compact binary diff between a chosen "base" object and each "delta" object referencing it. Reconstructing a delta object at read time means reading its base plus applying the delta instructions — a small amount of extra CPU work at read time in exchange for large storage savings.
 
-> ⚠️ **Critical distinction to never blur (revisited from §1.4 and §5.2):** this delta compression is a **physical, storage-layer** technique, completely invisible at the logical object-model layer covered in §5. Logically, every commit still points to a **complete, full tree snapshot** — `git cat-file -p <tree>` always shows you the complete directory listing, never "here's what changed." Delta compression only describes how that logically-complete data happens to be _packed on disk_; it is never something you interact with directly, and it never changes what `git log`, `git diff`, or `git checkout` show you.
+> ⚠️ **Critical distinction to never blur (revisited from §1's delta-storage discussion and §5's tree coverage):** this delta compression is a **physical, storage-layer** technique, completely invisible at the logical object-model layer covered in §5. Logically, every commit still points to a **complete, full tree snapshot** — `git cat-file -p <tree>` always shows you the complete directory listing, never "here's what changed." Delta compression only describes how that logically-complete data happens to be _packed on disk_; it is never something you interact with directly, and it never changes what `git log`, `git diff`, or `git checkout` show you.
 
 ## 6. Garbage Collection (`git gc`)
 
@@ -85,8 +85,8 @@ BEFORE gc (loose objects):                  AFTER gc (packed):
 `git gc` performs several related maintenance tasks in one operation:
 
 1. **Repacks loose objects into packfiles** (as described above), including recompacting existing packs if beneficial.
-2. **Prunes genuinely unreachable objects** — objects not referenced, directly or transitively, by any ref (branch, tag) _and_ not protected by the reflog's retention window (§6.6.3). This is where detached-HEAD commits you abandoned, or old commits replaced by `amend`/`rebase`, are eventually actually deleted from disk.
-3. **Packs refs** into the single `packed-refs` file (§6.7) for faster bulk ref resolution when there are many refs.
+2. **Prunes genuinely unreachable objects** — objects not referenced, directly or transitively, by any ref (branch, tag) _and_ not protected by the reflog's retention window (per §6's safety-net discussion). This is where detached-HEAD commits you abandoned, or old commits replaced by `amend`/`rebase`, are eventually actually deleted from disk.
+3. **Packs refs** into the single `packed-refs` file (per §6's refs-architecture diagram) for faster bulk ref resolution when there are many refs.
 4. **Removes stale/expired reflog entries** past the configured retention window.
 
 ### 6.2 When it runs
@@ -101,7 +101,7 @@ $ git count-objects -v       # inspect current loose object count before/after
 
 ### 6.3 The safety relationship with the reflog
 
-`gc` will **not** prune an object that's still within the reflog's retention window, even if no branch or tag currently references it — this is precisely the safety mechanism that makes "recover a lost commit via reflog" (§6.9) actually work in practice: the object survives specifically _because_ gc respects reflog entries as a form of reachability, until those entries themselves expire.
+`gc` will **not** prune an object that's still within the reflog's retention window, even if no branch or tag currently references it — this is precisely the safety mechanism that makes "recover a lost commit via reflog" (per §6's recovery walkthrough) actually work in practice: the object survives specifically _because_ gc respects reflog entries as a form of reachability, until those entries themselves expire.
 
 ```
 Object reachability for gc purposes:
@@ -147,7 +147,7 @@ Object reachability for gc purposes:
   packs: 1
   ```
 
-  Expected outcome: loose object count drops to (near) zero, replaced by objects consolidated into one or more packfiles — a direct, visible demonstration of 7.4's diagram.
+  Expected outcome: loose object count drops to (near) zero, replaced by objects consolidated into one or more packfiles — a direct, visible demonstration of the loose-objects-vs-packfiles diagram above.
 
 - **Production usage:** typically left to run automatically; explicitly invoked as part of scheduled repository maintenance jobs on self-hosted Git servers, or after operations known to generate large numbers of loose objects (e.g., a large history rewrite via `filter-repo`, §31).
 - **Common errors:** `warning: There are too many unreachable loose objects; run 'git prune' to remove them` — informational, not an error; indicates gc's automatic pruning threshold hasn't triggered yet.
@@ -216,7 +216,7 @@ pack-<hash>.idx
 pack-<hash>.pack
 ```
 
-Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas against similar objects (the 20 nearly-identical successive versions of `file.txt`'s blob compress extremely well against each other), directly demonstrating the space savings described in 7.5.
+Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas against similar objects (the 20 nearly-identical successive versions of `file.txt`'s blob compress extremely well against each other), directly demonstrating the space savings described in the delta-compression section above.
 
 ## 9. Production & Enterprise Usage
 
@@ -227,7 +227,7 @@ Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas 
 ## 10. Security Considerations
 
 - **Secret remediation is incomplete without gc.** Rewriting history to remove a leaked secret (via `filter-repo` or similar, §28, §31) only detaches the secret from reachable refs — the actual object with the secret's content still exists as a loose (or already-packed) object until `git gc --prune=now` (or equivalent) actually removes it, and even then, remote copies, forks, and other clones are entirely unaffected and must be separately addressed. This is one of the most commonly mishandled aspects of secret-leak incident response.
-- **Packfiles themselves carry no additional security properties** beyond what loose objects already have (§5.11) — packing is purely a size/performance optimization, not an encryption or access-control mechanism.
+- **Packfiles themselves carry no additional security properties** beyond what loose objects already have (per §5's security considerations) — packing is purely a size/performance optimization, not an encryption or access-control mechanism.
 
 ## 11. Performance Considerations
 

@@ -17,23 +17,23 @@ Team & Scale (Parts 5-6):                8 sections
 Operations & Mastery (Parts 7-8):        9 sections
 ```
 
-| Part                           | Title                                 | Sections |
-| ------------------------------- | -------------------------------------- | -------- |
-| **[Part 1](./Contents/Part1)** | Foundations                           | 1–3      |
-| **[Part 2](./Contents/Part2)** | Architecture & Internals              | 4–7      |
-| **[Part 3](./Contents/Part3)** | Setup & the Daily Workflow            | 8–11     |
-| **[Part 4](./Contents/Part4)** | Branching, Merging & History Surgery  | 12–19    |
-| **[Part 5](./Contents/Part5)** | Remotes & Team Collaboration          | 20–23    |
-| **[Part 6](./Contents/Part6)** | Automation & Scale                    | 24–27    |
-| **[Part 7](./Contents/Part7)** | Security & Operations                 | 28–30    |
-| **[Part 8](./Contents/Part8)** | Mastery, Interviews & Wrap-Up         | 31–36    |
+| Part                           | Title                                | Sections |
+| ------------------------------ | ------------------------------------ | -------- |
+| **[Part 1](./Contents/Part1)** | Foundations                          | 1–3      |
+| **[Part 2](./Contents/Part2)** | Architecture & Internals             | 4–7      |
+| **[Part 3](./Contents/Part3)** | Setup & the Daily Workflow           | 8–11     |
+| **[Part 4](./Contents/Part4)** | Branching, Merging & History Surgery | 12–19    |
+| **[Part 5](./Contents/Part5)** | Remotes & Team Collaboration         | 20–23    |
+| **[Part 6](./Contents/Part6)** | Automation & Scale                   | 24–27    |
+| **[Part 7](./Contents/Part7)** | Security & Operations                | 28–30    |
+| **[Part 8](./Contents/Part8)** | Mastery, Interviews & Wrap-Up        | 31–36    |
 
 ## How to Use This Resource
 
 ### 1. **Learn Sequentially** (Recommended for beginners)
 
 - Start with **[Part 1: Foundations](./Contents/Part1)** to build the core mental model
-- Part 2 (Architecture & Internals) is deliberately taught *before* the day-to-day commands — understanding the object model and refs first is what makes the rest of Git predictable instead of memorized
+- Part 2 (Architecture & Internals) is deliberately taught _before_ the day-to-day commands — understanding the object model and refs first is what makes the rest of Git predictable instead of memorized
 - Progress through Parts 3–6 for daily workflow, branching mastery, collaboration, and automation
 - Finish with Parts 7–8 for operations, security, and interview/mastery prep
 
@@ -62,7 +62,6 @@ Operations & Mastery (Parts 7-8):        9 sections
 1. GIT/
 ├── README.md (this file — quick orientation)
 ├── INDEX.md (comprehensive navigation & section index for all 8 parts)
-├── Roadmap.md (original planning roadmap)
 └── Contents/ (organized by part)
     ├── Part1/ (3 sections)
     ├── Part2/ (4 sections)
@@ -108,6 +107,15 @@ Operations & Mastery (Parts 7-8):        9 sections
 - **Each part is self-contained** but includes cross-references to related sections in other parts
 - **All 36 sections are organized in `Contents/PartN/` folders** for modular, scalable structure
 - **Single navigation source:** INDEX.md is the master reference for all parts and sections
+
+## Prerequisites
+
+| Prerequisite                                 | Needed For    | Introduced                          |
+| -------------------------------------------- | ------------- | ----------------------------------- |
+| Basic computer literacy (files, directories) | Part 1        | Assumed baseline                    |
+| Command-line comfort                         | Part 3 onward | Built progressively starting Part 3 |
+
+No external topic must be studied before starting; every Git-specific prerequisite is built in place. There is no single industry-standard Git certification analogous to AWS/Azure/GCP/Kubernetes exams, so this KB is not mapped to a certification domain table.
 
 ## Getting Started Now
 

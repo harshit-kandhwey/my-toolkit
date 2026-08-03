@@ -27,7 +27,7 @@ pre-applypatch.sample      prepare-commit-msg.sample
 pre-commit.sample          update.sample
 ```
 
-> ⚠️ **Critical clarification: hooks are not versioned by default.** `.git/` is never committed — it is the repository's private local metadata, not tracked content (§4). That means a `pre-commit` script you write and rely on lives only on your machine; a teammate cloning the same repository gets none of it, silently. This single fact is the reason 24.5's frameworks exist at all — "just write a hook" doesn't scale past a solo project.
+> ⚠️ **Critical clarification: hooks are not versioned by default.** `.git/` is never committed — it is the repository's private local metadata, not tracked content (§4). That means a `pre-commit` script you write and rely on lives only on your machine; a teammate cloning the same repository gets none of it, silently. This single fact is the reason the versioning frameworks covered later in this section exist at all — "just write a hook" doesn't scale past a solo project.
 
 ## 4. Client-Side Hooks
 
@@ -69,7 +69,7 @@ husky - pre-commit hook exited with code 1 (error)
 
 ## 5. The Versioning Problem — and Its Standard Solutions
 
-Because `.git/hooks/` is local-only (24.3), teams needing hooks to be **shared, versioned, and automatically installed** for every contributor rely on one of three approaches.
+Because `.git/hooks/` is local-only, as established above, teams needing hooks to be **shared, versioned, and automatically installed** for every contributor rely on one of three approaches.
 
 ### 5.1 The `pre-commit` framework (language-agnostic, Python-distributed)
 
@@ -117,7 +117,7 @@ Husky ties hook installation to `npm install` via `package.json`, so any contrib
 npx lint-staged
 ```
 
-**Mechanism:** Husky's own scripts live in a committed `.husky/` directory (ordinary tracked files, unlike `.git/hooks/`); its `install` step (run automatically via npm's `prepare` lifecycle script) points Git's `core.hooksPath` (24.5.3) at that committed directory, so Git executes the versioned scripts directly.
+**Mechanism:** Husky's own scripts live in a committed `.husky/` directory (ordinary tracked files, unlike `.git/hooks/`); its `install` step (run automatically via npm's `prepare` lifecycle script) points Git's `core.hooksPath` (covered next) at that committed directory, so Git executes the versioned scripts directly.
 
 ### 5.3 `core.hooksPath` — the manual, tool-free alternative
 
@@ -141,7 +141,7 @@ $ git commit -m "chore: add versioned pre-commit hook"
 
 **Trade-off:** this requires no external tool at all — just a config setting — but that setting itself is **per-clone local config**, so every contributor must still run the one `git config core.hooksPath .githooks` command themselves after cloning (often documented in a README or automated via an onboarding script); it does not self-install the way Husky's npm `prepare` hook does.
 
-> ⚠️ **Common confusion to preempt:** none of these three approaches make Git itself "version hooks." They all work around the same underlying fact from 24.3 — `.git/` is never committed — either by installing a dispatcher into `.git/hooks/` that reads versioned config (`pre-commit` framework), by redirecting `core.hooksPath` to a committed directory (Husky, manual), or by requiring an explicit one-time setup step contributors must remember to run.
+> ⚠️ **Common confusion to preempt:** none of these three approaches make Git itself "version hooks." They all work around the same underlying fact established earlier — `.git/` is never committed — either by installing a dispatcher into `.git/hooks/` that reads versioned config (`pre-commit` framework), by redirecting `core.hooksPath` to a committed directory (Husky, manual), or by requiring an explicit one-time setup step contributors must remember to run.
 
 ## 6. Server-Side Hooks
 
@@ -176,7 +176,7 @@ Push arrives at server
 Building on the Conventional Commits format from §18 (`type(scope): description`), a `commit-msg` hook can reject any commit whose message doesn't match.
 
 ```bash
-# .githooks/commit-msg  (installed via core.hooksPath, 24.5.3)
+# .githooks/commit-msg  (installed via core.hooksPath, see above)
 #!/usr/bin/env bash
 commit_msg_file="$1"
 pattern='^(feat|fix|docs|style|refactor|test|chore)(\([a-z0-9-]+\))?: .{1,72}$'

@@ -4,7 +4,7 @@
 
 **Plain language:** A Git hosting platform is a service that runs Git remotes for you and wraps them in a web UI, access control, and collaboration tooling — issues, pull requests, CI, and administration — on top of the plain protocol §20 already covers.
 
-**Precise:** At the protocol level, GitHub, GitLab, Bitbucket, and self-hosted alternatives are all, fundamentally, servers exposing Git repositories over HTTPS and/or SSH — anything §20's `fetch`/`push` can do against a bare repository (§9.3.4, §9.5), these platforms do too. Everything distinguishing them — pull requests, issue trackers, CI runners, permission systems, compliance features — is **platform-layer product**, not Git itself. §1.11's Misconception #1 already flagged this distinction; this section is where it's earned in full.
+**Precise:** At the protocol level, GitHub, GitLab, Bitbucket, and self-hosted alternatives are all, fundamentally, servers exposing Git repositories over HTTPS and/or SSH — anything §20's `fetch`/`push` can do against a bare repository (§9), these platforms do too. Everything distinguishing them — pull requests, issue trackers, CI runners, permission systems, compliance features — is **platform-layer product**, not Git itself. §1's Misconception #1 already flagged this distinction; this section is where it's earned in full.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -24,15 +24,15 @@ All three offer broadly comparable core features today — pull/merge requests, 
 
 ## 4. Self-Hosting a Git Server
 
-Not every organization wants — or is permitted — to store its code on a third party's infrastructure. Git's distributed design (§1.6) means self-hosting requires nothing more exotic than a server that can serve a bare repository over a transport Git understands.
+Not every organization wants — or is permitted — to store its code on a third party's infrastructure. Git's distributed design (§1) means self-hosting requires nothing more exotic than a server that can serve a bare repository over a transport Git understands.
 
 ### 4.1 Bare Repositories over SSH — the Minimal Server
 
-The simplest possible self-hosted Git server is: a machine with SSH access and a bare repository (§9.3.4) sitting on disk.
+The simplest possible self-hosted Git server is: a machine with SSH access and a bare repository (§9) sitting on disk.
 
 ```bash
 # On the server: create a bare repo (no working directory, just the
-# object database and refs — exactly what §9.5 established a bare
+# object database and refs — exactly what §9 established a bare
 # repo is for: a pure exchange point nobody edits directly)
 $ mkdir -p /srv/git/webapp.git
 $ cd /srv/git/webapp.git
@@ -104,9 +104,9 @@ Common protections:
 
 - **Require pull request review before merging** — no direct pushes allowed, even from users with write access; a specified number of approvals is mandatory.
 - **Require status checks to pass** — CI (§25) must report success before the merge button is even enabled.
-- **Prevent force-pushes** — enforces §20.6.2's caution at the platform level, so a force-push to `main` is rejected outright regardless of local Git configuration.
+- **Prevent force-pushes** — enforces §20's caution at the platform level, so a force-push to `main` is rejected outright regardless of local Git configuration.
 - **Prevent branch deletion** — stops an accidental or malicious `git push origin --delete main`.
-- **Require linear history** — rejects merge commits, effectively mandating rebase-and-merge or squash-and-merge (§21.6) for that branch.
+- **Require linear history** — rejects merge commits, effectively mandating rebase-and-merge or squash-and-merge (§21) for that branch.
 - **Restrict who can push, even within these rules** — e.g., only specific teams or roles can merge, even with an approved PR.
 
 ```
@@ -162,7 +162,7 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 - **Branch protection rulesets / policy-as-code.** Larger platforms increasingly let organizations define protection rules once and apply them across many repositories by pattern (e.g., "every repo's `main` branch requires 2 approvals and passing CI"), rather than configuring each repository's protection individually — turning branch protection from a per-repo chore into an organization-wide policy.
 - **Secret scanning / dependency and vulnerability alerts.** Increasingly bundled directly into the hosting platform rather than a bolt-on tool, flagging committed credentials or known-vulnerable dependencies automatically.
 
-> ⚠️ **Critical clarification:** none of 23.6–23.8 exist in plain Git. A bare repository served over SSH (23.4.1) has no concept of "protected branch," "CODEOWNERS," or "audit log" — these are entirely hosting-platform product features built on top of Git's protocol and object model. Understanding this boundary is exactly what separates "I know Git" from "I know GitHub" — genuinely distinct, if overlapping, bodies of knowledge, and precisely the conflation §1.11 flagged as the most common Git misconception on record.
+> ⚠️ **Critical clarification:** none of the protected-branches, CODEOWNERS, or governance features described above exist in plain Git. A bare repository served over SSH, as covered earlier in this section, has no concept of "protected branch," "CODEOWNERS," or "audit log" — these are entirely hosting-platform product features built on top of Git's protocol and object model. Understanding this boundary is exactly what separates "I know Git" from "I know GitHub" — genuinely distinct, if overlapping, bodies of knowledge, and precisely the conflation §1 flagged as the most common Git misconception on record.
 
 ## 9. Interview Questions
 
@@ -187,7 +187,7 @@ Beyond individual repositories, organizations running dozens or hundreds of repo
 2. **"You need a platform like GitHub to use Git collaboratively."** A bare repository served over SSH, requiring no platform software whatsoever, is a fully functional multi-developer Git server — platforms add convenience and governance, not the basic capability to collaborate.
 3. **"Protected branches are a Git feature you configure with `git config`."** They're entirely a hosting-platform feature, configured through that platform's settings, not through Git itself — a bare Git server has no concept of a protected branch at all.
 4. **"CODEOWNERS assigns commit access."** It only affects automatic reviewer requests; it doesn't grant or restrict who can push or merge on its own — that's the separate job of repository permissions and protected-branch rules (often used together, but mechanically distinct).
-5. **"Self-hosting Git means giving up all modern collaboration features."** Self-hosted platforms like GitLab CE/EE or GitHub Enterprise Server provide essentially the same PR/review/CI feature set as their SaaS counterparts; only the truly minimal "bare repo over SSH" option (23.4.1) lacks that layer, and that's a deliberate choice for teams who don't need it, not a limitation of self-hosting generally.
+5. **"Self-hosting Git means giving up all modern collaboration features."** Self-hosted platforms like GitLab CE/EE or GitHub Enterprise Server provide essentially the same PR/review/CI feature set as their SaaS counterparts; only the truly minimal "bare repo over SSH" option covered earlier lacks that layer, and that's a deliberate choice for teams who don't need it, not a limitation of self-hosting generally.
 
 ## 11. 🔑 Key Takeaways
 

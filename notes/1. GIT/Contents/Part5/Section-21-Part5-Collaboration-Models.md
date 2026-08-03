@@ -77,7 +77,7 @@ Contributors do **not** have write access to the canonical (**upstream**) reposi
 | Write access to canonical repo  | All contributors                                              | Maintainers only                                   |
 | Number of repositories involved | One                                                           | Two (fork + upstream) per contributor              |
 | Typical audience                | Internal team, known employees                                | Open-source, external/untrusted contributors       |
-| Branch namespace                | Shared — needs naming discipline (§12.10) to avoid collisions | Isolated per fork — no collision risk              |
+| Branch namespace                | Shared — needs naming discipline (§12) to avoid collisions | Isolated per fork — no collision risk              |
 | Setup overhead per contributor  | Low (just clone)                                              | Slightly higher (fork, clone, add upstream remote) |
 | Typical PR direction            | branch → main, same repo                                      | fork:branch → upstream:main                        |
 
@@ -85,17 +85,17 @@ Contributors do **not** have write access to the canonical (**upstream**) reposi
 
 Both models converge on essentially the same review workflow once a PR is open; the difference is only which repository the branch physically lives in.
 
-1. **Branch.** Create a feature/fix branch off the latest `main` (§12.7): `git switch -c feature-payments`.
+1. **Branch.** Create a feature/fix branch off the latest `main` (§12): `git switch -c feature-payments`.
 2. **Commit.** Make a series of focused commits (§10, tag/commit conventions in §18) as work progresses.
-3. **Push.** `git push -u origin feature-payments` (shared model) or to your fork (fork model, §21.4).
+3. **Push.** `git push -u origin feature-payments` (shared model) or to your fork (fork model, as covered above).
 4. **Open the PR.** On the hosting platform, open a pull request targeting the appropriate base branch, with a description of what changed and why. Many teams use a PR template requiring a summary, testing notes, and linked issue.
 5. **Automated checks run.** CI (§25) runs tests, linters, and build steps automatically against the PR; most teams block merge until these pass.
 6. **Review.** One or more reviewers read the diff, leave inline comments, request changes, or approve. This is where most of the _value_ of the model lives — a second set of eyes catches bugs, design issues, and knowledge silos before they become permanent.
 7. **Address feedback.** The contributor pushes more commits addressing comments. Two common styles:
    - **New commits on top** (`git commit -m "Address review: validate input"`), preserving the exact sequence of what happened during review — easy to see what changed in response to which comment, but a noisier final history.
-   - **Amend/fixup and force-push** (`git commit --amend` or `git commit --fixup=<hash>` + `git rebase -i --autosquash`, full mechanics §14 and §15) to keep the branch's history clean, then `git push --force-with-lease` to update the PR. Force-pushing to _your own_ PR branch is normal and expected here — §20.6.2's caution about force-push applies to shared integration branches, not to a personal feature branch only you and the PR's CI are working from.
+   - **Amend/fixup and force-push** (`git commit --amend` or `git commit --fixup=<hash>` + `git rebase -i --autosquash`, full mechanics §14 and §15) to keep the branch's history clean, then `git push --force-with-lease` to update the PR. Force-pushing to _your own_ PR branch is normal and expected here — §20's caution about force-push applies to shared integration branches, not to a personal feature branch only you and the PR's CI are working from.
 8. **Approval.** Once required reviewers approve and required checks pass, the platform allows merging (often enforced by protected-branch rules, §23).
-9. **Merge.** A maintainer (or the author, if permitted) merges using one of three strategies (21.6).
+9. **Merge.** A maintainer (or the author, if permitted) merges using one of three strategies, covered next.
 
 > 💡 **Tip:** Re-requesting review after pushing fixes, rather than assuming a reviewer will notice new commits, is basic PR hygiene that keeps review cycles fast on busy teams.
 
@@ -137,7 +137,7 @@ origin    https://github.com/your-username/webapp.git (push)
 upstream  https://github.com/original-org/webapp.git (fetch)
 upstream  https://github.com/original-org/webapp.git (push)
 
-# Fetch upstream's latest history (downloads only — §20.4)
+# Fetch upstream's latest history (downloads only — §20)
 $ git fetch upstream
 
 # Update your local main to match upstream's main
@@ -177,7 +177,7 @@ $ git push -u origin fix-null-check
 $ git commit --amend --no-edit
 $ git push --force-with-lease
 
-# 8. Maintainer merges; you sync your fork's main afterward (21.8)
+# 8. Maintainer merges; you sync your fork's main afterward, as covered above
 ```
 
 ## 10. Interview Questions

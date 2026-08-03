@@ -4,7 +4,7 @@
 
 §59 established the general concepts every package manager has to solve — dependency resolution, repositories, and the split between a low-level tool that installs packages and a high-level tool that resolves dependencies and talks to repositories on top of it. This section is that layering made concrete for the Debian family (Debian, Ubuntu, and their many derivatives): **dpkg** is the low-level tool, **apt**/**apt-get** is the high-level tool built on top of it, and the **.deb** file is the package format both of them operate on.
 
-The relationship is strict and one-directional. apt does not replace dpkg — it _drives_ dpkg. Every `apt install` ultimately ends in dpkg being invoked to actually unpack a `.deb` and register it in the system's package database. Understanding this layering isn't academic: it's exactly what explains why dpkg can leave a system in a broken dependency state that only apt can climb out of (6), and why "just use dpkg" is fine for a single offline `.deb` but the wrong tool the moment dependencies are involved.
+The relationship is strict and one-directional. apt does not replace dpkg — it _drives_ dpkg. Every `apt install` ultimately ends in dpkg being invoked to actually unpack a `.deb` and register it in the system's package database. Understanding this layering isn't academic: it's exactly what explains why dpkg can leave a system in a broken dependency state that only apt can climb out of, as the broken-dependency recovery section below covers, and why "just use dpkg" is fine for a single offline `.deb` but the wrong tool the moment dependencies are involved.
 
 > 💡 **Tip:** Keep the same two-question discipline §13 recommended for init systems: (1) _"what tool actually unpacks files and writes to the package database?"_ — always dpkg, no exceptions — and (2) _"what tool decided what to unpack, in what order, resolving what dependencies?"_ — apt, when repositories and dependency resolution are involved at all.
 
@@ -35,9 +35,9 @@ dpkg -s package-name          # show status/metadata of an installed package
 | `-S` | Search: given a file path, report which installed package owns it |
 | `-s` | Show a package's status entry from the dpkg database              |
 
-**The critical limitation, stated plainly:** dpkg does not resolve dependencies and does not fetch anything from anywhere. If you hand it a `.deb` file whose control metadata declares a dependency on a package that isn't currently installed, dpkg will not go find and install that dependency — it has no repository to look in even if it wanted to. Depending on the specific dpkg version and flags, it will either refuse to complete the install or install the package anyway and leave it in a broken, unconfigured state, reporting unmet dependencies and leaving the system exactly where 6 picks up.
+**The critical limitation, stated plainly:** dpkg does not resolve dependencies and does not fetch anything from anywhere. If you hand it a `.deb` file whose control metadata declares a dependency on a package that isn't currently installed, dpkg will not go find and install that dependency — it has no repository to look in even if it wanted to. Depending on the specific dpkg version and flags, it will either refuse to complete the install or install the package anyway and leave it in a broken, unconfigured state, reporting unmet dependencies and leaving the system exactly where the broken-dependency recovery section below picks up.
 
-> ⚠️ **Warning:** `dpkg -i somepackage.deb` succeeding at the shell level (exit code aside) is not the same as the package being in a fully working state. dpkg will happily install a `.deb` with unmet dependencies and leave the binary sitting there non-functional — no dependency, no error loud enough to stop you, just a package that will fail at runtime until the missing dependencies are resolved separately. This is precisely the scenario that makes `apt --fix-broken install` (6) a command every Debian-family administrator ends up needing eventually, not a rare edge case.
+> ⚠️ **Warning:** `dpkg -i somepackage.deb` succeeding at the shell level (exit code aside) is not the same as the package being in a fully working state. dpkg will happily install a `.deb` with unmet dependencies and leave the binary sitting there non-functional — no dependency, no error loud enough to stop you, just a package that will fail at runtime until the missing dependencies are resolved separately. This is precisely the scenario that makes `apt --fix-broken install`, covered in the broken-dependency recovery section below, a command every Debian-family administrator ends up needing eventually, not a rare edge case.
 
 **When dpkg is actually the right tool:** installing a single, already-downloaded `.deb` file where you already know its dependencies are satisfied (a vendor-provided package for software not in any repository, a package built in-house, a `.deb` downloaded directly from a project's release page) — and for read-only inspection (`-l`, `-L`, `-S`, `-s`), which apt doesn't replace at all. For anything involving fetching from a repository or resolving a dependency chain, apt is the tool, not dpkg.
 
@@ -102,7 +102,7 @@ This is inspectable directly with standard archive tools — `ar t package.deb` 
 
 ## 6. Fixing a Broken Dependency State
 
-Because dpkg installs happily accept unmet dependencies (2) and because interrupted apt operations (a killed process, a lost connection mid-download) can leave the dpkg database in a half-configured state, Debian-family systems have a dedicated recovery path:
+Because dpkg installs happily accept unmet dependencies, as the dpkg section above covers, and because interrupted apt operations (a killed process, a lost connection mid-download) can leave the dpkg database in a half-configured state, Debian-family systems have a dedicated recovery path:
 
 ```bash
 sudo apt --fix-broken install       # modern apt spelling
@@ -127,7 +127,7 @@ apt list --upgradable 2>/dev/null
 
 **Expected output:** `dpkg --audit` reports nothing if the database is consistent; it names specific packages left in a broken or half-configured state otherwise. A package install or apt operation that previously errored out mid-way is the most common real-world cause.
 
-**Common errors:** Assuming a package that merely shows as "held back" during `apt upgrade` is the same as "broken" — held-back packages (2) are a normal, non-error outcome of the safer `upgrade` behavior, not a sign of database corruption.
+**Common errors:** Assuming a package that merely shows as "held back" during `apt upgrade` is the same as "broken" — held-back packages are a normal, non-error outcome of the safer `upgrade` behavior described above, not a sign of database corruption.
 
 ### 7.2 Running the repair
 
@@ -145,10 +145,10 @@ sudo apt update && sudo apt upgrade
 
 ## 8. Common Misconceptions
 
-1. **"`apt update` upgrades my packages."** It refreshes the local index of what's available — it changes nothing about what's currently installed. `apt upgrade` (or `full-upgrade`) is the command that actually installs newer versions, and it only knows about versions `apt update` most recently fetched (3.1).
-2. **"`dpkg -i` is a safe, complete way to install any `.deb`."** dpkg has no dependency resolution and no repository access — it will install a `.deb` with unmet dependencies and leave the system in a broken state rather than refusing outright or fetching what's missing (2). Use `apt install ./file.deb` when dependency resolution matters, or follow a `dpkg -i` with `apt --fix-broken install` (6).
-3. **"`apt remove` and `apt purge` do the same thing."** `remove` leaves configuration files under `/etc/` in place; `purge` deletes them too. Decommissioning a package for good calls for `purge`; a temporary removal that might be reinstalled later usually calls for `remove` (3.2).
-4. **"apt and apt-get are just two names for the same tool, use whichever."** They differ specifically in output-format stability — `apt`'s output isn't guaranteed stable across versions and is meant for interactive human use, `apt-get`/`apt-cache`'s output has stayed stable for scripting purposes. Using `apt` inside automation is building on a surface the tool itself doesn't promise to keep stable (4).
+1. **"`apt update` upgrades my packages."** It refreshes the local index of what's available — it changes nothing about what's currently installed. `apt upgrade` (or `full-upgrade`) is the command that actually installs newer versions, and it only knows about versions `apt update` most recently fetched, as the index-vs-upgrade section above covers.
+2. **"`dpkg -i` is a safe, complete way to install any `.deb`."** dpkg has no dependency resolution and no repository access — it will install a `.deb` with unmet dependencies and leave the system in a broken state rather than refusing outright or fetching what's missing, as the dpkg section above explains. Use `apt install ./file.deb` when dependency resolution matters, or follow a `dpkg -i` with `apt --fix-broken install`, covered in the broken-dependency recovery section above.
+3. **"`apt remove` and `apt purge` do the same thing."** `remove` leaves configuration files under `/etc/` in place; `purge` deletes them too. Decommissioning a package for good calls for `purge`; a temporary removal that might be reinstalled later usually calls for `remove`, as the install/remove/purge section above details.
+4. **"apt and apt-get are just two names for the same tool, use whichever."** They differ specifically in output-format stability — `apt`'s output isn't guaranteed stable across versions and is meant for interactive human use, `apt-get`/`apt-cache`'s output has stayed stable for scripting purposes. Using `apt` inside automation is building on a surface the tool itself doesn't promise to keep stable, as the apt-vs-apt-get section above covers.
 
 ## 9. Tiered Interview Questions
 

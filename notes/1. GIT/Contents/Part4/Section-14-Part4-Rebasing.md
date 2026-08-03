@@ -4,7 +4,7 @@
 
 **Plain language:** Rebasing takes the commits you made on your branch and replays them, one by one, on top of a different starting point — as if you had started your work there in the first place — instead of joining the two histories together with a merge commit.
 
-**Precise:** `git rebase <upstream>` identifies the commits unique to the current branch since it diverged from `<upstream>`, then, for each one in order, reapplies its content diff on top of `<upstream>`'s current tip, producing a **brand-new commit** with a new hash and new parent for each original commit. The original commits are left untouched and unreferenced (recoverable via the reflog, §6.6) while the current branch's ref is moved to point at the tip of the newly created sequence.
+**Precise:** `git rebase <upstream>` identifies the commits unique to the current branch since it diverged from `<upstream>`, then, for each one in order, reapplies its content diff on top of `<upstream>`'s current tip, producing a **brand-new commit** with a new hash and new parent for each original commit. The original commits are left untouched and unreferenced (recoverable via the reflog, §6) while the current branch's ref is moved to point at the tip of the newly created sequence.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -40,9 +40,9 @@ Expected output (no conflicts):
 Successfully rebased and updated refs/heads/feature.
 ```
 
-Mechanically, Git: (1) finds the merge base of `feature` and `main` — exactly the same computation as §13.4's three-way merge; (2) temporarily sets `feature` aside as a list of commits (`C3`, `C4`) to replay; (3) resets the working tree to `main`'s tip; (4) applies each commit's diff in order, creating a new commit object each time, since each new commit's parent hash differs from the original's, its own hash necessarily differs too, per §5.5.3's chaining; (5) finally moves `feature`'s ref to the last newly created commit.
+Mechanically, Git: (1) finds the merge base of `feature` and `main` — exactly the same computation as §13's three-way merge; (2) temporarily sets `feature` aside as a list of commits (`C3`, `C4`) to replay; (3) resets the working tree to `main`'s tip; (4) applies each commit's diff in order, creating a new commit object each time, since each new commit's parent hash differs from the original's, its own hash necessarily differs too, per §5's commit-object chaining; (5) finally moves `feature`'s ref to the last newly created commit.
 
-> ⚠️ **Critical clarification:** rebasing does not "move" commits in any literal sense — it creates entirely new commit objects with the same tree content-diff but different parents (and therefore different hashes), then abandons the originals. This is the direct, unavoidable consequence of commit identity being computed from content including the parent hash (§5.5.3) — there is no way to change a commit's ancestry without changing its identity.
+> ⚠️ **Critical clarification:** rebasing does not "move" commits in any literal sense — it creates entirely new commit objects with the same tree content-diff but different parents (and therefore different hashes), then abandons the originals. This is the direct, unavoidable consequence of commit identity being computed from content including the parent hash (§5's commit-object coverage) — there is no way to change a commit's ancestry without changing its identity.
 
 ## 4. Rebase vs Merge — Trade-offs
 
@@ -188,7 +188,7 @@ error: could not apply d4e5f6a... Adjust discount logic
 ```
 
 ```bash
-# 1. Resolve the conflict exactly as in §13.7-13.8 — edit out markers, then:
+# 1. Resolve the conflict exactly as in §13's conflict-resolution walkthrough — edit out markers, then:
 $ git add pricing.js
 
 # 2. Tell rebase to proceed with the NEXT commit in the sequence
@@ -203,7 +203,7 @@ $ git rebase --skip
 $ git rebase --abort
 ```
 
-`git status` during a paused rebase names the specific commit currently being applied and reminds you of all three options — the same discoverability pattern as a paused merge (§13.9).
+`git status` during a paused rebase names the specific commit currently being applied and reminds you of all three options — the same discoverability pattern as a paused merge (§13's abort-and-recovery coverage).
 
 ## 9. `git pull --rebase`
 
@@ -257,23 +257,23 @@ Successfully rebased and updated refs/heads/feature.
 $ git rebase --abort     # returns feature to its pre-rebase state
 # or, after completing, recover the ORIGINAL pre-rebase commits via reflog:
 $ git reflog
-$ git reset --hard HEAD@{2}    # example position — see §6.6 / §15
+$ git reset --hard HEAD@{2}    # example position — see §6 / §15
 ```
 
 ## 11. Production & Enterprise Usage
 
 - Hosting platforms' "Rebase and merge" PR button performs exactly the mechanics of this section, non-interactively, replaying the PR's commits directly onto the target branch's tip and fast-forwarding — no merge commit results.
 - `rebase.autoSquash` and `pull.rebase` are common team-wide `.gitconfig` or repo-template defaults specifically to keep contribution history clean without relying on individual discipline.
-- CI pipelines that run on every push to a feature branch can be confused by force-pushes after a rebase (the "same branch, entirely different commits" scenario) — some CI systems specifically detect and re-trigger cleanly on this, others accumulate stale, confusing run history; understanding _why_ it happens (14.3) is the prerequisite for configuring it correctly.
+- CI pipelines that run on every push to a feature branch can be confused by force-pushes after a rebase (the "same branch, entirely different commits" scenario) — some CI systems specifically detect and re-trigger cleanly on this, others accumulate stale, confusing run history; understanding _why_ it happens (the standard-rebase mechanics covered earlier) is the prerequisite for configuring it correctly.
 
 ## 12. Troubleshooting
 
 | Symptom                                                                      | Likely cause                                                                                                  | Fix                                                                                                                                                        |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `error: cannot rebase: You have unstaged changes`                            | Dirty working directory before starting the rebase                                                            | Commit or stash (§16) first                                                                                                                                |
-| Same conflict appears to resolve, then reappears on the next commit          | Multiple replayed commits touch the same lines — expected with rebase, unlike merge's single resolution point | Resolve each occurrence; consider squashing (14.5) related commits first to reduce repeated conflicts                                                      |
-| Teammate's push rejected after your rebase-and-force-push to a shared branch | Exactly the Golden Rule failure mode (14.7)                                                                   | Coordinate: they should back up their work, reset onto your rewritten history, then reapply their commits — or you should not have rebased a shared branch |
-| Commits "disappeared" after a rebase                                         | They were replaced by new commits with new hashes; originals still exist, unreferenced                        | `git reflog` to find the pre-rebase tip, `git reset --hard` or `git switch -c` from it (§6.6, §15)                                                         |
+| Same conflict appears to resolve, then reappears on the next commit          | Multiple replayed commits touch the same lines — expected with rebase, unlike merge's single resolution point | Resolve each occurrence; consider squashing (see the interactive rebase section above) related commits first to reduce repeated conflicts                                                      |
+| Teammate's push rejected after your rebase-and-force-push to a shared branch | Exactly the Golden Rule failure mode (see the Golden Rule of Rebasing section above)                                                                   | Coordinate: they should back up their work, reset onto your rewritten history, then reapply their commits — or you should not have rebased a shared branch |
+| Commits "disappeared" after a rebase                                         | They were replaced by new commits with new hashes; originals still exist, unreferenced                        | `git reflog` to find the pre-rebase tip, `git reset --hard` or `git switch -c` from it (§6, §15)                                                         |
 
 ## 13. Interview Questions
 
@@ -298,7 +298,7 @@ $ git reset --hard HEAD@{2}    # example position — see §6.6 / §15
 2. **"Rebasing is always safer/cleaner than merging, so prefer it by default."** It's a trade-off, not a strict improvement — it discards true historical shape and is actively dangerous on shared branches, where merging remains the only safe option.
 3. **"`git pull --rebase` violates the Golden Rule."** It doesn't — it rebases your own local, not-yet-shared commits onto the newly fetched tip, which is exactly the kind of rebase the rule says is fine.
 4. **"If a rebase conflict is resolved once, it won't happen again in the same rebase."** Each replayed commit is applied independently; the same lines can conflict again on a later commit in the sequence if multiple commits touch that region.
-5. **"Once a rebase completes, the original commits are gone."** They still physically exist in the object database, unreferenced by any branch, and are recoverable via the reflog until garbage collection actually prunes them (§6.6, §15).
+5. **"Once a rebase completes, the original commits are gone."** They still physically exist in the object database, unreferenced by any branch, and are recoverable via the reflog until garbage collection actually prunes them (§6, §15).
 
 ## 15. 🔑 Key Takeaways
 

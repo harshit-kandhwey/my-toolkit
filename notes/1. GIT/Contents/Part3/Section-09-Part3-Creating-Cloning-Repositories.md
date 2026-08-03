@@ -4,7 +4,7 @@
 
 **Plain language:** There are exactly two ways a Git repository comes into existence for you: you create a brand-new, empty one (`git init`), or you copy an existing one from somewhere else, history and all (`git clone`).
 
-**Precise:** `git init` creates the `.git` directory anatomy described in §4.3 — object database, refs, HEAD, index, config — from nothing, with zero commits. `git clone` performs a network (or local-filesystem) transfer of a remote repository's entire object database and refs, then materializes a working directory from the resulting default branch, additionally configuring a **remote** named `origin` and a full set of **remote-tracking branches** (§6.7) pointing at the source's branches.
+**Precise:** `git init` creates the `.git` directory anatomy described in §4 — object database, refs, HEAD, index, config — from nothing, with zero commits. `git clone` performs a network (or local-filesystem) transfer of a remote repository's entire object database and refs, then materializes a working directory from the resulting default branch, additionally configuring a **remote** named `origin` and a full set of **remote-tracking branches** (§6) pointing at the source's branches.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -21,7 +21,7 @@ $ git init
 Initialized empty Git repository in /home/user/my-project/.git/
 ```
 
-This creates the entire `.git` anatomy from §4.3 with zero commits — `git log` at this point fails with `fatal: your current branch 'main' does not have any commits yet`, because there is nothing to log.
+This creates the entire `.git` anatomy from §4 with zero commits — `git log` at this point fails with `fatal: your current branch 'main' does not have any commits yet`, because there is nothing to log.
 
 ### 3.2 Converting an existing folder vs starting fresh
 
@@ -46,13 +46,13 @@ Nothing about `git init` inspects or cares what's already in the directory — i
 ### 3.3 Naming the initial branch: `--initial-branch`
 
 ```bash
-# Purpose: explicitly name the first branch, overriding whatever init.defaultBranch (§8.5) or Git's fallback default is
+# Purpose: explicitly name the first branch, overriding whatever init.defaultBranch (§8) or Git's fallback default is
 $ git init --initial-branch=main
 # short form:
 $ git init -b main
 ```
 
-If neither `init.defaultBranch` is configured nor `-b` is passed, Git falls back to `master` and prints a warning on every `init` — this is precisely why §8.5 recommends setting `init.defaultBranch` once, globally, rather than passing `-b` on every single `init`.
+If neither `init.defaultBranch` is configured nor `-b` is passed, Git falls back to `master` and prints a warning on every `init` — this is precisely why §8 recommends setting `init.defaultBranch` once, globally, rather than passing `-b` on every single `init`.
 
 ### 3.4 `--bare` repositories
 
@@ -62,7 +62,7 @@ $ git init --bare project.git
 Initialized empty Git repository in /srv/git/project.git/
 ```
 
-A bare repository has the same internal structure as `.git/` in a normal repo, but it _is_ the top-level directory — there is no working directory, no index in the usual sense, nothing to edit directly. Full contrast in 9.5.
+A bare repository has the same internal structure as `.git/` in a normal repo, but it _is_ the top-level directory — there is no working directory, no index in the usual sense, nothing to edit directly. Full contrast in the bare-vs-non-bare comparison below.
 
 ## 4. `git clone` — Full Mechanics
 
@@ -83,8 +83,8 @@ Step by step, `git clone` performs:
 
 1. **Full object transfer.** Every reachable commit, tree, and blob object across every branch and tag on the remote is transferred (as compressed packfiles over the wire — §7), not just the currently-checked-out branch's content. This is why a clone can be large even if you only ever intend to work on `main`.
 2. **`origin` remote creation.** A remote named `origin` is registered in `.git/config`, pointing at the URL you cloned from — this is purely a convention name (§20 covers remotes formally), not a Git keyword.
-3. **Remote-tracking branches for every branch on the remote.** Each of the source repo's branches becomes a _local, read-only_ bookkeeping ref under `refs/remotes/origin/<branch>` (§6.7) — `origin/main`, `origin/develop`, etc. — recording where each branch was as of this clone/fetch.
-4. **A local branch for the default branch only.** Git creates exactly one local, checked-out branch — matching whatever the remote's default branch is (commonly `main`) — set to **track** the corresponding remote-tracking branch. Other remote branches exist only as `origin/<name>` refs until you explicitly check them out locally (`git switch <name>` auto-creates the local tracking branch on first use, per §6.13's troubleshooting table).
+3. **Remote-tracking branches for every branch on the remote.** Each of the source repo's branches becomes a _local, read-only_ bookkeeping ref under `refs/remotes/origin/<branch>` (§6) — `origin/main`, `origin/develop`, etc. — recording where each branch was as of this clone/fetch.
+4. **A local branch for the default branch only.** Git creates exactly one local, checked-out branch — matching whatever the remote's default branch is (commonly `main`) — set to **track** the corresponding remote-tracking branch. Other remote branches exist only as `origin/<name>` refs until you explicitly check them out locally (`git switch <name>` auto-creates the local tracking branch on first use, per §6's troubleshooting table).
 5. **Working directory materialization.** Git checks out the default branch's tree, writing every file into a new working directory, and populates the index to match.
 
 ```
@@ -102,14 +102,14 @@ Remote (GitHub):                       Local machine:
 ### 4.2 Cloning via HTTPS vs SSH URL forms
 
 ```bash
-# HTTPS form — prompts for credentials/PAT per §8.7.4 (or uses a cached credential helper)
+# HTTPS form — prompts for credentials/PAT per §8's credential helper coverage (or uses a cached credential helper)
 $ git clone https://github.com/example-org/example-repo.git
 
-# SSH form — authenticates via your registered SSH key (§8.7.1)
+# SSH form — authenticates via your registered SSH key (§8)
 $ git clone git@github.com:example-org/example-repo.git
 ```
 
-Both produce an identical resulting repository — the URL scheme only affects _how_ the transfer authenticates and transports (§8.7.3 covers the trade-offs), never what ends up in `.git/objects`.
+Both produce an identical resulting repository — the URL scheme only affects _how_ the transfer authenticates and transports (§8 covers the trade-offs), never what ends up in `.git/objects`.
 
 ### 4.3 Naming the destination directory
 

@@ -18,7 +18,7 @@ Linus evaluated existing tools and rejected all of them. His requirements, later
 4. **Cheap, trivial branching and merging.** The kernel's actual workflow is a tree of maintainer trees (subsystem maintainers merge into Linus's tree), so merging had to be a first-class, cheap, frequent operation, not a rare, dreaded one.
 5. **Non-linear development at scale.** Thousands of parallel, divergent lines of work needed to be trackable and mergeable without central coordination.
 
-He evaluated **Monotone** specifically (§1.6.2) — it had the right philosophical shape (distributed, content-addressed) — and found it too slow for kernel-sized repositories, largely due to using a general-purpose SQL database for storage rather than a purpose-built format.
+He evaluated **Monotone** specifically (part of §1's survey of pre-Git VCS tools) — it had the right philosophical shape (distributed, content-addressed) — and found it too slow for kernel-sized repositories, largely due to using a general-purpose SQL database for storage rather than a purpose-built format.
 
 **Decision:** build a new tool from scratch. Linus began work on **April 3, 2005**. A self-hosting version — Git capable of managing its own source history — was running within about **10 days**. The kernel itself moved onto Git by June 2005. Linus handed primary maintainership to **Junio Hamano** shortly after, who remains Git's lead maintainer today.
 
@@ -40,7 +40,7 @@ Git's actual data model — a content-addressed graph of four object types (§5)
 
 ### 4.3 Distributed by design, not by feature
 
-Distribution was not an add-on; it was the entire point (§2.2, item 2). Every clone contains full history and full capability. There is no privileged operation that only a "server" can perform — a design position that flows directly from the BitKeeper trauma.
+Distribution was not an add-on; it was the entire point — recall Linus's "fully distributed" requirement above. Every clone contains full history and full capability. There is no privileged operation that only a "server" can perform — a design position that flows directly from the BitKeeper trauma.
 
 ### 4.4 Strong integrity guarantees via cryptographic hashing
 
@@ -57,7 +57,7 @@ A senior-level understanding requires knowing what was _sacrificed_, not just wh
 | Snapshots per commit                                     | Storing diffs per commit                    | Snapshots make "what did the whole project look like at commit X" a direct lookup, not a replay of every diff since the beginning — critical at kernel scale and history depth |
 | A minimal, low-level "plumbing" toolkit exposed to users | A single polished high-level interface only | Enabled the ecosystem of tools and scripts to be built on top (and, honestly, reflects that Git was built by and for kernel developers comfortable with low-level tools first) |
 | Command-line-first, Unix-philosophy tool                 | An integrated GUI application               | Matched its origin as infrastructure for the most CLI-native developer community in existence; GUIs came later as third-party or bolted-on layers                              |
-| Eventual-consistency, no locking                         | File-locking / pessimistic concurrency      | Matches the copy-modify-merge philosophy (§1.5.2) required for thousands of independent contributors who cannot coordinate locks in real time                                  |
+| Eventual-consistency, no locking                         | File-locking / pessimistic concurrency      | Matches the copy-modify-merge philosophy (per §1's model of concurrent editing) required for thousands of independent contributors who cannot coordinate locks in real time                                  |
 
 ## 6. From Kernel Tool to Industry Standard — Adoption Timeline
 
@@ -81,7 +81,7 @@ This is a frequent senior/architect interview question, so it deserves a direct,
 - **Technical parity, mostly.** Both are distributed, both use content-addressed-ish models (Mercurial's internals differ in detail but solve the same problems), both support fast local branching. Neither is simply "faster" in a way that explains 10x adoption differences.
 - **GitHub effect.** GitHub chose Git, not Mercurial, and became the dominant social coding platform. Network effects (where your collaborators and open-source dependencies already are) compound quickly.
 - **CLI philosophy diverged.** Git exposes a lower-level, more "here are the primitives" interface; Mercurial deliberately prioritized a cleaner, more consistent command surface. In practice the ecosystem/platform effect outweighed Mercurial's usability advantage.
-- **Corporate backing at scale.** Facebook/Meta invested heavily in Mercurial internally (and built Sapling on it, per §1.8) but did not open that investment into a competing public hosting platform the way GitHub did for Git.
+- **Corporate backing at scale.** Facebook/Meta invested heavily in Mercurial internally (and built Sapling on it, as covered in §1) but did not open that investment into a competing public hosting platform the way GitHub did for Git.
 - **Google** used both at different points, and Google Code (which supported both) shut down in 2016, removing one more Mercurial-hosting option from the ecosystem.
 
 > 🎯 **Interview tip:** A senior answer to "why did Git win?" names the platform/network-effect argument explicitly. A junior answer just claims Git is technically superior — which is not a fully accurate claim and signals shallow research if stated as fact.

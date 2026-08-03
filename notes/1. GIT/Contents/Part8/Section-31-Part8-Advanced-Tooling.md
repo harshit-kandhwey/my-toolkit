@@ -20,7 +20,7 @@ Ordinary Git usage assumes: one working directory per repository, conflicts reso
 
 ### 3.1 The problem it solves
 
-Without worktrees, working on two branches "at once" means either two full clones (duplicated object database, manual syncing, disk cost) or repeatedly stashing (§16) and switching (§12.6) in a single working directory — disruptive if you have an in-progress build, running dev server, or uncommitted experiment you don't want to touch.
+Without worktrees, working on two branches "at once" means either two full clones (duplicated object database, manual syncing, disk cost) or repeatedly stashing (§16) and switching branches (§12) in a single working directory — disruptive if you have an in-progress build, running dev server, or uncommitted experiment you don't want to touch.
 
 ### 3.2 The model
 
@@ -45,7 +45,7 @@ A **worktree** is a separate working directory, with its own checked-out branch 
 
 ### 3.3 Core rule: one branch, one worktree
 
-Git refuses to check the same branch out in two worktrees simultaneously — this prevents two working directories from silently diverging on what "the tip of `main`" means. Use a detached checkout (§6.4.2) or a distinct branch if you need two views of similar content.
+Git refuses to check the same branch out in two worktrees simultaneously — this prevents two working directories from silently diverging on what "the tip of `main`" means. Use a detached checkout (§6) or a distinct branch if you need two views of similar content.
 
 ```bash
 # Purpose: create a new worktree for a hotfix branch without touching the current working directory
@@ -123,13 +123,13 @@ $ git rebase main
 
 ### 5.1 The problem it solves
 
-Sometimes you want to attach information to a commit **after** it already exists — a code review verdict, a CI build ID, a link to an incident ticket, a "verified by QA" stamp — without amending the commit (which would change its hash, per §5.5.3, and break every reference, branch, tag, and downstream fork pointing at it).
+Sometimes you want to attach information to a commit **after** it already exists — a code review verdict, a CI build ID, a link to an incident ticket, a "verified by QA" stamp — without amending the commit (which would change its hash, per §5's object-hashing rules, and break every reference, branch, tag, and downstream fork pointing at it).
 
 ### 5.2 The mechanism
 
 A **note** is a separate object, stored under a special ref namespace (`refs/notes/commits` by default), that maps a commit hash to a piece of text. Crucially, **notes are not part of the commit object** — attaching, editing, or removing a note never changes the commit's hash.
 
-> ⚠️ **Critical clarification / contrast with §5:** §5 established that everything Git hashes is part of the object's permanent identity. Notes are the deliberate exception to that pattern at the _user-visible_ layer — they live alongside a commit, referenced by its hash, rather than inside it. This is precisely why they can be added, edited, or deleted freely without any of the cascading-hash consequences described in §5.5.3 and §5.7.
+> ⚠️ **Critical clarification / contrast with §5:** §5 established that everything Git hashes is part of the object's permanent identity. Notes are the deliberate exception to that pattern at the _user-visible_ layer — they live alongside a commit, referenced by its hash, rather than inside it. This is precisely why they can be added, edited, or deleted freely without any of §5's cascading-hash consequences for a changed object.
 
 ```bash
 # Purpose: attach a note to the current commit
@@ -255,7 +255,7 @@ $ git filter-repo --path billing-service/ --path-rename billing-service/:
 $ git filter-repo --mailmap mailmap.txt
 ```
 
-> ⚠️ **Critical clarification:** exactly like every other history-rewrite tool, `filter-repo` produces **new commit hashes for every rewritten commit** (per the chaining mechanism in §5.5.3) — this is a repository-wide history rewrite, subject to the full weight of the Golden Rule (§14.7). Every existing clone, fork, and open PR based on the old history becomes incompatible and must be re-cloned or reset onto the new history; this is not something to do to a shared branch without full team coordination and advance notice.
+> ⚠️ **Critical clarification:** exactly like every other history-rewrite tool, `filter-repo` produces **new commit hashes for every rewritten commit** (per §5's hash-chaining mechanism) — this is a repository-wide history rewrite, subject to the full weight of §14's Golden Rule of rebasing. Every existing clone, fork, and open PR based on the old history becomes incompatible and must be re-cloned or reset onto the new history; this is not something to do to a shared branch without full team coordination and advance notice.
 
 ### 7.3 Relationship to secret remediation
 
@@ -306,4 +306,4 @@ Removing a secret from history with `filter-repo` (or its equivalents) is a **ne
 
 ## 12. Related Concepts & What's Next
 
-This section covered the specialized tools sitting above the object model and refs. §32 turns to Git's own evolution over time — the `master`→`main` rename, the `checkout`-splitting story completed, default merge-strategy changes, the ongoing SHA-1-to-SHA-256 transition previewed in §5.4, and how Git compares today against SVN, Mercurial, and Perforce. §33 then consolidates best practices and anti-patterns from across this entire series into one reference.
+This section covered the specialized tools sitting above the object model and refs. §32 turns to Git's own evolution over time — the `master`→`main` rename, the `checkout`-splitting story completed, default merge-strategy changes, the ongoing SHA-1-to-SHA-256 transition previewed in §5, and how Git compares today against SVN, Mercurial, and Perforce. §33 then consolidates best practices and anti-patterns from across this entire series into one reference.

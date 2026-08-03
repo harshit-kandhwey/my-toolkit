@@ -41,11 +41,11 @@ mask::rw-
 other::---
 ```
 
-Reading this: `bob` (owner) has read-write, `finance` (owning group) has read-only, a named ACL entry grants `alice` read-only, another named entry grants the `auditors` group read-only, `mask` caps what named entries can effectively grant (3), and `other` has nothing.
+Reading this: `bob` (owner) has read-write, `finance` (owning group) has read-only, a named ACL entry grants `alice` read-only, another named entry grants the `auditors` group read-only, `mask` caps what named entries can effectively grant, as the `setfacl` section below details, and `other` has nothing.
 
 **Common errors:**
 
-- Assuming a file with no visible `+` in `ls -l` (3.3) still needs `getfacl` checked — it doesn't; the `+` is a reliable signal that ACL entries exist beyond the standard bits, so `getfacl` is only necessary once that flag is spotted.
+- Assuming a file with no visible `+` in `ls -l` still needs `getfacl` checked — it doesn't; the `+` is a reliable signal that ACL entries exist beyond the standard bits, so `getfacl` is only necessary once that flag is spotted.
 
 ## 3. `setfacl`: Setting and Modifying ACL Entries
 
@@ -65,7 +65,7 @@ setfacl -b FILE            # remove ALL ACL entries, back to plain owner/group/o
 | `-x` | Remove one named entry, leaving other ACL entries and the base bits intact                |
 | `-b` | Strip every ACL entry from the file, reverting to pure owner/group/other                  |
 | `-R` | Recursive — apply through a directory tree (same mixed-tree caution as §27's `chmod -R`)  |
-| `-d` | Set a **default** ACL on a directory, for inheritance (4)                                 |
+| `-d` | Set a **default** ACL on a directory, for inheritance — see the default ACL section below |
 
 **Example usage:**
 
@@ -84,7 +84,7 @@ Entry syntax follows `[u|g]:name:permissions` — `u:alice:rx` for a named user,
 **Common errors:**
 
 - Forgetting that `-x` takes just the identity (`u:alice`), not a permission string — `setfacl -x u:alice:rx file` is invalid syntax for removal; only `setfacl -x u:alice file` removes the entry.
-- Running `setfacl -m` and expecting the new entry to take effect immediately regardless of the mask — it doesn't (3.1).
+- Running `setfacl -m` and expecting the new entry to take effect immediately regardless of the mask — it doesn't, as the mask entry below explains.
 
 ### 3.1 The Mask Entry: A Silent Permission Cap
 
@@ -182,21 +182,21 @@ After `-b`, the file's standard bits (§27) remain exactly as they were — `-b`
 ACLs solve a real gap, but they come with a real cost that's easy to underweight when reaching for them:
 
 - **They're invisible in the tool most admins check first.** `ls -l` shows only the `+` flag, not what the ACL actually grants — anyone auditing permissions by eye has to know to run `getfacl` on every flagged file, which is an easy step to skip under time pressure.
-- **The mask makes "looks right" and "is right" diverge.** A `getfacl` listing can show an entry granting `rwx` while the effective permission is silently `r--` because of the mask (3.1) — debugging an access-denied report on a file with ACLs takes longer than debugging the same report on a file governed purely by standard bits.
+- **The mask makes "looks right" and "is right" diverge.** A `getfacl` listing can show an entry granting `rwx` while the effective permission is silently `r--` because of the mask entry covered above — debugging an access-denied report on a file with ACLs takes longer than debugging the same report on a file governed purely by standard bits.
 - **They don't compose cleanly with some backup, sync, and archive tools.** Not every `cp`, `rsync`, or `tar` invocation preserves ACL entries by default (`rsync -A`, `cp --preserve=all`/`-p` with ACL-aware builds are needed) — a routine backup or migration that doesn't explicitly preserve ACLs can silently drop them, leaving the restored copy under-permissioned relative to the original without any error being raised.
 - **They spread access-control logic across two places instead of one.** Once ACLs are in use, understanding "who can access this file" requires checking both the standard bits and the ACL entries — for a host or fleet where ACLs are used pervasively, that doubling of what has to be audited is a genuine, ongoing operational cost, not a one-time setup cost.
 
-The practical guidance senior teams converge on: reach for ACLs when the three-slot model genuinely can't express the requirement (6, §27), not as a default habit for every sharing need — a well-designed group structure handles most real cases more transparently, and ACLs are best reserved for the specific, narrow exceptions groups can't cleanly cover.
+The practical guidance senior teams converge on: reach for ACLs when the three-slot model genuinely can't express the requirement, as established by §27's three-slot limitation, not as a default habit for every sharing need — a well-designed group structure handles most real cases more transparently, and ACLs are best reserved for the specific, narrow exceptions groups can't cleanly cover.
 
 > ⚠️ **Warning:** Treat any file or directory carrying ACL entries as needing explicit documentation of _why_ — a stray `setfacl` entry left over from a resolved one-off request is a common source of stale access that outlives its justification, precisely because it's invisible to a casual `ls -l` review and easy to forget was ever set.
 
 ## 9. Common Misconceptions
 
-1. **"ACLs replace the standard permission bits."** They extend them — every file still has its owner/group/other bits, and `setfacl -b` proves this by showing those bits fully intact once every ACL entry is stripped away (7).
-2. **"If `getfacl` shows `rwx` on a named entry, that's the effective permission."** Not necessarily — the mask entry caps what every named user/group entry (and the owning group entry) can actually grant, and `getfacl` only surfaces the reduction via an easy-to-miss `#effective:` comment (3.1).
-3. **"A default ACL on a directory retroactively protects existing files inside it."** It only governs files created after the default ACL is set — existing content needs a separate, explicit `setfacl -R` pass (4).
-4. **"`ls -l`'s `rwx` string is the complete permission picture."** If the string ends in `+`, it isn't — that flag means ACL entries exist beyond the nine visible characters, and only `getfacl` shows the full picture (5).
-5. **"ACLs are always available wherever chmod works."** They require filesystem-level support and, historically, an explicit `acl` mount option — assuming availability without checking can produce a confusing operation-not-supported error on older systems or unusually mounted filesystems (6).
+1. **"ACLs replace the standard permission bits."** They extend them — every file still has its owner/group/other bits, and `setfacl -b` proves this by showing those bits fully intact once every ACL entry is stripped away, as the removing-ACLs section above demonstrates.
+2. **"If `getfacl` shows `rwx` on a named entry, that's the effective permission."** Not necessarily — the mask entry caps what every named user/group entry (and the owning group entry) can actually grant, and `getfacl` only surfaces the reduction via an easy-to-miss `#effective:` comment, as covered in the mask section above.
+3. **"A default ACL on a directory retroactively protects existing files inside it."** It only governs files created after the default ACL is set — existing content needs a separate, explicit `setfacl -R` pass, as the default ACL section above notes.
+4. **"`ls -l`'s `rwx` string is the complete permission picture."** If the string ends in `+`, it isn't — that flag means ACL entries exist beyond the nine visible characters, and only `getfacl` shows the full picture, as the `ls -l` section above covers.
+5. **"ACLs are always available wherever chmod works."** They require filesystem-level support and, historically, an explicit `acl` mount option — assuming availability without checking can produce a confusing operation-not-supported error on older systems or unusually mounted filesystems, as the filesystem-support section above details.
 
 ## 10. Tiered Interview Questions
 
@@ -228,6 +228,6 @@ _What the interviewer is probing for:_ Realistic design balancing groups as the 
 
 ## 12. Related Concepts & What's Next
 
-This section is the direct continuation of §27's three-slot limitation and depends on §27's owner/group/other model as the base layer ACL entries extend rather than replace. §29's umask governs the base bits a new file receives at creation; default ACLs (4) layer named-entry inheritance on top of that same creation-time moment without overriding it. §31 (`sudo`, next) moves to a different axis of access control entirely — privilege escalation for specific commands rather than per-file named grants — and is the mechanism an admin would actually use to run `setfacl` on files they don't already have write access to.
+This section is the direct continuation of §27's three-slot limitation and depends on §27's owner/group/other model as the base layer ACL entries extend rather than replace. §29's umask governs the base bits a new file receives at creation; default ACLs, as covered above, layer named-entry inheritance on top of that same creation-time moment without overriding it. §31 (`sudo`, next) moves to a different axis of access control entirely — privilege escalation for specific commands rather than per-file named grants — and is the mechanism an admin would actually use to run `setfacl` on files they don't already have write access to.
 
 **Next Section:** §31 — `Section-31-Part4-Sudo-Privilege-Escalation.md`

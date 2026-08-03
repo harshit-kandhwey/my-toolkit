@@ -8,14 +8,14 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **Loose objects and stale packs degrade real performance**, not just disk usage — filesystem overhead per tiny loose-object file (§7.2) and unoptimized delta relationships both slow down `status`, `log`, `checkout`, and clone operations as a repository ages.
+1. **Loose objects and stale packs degrade real performance**, not just disk usage — filesystem overhead per tiny loose-object file (§7) and unoptimized delta relationships both slow down `status`, `log`, `checkout`, and clone operations as a repository ages.
 2. **Corruption, while rare, does happen** — disk failures, interrupted operations, or misuse of low-level plumbing commands can leave the object database in an inconsistent state; `fsck` is the tool that detects this before it causes silent, confusing downstream failures.
 3. **A small set of situations account for the overwhelming majority of "Git is broken" support requests** — detached HEAD confusion, commits on the wrong branch, conflict-resolution paralysis, and SSH authentication failures. Recognizing the pattern immediately, rather than re-deriving the fix from first principles under panic, is a genuine practical skill.
-4. **At scale, default Git configuration leaves real performance on the table** — a handful of configuration knobs and the scaling techniques from §26 exist specifically because "everyone has all history, plus a full working-tree scan on every status" (§1.6.1's DVCS model) has real costs once a repository grows large enough.
+4. **At scale, default Git configuration leaves real performance on the table** — a handful of configuration knobs and the scaling techniques from §26 exist specifically because "everyone has all history, plus a full working-tree scan on every status" (§1's DVCS model) has real costs once a repository grows large enough.
 
 ## 3. `git gc` in Practice — When and How to Run It Manually
 
-§7.6 covered the mechanics; the operational question here is _when a developer or repo administrator should intervene_ rather than trust `gc.auto`.
+§7 covered the mechanics; the operational question here is _when a developer or repo administrator should intervene_ rather than trust `gc.auto`.
 
 ```bash
 # Purpose: standard maintenance — safe to run any time, cheap on small/medium repos
@@ -31,9 +31,9 @@ $ git gc --aggressive
 
 Manual intervention is worth it specifically:
 
-- **After a large history rewrite** (`filter-repo`, §28.10) — this generates a burst of loose objects that `gc.auto`'s threshold-based trigger may not immediately catch, and the old, now-unreferenced objects should be pruned promptly rather than left occupying disk.
-- **After a bulk import** (converting a large SVN/Perforce history, §1.8) — same reasoning, large one-time object churn.
-- **On self-hosted infrastructure**, where administrators typically schedule `git gc` (or the newer `git maintenance`, 29.3.1) as a deliberate cron job across many repositories during low-traffic windows, rather than relying purely on each individual repo's automatic trigger.
+- **After a large history rewrite** (`filter-repo`, §28) — this generates a burst of loose objects that `gc.auto`'s threshold-based trigger may not immediately catch, and the old, now-unreferenced objects should be pruned promptly rather than left occupying disk.
+- **After a bulk import** (converting a large SVN/Perforce history, §1) — same reasoning, large one-time object churn.
+- **On self-hosted infrastructure**, where administrators typically schedule `git gc` (or the newer `git maintenance`, covered next) as a deliberate cron job across many repositories during low-traffic windows, rather than relying purely on each individual repo's automatic trigger.
 
 ### 3.1 `git maintenance` — the modern scheduler
 
@@ -80,13 +80,13 @@ dangling commit <hash>
 
 | Category                    | Meaning                                                                    | Concerning?                                                                                                                                                         |
 | --------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dangling commit/blob/tree` | A valid, uncorrupted object that nothing currently references              | Not inherently a problem — often just an abandoned detached-HEAD commit (§6.4.2) or amend/rebase leftover (§7.6.3); occasionally a deliberate recovery target (§30) |
+| `dangling commit/blob/tree` | A valid, uncorrupted object that nothing currently references              | Not inherently a problem — often just an abandoned detached-HEAD commit (§6) or amend/rebase leftover (§7); occasionally a deliberate recovery target (§30) |
 | `missing <type> <hash>`     | Something references an object that doesn't actually exist in the database | Genuine corruption or an incomplete clone/fetch                                                                                                                     |
 | `error: bad <type> object`  | An object exists but fails to parse/validate                               | Genuine corruption — file truncation, disk error, or manual tampering                                                                                               |
 
 ## 5. `git count-objects` — Repository Health Stats
 
-Already introduced in §7.7; the operational habit worth calling out here is using it as the _first_ diagnostic step before reaching for `gc`, so you have a before/after comparison and aren't running maintenance blind:
+Already introduced in §7; the operational habit worth calling out here is using it as the _first_ diagnostic step before reaching for `gc`, so you have a before/after comparison and aren't running maintenance blind:
 
 ```bash
 $ git count-objects -v
@@ -97,7 +97,7 @@ packs: 3
 size-pack: 158200
 ```
 
-A persistently high `count` (loose objects) relative to `in-pack` across normal usage is the signal that `gc.auto`'s threshold isn't triggering appropriately for this repo's activity level, and manual/scheduled maintenance (29.3, 29.3.1) is warranted.
+A persistently high `count` (loose objects) relative to `in-pack` across normal usage is the signal that `gc.auto`'s threshold isn't triggering appropriately for this repo's activity level, and manual/scheduled maintenance, as covered above, is warranted.
 
 ## 6. Repository Size Troubleshooting — Finding Large Objects in History
 
@@ -118,8 +118,8 @@ Expected output (trimmed to key columns): a ranked list of `<hash> <size> <path>
 **General diagnostic approach once the large blobs are identified:**
 
 1. Confirm whether the large file is **still needed in the working tree today** or is purely historical baggage.
-2. If it's a currently-needed large/binary asset that churns, that's a Git LFS candidate (§26.7), not a history-rewriting problem.
-3. If it's genuinely accidental (a build artifact, a debug dump, a media file committed by mistake) and no longer needed even historically, it's a `git filter-repo` removal — the same class of operation as §28.10's secret remediation, with the same force-push/re-clone coordination consequences (§14.7's Golden Rule) and the same requirement to inform every collaborator.
+2. If it's a currently-needed large/binary asset that churns, that's a Git LFS candidate (§26), not a history-rewriting problem.
+3. If it's genuinely accidental (a build artifact, a debug dump, a media file committed by mistake) and no longer needed even historically, it's a `git filter-repo` removal — the same class of operation as §28's secret remediation, with the same force-push/re-clone coordination consequences (§14's Golden Rule) and the same requirement to inform every collaborator.
 4. If the size is simply "a large, long-lived, active repository with a lot of legitimate history," the answer isn't rewriting — it's the scaling techniques from §26: shallow clones, partial clone, sparse-checkout.
 
 ## 7. Common Failure Scenarios — Symptom → Diagnosis → Fix
@@ -127,31 +127,31 @@ Expected output (trimmed to key columns): a ranked list of `<hash> <size> <path>
 ### 7.1 "I'm in detached HEAD and I don't know what happened"
 
 - **Symptom:** `git status` reports "HEAD detached at `<hash>`"; branch name is missing from the prompt/status.
-- **Diagnosis:** you checked out a specific commit or tag rather than a branch (§6.4.2), likely deliberately at the time (inspecting an old release, or a CI checkout) but now need to continue working.
-- **Fix:** if you want to keep any commits made here, `git switch -c <new-branch-name>` immediately; if you just want to get back to normal work, `git switch main` (or whichever branch), accepting that any uncommitted detached-HEAD commits become reflog-recoverable-only (§6.9) unless branched off first.
+- **Diagnosis:** you checked out a specific commit or tag rather than a branch (§6), likely deliberately at the time (inspecting an old release, or a CI checkout) but now need to continue working.
+- **Fix:** if you want to keep any commits made here, `git switch -c <new-branch-name>` immediately; if you just want to get back to normal work, `git switch main` (or whichever branch), accepting that any uncommitted detached-HEAD commits become reflog-recoverable-only (§6) unless branched off first.
 
 ### 7.2 "I committed to the wrong branch"
 
 - **Symptom:** a commit landed on `main` (or another shared branch) that should have gone on a feature branch.
 - **Diagnosis:** forgot to `git switch -c` before starting work.
-- **Fix, if not yet pushed:** `git reset --soft HEAD~1` on the wrong branch (undoes the commit, keeps changes staged, §15.4), `git switch -c correct-branch`, then commit there. **Fix, if already pushed and shared:** don't `reset` a shared branch (§14.7's Golden Rule) — instead `git revert` the mistaken commit on the wrong branch (§15.5), then cherry-pick (§17) or recreate the change on the correct branch.
+- **Fix, if not yet pushed:** `git reset --soft HEAD~1` on the wrong branch (undoes the commit, keeps changes staged, §15), `git switch -c correct-branch`, then commit there. **Fix, if already pushed and shared:** don't `reset` a shared branch (§14's Golden Rule) — instead `git revert` the mistaken commit on the wrong branch (§15), then cherry-pick (§17) or recreate the change on the correct branch.
 
 ### 7.3 "Merge conflict I can't resolve, how do I start over"
 
 - **Symptom:** mid-merge, conflict markers are confusing, multiple files are affected, and the safest move feels like "undo all of this."
-- **Diagnosis:** normal outcome of overlapping concurrent edits (§13.7-13.8); panic, not an actual error state.
-- **Fix:** `git merge --abort` restores the pre-merge state exactly, with zero risk — this is always safe as long as the merge hasn't been completed with a commit yet. Same pattern for a rebase gone wrong: `git rebase --abort` (§14.8). Only after aborting and calming down should you re-attempt, ideally resolving one file at a time and checking `git status` between each.
+- **Diagnosis:** normal outcome of overlapping concurrent edits (§13); panic, not an actual error state.
+- **Fix:** `git merge --abort` restores the pre-merge state exactly, with zero risk — this is always safe as long as the merge hasn't been completed with a commit yet. Same pattern for a rebase gone wrong: `git rebase --abort` (§14). Only after aborting and calming down should you re-attempt, ideally resolving one file at a time and checking `git status` between each.
 
 ### 7.4 "My repo is huge and slow"
 
 - **Symptom:** `clone`, `status`, or `checkout` taking noticeably longer than expected.
-- **Diagnosis:** apply 29.5-29.6's process — check loose object count first, then hunt for outsized historical blobs.
-- **Fix:** `git gc` if it's simply unpacked/unoptimized storage; large-blob removal via `filter-repo` (28.10) or migration to LFS (§26.7) if specific objects are the culprit; shallow/partial clone and sparse-checkout (§26.4-26.6) if the repository is legitimately large and the real fix is not fetching/materializing all of it in the first place.
+- **Diagnosis:** apply the health-stats-then-large-object-hunt process described above — check loose object count first, then hunt for outsized historical blobs.
+- **Fix:** `git gc` if it's simply unpacked/unoptimized storage; large-blob removal via `filter-repo` (§28) or migration to LFS (§26) if specific objects are the culprit; shallow/partial clone and sparse-checkout (§26) if the repository is legitimately large and the real fix is not fetching/materializing all of it in the first place.
 
 ### 7.5 "Permission denied (publickey)"
 
 - **Symptom:** `git fetch`/`push` over SSH fails with `Permission denied (publickey). fatal: Could not read from remote repository.`
-- **Diagnosis:** the SSH key being offered doesn't match a key registered with the remote host — most commonly: no key generated yet, the public key was never added to the platform (§8.7.1), the wrong key is being offered when multiple exist, or the SSH agent isn't running/loaded with the key.
+- **Diagnosis:** the SSH key being offered doesn't match a key registered with the remote host — most commonly: no key generated yet, the public key was never added to the platform (§8), the wrong key is being offered when multiple exist, or the SSH agent isn't running/loaded with the key.
 - **Fix:**
 
   ```bash
@@ -176,7 +176,7 @@ Beyond the scaling techniques already covered in depth in §26, a few configurat
 | `core.fsmonitor`                             | Delegates working-tree change detection to a filesystem watcher (built-in since Git 2.37, or the older Watchman integration) instead of Git scanning every file on every `status` — the single biggest `status`/`add` speedup on repositories with very large working trees (hundreds of thousands of files) |
 | `feature.manyFiles`                          | A convenience meta-setting that bundles several defaults (including enabling `fsmonitor`-friendly behavior and the untracked-cache) tuned for exactly this large-file-count scenario                                                                                                                         |
 | `core.untrackedCache`                        | Caches which paths are untracked between runs, avoiding a full untracked-file re-scan every time                                                                                                                                                                                                             |
-| Partial clone / sparse-checkout (§26.5-26.6) | Not a config knob so much as an architectural mitigation — reduces how much history/working-tree content exists locally at all, which is the more fundamental fix once a repository crosses from "large" into "too large for a full clone to be reasonable"                                                  |
+| Partial clone / sparse-checkout (§26)        | Not a config knob so much as an architectural mitigation — reduces how much history/working-tree content exists locally at all, which is the more fundamental fix once a repository crosses from "large" into "too large for a full clone to be reasonable"                                                  |
 
 ```bash
 # Purpose: enable the bundle of large-repository-friendly defaults in one setting
@@ -212,7 +212,7 @@ in-pack: 3421
 packs: 1
 ```
 
-Exactly as §28.10-28.11 describe for secret remediation, this rewrite changes every commit hash from the point the file was introduced onward — the same force-push/re-clone coordination under the Golden Rule (§14.7) applies here too, even though the motive is disk space rather than security.
+Exactly as §28 describes for secret remediation, this rewrite changes every commit hash from the point the file was introduced onward — the same force-push/re-clone coordination under the Golden Rule (§14) applies here too, even though the motive is disk space rather than security.
 
 ## 10. Troubleshooting Reference Table
 
@@ -221,7 +221,7 @@ Exactly as §28.10-28.11 describe for secret remediation, this rewrite changes e
 | `fatal: bad object <hash>`                              | Corruption — truncated file, disk error, interrupted operation    | `git fsck --full`; if the object is unrecoverable locally, re-fetch from a remote or another collaborator's clone (§30) |
 | `warning: There are too many unreachable loose objects` | Past `gc.auto`'s threshold, not yet cleaned                       | `git gc` manually, or wait for the next automatic trigger                                                               |
 | `status`/`add` noticeably slow on a large working tree  | No filesystem monitor caching, huge file count scanned every time | `git config core.fsmonitor true` and/or `feature.manyFiles true`                                                        |
-| Clone takes far longer than expected                    | Full history of a large/old repository being fetched in full      | Shallow clone (`--depth`) or partial clone (`--filter=blob:none`), §26.4-26.5                                           |
+| Clone takes far longer than expected                    | Full history of a large/old repository being fetched in full      | Shallow clone (`--depth`) or partial clone (`--filter=blob:none`), §26                                                  |
 | `Permission denied (publickey)` on fetch/push           | SSH key not registered, not loaded in agent, or wrong key offered | `ssh -T git@<host>` to diagnose; `ssh-add`; per-host `~/.ssh/config` entries                                            |
 | Merge/rebase feels unrecoverable mid-conflict           | Normal conflict-resolution overwhelm, not an actual broken state  | `git merge --abort` / `git rebase --abort` — always safe before completion                                              |
 
@@ -240,11 +240,11 @@ Exactly as §28.10-28.11 describe for secret remediation, this rewrite changes e
 **Model answer:** First, `ssh -T git@<host>` to see exactly what identity, if any, the remote host recognizes them as — this immediately tells you whether it's an authentication problem at all versus something else being misreported. Second, `ssh-add -l` to confirm their SSH agent actually has a key loaded — a generated key that was never added to the running agent is a common gap. Third, confirm the matching public key is actually registered in their account settings on the hosting platform, not just generated locally. Fourth, if they have multiple SSH keys for different hosts or accounts, check whether the wrong one is being offered by default, which is best solved durably with per-host `IdentityFile` entries in `~/.ssh/config` rather than manually managing which key is loaded each time.
 
 **[Senior] Q5. Your CI pipeline's checkout step has gotten noticeably slower over the past year as the repository has grown. Walk through your diagnostic and remediation approach.**
-**Model answer:** I'd first separate two possible causes: is the repository genuinely larger (more history, more/bigger files), or is it the same logical size but poorly packed/maintained? `git count-objects -v` and a size-sorted object scan (§29.6's `rev-list`/`cat-file` pipeline) answer that quickly. If it's poor packing, scheduled `git gc` or `git maintenance` on the hosting side fixes it without touching CI at all. If it's genuine growth, I'd challenge whether CI actually needs full history at all — most CI jobs only need the working tree at one commit, which makes shallow clone (`--depth=1`) or, better, partial clone (`--filter=blob:none` with sparse-checkout if only part of the tree is needed for a given job) the right fix, since it avoids fetching object content the job will never use rather than trying to make fetching all of it faster. If a specific class of large binary asset is driving growth and is actively churning (not just legacy weight), I'd propose migrating it to Git LFS so ordinary clones/checkouts don't pay for it by default. I'd avoid reaching for history rewriting here unless the growth is traceable to specific accidental commits — rewriting is disruptive and requires full-team coordination, and is the wrong tool for "the repository is just larger now than it used to be."
+**Model answer:** I'd first separate two possible causes: is the repository genuinely larger (more history, more/bigger files), or is it the same logical size but poorly packed/maintained? `git count-objects -v` and a size-sorted object scan (the `rev-list`/`cat-file` pipeline covered above) answer that quickly. If it's poor packing, scheduled `git gc` or `git maintenance` on the hosting side fixes it without touching CI at all. If it's genuine growth, I'd challenge whether CI actually needs full history at all — most CI jobs only need the working tree at one commit, which makes shallow clone (`--depth=1`) or, better, partial clone (`--filter=blob:none` with sparse-checkout if only part of the tree is needed for a given job) the right fix, since it avoids fetching object content the job will never use rather than trying to make fetching all of it faster. If a specific class of large binary asset is driving growth and is actively churning (not just legacy weight), I'd propose migrating it to Git LFS so ordinary clones/checkouts don't pay for it by default. I'd avoid reaching for history rewriting here unless the growth is traceable to specific accidental commits — rewriting is disruptive and requires full-team coordination, and is the wrong tool for "the repository is just larger now than it used to be."
 
 ## 12. Common Misconceptions
 
-1. **"`git gc` is dangerous and should be avoided."** It's a safe, routine operation that respects reflog-protected objects (§7.6.3) and never removes anything still reachable or within its retention window; it runs automatically for exactly this reason.
+1. **"`git gc` is dangerous and should be avoided."** It's a safe, routine operation that respects reflog-protected objects (§7) and never removes anything still reachable or within its retention window; it runs automatically for exactly this reason.
 2. **"A slow repository always means corruption."** Corruption is rare; slowness is far more commonly unpacked loose objects, an unusually large file-count working tree without `fsmonitor`, or genuinely large history that needs a scaling technique (§26), not a repair.
 3. **"`fsck` reporting dangling commits means something is broken."** Dangling objects are frequently harmless, expected leftovers (abandoned detached-HEAD work, amend/rebase remnants) — not evidence of corruption; only `missing`/`bad object` errors indicate an actual integrity problem.
 4. **"Aborting a merge or rebase mid-conflict is risky."** `--abort` on either is specifically designed to be fully safe and restore the exact pre-operation state, as long as the operation hasn't been completed with a final commit yet — it's the correct move whenever conflict resolution feels overwhelming, not a last resort.

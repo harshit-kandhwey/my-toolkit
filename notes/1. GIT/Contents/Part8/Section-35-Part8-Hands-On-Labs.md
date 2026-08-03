@@ -2,7 +2,7 @@
 
 ## 1. Purpose of This Section
 
-**Plain language:** Reading about Git builds recognition; running Git builds fluency. This section is a sequence of self-contained labs, each isolated in its own scratch directory, that turn the concepts from earlier sections into muscle memory — exactly the kind of lived experience §34.2 says interviewers can detect the presence or absence of.
+**Plain language:** Reading about Git builds recognition; running Git builds fluency. This section is a sequence of self-contained labs, each isolated in its own scratch directory, that turn the concepts from earlier sections into muscle memory — exactly the kind of lived experience §34's interview-prep guidance says interviewers can detect the presence or absence of.
 
 **Precise:** Each lab states a goal, the prerequisite sections to have read first, numbered steps using real `git` commands, and a verification check describing exactly what you should observe if you did it correctly. Labs increase in difficulty and are designed to be run in order, since later labs assume the environment/skills of earlier ones. Every lab uses a disposable directory outside any real project — nothing here touches your actual repositories.
 
@@ -148,12 +148,12 @@ Git will pause twice to let you write combined commit messages — write clean, 
 $ git log --oneline
 ```
 
-**What you should observe:** the branch now has three commits total (initial + two clean feature commits) instead of five, and every commit after the rebase point has a **new hash** — including "wip login," even though its content-diff never changed, exactly per §14.3's explanation of why parent-hash chaining cascades new hashes through an entire replayed sequence.
+**What you should observe:** the branch now has three commits total (initial + two clean feature commits) instead of five, and every commit after the rebase point has a **new hash** — including "wip login," even though its content-diff never changed, exactly per §14's explanation of why parent-hash chaining cascades new hashes through an entire replayed sequence.
 
 ## 6. Lab 4 (Intermediate) — Break Something, Recover via Reflog
 
 **Goal:** Deliberately lose commits with `reset --hard`, then recover them — the single most valuable recovery sequence to have reflexive.
-**Prerequisites:** §6.6 (reflog), §15 (reset), §30 (disaster recovery, if written).
+**Prerequisites:** §6 (reflog), §15 (reset), §30 (disaster recovery, if written).
 
 ```bash
 $ mkdir lab4-recovery && cd lab4-recovery && git init -q
@@ -196,7 +196,7 @@ $ git log --oneline
 $ cat important.txt
 ```
 
-**What you should observe:** after the recovery `reset --hard`, "commit 3 - the important one" is back at the tip, and `important.txt` again shows "v3." This confirms §15.4's claim directly: `reset` never deletes the commits it moves away from — it only relabels which one the branch pointer names — and the reflog is what lets you find them again. Note this only works because garbage collection hasn't run; in production, act quickly.
+**What you should observe:** after the recovery `reset --hard`, "commit 3 - the important one" is back at the tip, and `important.txt` again shows "v3." This confirms §15's claim directly about how `reset` works: `reset` never deletes the commits it moves away from — it only relabels which one the branch pointer names — and the reflog is what lets you find them again. Note this only works because garbage collection hasn't run; in production, act quickly.
 
 ## 7. Lab 5 (Advanced) — Two "Developers," One Bare Repo, a Conflicting Push
 
@@ -260,7 +260,7 @@ $ git pull origin main
 $ git push origin main
 ```
 
-**What you should observe:** the first push attempt is rejected because `origin/main` moved since dev-b's last fetch — Git refuses to silently overwrite dev-a's second commit. `git pull` (fetch + merge) brings both histories together locally, possibly opening an editor for a merge commit message if the changes don't cleanly auto-merge; only after that does the second push succeed. This is the everyday, non-catastrophic version of the coordination problem §34.6's force-push scenario escalates.
+**What you should observe:** the first push attempt is rejected because `origin/main` moved since dev-b's last fetch — Git refuses to silently overwrite dev-a's second commit. `git pull` (fetch + merge) brings both histories together locally, possibly opening an editor for a merge commit message if the changes don't cleanly auto-merge; only after that does the second push succeed. This is the everyday, non-catastrophic version of the coordination problem that §34's FAANG-style force-push scenario escalates.
 
 ## 8. Lab 6 (Advanced) — A Working Pre-Commit Hook That Blocks a Forbidden Word
 
@@ -313,7 +313,7 @@ $ git commit -qm "add config"
 $ git log --oneline    # commit now exists
 ```
 
-**What you should observe:** the first commit attempt is refused entirely (exit code 1 from the hook aborts `git commit` before it creates anything), while identical content minus the forbidden pattern commits normally. Note per §4.9's clarification that the hook reads `git diff --cached` — the **index**, not just working-directory files — which matters for correctness (a hook that scanned working-directory files instead could pass content that isn't actually what's about to be committed). This is a local safety net only; real secret-detection setups (§28) pair this with server-side scanning too, since hooks in `.git/hooks` are not version-controlled or transferred by clone, and a developer can bypass them with `--no-verify` — the `pre-commit` framework or Husky (§24) solve the distribution problem, but not the bypass problem, which is why CI-side scanning remains necessary.
+**What you should observe:** the first commit attempt is refused entirely (exit code 1 from the hook aborts `git commit` before it creates anything), while identical content minus the forbidden pattern commits normally. Note per §4's clarification about hooks reading staged content that the hook reads `git diff --cached` — the **index**, not just working-directory files — which matters for correctness (a hook that scanned working-directory files instead could pass content that isn't actually what's about to be committed). This is a local safety net only; real secret-detection setups (§28) pair this with server-side scanning too, since hooks in `.git/hooks` are not version-controlled or transferred by clone, and a developer can bypass them with `--no-verify` — the `pre-commit` framework or Husky (§24) solve the distribution problem, but not the bypass problem, which is why CI-side scanning remains necessary.
 
 ## 9. Lab 7 (Capstone) — A Small Project With Branching Discipline and a CI-Like Pre-Push Check
 
@@ -361,7 +361,7 @@ EOF
 $ chmod +x .git/hooks/pre-push
 ```
 
-Now follow trunk-based, short-lived-branch discipline (§22.4-style) for a feature:
+Now follow trunk-based, short-lived-branch discipline (§22-style) for a feature:
 
 ```bash
 $ git switch -c feature/subtract
@@ -425,7 +425,7 @@ $ git log --graph --oneline --all
 **Model answer:** `git log` and `git show` are user-facing views built on top of the object model, formatted for readability. `git cat-file -p` shows the actual raw content of blob, tree, and commit objects — seeing that a commit object literally contains a `tree` line and `parent` line as plain text, or that two differently-named files with identical content share one blob hash, converts the object model from an abstract diagram (§5) into something directly observed, which is far stickier knowledge than reading a description.
 
 **[Intermediate] Q2. In Lab 6's hook, why does it matter that the hook reads `git diff --cached` rather than scanning the working directory?**
-**Model answer:** `git diff --cached` (equivalently `git diff --staged`) shows exactly what's in the index — what will actually become part of the next commit. Scanning working-directory files instead could either miss a forbidden pattern that's staged but has since been edited out of the working copy, or flag a pattern that exists in the working directory but was never staged and isn't part of this commit at all. A correctness-sensitive hook must check the same content the commit is actually going to contain, which is the index, not the working tree — the same distinction §4.9 raises about pre-commit hooks generally.
+**Model answer:** `git diff --cached` (equivalently `git diff --staged`) shows exactly what's in the index — what will actually become part of the next commit. Scanning working-directory files instead could either miss a forbidden pattern that's staged but has since been edited out of the working copy, or flag a pattern that exists in the working directory but was never staged and isn't part of this commit at all. A correctness-sensitive hook must check the same content the commit is actually going to contain, which is the index, not the working tree — the same distinction §4 raises about pre-commit hooks generally.
 
 **[Senior] Q3. Lab 7's pre-push hook can be bypassed with `--no-verify`. Given that, what's actually the point of writing it, versus relying purely on server-side CI?**
 **Model answer:** A local pre-push (or pre-commit) hook gives fast, offline feedback before a network round trip and a CI queue — catching an obvious mistake in seconds rather than minutes, and without consuming CI capacity for something trivially detectable locally. But because it's bypassable and, crucially, not distributed automatically to every clone (hooks live in `.git/hooks`, which clone does not populate from a remote), it cannot be the sole enforcement mechanism for anything that matters — that has to be a server-side required status check tied to branch protection (§23, §25), which no individual developer can opt out of. The correct mental model is defense in depth: local hooks for fast feedback and developer convenience, server-side checks for actual enforcement.
@@ -438,11 +438,11 @@ $ git log --graph --oneline --all
 
 ## 13. 🔑 Key Takeaways
 
-- Object-model labs (35.3) convert §5's abstract diagrams into observed fact — do this one first if you skip everything else.
-- The reflog recovery sequence in Lab 4 (35.6) is the single most valuable reflex from this entire lab set; rehearse it until it's automatic.
+- Object-model Lab 1 above converts §5's abstract diagrams into observed fact — do this one first if you skip everything else.
+- The reflog recovery sequence in Lab 4 above is the single most valuable reflex from this entire lab set; rehearse it until it's automatic.
 - Lab 5's rejected push and Lab 7's blocked push both demonstrate the same underlying principle — automated checks (server-enforced sync state, or a local/CI test gate) exist to catch problems before they reach shared history, not after.
-- Hooks (Lab 6, Lab 7) are genuinely useful for fast local feedback but are not a substitute for server-side, non-bypassable enforcement — that distinction is a recurring senior-level interview probe (§35.11 Q3).
+- Hooks (Lab 6, Lab 7) are genuinely useful for fast local feedback but are not a substitute for server-side, non-bypassable enforcement — that distinction is a recurring senior-level interview probe (see the Interview Questions Q3 above).
 
 ## 14. Related Concepts
 
-Each lab names its prerequisite sections inline. For the theory these labs made concrete, revisit: §4-5 (objects), §13-14 (merge/rebase), §6.6/§15 (reflog/reset), §20 (remotes), §24 (hooks), §22-23 (branching strategy and hosting platform enforcement), §25 (CI/CD). For interview framing of the same material, see §34. For the corpus-wide synthesis, see §36.
+Each lab names its prerequisite sections inline. For the theory these labs made concrete, revisit: §4-5 (objects), §13-14 (merge/rebase), §6/§15 (reflog/reset), §20 (remotes), §24 (hooks), §22-23 (branching strategy and hosting platform enforcement), §25 (CI/CD). For interview framing of the same material, see §34. For the corpus-wide synthesis, see §36.

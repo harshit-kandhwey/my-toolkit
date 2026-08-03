@@ -37,7 +37,7 @@ Expected output (illustrative):
 | `--decorate` | Show which refs (branches, tags, HEAD) point at each commit                                                  |
 | `--all`      | Include every ref (all local branches, all remote-tracking branches), not just the current branch's ancestry |
 
-> 💡 **Tip:** `git log --graph --oneline --decorate --all` is common enough as a daily-driver command that most engineers alias it — recall §8.6's `alias.lg` example configured exactly this.
+> 💡 **Tip:** `git log --graph --oneline --decorate --all` is common enough as a daily-driver command that most engineers alias it — recall §8's `alias.lg` example configured exactly this.
 
 ### 3.2 Custom formatting: `--pretty=format:`
 
@@ -59,7 +59,7 @@ Expected output:
 | `%an` / `%ae` | Author name / email                                                |
 | `%ad` / `%ar` | Author date (absolute) / author date (relative, "2 hours ago")     |
 | `%s`          | Subject line (first line of the commit message)                    |
-| `%cn` / `%cd` | Committer name / committer date — distinct from author, per §5.5.3 |
+| `%cn` / `%cd` | Committer name / committer date — distinct from author, per §5 |
 
 ### 3.3 Filtering by author, date, and path
 
@@ -126,7 +126,7 @@ $ git blame -C pricing.js
 
 ## 5. `git bisect` — Systematic Regression Search
 
-When you know a specific commit was **good** and a later one is **bad**, but not which of potentially hundreds of commits in between introduced the regression, `git bisect` performs an automated binary search over the commit graph, checking out (in detached HEAD, exactly as described in §6.4.3) successive candidate commits for you to test.
+When you know a specific commit was **good** and a later one is **bad**, but not which of potentially hundreds of commits in between introduced the regression, `git bisect` performs an automated binary search over the commit graph, checking out (in detached HEAD, exactly as described in §6) successive candidate commits for you to test.
 
 ### 5.1 Manual workflow
 
@@ -186,7 +186,7 @@ $ git grep -n "getDiscount" -- "*.js"
 | Requires being inside a Git repository     | Yes                                                                          | No                                                        |
 | Speed on large repos                       | Generally fast; can leverage Git's own tree/index structures                 | Depends entirely on the tool and file count on disk       |
 
-`git grep <pattern> <commit>` is the specific capability worth internalizing: you can search _any past commit's_ content directly, with no `checkout`, no detached HEAD, no working-directory disruption at all — genuinely useful for "did this string ever exist anywhere in history" investigations combined with `-S`/`-G` (19.3.4) or a manual walk across tags.
+`git grep <pattern> <commit>` is the specific capability worth internalizing: you can search _any past commit's_ content directly, with no `checkout`, no detached HEAD, no working-directory disruption at all — genuinely useful for "did this string ever exist anywhere in history" investigations combined with the pickaxe search covered above or a manual walk across tags.
 
 ## 7. `git shortlog` — Contributor Summaries
 
@@ -241,7 +241,7 @@ $ git grep -n "retryCount" v1.0.0
 ## 9. Production & Enterprise Usage
 
 - Incident postmortems routinely use `git bisect run` against an automated regression test as the fastest, most objective way to identify a root-cause commit, replacing much slower manual code review of the entire suspect range.
-- `git blame` output is a standard input to code-review tooling and IDE integrations (inline "who last changed this line" annotations), though senior engineers know to treat it as a starting point for a conversation, not a verdict, per 19.4's caveat.
+- `git blame` output is a standard input to code-review tooling and IDE integrations (inline "who last changed this line" annotations), though senior engineers know to treat it as a starting point for a conversation, not a verdict, per the caveat above.
 - `git shortlog -sn` output frequently appears in release notes, contributor-recognition tooling, and open-source project reporting (e.g., "N contributors made M commits since the last release").
 - Security incident response sometimes uses `git log -S`/`-G` and `git grep` across historical commits specifically to determine whether a secret or vulnerable pattern was ever introduced anywhere in history, not just in the current tree — directly feeding into the secret-remediation workflow of §28.
 
@@ -269,7 +269,7 @@ $ git grep -n "retryCount" v1.0.0
 **Model answer:** I'd write a script that builds the project and runs a targeted performance benchmark, exiting 0 if a measured metric (e.g., request latency) stays under a defined threshold and non-zero otherwise, then run `git bisect start`, mark the current HEAD bad and a known-good older commit good, and hand the script to `git bisect run` to search unattended. Reliability risks: if the build system, dependency versions, or the benchmark script itself changed meaningfully across the bisected range, old commits might fail to build or run for reasons unrelated to the actual regression, producing a false "bad" result that isn't about performance at all — `git bisect skip` lets you mark such commits as untestable rather than wrongly good or bad, but a large enough tooling change partway through the range can still corrupt the search. I'd also flag that performance measurements carry noise, so a single-run pass/fail threshold can produce flaky bisect results; a more robust script would average multiple runs before deciding good or bad.
 
 **[Senior] Q5. A security team asks whether an API key was ever committed to the repository at any point in its history, even if it's not present now. How do you answer this with Git's history tools, precisely?**
-**Model answer:** I'd combine `git log -S "<the exact key or a distinctive fragment>"` across all branches (`--all`) to find any commit where that string's occurrence count changed — this catches both its introduction and its later removal — and `git grep "<pattern>" <ref>` against specific historical tags or commits for a more targeted check without needing to check anything out. I'd also widen the search with `-G` for a regex pattern if the exact key value isn't known but its format is (e.g., a known API key prefix pattern). Importantly, I'd be precise with the security team about what a negative result actually proves: these tools search the reachable commit graph, so anything already garbage-collected as truly unreferenced (e.g., from an old force-pushed rewrite that was never actually pushed anywhere else, or old enough to be pruned) may no longer be searchable this way — a genuinely thorough audit for a leaked secret also needs to consider the reflog (§6.6) and, since the secret may already have propagated to clones or forks before removal, treat rotation of the actual credential as mandatory regardless of what the history search finds, exactly the remediation posture §28 covers in full.
+**Model answer:** I'd combine `git log -S "<the exact key or a distinctive fragment>"` across all branches (`--all`) to find any commit where that string's occurrence count changed — this catches both its introduction and its later removal — and `git grep "<pattern>" <ref>` against specific historical tags or commits for a more targeted check without needing to check anything out. I'd also widen the search with `-G` for a regex pattern if the exact key value isn't known but its format is (e.g., a known API key prefix pattern). Importantly, I'd be precise with the security team about what a negative result actually proves: these tools search the reachable commit graph, so anything already garbage-collected as truly unreferenced (e.g., from an old force-pushed rewrite that was never actually pushed anywhere else, or old enough to be pruned) may no longer be searchable this way — a genuinely thorough audit for a leaked secret also needs to consider the reflog (§6) and, since the secret may already have propagated to clones or forks before removal, treat rotation of the actual credential as mandatory regardless of what the history search finds, exactly the remediation posture §28 covers in full.
 
 ## 12. Common Misconceptions
 

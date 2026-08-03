@@ -10,7 +10,7 @@
 
 1. **Generated and environment-specific files pollute `git status` and history.** Compiled binaries, `node_modules/`, `__pycache__/`, IDE settings, log files — none of these belong in a shared history; they're either regenerable, machine-specific, or simply noise. `.gitignore` lets Git filter them out of everyday visibility permanently rather than requiring constant manual discipline.
 2. **Not everything Git tracks is text.** Git's diff/merge machinery assumes line-oriented text by default; binary files (images, compiled artifacts) need Git to detect that and stop trying to line-diff or line-merge them, which would produce garbage or false conflicts. `.gitattributes` gives Git explicit, per-path knowledge of what it's dealing with.
-3. **Cross-platform teams hit a specific, painful failure mode around line endings.** Windows and Unix-family systems have used different line-ending conventions since long before Git existed; without explicit configuration, this silently corrupts diffs and creates spurious conflicts across every text file in a mixed-OS team (11.6 is dedicated entirely to this).
+3. **Cross-platform teams hit a specific, painful failure mode around line endings.** Windows and Unix-family systems have used different line-ending conventions since long before Git existed; without explicit configuration, this silently corrupts diffs and creates spurious conflicts across every text file in a mixed-OS team (the line-endings deep dive later in this section covers it entirely).
 4. **A repository's working tree and its distributable archive aren't always the same set of files.** `.gitattributes`' `export-ignore` lets internal-only files (CI config, test fixtures) exist in the repo without polluting a `git archive` release tarball.
 
 ## 3. `.gitignore` Syntax
@@ -215,7 +215,7 @@ $ git config --global core.autocrlf false
 | `input` | No conversion             | CRLF converted to LF      | macOS/Linux developers — never want CRLF written to disk, but normalize anything that sneaks in |
 | `false` | No conversion             | No conversion             | Repos that intentionally store CRLF, or teams relying entirely on `.gitattributes` instead      |
 
-`core.autocrlf` is a **per-developer, per-machine** setting (global config, §8.4) — it does not travel with the repository, which is precisely its weakness: a repo relies on every single contributor having configured it correctly and consistently, and one person with the wrong setting (or `false` when everyone else uses `true`) reintroduces the spurious-diff problem for everyone who later touches files they saved.
+`core.autocrlf` is a **per-developer, per-machine** setting (global config, §8) — it does not travel with the repository, which is precisely its weakness: a repo relies on every single contributor having configured it correctly and consistently, and one person with the wrong setting (or `false` when everyone else uses `true`) reintroduces the spurious-diff problem for everyone who later touches files they saved.
 
 ### 6.3 The robust fix: `.gitattributes`
 
@@ -328,7 +328,7 @@ tests/ export-ignore
 
 | Symptom                                                              | Likely cause                                                                                                    | Fix                                                                                                                                  |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| A file I added to `.gitignore` still shows up in `git status`        | It was already tracked before being ignored — `.gitignore` never affects tracked files                          | `git rm --cached <file>` (11.3.6)                                                                                                    |
+| A file I added to `.gitignore` still shows up in `git status`        | It was already tracked before being ignored — `.gitignore` never affects tracked files                          | `git rm --cached <file>` (see the un-tracking walkthrough above)                                                                     |
 | Every line of a file shows as changed in a diff with no real edits   | Line-ending mismatch — CRLF/LF inconsistency                                                                    | Set `core.autocrlf` correctly per-platform AND add a `.gitattributes` `text=auto` policy; renormalize with `git add --renormalize .` |
 | `.gitignore` rule doesn't seem to match                              | Pattern typo, or file already tracked, or a parent directory's ignore rule blocks a negation from taking effect | `git check-ignore -v <path>` to see exactly which rule (if any) applies                                                              |
 | Binary file shows a garbled/useless diff                             | Git guessed "text" via heuristic incorrectly                                                                    | Explicitly mark the pattern `binary` in `.gitattributes`                                                                             |

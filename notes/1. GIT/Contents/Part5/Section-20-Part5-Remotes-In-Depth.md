@@ -4,11 +4,11 @@
 
 **Plain language:** A remote is a bookmark your local repository keeps for another copy of the same project — usually one living on a server — along with the commands (`fetch`, `pull`, `push`) that synchronize history between the two.
 
-**Precise:** A **remote** is a named entry in `.git/config` pairing a short label (conventionally `origin`) with a URL. Git uses that URL plus a **refspec** to know which remote refs map to which local remote-tracking refs. `fetch` downloads objects and updates remote-tracking branches; `push` uploads objects and asks the remote to move its refs; `pull` is fetch followed by an integration step (merge or rebase). Everything here builds on the local-vs-remote-tracking-vs-remote distinction already established in §12.9.
+**Precise:** A **remote** is a named entry in `.git/config` pairing a short label (conventionally `origin`) with a URL. Git uses that URL plus a **refspec** to know which remote refs map to which local remote-tracking refs. `fetch` downloads objects and updates remote-tracking branches; `push` uploads objects and asks the remote to move its refs; `pull` is fetch followed by an integration step (merge or rebase). Everything here builds on the local-vs-remote-tracking-vs-remote distinction already established in §12.
 
 ## 2. Why It Exists / Problem It Solves
 
-§1.6 established that every Git clone is a complete, independent repository — there's no technical requirement that any two clones ever talk to each other again. Remotes are the mechanism that makes talking to each other _possible and efficient_ without merging the repositories into one: each side keeps its own full history, and remotes let you selectively exchange just the new objects since the last sync, plus move a small number of ref pointers to record where things stand. Without this layer you'd be manually copying `.git/objects` directories around and hand-editing ref files — remotes give you named, repeatable, incremental synchronization.
+§1 established that every Git clone is a complete, independent repository — there's no technical requirement that any two clones ever talk to each other again. Remotes are the mechanism that makes talking to each other _possible and efficient_ without merging the repositories into one: each side keeps its own full history, and remotes let you selectively exchange just the new objects since the last sync, plus move a small number of ref pointers to record where things stand. Without this layer you'd be manually copying `.git/objects` directories around and hand-editing ref files — remotes give you named, repeatable, incremental synchronization.
 
 ## 3. Managing Remotes: `git remote`
 
@@ -39,7 +39,7 @@ $ git remote set-url origin git@github.com:acme/webapp.git
 $ git remote show origin
 ```
 
-A repository is not limited to one remote. `origin` is purely a naming convention set automatically by `git clone` — nothing prevents a second, third, or tenth remote pointing at forks, mirrors, or entirely unrelated hosts. §21.4 covers the canonical multi-remote pattern (`origin` + `upstream`) used in fork-based collaboration.
+A repository is not limited to one remote. `origin` is purely a naming convention set automatically by `git clone` — nothing prevents a second, third, or tenth remote pointing at forks, mirrors, or entirely unrelated hosts. §21 covers the canonical multi-remote pattern (`origin` + `upstream`) used in fork-based collaboration.
 
 > 💡 **Tip:** `git remote` only manages the _bookmark_ — name, URL, and the refspec rules for it. It never itself transfers any objects. `fetch`/`push`/`pull` are the commands that actually move data; `remote` just tells them where to point.
 
@@ -62,7 +62,7 @@ From github.com:acme/webapp
    * [new branch]    feature-x  -> origin/feature-x
 ```
 
-After this, `origin/main` reflects the server's `main` as it stood a moment ago, but your local `main` is untouched — you are still exactly where you were, just with more information available. This is precisely the safety property §12.9 described: fetch is the _only_ thing that ever moves a remote-tracking branch, and it does so without disturbing your own line of work.
+After this, `origin/main` reflects the server's `main` as it stood a moment ago, but your local `main` is untouched — you are still exactly where you were, just with more information available. This is precisely the safety property §12 described: fetch is the _only_ thing that ever moves a remote-tracking branch, and it does so without disturbing your own line of work.
 
 ```bash
 # Fetch from all configured remotes at once
@@ -73,7 +73,7 @@ $ git fetch --all
 $ git fetch --prune
 ```
 
-> 💡 **Tip:** `git fetch --prune` is what makes `git branch -d` reliably safe after a teammate's branch is merged and deleted on the server — without pruning, your stale `origin/old-feature` remote-tracking ref lingers and can confuse merge-status checks (§12.11).
+> 💡 **Tip:** `git fetch --prune` is what makes `git branch -d` reliably safe after a teammate's branch is merged and deleted on the server — without pruning, your stale `origin/old-feature` remote-tracking ref lingers and can confuse merge-status checks (§12).
 
 ## 5. `git pull` — Fetch Plus Integration
 
@@ -154,11 +154,11 @@ $ git switch -c feature-search
 $ git push -u origin feature-search
 ```
 
-`-u`/`--set-upstream` does two things in one step: creates the branch on the remote if it doesn't exist, and records the tracking relationship locally (the same relationship §12.8 covered from the branch-creation side) so future bare `git push`/`git pull` on this branch know exactly where to go.
+`-u`/`--set-upstream` does two things in one step: creates the branch on the remote if it doesn't exist, and records the tracking relationship locally (the same relationship §12 covered from the branch-creation side) so future bare `git push`/`git pull` on this branch know exactly where to go.
 
 ## 7. Tracking Branches Recap
 
-§12.8–12.9 already established the mechanics; here's the practical view from the remote-operations side. `git branch -vv` is the single command that answers "what's my tracking situation, and am I ahead or behind?" across every local branch at once:
+§12 already established the mechanics; here's the practical view from the remote-operations side. `git branch -vv` is the single command that answers "what's my tracking situation, and am I ahead or behind?" across every local branch at once:
 
 ```bash
 $ git branch -vv
@@ -167,7 +167,7 @@ $ git branch -vv
   scratch          1d4e8b0 Local experiment, no upstream
 ```
 
-Reading this: `main` has 2 local commits not yet pushed and is missing 1 commit that exists on `origin/main` (a fetch happened, an integration step hasn't) — the exact state that triggers a non-fast-forward push rejection (20.6.1) if you tried to push right now. `scratch` has no `[...]` bracket at all, meaning it has no upstream configured — `git push`/`git pull` on it will fail with an explicit "no upstream branch" error until you set one.
+Reading this: `main` has 2 local commits not yet pushed and is missing 1 commit that exists on `origin/main` (a fetch happened, an integration step hasn't) — the exact state that triggers a non-fast-forward push rejection, as covered above, if you tried to push right now. `scratch` has no `[...]` bracket at all, meaning it has no upstream configured — `git push`/`git pull` on it will fail with an explicit "no upstream branch" error until you set one.
 
 ## 8. Refspecs Explained Precisely
 
@@ -207,7 +207,7 @@ $ git push origin develop:staging
 # Push local branch to remote, deleting on the other end is the empty-src form
 $ git push origin :feature-old
 # reads as: push "nothing" (src is empty) to refs/heads/feature-old,
-# i.e., delete it — the mechanical explanation behind 20.6's delete syntax
+# i.e., delete it — the mechanical explanation behind the delete syntax covered above
 ```
 
 > 💡 **Tip:** Once refspecs click, `git push origin :feature-old` for branch deletion stops looking like a magic incantation — it's just an empty `<src>` mapped to the branch you want gone, exactly the same `<src>:<dst>` grammar as everything else.
@@ -231,7 +231,7 @@ git@github.com:acme/webapp.git
 | Repeated-auth experience     | Needs a credential helper configured to avoid retyping tokens         | Effectively zero-friction once the key is registered                               |
 | Common enterprise preference | Favored where outbound SSH (port 22) is firewalled                    | Favored by individual developers and CI systems with key-based auth already set up |
 
-Full SSH key generation, agent setup, and credential-helper configuration were covered in §8.7 — this section assumes that setup exists and focuses only on the remote-URL consequence of it.
+Full SSH key generation, agent setup, and credential-helper configuration were covered in §8 — this section assumes that setup exists and focuses only on the remote-URL consequence of it.
 
 ### 9.1 Switching a Remote's URL Scheme
 
@@ -314,4 +314,4 @@ $ git pull --rebase origin main
 
 ## 14. Related Concepts & What's Next
 
-This section assumed the auth setup from §8.7 and the local/remote-tracking/remote distinction from §12.9, and built the full synchronization vocabulary — fetch, pull, push, refspecs — on top of them. §21 puts these commands into their real collaborative context: the shared-repository and fork-and-pull-request models, and the full lifecycle of a code review from first push to merge.
+This section assumed the auth setup from §8 and the local/remote-tracking/remote distinction from §12, and built the full synchronization vocabulary — fetch, pull, push, refspecs — on top of them. §21 puts these commands into their real collaborative context: the shared-repository and fork-and-pull-request models, and the full lifecycle of a code review from first push to merge.

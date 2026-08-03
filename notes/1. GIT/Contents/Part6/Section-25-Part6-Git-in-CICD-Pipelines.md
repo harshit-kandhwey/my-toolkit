@@ -33,7 +33,7 @@ Hosting platform fires webhook ──► CI system receives event
 Runner provisioned (fresh, disposable environment)
         │
         ▼
-Clone/fetch the relevant ref  (often SHALLOW — §25.4)
+Clone/fetch the relevant ref  (often SHALLOW — see below)
         │
         ▼
 Run pipeline: build → lint → test → package
@@ -108,7 +108,7 @@ An engineer changes desired state by opening a pull request against the Git repo
 
 - **Git's existing guarantees become infrastructure's guarantees.** Full history of every infrastructure change, `git blame` on who changed what and why, `git revert` as the rollback mechanism, pull-request review as the change-approval process — none of this needs separate tooling; it's already there.
 - **Drift detection.** Because the operator continuously compares live state against Git, any out-of-band manual change (someone `kubectl edit`-ing a resource directly) is detected as drift and can be automatically reverted, which enforces that Git genuinely stays authoritative rather than becoming stale documentation.
-- **Auditability.** Every change to production infrastructure has an associated commit, author, and (ideally) review trail — directly serving the compliance use case named back in §1.2.
+- **Auditability.** Every change to production infrastructure has an associated commit, author, and (ideally) review trail — directly serving the compliance use case named back in §1.
 
 > ⚠️ **Critical clarification:** GitOps is an operating _model_, not a specific tool or a Git feature. Git itself has no special "GitOps mode" — GitOps works because ordinary Git mechanics (commits, PRs, tags, history) happen to be exactly what's needed for a reconciliation loop, combined with an external operator that does the watching and applying.
 
@@ -170,7 +170,7 @@ $ git push -u origin feature/retry-logic
 # Team tags a release once ready:
 $ git tag -a v2.5.0 -m "Release 2.5.0: payment retry logic"
 $ git push origin v2.5.0
-# Tag push triggers the production deployment pipeline (25.6)
+# Tag push triggers the production deployment pipeline (see tag-triggered deployment pattern above)
 ```
 
 ## 9. Interview Questions

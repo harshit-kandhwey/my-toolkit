@@ -258,7 +258,7 @@ jane : jane sudo docker
 
 `id` with no argument reports the current shell's identity, which is subtly different from `whoami` in one edge case worth knowing: under `sudo` (§31), `whoami` reports the **effective** user (e.g., `root`), while `id` shows both real and effective UID/GID together when they differ — making `id` the more complete diagnostic when investigating a privilege-related issue.
 
-> 💡 **Tip:** After any `usermod -aG`/`-G`, `gpasswd -a`/`-d`, or lock/unlock change, run `id USERNAME` (or have the affected user log out and back in, since group membership is generally read at login time, not live) as the standard verification step — this is the direct antidote to the `-aG` vs `-G` gotcha in 3.
+> 💡 **Tip:** After any `usermod -aG`/`-G`, `gpasswd -a`/`-d`, or lock/unlock change, run `id USERNAME` (or have the affected user log out and back in, since group membership is generally read at login time, not live) as the standard verification step — this is the direct antidote to the `-aG` vs `-G` gotcha covered in the `usermod` section above.
 
 ## 8. `su` vs. `su -`: Switching Users
 
@@ -296,7 +296,7 @@ deploy@host:~$ pwd
 | Command       | Purpose                                           | Key flags                                         | Destructive?                               |
 | ------------- | ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------ |
 | `useradd`     | Create a user                                     | `-m -s -G -u -d -c -e -r`                         | No                                         |
-| `usermod`     | Modify a user                                     | `-aG` (append), `-G` (replace!), `-s -L -U -l -e` | Yes if `-G` used carelessly (3)            |
+| `usermod`     | Modify a user                                     | `-aG` (append), `-G` (replace!), `-s -L -U -l -e` | Yes if `-G` used carelessly                |
 | `userdel`     | Remove a user                                     | `-r` (remove home), `-f` (force)                  | **Yes with `-r` — irreversible**           |
 | `groupadd`    | Create a group                                    | `-g -r`                                           | No                                         |
 | `groupdel`    | Remove a group                                    | (none common)                                     | Yes (fails safely if it's a primary group) |
@@ -314,11 +314,11 @@ Part 9 (§65–§72) covers systemd in depth, but it's worth flagging here that 
 
 ## 11. Common Misconceptions
 
-1. **"`usermod -G group` adds the user to `group`."** It **replaces** the entire supplementary group list with whatever is given — the classic incident-causing mistake covered in depth in 3. `-aG` is the append form; `-G` alone is destructive to existing memberships.
-2. **"`useradd` and `adduser` are just two names for the same command."** `useradd` is the low-level, minimal-defaults tool present everywhere; `adduser` (Debian/Ubuntu) is a friendlier interactive wrapper around it with different defaults (home directory creation, prompts). Scripts intended to be portable should call `useradd` with explicit flags rather than assume either tool's defaults (2.1).
-3. **"`userdel` without `-r` fully removes a user."** It removes the account entries but leaves the home directory and mail spool on disk, now owned by an orphaned UID — a common source of stale data found in later audits (4).
-4. **"`su jane` and `su - jane` are basically equivalent."** They differ in environment — `su -` is a full login shell resetting `$HOME`, `$PATH`, and working directory to the target user's; plain `su` keeps the calling shell's environment, which can cause tools to behave inconsistently versus a genuine login (8).
-5. **"Changing a UID with `usermod -u` updates file ownership automatically."** It changes the account's UID going forward only — existing files on disk still reference the old numeric UID and need an explicit `find ... -exec chown` pass to be reconciled (3).
+1. **"`usermod -G group` adds the user to `group`."** It **replaces** the entire supplementary group list with whatever is given — the classic incident-causing mistake covered in depth in the `usermod` section above. `-aG` is the append form; `-G` alone is destructive to existing memberships.
+2. **"`useradd` and `adduser` are just two names for the same command."** `useradd` is the low-level, minimal-defaults tool present everywhere; `adduser` (Debian/Ubuntu) is a friendlier interactive wrapper around it with different defaults (home directory creation, prompts). Scripts intended to be portable should call `useradd` with explicit flags rather than assume either tool's defaults, as the `useradd` vs. `adduser` comparison above covers.
+3. **"`userdel` without `-r` fully removes a user."** It removes the account entries but leaves the home directory and mail spool on disk, now owned by an orphaned UID — a common source of stale data found in later audits, per the `userdel` section above.
+4. **"`su jane` and `su - jane` are basically equivalent."** They differ in environment — `su -` is a full login shell resetting `$HOME`, `$PATH`, and working directory to the target user's; plain `su` keeps the calling shell's environment, which can cause tools to behave inconsistently versus a genuine login, as the `su` vs. `su -` section above covers.
+5. **"Changing a UID with `usermod -u` updates file ownership automatically."** It changes the account's UID going forward only — existing files on disk still reference the old numeric UID and need an explicit `find ... -exec chown` pass to be reconciled, per the `usermod` section above.
 
 ## 12. Tiered Interview Questions
 
@@ -340,16 +340,16 @@ _What the interviewer is probing for:_ Systems-level process design that closes 
 
 ## 13. Key Takeaways
 
-- `useradd` is the low-level, minimal-defaults account-creation tool; `adduser` (Debian/Ubuntu) is a friendlier interactive wrapper with different defaults — don't assume either's behavior when scripting portably (2, 2.1).
-- `usermod -aG` **appends** to supplementary groups; `usermod -G` **replaces** the entire list — this is the single most consequential command distinction in this section, and the direct cause of a recurring class of accidental-lockout incidents (3).
-- `userdel` needs `-r` to remove the home directory and mail spool along with the account; without it, orphaned, numerically-owned data accumulates silently on disk (4).
+- `useradd` is the low-level, minimal-defaults account-creation tool; `adduser` (Debian/Ubuntu) is a friendlier interactive wrapper with different defaults — don't assume either's behavior when scripting portably, per the `useradd`/`adduser` sections above.
+- `usermod -aG` **appends** to supplementary groups; `usermod -G` **replaces** the entire list — this is the single most consequential command distinction in this section, and the direct cause of a recurring class of accidental-lockout incidents, covered in the `usermod` section above.
+- `userdel` needs `-r` to remove the home directory and mail spool along with the account; without it, orphaned, numerically-owned data accumulates silently on disk, as the `userdel` section above covers.
 - `groupadd`/`groupdel`/`gpasswd` manage groups and membership independently of `usermod`, and `groupdel` correctly refuses to remove a group that's still someone's primary group.
 - `passwd -l`/`-u` and `chage` cover account locking and password-aging policy — `passwd -S` and `chage -l` are the fast status-check commands.
 - `id`, `whoami`, and `groups` are the read-only verification trio to run after any mutating command — especially after any group-membership change, given the `-aG`/`-G` gotcha.
-- `su -` gives a full login-shell environment reset; plain `su` inherits the calling shell's environment, which can produce subtly different behavior than a genuine login (8).
+- `su -` gives a full login-shell environment reset; plain `su` inherits the calling shell's environment, which can produce subtly different behavior than a genuine login, per the `su` vs. `su -` section above.
 
 ## 14. Related Concepts & What's Next
 
-This section is the command-layer counterpart to §25's `/etc/passwd`/`/etc/shadow`/`/etc/group` file formats — every command here ultimately just edits those files safely. §27 (next) covers the standard `rwx` permission model (`chmod`, `chown`, `chgrp`) that determines what a user or group created here can actually do to files. §31's sudo/privilege-escalation coverage depends directly on the `usermod -aG sudo`/`wheel` pattern shown in 3. Part 9's systemd coverage (§65–§72) is where `systemd-homed`/`homectl`, briefly flagged in 10 as a modern alternative, would be covered in operational depth if a given fleet adopts it.
+This section is the command-layer counterpart to §25's `/etc/passwd`/`/etc/shadow`/`/etc/group` file formats — every command here ultimately just edits those files safely. §27 (next) covers the standard `rwx` permission model (`chmod`, `chown`, `chgrp`) that determines what a user or group created here can actually do to files. §31's sudo/privilege-escalation coverage depends directly on the `usermod -aG sudo`/`wheel` pattern shown in the `usermod` section above. Part 9's systemd coverage (§65–§72) is where `systemd-homed`/`homectl`, briefly flagged in the systemd-homed note above as a modern alternative, would be covered in operational depth if a given fleet adopts it.
 
 **Next Section:** §27 — `Section-27-Part4-Standard-Permission-Model.md`

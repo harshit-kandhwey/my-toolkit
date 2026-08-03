@@ -16,7 +16,7 @@ That distinction matters more than it first appears:
 
 ### 2.1 `sh` — the POSIX Baseline, Not a Specific Program
 
-`sh` (the "Bourne shell," historically) is best understood as a **standard**, not a single implementation — POSIX defines a baseline set of shell syntax and behavior that any conforming shell must support. On a modern Linux system, `/bin/sh` is essentially always a **symlink** to some other shell running in a POSIX-compatibility mode, not a distinct binary implementing the original 1970s Bourne shell. Which shell `/bin/sh` actually points to varies by distribution, and that variance is the source of the most common real-world gotcha in this entire section (3).
+`sh` (the "Bourne shell," historically) is best understood as a **standard**, not a single implementation — POSIX defines a baseline set of shell syntax and behavior that any conforming shell must support. On a modern Linux system, `/bin/sh` is essentially always a **symlink** to some other shell running in a POSIX-compatibility mode, not a distinct binary implementing the original 1970s Bourne shell. Which shell `/bin/sh` actually points to varies by distribution, and that variance is the source of the most common real-world gotcha in this entire section, covered in the dash subsection below.
 
 ### 2.2 `bash` — the Dominant Default
 
@@ -43,8 +43,8 @@ These two axes combine into four real combinations, and bash treats each one dif
 
 | Combination                 | Typical real-world example                                               | bash's general behavior                                                                   |
 | --------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Login + interactive         | SSH-ing into a server; a fresh TTY login                                 | Reads login-shell config files (4.1)                                                      |
-| Non-login + interactive     | Opening a new terminal tab in an existing desktop session                | Reads `~/.bashrc` only (4.2)                                                              |
+| Login + interactive         | SSH-ing into a server; a fresh TTY login                                 | Reads login-shell config files — see the login-shells section below                       |
+| Non-login + interactive     | Opening a new terminal tab in an existing desktop session                | Reads `~/.bashrc` only — see the non-login interactive shells section below               |
 | Non-login + non-interactive | Running a script (`./deploy.sh`), a cron job                             | Reads neither by default (unless `BASH_ENV` is set, or the script sources one explicitly) |
 | Login + non-interactive     | Rare — e.g., some remote-command SSH invocations with `bash -l -c "cmd"` | Reads login-shell config files, runs the command, exits                                   |
 
@@ -83,7 +83,7 @@ Distributions commonly also ship `/etc/bashrc` or `/etc/bash.bashrc` (naming var
 
 ## 5. zsh's Parallel Structure (Brief)
 
-zsh follows a conceptually parallel but separately-named set of files, worth knowing exists even at a conceptual level: `/etc/zshenv` and `~/.zshenv` (read for essentially every zsh invocation, login or not), `/etc/zprofile`/`~/.zprofile` (login shells), `/etc/zshrc`/`~/.zshrc` (interactive shells — this is the one oh-my-zsh and most user customization lives in), and `/etc/zlogin`/`~/.zlogin` (login shells, read after `.zshrc`). The naming maps loosely onto bash's `profile`/`bashrc` split, but the file count and exact ordering differ — treat this as "know the shape exists," not something to memorize to the same depth as bash's table in 4, since bash remains the default scripting target on Linux.
+zsh follows a conceptually parallel but separately-named set of files, worth knowing exists even at a conceptual level: `/etc/zshenv` and `~/.zshenv` (read for essentially every zsh invocation, login or not), `/etc/zprofile`/`~/.zprofile` (login shells), `/etc/zshrc`/`~/.zshrc` (interactive shells — this is the one oh-my-zsh and most user customization lives in), and `/etc/zlogin`/`~/.zlogin` (login shells, read after `.zshrc`). The naming maps loosely onto bash's `profile`/`bashrc` split, but the file count and exact ordering differ — treat this as "know the shape exists," not something to memorize to the same depth as bash's load-order table above, since bash remains the default scripting target on Linux.
 
 ## 6. Changing a User's Default Shell
 
@@ -128,10 +128,10 @@ $ zsh
 
 ## 8. Common Misconceptions
 
-1. **"`/bin/sh` is the original Bourne shell."** On essentially every modern Linux system it's a symlink to some other shell running in POSIX-compatibility mode — dash on Debian/Ubuntu, bash (restricted) on RHEL-family — not a distinct historical binary. Which shell it actually resolves to is distribution-dependent and directly determines whether bash-specific syntax in a `#!/bin/sh` script will work (2.4).
-2. **"`~/.bashrc` and `~/.bash_profile` are basically interchangeable — just put everything in whichever one."** They're read in different, non-overlapping circumstances (login vs. non-login interactive shells) — code that only ever runs from one will silently not run in the other's context, which is exactly why the standard convention has `~/.bash_profile` explicitly source `~/.bashrc` rather than duplicating content (4.1).
-3. **"`#!/bin/sh` is safer/more portable than `#!/bin/bash`, so I should always use it."** It's only safer if the script's contents are genuinely restricted to POSIX syntax — using `#!/bin/sh` while writing bash-specific syntax is worse than being explicit, because it fails inconsistently depending on what `/bin/sh` happens to be symlinked to on whatever host runs it (2.4).
-4. **"`$SHELL` tells me what shell I'm currently running."** It tells you the user's configured default login shell, set once at login time and never automatically updated — it does not track shell changes made afterward within the session. `echo $0` or `ps -p $$` are the commands that report the actual running process (7).
+1. **"`/bin/sh` is the original Bourne shell."** On essentially every modern Linux system it's a symlink to some other shell running in POSIX-compatibility mode — dash on Debian/Ubuntu, bash (restricted) on RHEL-family — not a distinct historical binary. Which shell it actually resolves to is distribution-dependent and directly determines whether bash-specific syntax in a `#!/bin/sh` script will work, as the dash subsection above covers.
+2. **"`~/.bashrc` and `~/.bash_profile` are basically interchangeable — just put everything in whichever one."** They're read in different, non-overlapping circumstances (login vs. non-login interactive shells) — code that only ever runs from one will silently not run in the other's context, which is exactly why the standard convention has `~/.bash_profile` explicitly source `~/.bashrc` rather than duplicating content, as the login-shells subsection above explains.
+3. **"`#!/bin/sh` is safer/more portable than `#!/bin/bash`, so I should always use it."** It's only safer if the script's contents are genuinely restricted to POSIX syntax — using `#!/bin/sh` while writing bash-specific syntax is worse than being explicit, because it fails inconsistently depending on what `/bin/sh` happens to be symlinked to on whatever host runs it, as the dash subsection above covers.
+4. **"`$SHELL` tells me what shell I'm currently running."** It tells you the user's configured default login shell, set once at login time and never automatically updated — it does not track shell changes made afterward within the session. `echo $0` or `ps -p $$` are the commands that report the actual running process, as the section above on `$SHELL` versus the actually-running shell details.
 
 ## 9. Tiered Interview Questions
 
@@ -163,6 +163,6 @@ _What the interviewer is probing for:_ Fleet-scale thinking that goes beyond "fi
 
 ## 11. Related Concepts & What's Next
 
-This section opens Part 6 by naming the program §40 closed Part 5 by demonstrating the effect of — the shell that turns a pipeline like `ls | grep` into the pipe-connected processes §40 described at the kernel level. It leans on §25's `/etc/passwd` structure for the default-shell field (6) and echoes §13's "trust the running process over the label" discipline in distinguishing `$SHELL` from the actually-running shell (7). §42 (next) moves from "which shell, which config files" into shell basics proper — variables, quoting, and expansion — the vocabulary every later Part 6 section assumes. §45 returns to this section's shell-selection material when it introduces bash scripting fundamentals and the shebang line in full.
+This section opens Part 6 by naming the program §40 closed Part 5 by demonstrating the effect of — the shell that turns a pipeline like `ls | grep` into the pipe-connected processes §40 described at the kernel level. It leans on §25's `/etc/passwd` structure for the default-shell field, covered above in the default-shell section, and echoes §13's "trust the running process over the label" discipline in distinguishing `$SHELL` from the actually-running shell, covered above. §42 (next) moves from "which shell, which config files" into shell basics proper — variables, quoting, and expansion — the vocabulary every later Part 6 section assumes. §45 returns to this section's shell-selection material when it introduces bash scripting fundamentals and the shebang line in full.
 
 **Next Section:** §42 — `Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion.md`
