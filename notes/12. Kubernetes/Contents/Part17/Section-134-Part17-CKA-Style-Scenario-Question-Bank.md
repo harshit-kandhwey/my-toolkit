@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §133 (kubectl speed techniques — aliases, editor config, imperative one-liners), which every solution below assumes is already in your muscle memory. Each scenario also draws on a specific earlier Part: Deployments and rollouts (§26–§29), Taints and Tolerations (§68), RBAC (§75), Services and NetworkPolicies (Part 7), Storage (Part 8), and etcd/cluster maintenance (Part 14) — this section does not re-teach those concepts, it tests them under exam conditions.
+Builds directly on [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md) (kubectl speed techniques — aliases, editor config, imperative one-liners), which every solution below assumes is already in your muscle memory. Each scenario also draws on a specific earlier Part: Deployments and rollouts ([§26](../Part4/Section-26-Part4-Init-Containers.md)–[§29](../Part4/Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)), Taints and Tolerations ([§68](../Part9/Section-68-Part9-Taints-Tolerations.md)), RBAC ([§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)), Services and NetworkPolicies (Part 7), Storage (Part 8), and etcd/cluster maintenance (Part 14) — this section does not re-teach those concepts, it tests them under exam conditions.
 
 ## 4. Architecture Diagram: Scenario Category Breakdown
 
@@ -68,7 +68,7 @@ exit
 kubectl get nodes
 ```
 
-**What it's testing:** Node-level troubleshooting (§97–§105 methodology), kubelet static configuration (§17), and the discipline of reading `journalctl` output rather than guessing — this is the single most common CKA "cluster architecture + troubleshooting" crossover task.
+**What it's testing:** Node-level troubleshooting ([§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)–[§105](../Part13/Section-105-Part13-Incident-Case-Studies-Runbooks.md) methodology), kubelet static configuration ([§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md)), and the discipline of reading `journalctl` output rather than guessing — this is the single most common CKA "cluster architecture + troubleshooting" crossover task.
 
 ### Scenario 2 — Rolling Update With a Deliberate Rollback (6 minutes)
 
@@ -88,7 +88,7 @@ kubectl -n frontend rollout status deployment/web
 kubectl -n frontend get pods -l app=web
 ```
 
-**What it's testing:** Deployment rollout mechanics and revision history (§27–§28), and correctly reading `rollout status` to know when to intervene rather than waiting out a stuck rollout.
+**What it's testing:** Deployment rollout mechanics and revision history ([§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)–[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md)), and correctly reading `rollout status` to know when to intervene rather than waiting out a stuck rollout.
 
 ### Scenario 3 — CrashLoopBackOff Root-Cause and Fix (5 minutes)
 
@@ -110,7 +110,7 @@ kubectl -n payments delete pod ledger-0
 kubectl -n payments get pods -w
 ```
 
-**What it's testing:** Pod failure-state triage (§97–§99: CrashLoopBackOff specifically), reading `--previous` logs on a restarting container, and correctly distinguishing "fix the cause, let the controller recreate the Pod" from "the Pod itself is the problem."
+**What it's testing:** Pod failure-state triage ([§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)–[§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md): CrashLoopBackOff specifically), reading `--previous` logs on a restarting container, and correctly distinguishing "fix the cause, let the controller recreate the Pod" from "the Pod itself is the problem."
 
 ### Scenario 4 — Service Not Reachable Across Namespaces (6 minutes)
 
@@ -180,7 +180,7 @@ ETCDCTL_API=3 etcdctl snapshot save /opt/backups/etcd-snapshot.db \
 ETCDCTL_API=3 etcdctl snapshot status /opt/backups/etcd-snapshot.db --write-out=table
 ```
 
-**What it's testing:** etcd backup procedure recall under zero notes allowed (§107 territory) — this is one of the highest-value single tasks on the real CKA because the certificate paths are always the same three files and memorizing them cold saves minutes versus hunting through `/etc/kubernetes/manifests/etcd.yaml` for the flags during the exam.
+**What it's testing:** etcd backup procedure recall under zero notes allowed ([§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md) territory) — this is one of the highest-value single tasks on the real CKA because the certificate paths are always the same three files and memorizing them cold saves minutes versus hunting through `/etc/kubernetes/manifests/etcd.yaml` for the flags during the exam.
 
 ### Scenario 7 — Draining a Node for Maintenance Without Dropping Workloads (5 minutes)
 
@@ -200,7 +200,7 @@ kubectl uncordon node02
 kubectl get nodes
 ```
 
-**What it's testing:** Node maintenance lifecycle (§109: cordon/drain/uncordon), correct use of `--ignore-daemonsets` (drain fails without it if any DaemonSet Pods are present), and awareness that a PodDisruptionBudget violation will block eviction rather than silently ignore it — a candidate who doesn't know this can burn the whole time box waiting on a drain that will never complete without `--disable-eviction` (which should NOT be used against a real PDB in production).
+**What it's testing:** Node maintenance lifecycle ([§108](../Part14/Section-108-Part14-Node-Maintenance-cordon-drain-uncordon.md): cordon/drain/uncordon), correct use of `--ignore-daemonsets` (drain fails without it if any DaemonSet Pods are present), and awareness that a PodDisruptionBudget violation will block eviction rather than silently ignore it — a candidate who doesn't know this can burn the whole time box waiting on a drain that will never complete without `--disable-eviction` (which should NOT be used against a real PDB in production).
 
 ## 6. Production Usage Notes: Practicing Under Real Exam Time Pressure
 
@@ -211,7 +211,7 @@ kubectl get nodes
 
 ## 7. Security Considerations
 
-- Scenario 6 (etcd backup) touches the exact PKI material — `ca.crt`, `server.crt`, `server.key` — that an attacker with etcd snapshot access could use to reconstruct all cluster secrets in plaintext (etcd stores Secrets base64-encoded, not encrypted, unless EncryptionConfiguration is enabled per §43); treat any backup file you produce as equivalently sensitive to the cluster's Secrets and never leave it world-readable.
+- Scenario 6 (etcd backup) touches the exact PKI material — `ca.crt`, `server.crt`, `server.key` — that an attacker with etcd snapshot access could use to reconstruct all cluster secrets in plaintext (etcd stores Secrets base64-encoded, not encrypted, unless EncryptionConfiguration is enabled per [§43](../Part6/Section-43-Part6-Encrypting-Secrets-At-Rest-EncryptionConfiguration.md)); treat any backup file you produce as equivalently sensitive to the cluster's Secrets and never leave it world-readable.
 - Scenario 4's NetworkPolicy trap is a reminder that the real exam (and real production clusters) frequently combine a security control with an unrelated bug — don't assume a broken connection is "just the NetworkPolicy" without also checking Service/Endpoints wiring, and don't assume it's "just a selector bug" without also checking whether a policy is additionally restricting the path.
 - RBAC-related node/PVC/Secret troubleshooting scenarios should always be diagnosed with `kubectl auth can-i` before assuming a permissions issue is a bug rather than an intentional restriction — accidentally loosening RBAC to "make a scenario work" during practice builds the wrong reflex for the real exam and for production incident response alike.
 
@@ -228,7 +228,7 @@ kubectl get nodes
 ## 9. Best Practices
 
 - Read the entire prompt once, fully, before typing anything — many CKA tasks bury a constraint ("do not delete the owning controller," "do not modify any other node") in the last sentence that changes the correct command.
-- Prefer imperative one-liners for straightforward creates/patches and switch to a YAML manifest only when the object needs fields no generator flag covers — this is a direct application of the speed techniques from §133.
+- Prefer imperative one-liners for straightforward creates/patches and switch to a YAML manifest only when the object needs fields no generator flag covers — this is a direct application of the speed techniques from [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md).
 - Verify with a cheap read-only command (`get`, `describe`, `rollout status`) immediately after each fix, then move on — don't re-verify a task repeatedly at the cost of time on the remaining tasks.
 
 ## 10. Common Anti-Patterns / Mistakes
@@ -252,7 +252,7 @@ _What the interviewer is probing for:_ Breadth across the real causes rather tha
 _What the interviewer is probing for:_ Real exam-time triage judgment and the specific knowledge that the etcd manifest itself is the fastest source of truth for its own connection flags, rather than pure memorization.
 
 **🎯 Architect:** _"How would you design a practice regimen that builds real exam-day speed rather than memorized muscle memory that breaks the moment a scenario is worded slightly differently?"_
-**Model answer:** I'd build the regimen around varying the surface details while holding the diagnostic sequence constant — rotate namespace names, resource names, and the specific fault injected (bad selector one day, bad NetworkPolicy the next, both stacked together another day) so the candidate is forced to actually run `get`/`describe`/`logs` each time rather than pattern-matching a memorized fix. I'd also deliberately randomize which context points at which cluster between practice runs, specifically to keep the "read prompt, switch context" reflex sharp rather than assumed. Finally, I'd track time-per-task-category over successive sessions (troubleshooting, workloads, networking, storage) against the real domain weights from §130, so practice time is allocated toward the 30%-weighted Troubleshooting domain rather than evenly split — a candidate who's equally fast at all five domains but the exam is 30% one domain should spend disproportionate practice time there, not equal time everywhere.
+**Model answer:** I'd build the regimen around varying the surface details while holding the diagnostic sequence constant — rotate namespace names, resource names, and the specific fault injected (bad selector one day, bad NetworkPolicy the next, both stacked together another day) so the candidate is forced to actually run `get`/`describe`/`logs` each time rather than pattern-matching a memorized fix. I'd also deliberately randomize which context points at which cluster between practice runs, specifically to keep the "read prompt, switch context" reflex sharp rather than assumed. Finally, I'd track time-per-task-category over successive sessions (troubleshooting, workloads, networking, storage) against the real domain weights from [§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md), so practice time is allocated toward the 30%-weighted Troubleshooting domain rather than evenly split — a candidate who's equally fast at all five domains but the exam is 30% one domain should spend disproportionate practice time there, not equal time everywhere.
 _What the interviewer is probing for:_ Systems thinking about deliberate practice design, not just listing scenario types, and explicit awareness that domain weight should drive time allocation both on exam day and during preparation.
 
 ## 12. Common Misconceptions
@@ -272,6 +272,6 @@ _What the interviewer is probing for:_ Systems thinking about deliberate practic
 
 ## 14. Related Concepts & What's Next
 
-This section built directly on §133's speed techniques and drew scenario material from Deployments (§26–§29), Taints/Tolerations (§68), RBAC (§75), Services and NetworkPolicies (Part 7), Storage (Part 8), and cluster maintenance (Part 14) — treat every scenario above as a checkpoint on whether those sections' concepts are exam-ready, not just understood. §135 shifts from cluster-operator scenarios to application-developer scenarios: ConfigMaps, Secrets, probes, multi-container Pods, and the build/deploy lifecycle that the CKAD exam grades instead.
+This section built directly on [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md)'s speed techniques and drew scenario material from Deployments ([§26](../Part4/Section-26-Part4-Init-Containers.md)–[§29](../Part4/Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)), Taints/Tolerations ([§68](../Part9/Section-68-Part9-Taints-Tolerations.md)), RBAC ([§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)), Services and NetworkPolicies (Part 7), Storage (Part 8), and cluster maintenance (Part 14) — treat every scenario above as a checkpoint on whether those sections' concepts are exam-ready, not just understood. [§135](./Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md) shifts from cluster-operator scenarios to application-developer scenarios: ConfigMaps, Secrets, probes, multi-container Pods, and the build/deploy lifecycle that the CKAD exam grades instead.
 
-**Next Section:** §135 — `Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md`
+**Next Section:** [§135](./Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md) — `Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md`

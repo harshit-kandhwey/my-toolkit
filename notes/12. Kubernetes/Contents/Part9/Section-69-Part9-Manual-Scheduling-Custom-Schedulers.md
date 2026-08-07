@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **Manual scheduling is the escape hatch when the default scheduler's algorithm doesn't fit an edge case.** Understanding `nodeName` clarifies what the scheduler actually does — bind a Pod to a node — which makes the entire filtering/scoring pipeline and its taint/toleration rules (§68) easier to reason about by contrast.
+- **Manual scheduling is the escape hatch when the default scheduler's algorithm doesn't fit an edge case.** Understanding `nodeName` clarifies what the scheduler actually does — bind a Pod to a node — which makes the entire filtering/scoring pipeline and its taint/toleration rules ([§68](./Section-68-Part9-Taints-Tolerations.md)) easier to reason about by contrast.
 - **Custom schedulers are a real production pattern, not just a CKA exam trick.** Batch scheduling systems (Volcano, YuniKorn) and GPU-aware schedulers run as separate `schedulerName`-scoped binaries precisely because kube-scheduler's default algorithm doesn't model gang scheduling or fractional GPU allocation well.
-- **Multiple schedulers running concurrently is a foundational concept for everything else in Part 9.** Resource-based scheduling (§70), priority/preemption (§71), and topology spread (§72) are all behaviors of the _default_ scheduler — knowing that they can, in principle, be replaced or supplemented clarifies what's a Kubernetes primitive versus a default-scheduler-specific behavior.
+- **Multiple schedulers running concurrently is a foundational concept for everything else in Part 9.** Resource-based scheduling ([§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)), priority/preemption ([§71](./Section-71-Part9-Priority-Classes-Preemption.md)), and topology spread ([§72](./Section-72-Part9-Topology-Spread-Constraints.md)) are all behaviors of the _default_ scheduler — knowing that they can, in principle, be replaced or supplemented clarifies what's a Kubernetes primitive versus a default-scheduler-specific behavior.
 
-🔑 **Key Takeaway:** Setting `nodeName` bypasses kube-scheduler entirely; setting `schedulerName` routes a Pod to an alternative scheduler process — both are legitimate mechanisms for cases where the default filtering/scoring pipeline (§68 and earlier) isn't the right tool.
+🔑 **Key Takeaway:** Setting `nodeName` bypasses kube-scheduler entirely; setting `schedulerName` routes a Pod to an alternative scheduler process — both are legitimate mechanisms for cases where the default filtering/scoring pipeline ([§68](./Section-68-Part9-Taints-Tolerations.md) and earlier) isn't the right tool.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §68 (Taints and Tolerations), the last of the default scheduler's placement-constraint mechanisms covered in this Part, and assumes familiarity with the scheduler's filtering/scoring pipeline introduced earlier in Part 9.
+Builds directly on [§68](./Section-68-Part9-Taints-Tolerations.md) (Taints and Tolerations), the last of the default scheduler's placement-constraint mechanisms covered in this Part, and assumes familiarity with the scheduler's filtering/scoring pipeline introduced earlier in Part 9.
 
 ## 4. Architecture Diagram
 
@@ -41,7 +41,7 @@ Builds directly on §68 (Taints and Tolerations), the last of the default schedu
                                              ▼                   ▼
                                      kube-scheduler runs   custom scheduler binary
                                      filter/score/bind     runs its own algorithm,
-                                     (§65-68)              writes Binding object
+                                     (§65-§68)              writes Binding object
                                              │                   │
                                              └─────────┬─────────┘
                                                        ▼
@@ -80,7 +80,7 @@ kubectl get nodes
 kubectl apply -f manually-placed.yaml
 ```
 
-**Production usage example:** During an incident where kube-scheduler itself is crash-looping (§104, control-plane failure scenarios), an SRE can keep critical workloads deployable by setting `nodeName` directly on a handful of manifests, sidestepping the broken scheduler entirely until the control plane is restored — a break-glass procedure, not a routine practice.
+**Production usage example:** During an incident where kube-scheduler itself is crash-looping ([§104](../Part13/Section-104-Part13-Cluster-Level-Resource-Exhaustion-Eviction.md), control-plane failure scenarios), an SRE can keep critical workloads deployable by setting `nodeName` directly on a handful of manifests, sidestepping the broken scheduler entirely until the control plane is restored — a break-glass procedure, not a routine practice.
 
 **Common errors:** Setting `nodeName` to a node that doesn't exist or is `NotReady` leaves the Pod stuck, because there is no scheduler retry logic in this path at all — kubelet on the named node simply never picks it up, and `kubectl describe pod` shows no scheduling events whatsoever since the scheduler was never involved.
 
@@ -153,7 +153,7 @@ Events:
 ## 7. Security Considerations
 
 - Manually setting `nodeName` bypasses any admission-time scheduling constraints that would otherwise be enforced through the scheduler's filtering phase (such as taints that reject workloads from sensitive nodes) — RBAC alone must be relied on to prevent unauthorized users from creating Pods with `nodeName` pointed at nodes they shouldn't be able to target.
-- A custom scheduler's ServiceAccount typically needs `create` permission on `bindings` and broad `get`/`list`/`watch` on Pods and Nodes — over-scoping this ServiceAccount's RBAC (§74) turns a scheduling component into a high-value target, since it can effectively place workloads anywhere in the cluster.
+- A custom scheduler's ServiceAccount typically needs `create` permission on `bindings` and broad `get`/`list`/`watch` on Pods and Nodes — over-scoping this ServiceAccount's RBAC ([§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md)) turns a scheduling component into a high-value target, since it can effectively place workloads anywhere in the cluster.
 - Running an unreviewed third-party custom scheduler introduces a new, highly privileged control-plane-adjacent component into the cluster's trust boundary; treat its image provenance and RBAC footprint with the same scrutiny given to kube-scheduler itself.
 
 ## 8. Common Troubleshooting Scenarios
@@ -203,13 +203,13 @@ _What the interviewer is probing for:_ Systems-level thinking about workload seg
 
 ## 13. 🔑 Key Takeaways
 
-- Setting `spec.nodeName` binds a Pod directly to a node, bypassing kube-scheduler's filtering/scoring pipeline entirely — including taint and resource-fit checks covered in §68 and earlier sections.
+- Setting `spec.nodeName` binds a Pod directly to a node, bypassing kube-scheduler's filtering/scoring pipeline entirely — including taint and resource-fit checks covered in [§68](./Section-68-Part9-Taints-Tolerations.md) and earlier sections.
 - `spec.schedulerName` routes a Pod to a specific scheduler process, and Kubernetes natively supports multiple schedulers coexisting without conflict as long as each Pod maps to exactly one.
 - Custom schedulers are a legitimate production tool for specialized workload classes (batch/GPU scheduling) but carry substantial engineering cost — mature existing projects or scheduler configuration profiles are usually preferable to building one from scratch.
 - Manual scheduling should be reserved for break-glass operational scenarios, never routine production placement, since it forfeits every scheduler safety check.
 
 ## 14. Related Concepts & What's Next
 
-This section closes out the placement-mechanism tour that began with node/Pod affinity and taints/tolerations (§68) by showing what happens when the scheduler is bypassed or replaced outright. §70 turns to how the _default_ scheduler actually uses resource requests and limits during its filtering and scoring phases — the mechanism manual scheduling and custom schedulers both sidestep or must reimplement themselves.
+This section closes out the placement-mechanism tour that began with node/Pod affinity and taints/tolerations ([§68](./Section-68-Part9-Taints-Tolerations.md)) by showing what happens when the scheduler is bypassed or replaced outright. [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md) turns to how the _default_ scheduler actually uses resource requests and limits during its filtering and scoring phases — the mechanism manual scheduling and custom schedulers both sidestep or must reimplement themselves.
 
-**Next Section:** §70 — `Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md`
+**Next Section:** [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md) — `Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md`

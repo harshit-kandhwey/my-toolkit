@@ -4,19 +4,19 @@
 
 **Plain language:** Kubernetes doesn't know your application is "the payments service, version 2, in the production environment" unless you tell it — and the way you tell it is by sticking small key-value tags onto objects. Some of those tags are used by Kubernetes itself to group and target objects; others are just notes for humans and tooling.
 
-**Precise definition:** **Labels** are key-value pairs attached to objects' `metadata.labels` that are used to identify, group, and organize objects for querying and selection. **Selectors** are expressions (either **equality-based**, e.g. `env=prod`, or **set-based**, e.g. `env in (prod, staging)`) that Kubernetes controllers and `kubectl` use to find the subset of objects matching a label criterion — this is the exact mechanism a ReplicaSet (§27) uses to know which Pods it owns. **Annotations** are also key-value pairs on `metadata.annotations`, but unlike labels they are **not indexed or selectable** — they exist purely to attach arbitrary, often larger, non-identifying metadata (build info, contact emails, tool-specific config) to an object.
+**Precise definition:** **Labels** are key-value pairs attached to objects' `metadata.labels` that are used to identify, group, and organize objects for querying and selection. **Selectors** are expressions (either **equality-based**, e.g. `env=prod`, or **set-based**, e.g. `env in (prod, staging)`) that Kubernetes controllers and `kubectl` use to find the subset of objects matching a label criterion — this is the exact mechanism a ReplicaSet ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)) uses to know which Pods it owns. **Annotations** are also key-value pairs on `metadata.annotations`, but unlike labels they are **not indexed or selectable** — they exist purely to attach arbitrary, often larger, non-identifying metadata (build info, contact emails, tool-specific config) to an object.
 
 ## 2. Why This Matters
 
-- **Labels are the entire mechanism controllers use to own objects.** A ReplicaSet's `spec.selector.matchLabels` is not a suggestion — it's a live query re-evaluated continuously; any Pod whose labels match gets adopted, and any Pod that stops matching (via a label change) is abandoned by the controller (§27).
-- **Selectors are also how Services find their backend Pods.** The Service selectors covered in depth in §48–§56 (Part 7) use the exact same label-matching mechanism described here — a Service's `spec.selector` behaves identically to a ReplicaSet's, just routing network traffic instead of managing replica count.
+- **Labels are the entire mechanism controllers use to own objects.** A ReplicaSet's `spec.selector.matchLabels` is not a suggestion — it's a live query re-evaluated continuously; any Pod whose labels match gets adopted, and any Pod that stops matching (via a label change) is abandoned by the controller ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)).
+- **Selectors are also how Services find their backend Pods.** The Service selectors covered in depth in [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)–[§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) use the exact same label-matching mechanism described here — a Service's `spec.selector` behaves identically to a ReplicaSet's, just routing network traffic instead of managing replica count.
 - **Annotations are where tooling metadata lives without polluting selection logic.** Ingress controllers, service meshes, and CI/CD systems routinely stash configuration in annotations (e.g. `kubernetes.io/ingress.class`) specifically because that data must never accidentally participate in a label selector match.
 
 🔑 **Key Takeaway:** Labels + selectors are Kubernetes' universal, live-queried grouping mechanism — the same pattern under Deployments, Services, and NetworkPolicies alike — while annotations are the parallel channel for descriptive metadata that was never meant to be queried against.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §24 (Pod spec, where `metadata.labels` first appears) and §27 (ReplicaSet, the first controller shown using label selectors to own Pods).
+Builds on [§24](./Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (Pod spec, where `metadata.labels` first appears) and [§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) (ReplicaSet, the first controller shown using label selectors to own Pods).
 
 ## 4. Architecture Diagram
 
@@ -124,7 +124,7 @@ $ kubectl get deployment payments -o jsonpath='{.metadata.annotations}'
 {"kubernetes.io/change-cause":"bump to 2.3.0, ticket JIRA-4821"}
 ```
 
-**Production usage example:** Ingress controllers are configured almost entirely via annotations (e.g. `nginx.ingress.kubernetes.io/rewrite-target`) rather than a typed spec field, because annotations let controller-specific configuration evolve independently of the core Kubernetes API schema (§85, Part 7).
+**Production usage example:** Ingress controllers are configured almost entirely via annotations (e.g. `nginx.ingress.kubernetes.io/rewrite-target`) rather than a typed spec field, because annotations let controller-specific configuration evolve independently of the core Kubernetes API schema ([§86](../Part11/Section-86-Part11-Operators-Operator-Pattern-CRDs.md)).
 
 ## 6. Production Usage Notes
 
@@ -134,16 +134,16 @@ $ kubectl get deployment payments -o jsonpath='{.metadata.annotations}'
 
 ## 7. Security Considerations
 
-- Labels are visible to anyone with read access to the object and are commonly used in RBAC-adjacent tooling and NetworkPolicy selectors (§55, Part 7) — accidentally leaking sensitive information (customer names, internal ticket details) into a label rather than an annotation increases its exposure surface.
-- Annotations are sometimes (incorrectly) used to store secrets-adjacent data since they accept arbitrary strings; this is an anti-pattern — annotations are not encrypted at rest any differently than the rest of the object, and actual secrets belong in the Secret object type (§42, Part 6).
+- Labels are visible to anyone with read access to the object and are commonly used in RBAC-adjacent tooling and NetworkPolicy selectors ([§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)) — accidentally leaking sensitive information (customer names, internal ticket details) into a label rather than an annotation increases its exposure surface.
+- Annotations are sometimes (incorrectly) used to store secrets-adjacent data since they accept arbitrary strings; this is an anti-pattern — annotations are not encrypted at rest any differently than the rest of the object, and actual secrets belong in the Secret object type ([§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                             | Likely Cause                                                            | Resolution Path                                                                                            |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| A ReplicaSet keeps creating new Pods while old ones stay "orphaned" | A Pod's labels were changed such that it no longer matches the selector | Relabel the Pod back to match, or delete the orphaned Pod and let the ReplicaSet's fresh one stand in      |
-| `kubectl apply` on an updated Deployment manifest fails/rejects     | `spec.selector` was changed — selectors are immutable after creation    | Revert the selector change, or delete and recreate the Deployment if the selector genuinely must change    |
-| A Service reports zero Endpoints despite Pods running fine          | Service `spec.selector` doesn't match any Pod's labels (typo or drift)  | Compare `kubectl get svc -o yaml` selector against `kubectl get pods --show-labels` directly (§50, Part 7) |
+| Symptom                                                             | Likely Cause                                                            | Resolution Path                                                                                                                                                                          |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A ReplicaSet keeps creating new Pods while old ones stay "orphaned" | A Pod's labels were changed such that it no longer matches the selector | Relabel the Pod back to match, or delete the orphaned Pod and let the ReplicaSet's fresh one stand in                                                                                    |
+| `kubectl apply` on an updated Deployment manifest fails/rejects     | `spec.selector` was changed — selectors are immutable after creation    | Revert the selector change, or delete and recreate the Deployment if the selector genuinely must change                                                                                  |
+| A Service reports zero Endpoints despite Pods running fine          | Service `spec.selector` doesn't match any Pod's labels (typo or drift)  | Compare `kubectl get svc -o yaml` selector against `kubectl get pods --show-labels` directly ([§50](../Part7/Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)) |
 
 ## 9. Best Practices
 
@@ -172,7 +172,7 @@ _What the interviewer is probing for:_ Understanding that label matching is live
 _What the interviewer is probing for:_ Real operational knowledge of selector immutability and the actual migration mechanics, not just "selectors match labels."
 
 **🎯 Architect:** _"You're designing a cluster-wide labeling standard for a platform with 200+ microservices across multiple teams. What do you mandate, and what failure modes are you designing against?"_
-**Model answer:** I'd mandate the Kubernetes-recommended `app.kubernetes.io/name`, `app.kubernetes.io/version`, `app.kubernetes.io/component`, `app.kubernetes.io/managed-by`, plus organization-specific keys like `team` and `env`, enforced via an admission policy (§77, Part 10) that rejects objects missing required labels — because retrofitting a label scheme across hundreds of already-deployed workloads is dramatically more expensive than enforcing it from day one. I'm designing against three failure modes: inconsistent key naming across teams breaking cluster-wide dashboards and cost allocation; selector immutability surprising teams mid-migration when they try to "just relabel" a running Deployment; and label sprawl where teams stuff non-identifying data into labels that belongs in annotations, bloating selector-matching overhead and etcd object size unnecessarily. I'd pair the mandated schema with linting in CI (kube-linter, §116) so violations are caught before they ever reach the cluster.
+**Model answer:** I'd mandate the Kubernetes-recommended `app.kubernetes.io/name`, `app.kubernetes.io/version`, `app.kubernetes.io/component`, `app.kubernetes.io/managed-by`, plus organization-specific keys like `team` and `env`, enforced via an admission policy ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) that rejects objects missing required labels — because retrofitting a label scheme across hundreds of already-deployed workloads is dramatically more expensive than enforcing it from day one. I'm designing against three failure modes: inconsistent key naming across teams breaking cluster-wide dashboards and cost allocation; selector immutability surprising teams mid-migration when they try to "just relabel" a running Deployment; and label sprawl where teams stuff non-identifying data into labels that belongs in annotations, bloating selector-matching overhead and etcd object size unnecessarily. I'd pair the mandated schema with linting in CI (kube-linter, [§116](../Part15/Section-116-Part15-Supply-Chain-Security-Image-Scanning-Trivy-Signing-Cosign-Sigstore-SBOM.md)) so violations are caught before they ever reach the cluster.
 _What the interviewer is probing for:_ Ability to turn a simple mechanism (labels/selectors) into an enforceable, organization-scale governance policy, anticipating the operational failure modes rather than just describing the feature.
 
 ## 12. Common Misconceptions
@@ -185,13 +185,13 @@ _What the interviewer is probing for:_ Ability to turn a simple mechanism (label
 ## 13. 🔑 Key Takeaways
 
 - Labels are indexed, selectable key-value metadata; selectors (equality- or set-based) are the live queries controllers and Services use against them.
-- ReplicaSets (§27) and Services (§48–§56) use the identical label-selector mechanism for fundamentally different purposes — replica ownership vs. traffic routing.
+- ReplicaSets ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)) and Services ([§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)–[§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)) use the identical label-selector mechanism for fundamentally different purposes — replica ownership vs. traffic routing.
 - Annotations hold non-selectable metadata (build info, tool config) and have no bearing on controller or Service matching logic.
 - Selectors are immutable after object creation — a real operational constraint, not just a technical detail.
 - A consistent, cluster-wide label taxonomy is a platform-governance decision that pays off (or fails to) at scale, not a per-team style preference.
 
 ## 14. Related Concepts & What's Next
 
-§27 introduced the ReplicaSet's use of label selectors to own Pods; this section generalized that mechanism fully, including set-based expressions and the parallel annotation channel. §48–§56 (Part 7) apply this exact same selector mechanism to Services routing traffic to Pods, and §55 extends it further into NetworkPolicy selection. §77 (Part 10) covers admission control, one enforcement point for mandating label schemas cluster-wide.
+[§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) introduced the ReplicaSet's use of label selectors to own Pods; this section generalized that mechanism fully, including set-based expressions and the parallel annotation channel. [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)–[§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) apply this exact same selector mechanism to Services routing traffic to Pods, and [§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) extends it further into NetworkPolicy selection. [§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md) covers admission control, one enforcement point for mandating label schemas cluster-wide.
 
-**Next Section:** §31 — `Section-31-Part4-Kubectl-Fundamentals-Imperative-Commands-Generators-Dry-Run-Diff.md`
+**Next Section:** [§31](./Section-31-Part4-Kubectl-Fundamentals-Imperative-Commands-Generators-Dry-Run-Diff.md) — `Section-31-Part4-Kubectl-Fundamentals-Imperative-Commands-Generators-Dry-Run-Diff.md`

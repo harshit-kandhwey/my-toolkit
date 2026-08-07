@@ -4,19 +4,19 @@
 
 **Plain language:** Some workloads aren't "run N copies somewhere in the cluster" but "run exactly one copy on every node" — a log collector, a metrics agent, a network plugin's node agent. A DaemonSet is the controller purpose-built for that "one per node" shape, rather than an arbitrary replica count.
 
-**Precise definition:** A **DaemonSet** is a controller that ensures a copy of a Pod runs on every node in the cluster (or on a filtered subset of nodes matching a **node selector** or **affinity** rule), automatically adding a Pod when a new node joins and removing that Pod when a node is removed — with no `replicas` field at all, since the desired count is implicitly "one per matching node," not a fixed number. DaemonSets are the standard mechanism behind node-level infrastructure agents: `kube-proxy` (§9) itself typically runs as a DaemonSet, alongside CNI node agents, log-shipping sidecars like Fluent Bit, and node-level metrics exporters like `node-exporter`.
+**Precise definition:** A **DaemonSet** is a controller that ensures a copy of a Pod runs on every node in the cluster (or on a filtered subset of nodes matching a **node selector** or **affinity** rule), automatically adding a Pod when a new node joins and removing that Pod when a node is removed — with no `replicas` field at all, since the desired count is implicitly "one per matching node," not a fixed number. DaemonSets are the standard mechanism behind node-level infrastructure agents: `kube-proxy` ([§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)) itself typically runs as a DaemonSet, alongside CNI node agents, log-shipping sidecars like Fluent Bit, and node-level metrics exporters like `node-exporter`.
 
 ## 2. Why This Matters
 
-- **`kube-proxy` is a concrete example already covered.** §9 introduced `kube-proxy` as a node component responsible for Service traffic routing on every node; in most cluster distributions it's deployed as a DaemonSet in `kube-system`, which is the clearest possible real-world proof that "one Pod per node, automatically" is a genuinely necessary workload shape, not an edge case.
+- **`kube-proxy` is a concrete example already covered.** [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) introduced `kube-proxy` as a node component responsible for Service traffic routing on every node; in most cluster distributions it's deployed as a DaemonSet in `kube-system`, which is the clearest possible real-world proof that "one Pod per node, automatically" is a genuinely necessary workload shape, not an edge case.
 - **Observability and log-collection agents depend entirely on this pattern.** A log shipper or metrics agent needs to read node-local files or the local container runtime's socket on every single node without exception — a Deployment cannot guarantee "one on every node," but a DaemonSet guarantees it structurally, including automatically extending coverage to newly added nodes with zero manual intervention.
 - **DaemonSets interact directly with scheduling exceptions that other workloads don't get.** DaemonSet Pods bypass the default scheduler's normal placement logic in relevant ways and tolerate the control-plane node taint by default in many setups, since infrastructure agents typically need to run even on nodes that are otherwise off-limits to regular workloads — a nuance that becomes fully concrete once taints and tolerations are covered in Part 9.
 
-🔑 **Key Takeaway:** Reach for a DaemonSet whenever the requirement is "exactly one Pod per (all or matching) node," not "some fixed number of Pods somewhere in the cluster" — the canonical uses are node-level infrastructure like `kube-proxy` (§9), CNI agents, and observability collectors that must observe every node without exception.
+🔑 **Key Takeaway:** Reach for a DaemonSet whenever the requirement is "exactly one Pod per (all or matching) node," not "some fixed number of Pods somewhere in the cluster" — the canonical uses are node-level infrastructure like `kube-proxy` ([§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)), CNI agents, and observability collectors that must observe every node without exception.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §9 (kube-proxy and node components, the running real-world example of a DaemonSet) and §24 (Pod spec anatomy); the taint/toleration mechanics that let DaemonSet Pods schedule onto otherwise-restricted nodes are covered fully in Part 9.
+Builds on [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) (kube-proxy and node components, the running real-world example of a DaemonSet) and [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (Pod spec anatomy); the taint/toleration mechanics that let DaemonSet Pods schedule onto otherwise-restricted nodes are covered fully in Part 9.
 
 ## 4. Architecture Diagram
 
@@ -180,7 +180,7 @@ daemonset.apps/fluent-bit rolled back
 
 ## 7. Security Considerations
 
-- DaemonSet Pods that mount `hostPath` volumes (as in the log-collector example) or run with elevated `SecurityContext` privileges have node-level blast radius by construction — a compromised DaemonSet Pod potentially affects every node it's scheduled on, making these manifests a priority target for security review (§79, Part 10; Part 15).
+- DaemonSet Pods that mount `hostPath` volumes (as in the log-collector example) or run with elevated `SecurityContext` privileges have node-level blast radius by construction — a compromised DaemonSet Pod potentially affects every node it's scheduled on, making these manifests a priority target for security review ([§79](../Part10/Section-79-Part10-NetworkPolicies-Security-Boundary-Cross-Reference-Part7.md); Part 15).
 - Because DaemonSets often need to tolerate control-plane taints to observe every node, review each toleration deliberately — a broad, unnecessary toleration on a DaemonSet is a common way for a workload to end up running somewhere it shouldn't, including control-plane nodes.
 
 ## 8. Common Troubleshooting Scenarios
@@ -201,7 +201,7 @@ daemonset.apps/fluent-bit rolled back
 ## 10. Common Anti-Patterns / Mistakes
 
 - **Using a DaemonSet when a Deployment with anti-affinity would suffice**, adding unnecessary "one per node" rigidity to a workload that doesn't actually need node-level coverage.
-- **Granting a DaemonSet Pod broad, unreviewed `hostPath` access or elevated privileges** "because it's infrastructure," without applying the same SecurityContext scrutiny (§45, Part 6) given to application workloads — despite its node-wide blast radius being larger, not smaller.
+- **Granting a DaemonSet Pod broad, unreviewed `hostPath` access or elevated privileges** "because it's infrastructure," without applying the same SecurityContext scrutiny ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)) given to application workloads — despite its node-wide blast radius being larger, not smaller.
 - **Forgetting that DaemonSets have no `replicas` field and no `kubectl scale` support**, then being confused when scaling commands silently fail or do nothing meaningful against a DaemonSet.
 
 ## 11. Interview Questions
@@ -211,7 +211,7 @@ daemonset.apps/fluent-bit rolled back
 _What the interviewer is probing for:_ Understanding that DaemonSet Pod count is derived from cluster topology, not a static number the operator sets.
 
 **🎯 Intermediate:** _"Give a real Kubernetes component that runs as a DaemonSet, and explain why that's the right shape for it."_
-**Model answer:** `kube-proxy` (§9) is a canonical example — it needs to run on literally every node to program that node's Service routing rules (iptables or IPVS), so a Deployment's "some number of interchangeable replicas somewhere" model doesn't fit; the requirement is specifically "exactly one per node, including new nodes automatically," which is the DaemonSet's entire purpose.
+**Model answer:** `kube-proxy` ([§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)) is a canonical example — it needs to run on literally every node to program that node's Service routing rules (iptables or IPVS), so a Deployment's "some number of interchangeable replicas somewhere" model doesn't fit; the requirement is specifically "exactly one per node, including new nodes automatically," which is the DaemonSet's entire purpose.
 _What the interviewer is probing for:_ Whether the candidate connects the abstract controller definition to a concrete, already-known real-world instance rather than only reciting textbook use cases.
 
 **🎯 Senior:** _"Your log-collector DaemonSet shows `DESIRED: 5` but the cluster has 6 nodes. How do you investigate?"_
@@ -232,13 +232,13 @@ _What the interviewer is probing for:_ Systems-level thinking about DaemonSets a
 ## 13. 🔑 Key Takeaways
 
 - A DaemonSet runs exactly one Pod per node matching its selector/affinity criteria, with Pod count derived from cluster topology rather than a fixed `replicas` value.
-- `kube-proxy` (§9) is a concrete, already-covered real-world example of the DaemonSet pattern in action.
+- `kube-proxy` ([§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)) is a concrete, already-covered real-world example of the DaemonSet pattern in action.
 - DaemonSet Pods often need explicit tolerations to schedule onto tainted nodes, including the control-plane, since they're otherwise excluded by default like any workload.
 - Resource requests on DaemonSet Pods are effectively multiplied across the entire matching node fleet, making sizing discipline more consequential than for typical Deployments.
 - Observability and log-collection agents (Fluent Bit, node-exporter) are the most common production DaemonSet use case, alongside CNI and CSI node-level plugins.
 
 ## 14. Related Concepts & What's Next
 
-§9 supplied the concrete `kube-proxy` example this section built on to explain the DaemonSet pattern's real necessity, and §24's Pod spec anatomy underlies every DaemonSet template. The taint/toleration mechanics referenced throughout for control-plane scheduling are covered in full depth in Part 9. §35 moves from "always-running, one-per-node" workloads to the opposite shape: workloads designed to run to completion and then stop.
+[§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) supplied the concrete `kube-proxy` example this section built on to explain the DaemonSet pattern's real necessity, and [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)'s Pod spec anatomy underlies every DaemonSet template. The taint/toleration mechanics referenced throughout for control-plane scheduling are covered in full depth in Part 9. [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) moves from "always-running, one-per-node" workloads to the opposite shape: workloads designed to run to completion and then stop.
 
-**Next Section:** §35 — `Section-35-Part5-Jobs-Run-To-Completion-Workloads.md`
+**Next Section:** [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) — `Section-35-Part5-Jobs-Run-To-Completion-Workloads.md`

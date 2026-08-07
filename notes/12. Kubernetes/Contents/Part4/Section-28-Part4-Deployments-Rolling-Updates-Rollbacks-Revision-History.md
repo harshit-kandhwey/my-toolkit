@@ -4,19 +4,19 @@
 
 **Plain language:** Applications don't just need to be kept running — they need to be updated, over and over, without downtime, and with a safe way back if the update turns out to be broken. A Deployment is the object that manages exactly that: it's the thing you actually write and edit as an operator, and it's responsible for turning a change in your manifest into a safe, gradual transition in the running cluster.
 
-**Precise definition:** A **Deployment** is a controller that manages the rollout of Pods via one or more **ReplicaSets** (§27). When a Deployment's Pod template (`spec.template`) changes — a new image tag, an updated environment variable, a new resource limit — the Deployment creates a **new ReplicaSet** representing that revision, and orchestrates a transition of replica counts from the old ReplicaSet to the new one according to its configured **strategy** (§29). Kubernetes retains a bounded history of prior ReplicaSets (governed by `spec.revisionHistoryLimit`), which is what makes `kubectl rollout undo` an near-instant operation — rolling back means shifting replicas back to an already-existing, already-scheduled prior ReplicaSet rather than recreating anything from scratch.
+**Precise definition:** A **Deployment** is a controller that manages the rollout of Pods via one or more **ReplicaSets** ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)). When a Deployment's Pod template (`spec.template`) changes — a new image tag, an updated environment variable, a new resource limit — the Deployment creates a **new ReplicaSet** representing that revision, and orchestrates a transition of replica counts from the old ReplicaSet to the new one according to its configured **strategy** ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)). Kubernetes retains a bounded history of prior ReplicaSets (governed by `spec.revisionHistoryLimit`), which is what makes `kubectl rollout undo` an near-instant operation — rolling back means shifting replicas back to an already-existing, already-scheduled prior ReplicaSet rather than recreating anything from scratch.
 
 ## 2. Why This Matters
 
-- **Deployments are what makes zero-downtime updates possible without external tooling.** Editing a bare ReplicaSet's Pod template does nothing to existing Pods (§27) — only a Deployment actually knows how to gradually transition from an old Pod template to a new one while keeping the service available throughout.
-- **Revision history turns "the last deploy broke something" into a one-command fix.** `kubectl rollout undo` works because the previous ReplicaSet, complete with its exact Pod template, is still sitting there (scaled to zero) rather than deleted — a direct, practical consequence of the ReplicaSet ownership model from §27.
+- **Deployments are what makes zero-downtime updates possible without external tooling.** Editing a bare ReplicaSet's Pod template does nothing to existing Pods ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)) — only a Deployment actually knows how to gradually transition from an old Pod template to a new one while keeping the service available throughout.
+- **Revision history turns "the last deploy broke something" into a one-command fix.** `kubectl rollout undo` works because the previous ReplicaSet, complete with its exact Pod template, is still sitting there (scaled to zero) rather than deleted — a direct, practical consequence of the ReplicaSet ownership model from [§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md).
 - **`kubectl rollout status` gives you a deterministic signal for CI/CD gating.** Because rollout progress is a first-class, queryable Deployment status field, pipelines can block on `kubectl rollout status deployment/x` and reliably know whether a deploy actually succeeded before proceeding, rather than guessing from logs.
 
-🔑 **Key Takeaway:** A Deployment is the production-standard way to run and update stateless workloads in Kubernetes — it manages ReplicaSets (§27) on your behalf, executes an update strategy (§29) to transition between them safely, and retains revision history so that rolling back a bad release is a fast, built-in operation rather than an emergency re-deploy.
+🔑 **Key Takeaway:** A Deployment is the production-standard way to run and update stateless workloads in Kubernetes — it manages ReplicaSets ([§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)) on your behalf, executes an update strategy ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)) to transition between them safely, and retains revision history so that rolling back a bad release is a fast, built-in operation rather than an emergency re-deploy.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §27 (ReplicaSets — the object every Deployment creates and manages) and assumes the declarative model from §4 (desired state, `kubectl apply`) as the mechanism by which Deployment changes are actually submitted.
+Builds directly on [§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) (ReplicaSets — the object every Deployment creates and manages) and assumes the declarative model from [§4](../Part1/Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md) (desired state, `kubectl apply`) as the mechanism by which Deployment changes are actually submitted.
 
 ## 4. Architecture Diagram
 
@@ -94,13 +94,13 @@ Waiting for deployment "app" rollout to finish: 3 out of 4 new replicas have bee
 deployment "app" successfully rolled out
 ```
 
-**Production usage example:** `kubectl set image` is a common quick imperative path for a single-field image bump, but the production-standard path is editing `spec.template.spec.containers[].image` in the version-controlled manifest and applying it via CI (§4) — `kubectl set image` is genuinely useful for fast manual hotfixes and exam scenarios.
+**Production usage example:** `kubectl set image` is a common quick imperative path for a single-field image bump, but the production-standard path is editing `spec.template.spec.containers[].image` in the version-controlled manifest and applying it via CI ([§4](../Part1/Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md)) — `kubectl set image` is genuinely useful for fast manual hotfixes and exam scenarios.
 
 **Common errors:** `--record` is deprecated as of newer `kubectl` versions and produces a warning; `kubectl rollout history` still functions using the `CHANGE-CAUSE` annotation only if it was set, so many teams now set `kubectl.kubernetes.io/change-cause` manually via an annotation in the manifest instead.
 
 ### 5.2 Inspecting Revision History and Rolling Back
 
-**Purpose:** Recover from a bad rollout using the retained ReplicaSet history from §27.
+**Purpose:** Recover from a bad rollout using the retained ReplicaSet history from [§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md).
 
 ```bash
 $ kubectl rollout history deployment/app
@@ -147,18 +147,18 @@ $ kubectl scale deployment/app --replicas=6
 deployment.apps/app scaled
 ```
 
-**Production usage example:** Pausing a rollout after only a fraction of Pods have updated (combined with manual monitoring, or scripted checks against error-rate dashboards) is a manual approximation of canary deployment (§29) achievable with nothing beyond built-in `kubectl` commands, though dedicated tooling (Argo Rollouts, Flagger — §88, Part 11) automates this far more robustly.
+**Production usage example:** Pausing a rollout after only a fraction of Pods have updated (combined with manual monitoring, or scripted checks against error-rate dashboards) is a manual approximation of canary deployment ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)) achievable with nothing beyond built-in `kubectl` commands, though dedicated tooling (Argo Rollouts, Flagger — [§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) automates this far more robustly.
 
 ## 6. Production Usage Notes
 
-- **`maxUnavailable` and `maxSurge` under `spec.strategy.rollingUpdate` directly control rollout pace and risk** — a lower `maxUnavailable` favors availability during the rollout at the cost of slower progression; a higher `maxSurge` speeds up the rollout at the cost of a brief spike in total resource consumption (full mechanics in §29).
-- **Readiness probes (§92, Part 12) are what actually gate rollout progress.** The Deployment controller only considers a new Pod "available" — and therefore proceeds to the next batch — once that Pod's readiness probe passes; a missing or overly lenient readiness probe can let a broken rollout appear to succeed.
+- **`maxUnavailable` and `maxSurge` under `spec.strategy.rollingUpdate` directly control rollout pace and risk** — a lower `maxUnavailable` favors availability during the rollout at the cost of slower progression; a higher `maxSurge` speeds up the rollout at the cost of a brief spike in total resource consumption (full mechanics in [§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)).
+- **Readiness probes ([§92](../Part12/Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) are what actually gate rollout progress.** The Deployment controller only considers a new Pod "available" — and therefore proceeds to the next batch — once that Pod's readiness probe passes; a missing or overly lenient readiness probe can let a broken rollout appear to succeed.
 - **`kubectl.kubernetes.io/change-cause` as a manifest annotation is the durable way to record why a revision happened**, since it survives independent of whichever `kubectl` flags were used at deploy time and shows up cleanly in `kubectl rollout history`.
 
 ## 7. Security Considerations
 
 - Rollback via `kubectl rollout undo` reintroduces the exact prior Pod template — including any prior image tag — so if a rollback target's image has since been found to contain a vulnerability, `undo` alone is not a safe fix; a forward roll to a patched image is required instead.
-- Because a Deployment's rollout history retains prior Pod templates (including any environment variables or non-Secret configuration baked into them), reviewing `kubectl rollout history --revision=N` output can inadvertently surface old configuration values — a reason to keep genuinely sensitive values in Secrets (§42, Part 6) rather than plain environment values in the template.
+- Because a Deployment's rollout history retains prior Pod templates (including any environment variables or non-Secret configuration baked into them), reviewing `kubectl rollout history --revision=N` output can inadvertently surface old configuration values — a reason to keep genuinely sensitive values in Secrets ([§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) rather than plain environment values in the template.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -195,19 +195,19 @@ _What the interviewer is probing for:_ Understanding that rollback reuses existi
 _What the interviewer is probing for:_ A structured diagnostic sequence connecting rollout mechanics to readiness probes, plus the judgment to decide between "keep debugging" and "roll back now."
 
 **🎯 Architect:** _"How would you design a deployment pipeline's rollout-safety gates using nothing but native Deployment features (no external progressive-delivery tooling)?"_
-**Model answer:** I'd have CI apply the manifest, then immediately run `kubectl rollout status deployment/<name> --timeout=<N>` as a blocking pipeline step — a nonzero exit (timeout or explicit failure) triggers an automatic `kubectl rollout undo` rather than leaving the deploy in an ambiguous state, and I'd back this with meaningful readiness probes (§92, Part 12) as the actual health signal the rollout depends on. I'd tune `maxUnavailable`/`maxSurge` per service based on its actual availability requirements and cost tolerance for surge capacity, and set `revisionHistoryLimit` generously enough to cover realistic mean-time-to-detect windows for the team. I'd be explicit with stakeholders, though, that this native approach gives coarse, replica-percentage-based rollout control — no traffic-percentage-based canary analysis or automated metric-driven promotion — and that genuinely progressive delivery (§29) requires layering Argo Rollouts or Flagger (§88, Part 11) on top of this same Deployment/ReplicaSet foundation.
+**Model answer:** I'd have CI apply the manifest, then immediately run `kubectl rollout status deployment/<name> --timeout=<N>` as a blocking pipeline step — a nonzero exit (timeout or explicit failure) triggers an automatic `kubectl rollout undo` rather than leaving the deploy in an ambiguous state, and I'd back this with meaningful readiness probes ([§92](../Part12/Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) as the actual health signal the rollout depends on. I'd tune `maxUnavailable`/`maxSurge` per service based on its actual availability requirements and cost tolerance for surge capacity, and set `revisionHistoryLimit` generously enough to cover realistic mean-time-to-detect windows for the team. I'd be explicit with stakeholders, though, that this native approach gives coarse, replica-percentage-based rollout control — no traffic-percentage-based canary analysis or automated metric-driven promotion — and that genuinely progressive delivery ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)) requires layering Argo Rollouts or Flagger ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) on top of this same Deployment/ReplicaSet foundation.
 _What the interviewer is probing for:_ Whether the candidate can build real safety into a pipeline using only built-in primitives, while correctly identifying the ceiling of what native Deployments alone can provide.
 
 ## 12. Common Misconceptions
 
-1. **"A Deployment update immediately replaces all Pods at once."** By default it uses the RollingUpdate strategy (§29), replacing Pods incrementally according to `maxUnavailable`/`maxSurge`, not all at once.
+1. **"A Deployment update immediately replaces all Pods at once."** By default it uses the RollingUpdate strategy ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)), replacing Pods incrementally according to `maxUnavailable`/`maxSurge`, not all at once.
 2. **"`kubectl rollout undo` recreates the previous version from the manifest history in Git."** It has no awareness of Git at all — it operates purely on the retained ReplicaSet objects still present in the cluster; if that ReplicaSet has been garbage-collected, undo to that revision is no longer possible regardless of what Git holds.
 3. **"Rollout status success means the new version is actually healthy in a business-logic sense."** It only means the configured number of new Pods passed their readiness probes — a probe that only checks "process is listening" won't catch a functional regression a broader observability stack (Part 12) would.
 4. **"Scaling a Deployment and updating its image are the same kind of operation."** Scaling changes replica count without creating a new revision; only a Pod template change (image, env, resources, etc.) triggers a new ReplicaSet and rollout.
 
 ## 13. 🔑 Key Takeaways
 
-- Deployments manage rollout of Pod template changes by creating a new ReplicaSet per revision and shifting replicas between old and new according to a strategy (§29).
+- Deployments manage rollout of Pod template changes by creating a new ReplicaSet per revision and shifting replicas between old and new according to a strategy ([§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)).
 - Revision history (retained, zero-replica ReplicaSets) is what makes `kubectl rollout undo` fast and reliable — rollback reuses existing objects rather than recreating anything.
 - `kubectl rollout status`, `history`, `undo`, `pause`, and `resume` are the core operational toolkit for managing rollouts day to day.
 - Readiness probes are the actual mechanism gating rollout progress — a rollout can only be as reliable as the health signal it depends on.
@@ -215,6 +215,6 @@ _What the interviewer is probing for:_ Whether the candidate can build real safe
 
 ## 14. Related Concepts & What's Next
 
-§27 established the ReplicaSet mechanics this section built directly on top of. §29 covers exactly how the transition between old and new ReplicaSets is paced and shaped — the built-in `RollingUpdate`/`Recreate` strategies, and how Blue/Green and Canary patterns extend beyond what a bare Deployment can do natively.
+[§27](./Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) established the ReplicaSet mechanics this section built directly on top of. [§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md) covers exactly how the transition between old and new ReplicaSets is paced and shaped — the built-in `RollingUpdate`/`Recreate` strategies, and how Blue/Green and Canary patterns extend beyond what a bare Deployment can do natively.
 
-**Next Section:** §29 — `Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md`
+**Next Section:** [§29](./Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md) — `Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md`

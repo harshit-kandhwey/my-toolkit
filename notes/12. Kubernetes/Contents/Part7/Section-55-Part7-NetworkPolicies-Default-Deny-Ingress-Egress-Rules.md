@@ -4,19 +4,19 @@
 
 **Plain language:** By default, every Pod in a Kubernetes cluster can talk to every other Pod, cluster-wide, regardless of namespace — a flat, fully-open network model that is convenient for getting started but is a real security liability once a cluster hosts more than one team or workload of differing sensitivity. NetworkPolicy lets you restrict that.
 
-**Precise definition:** A **NetworkPolicy** is a namespaced Kubernetes API object that specifies allowed **ingress** (incoming) and/or **egress** (outgoing) traffic for a selected set of Pods, based on Pod/namespace selectors, IP block (CIDR) ranges, and ports/protocols. NetworkPolicies are **additive and default-deny once any policy selects a Pod for a given direction** — a Pod with zero applicable NetworkPolicies allows all traffic in that direction (the cluster default), but a Pod matched by at least one ingress-type NetworkPolicy allows _only_ traffic explicitly permitted by the union of all matching policies' rules, denying everything else by default. Critically, **NetworkPolicy enforcement is entirely dependent on the CNI plugin** — the API object can be created in any cluster, but it has zero effect unless the installed CNI plugin (§49) actually implements NetworkPolicy enforcement (Calico and Cilium do; Flannel alone does not).
+**Precise definition:** A **NetworkPolicy** is a namespaced Kubernetes API object that specifies allowed **ingress** (incoming) and/or **egress** (outgoing) traffic for a selected set of Pods, based on Pod/namespace selectors, IP block (CIDR) ranges, and ports/protocols. NetworkPolicies are **additive and default-deny once any policy selects a Pod for a given direction** — a Pod with zero applicable NetworkPolicies allows all traffic in that direction (the cluster default), but a Pod matched by at least one ingress-type NetworkPolicy allows _only_ traffic explicitly permitted by the union of all matching policies' rules, denying everything else by default. Critically, **NetworkPolicy enforcement is entirely dependent on the CNI plugin** — the API object can be created in any cluster, but it has zero effect unless the installed CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) actually implements NetworkPolicy enforcement (Calico and Cilium do; Flannel alone does not).
 
 ## 2. Why This Matters
 
-- **NetworkPolicy enforcement requires CNI plugin support, and this is not universal — a very easy-to-miss gap.** A cluster running Flannel alone can have NetworkPolicy objects applied via `kubectl apply` with zero errors and zero actual enforcement, since Flannel has no NetworkPolicy controller — the objects silently do nothing, which is a materially different failure mode from a clear rejection or error (§49 covers this CNI capability gap at install-time decision level).
-- **The "default-allow-all, then restrict" starting posture is itself a security anti-pattern for anything beyond a single-team dev cluster** — moving to an explicit default-deny baseline (§113, Part 15's CKS network security depth builds on exactly this pattern) and then allowlisting only necessary traffic is the standard production security posture, not an unusual hardening step.
+- **NetworkPolicy enforcement requires CNI plugin support, and this is not universal — a very easy-to-miss gap.** A cluster running Flannel alone can have NetworkPolicy objects applied via `kubectl apply` with zero errors and zero actual enforcement, since Flannel has no NetworkPolicy controller — the objects silently do nothing, which is a materially different failure mode from a clear rejection or error ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) covers this CNI capability gap at install-time decision level).
+- **The "default-allow-all, then restrict" starting posture is itself a security anti-pattern for anything beyond a single-team dev cluster** — moving to an explicit default-deny baseline ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)'s CKS network security depth builds on exactly this pattern) and then allowlisting only necessary traffic is the standard production security posture, not an unusual hardening step.
 - **NetworkPolicy rules are purely additive across multiple objects targeting the same Pods** — there is no explicit "deny" rule type; achieving a deny-by-default posture means creating a policy that selects Pods with empty rule lists for a direction, then adding further policies that explicitly allow only what's needed, and understanding this additive-only model is essential to avoid an unintentionally over-permissive or contradictory-seeming policy set.
 
-🔑 **Key Takeaway:** NetworkPolicy provides namespace-scoped, additive-only ingress/egress traffic restriction that is only as real as the CNI plugin's enforcement support underneath it — always verify the plugin (§49) supports NetworkPolicy before relying on it, and design deliberately from a default-deny baseline outward rather than an open-by-default posture restricted after the fact.
+🔑 **Key Takeaway:** NetworkPolicy provides namespace-scoped, additive-only ingress/egress traffic restriction that is only as real as the CNI plugin's enforcement support underneath it — always verify the plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) supports NetworkPolicy before relying on it, and design deliberately from a default-deny baseline outward rather than an open-by-default posture restricted after the fact.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §49 (CNI plugin selection — NetworkPolicy enforcement is a plugin-dependent capability, not guaranteed by the API's existence) and references forward to §113 (Part 15, CKS network security depth, which builds substantially on this section's default-deny model).
+Builds directly on [§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) (CNI plugin selection — NetworkPolicy enforcement is a plugin-dependent capability, not guaranteed by the API's existence) and references forward to [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) (Part 15, CKS network security depth, which builds substantially on this section's default-deny model).
 
 ## 4. Architecture Diagram
 
@@ -80,7 +80,7 @@ curl: (28) Connection timed out after 3000 milliseconds
 
 **Production usage example:** This exact manifest — empty `podSelector` (matches every Pod in the namespace) with both `policyTypes` and no rules listed — is the standard, first object applied when hardening a namespace, deliberately breaking all traffic in and out until explicit allow rules (5.2, 5.3) are added back one at a time.
 
-**Common errors:** Applying this in a namespace whose CNI plugin doesn't support NetworkPolicy enforcement (e.g., Flannel-only) produces zero effect and zero errors — always confirm enforcement is actually active (§49) before treating the absence of connectivity issues as evidence a default-deny policy is working; conversely, on an enforcing plugin, applying this without a rollout plan can cause an unplanned outage of all namespace traffic.
+**Common errors:** Applying this in a namespace whose CNI plugin doesn't support NetworkPolicy enforcement (e.g., Flannel-only) produces zero effect and zero errors — always confirm enforcement is actually active ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) before treating the absence of connectivity issues as evidence a default-deny policy is working; conversely, on an enforcing plugin, applying this without a rollout plan can cause an unplanned outage of all namespace traffic.
 
 ### 5.2 Allowing Specific Ingress Traffic
 
@@ -132,7 +132,7 @@ curl: (28) Connection timed out after 3000 milliseconds
 
 ### 5.3 Restricting Egress to DNS and a Specific External CIDR
 
-**Purpose:** Show a realistic egress policy — Pods almost always need at least DNS (§52) egress permitted explicitly, which is easy to forget once egress is default-denied.
+**Purpose:** Show a realistic egress policy — Pods almost always need at least DNS ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) egress permitted explicitly, which is easy to forget once egress is default-denied.
 
 **Syntax:**
 
@@ -182,7 +182,7 @@ $ kubectl exec -it api-pod -n backend -- curl -m 3 https://203.0.113.50
 
 **Production usage example:** Forgetting the DNS egress rule (port 53 UDP/TCP) after applying a default-deny egress policy is one of the single most common causes of "everything broke after we added NetworkPolicy," since Pods can no longer resolve any name — including in-cluster Service names — even though the rest of the network path might be perfectly fine.
 
-**Common errors:** Omitting the DNS rule (or scoping the `namespaceSelector: {}` for DNS too narrowly to just `kube-system`) breaks all name resolution for the selected Pods, producing symptoms that look like a DNS outage (§52) but are actually an egress NetworkPolicy misconfiguration.
+**Common errors:** Omitting the DNS rule (or scoping the `namespaceSelector: {}` for DNS too narrowly to just `kube-system`) breaks all name resolution for the selected Pods, producing symptoms that look like a DNS outage ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) but are actually an egress NetworkPolicy misconfiguration.
 
 ## 6. Production Usage Notes
 
@@ -192,18 +192,18 @@ $ kubectl exec -it api-pod -n backend -- curl -m 3 https://203.0.113.50
 
 ## 7. Security Considerations
 
-- NetworkPolicy enforcement is entirely dependent on the CNI plugin (§49) — treating a cluster as "secured by NetworkPolicy" without first confirming the plugin actually enforces it is a false sense of security with real risk.
-- Default-deny-egress is a meaningful control against data exfiltration and lateral movement from a compromised Pod, and is a specific, named requirement in CKS-level cluster hardening (§113, Part 15) — not an optional nicety.
+- NetworkPolicy enforcement is entirely dependent on the CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) — treating a cluster as "secured by NetworkPolicy" without first confirming the plugin actually enforces it is a false sense of security with real risk.
+- Default-deny-egress is a meaningful control against data exfiltration and lateral movement from a compromised Pod, and is a specific, named requirement in CKS-level cluster hardening ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)) — not an optional nicety.
 - Because policies are additive with no explicit deny, a single overly broad policy (e.g., an accidentally empty `from`/`to` list, which matches everything) anywhere in a namespace can silently undermine an otherwise carefully-restricted set of other policies.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                           | Likely Cause                                                                            | Resolution Path                                                                                                       |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| NetworkPolicy applied, but traffic behaves as if nothing changed  | CNI plugin doesn't support NetworkPolicy enforcement (e.g., Flannel alone)              | Confirm the CNI plugin's NetworkPolicy support (§49); switch to or add an enforcing plugin (Calico, Cilium) if not    |
-| All Pod-to-Pod traffic broke after applying a default-deny policy | No allow-rules staged before the default-deny policy was applied                        | Add the required allow-rules immediately; always stage/test allow-rules before default-deny rollout going forward     |
-| DNS resolution fails only after adding an egress NetworkPolicy    | Missing explicit port-53 (UDP/TCP) egress allow-rule                                    | Add a DNS-egress rule, as shown above, permitting traffic to the cluster DNS Service/`kube-system` namespace          |
-| A Pod is reachable from a namespace that should be restricted     | An unrelated, overly broad NetworkPolicy elsewhere also selects the same Pod (additive) | Audit all NetworkPolicies selecting the Pod (`kubectl get networkpolicy --all-namespaces`), not just the intended one |
+| Symptom                                                           | Likely Cause                                                                            | Resolution Path                                                                                                                                                                              |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NetworkPolicy applied, but traffic behaves as if nothing changed  | CNI plugin doesn't support NetworkPolicy enforcement (e.g., Flannel alone)              | Confirm the CNI plugin's NetworkPolicy support ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)); switch to or add an enforcing plugin (Calico, Cilium) if not |
+| All Pod-to-Pod traffic broke after applying a default-deny policy | No allow-rules staged before the default-deny policy was applied                        | Add the required allow-rules immediately; always stage/test allow-rules before default-deny rollout going forward                                                                            |
+| DNS resolution fails only after adding an egress NetworkPolicy    | Missing explicit port-53 (UDP/TCP) egress allow-rule                                    | Add a DNS-egress rule, as shown above, permitting traffic to the cluster DNS Service/`kube-system` namespace                                                                                 |
+| A Pod is reachable from a namespace that should be restricted     | An unrelated, overly broad NetworkPolicy elsewhere also selects the same Pod (additive) | Audit all NetworkPolicies selecting the Pod (`kubectl get networkpolicy --all-namespaces`), not just the intended one                                                                        |
 
 ## 9. Best Practices
 
@@ -237,7 +237,7 @@ _What the interviewer is probing for:_ Platform-level thinking about defaulting 
 
 ## 12. Common Misconceptions
 
-1. **"Applying a NetworkPolicy guarantees it's enforced."** Enforcement depends entirely on CNI plugin support (§49); on a non-enforcing plugin, applied policies have zero actual effect.
+1. **"Applying a NetworkPolicy guarantees it's enforced."** Enforcement depends entirely on CNI plugin support ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)); on a non-enforcing plugin, applied policies have zero actual effect.
 2. **"NetworkPolicy has explicit deny rules."** It does not — the model is purely additive allow-rules; isolation comes from the absence of any matching allow-rule, not from an explicit deny.
 3. **"Restricting ingress is sufficient hardening."** Egress is evaluated completely independently; an ingress-only policy leaves outbound traffic (including potential data exfiltration paths) fully unrestricted.
 4. **"Multiple NetworkPolicies on the same Pod can conflict or override each other."** They cannot — all matching policies' allow-rules are combined additively (logical OR); there is no concept of one policy overriding another.
@@ -245,13 +245,13 @@ _What the interviewer is probing for:_ Platform-level thinking about defaulting 
 ## 13. 🔑 Key Takeaways
 
 - NetworkPolicy restricts ingress/egress traffic per-Pod via selectors, IP blocks, and ports, but only becomes default-deny in a direction once at least one matching policy references that direction.
-- Enforcement is entirely CNI-plugin-dependent — always confirm the plugin (§49) actually supports it before relying on any NetworkPolicy for real security.
+- Enforcement is entirely CNI-plugin-dependent — always confirm the plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) actually supports it before relying on any NetworkPolicy for real security.
 - The model is purely additive with no explicit deny or priority — auditing "all policies selecting this Pod," not just the one you wrote, is essential when troubleshooting unexpected access.
 - Egress restriction (especially remembering DNS on port 53) is frequently neglected relative to ingress, despite being a meaningful control against compromised-Pod exfiltration.
 - Default-deny should be designed from the start with pre-staged, tested allow-rules — applying it to a live namespace without preparation causes an immediate, self-inflicted outage.
 
 ## 14. Related Concepts & What's Next
 
-§49 covers the CNI plugin layer this section's enforcement entirely depends on, and §52's DNS coverage explains exactly why DNS egress rules are so often the missing piece in a new egress policy. §113 (Part 15) returns to NetworkPolicy as part of full CKS-level cluster and network security hardening, building directly on this section's default-deny model. §56 closes out Part 7 by folding NetworkPolicy-aware diagnosis into the complete in-cluster network troubleshooting toolkit.
+[§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) covers the CNI plugin layer this section's enforcement entirely depends on, and [§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)'s DNS coverage explains exactly why DNS egress rules are so often the missing piece in a new egress policy. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) returns to NetworkPolicy as part of full CKS-level cluster and network security hardening, building directly on this section's default-deny model. [§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) closes out Part 7 by folding NetworkPolicy-aware diagnosis into the complete in-cluster network troubleshooting toolkit.
 
-**Next Section:** §56 — `Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md`
+**Next Section:** [§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) — `Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md`

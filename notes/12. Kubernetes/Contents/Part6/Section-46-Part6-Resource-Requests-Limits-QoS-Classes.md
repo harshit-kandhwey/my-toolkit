@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **QoS class determines eviction order, not just performance.** Under node memory pressure, the kubelet evicts **BestEffort** Pods first, then **Burstable** Pods exceeding their requests, and only evicts **Guaranteed** Pods as an absolute last resort — a direct consequence of how you set requests/limits, tying this section to §24's Pod spec anatomy and to real production incident behavior.
-- **Requests are the scheduler's placement currency.** The scheduler's filtering phase (previewed in §12, fully covered in §65-72) rejects any node that doesn't have enough _unreserved_ request capacity for a new Pod — meaning under-requesting leads to overcommitted nodes and over-requesting wastes cluster capacity, a tension every capacity-planning decision in Part 9 has to resolve.
-- **Autoscalers act on requests, not raw usage.** The Horizontal Pod Autoscaler (§37) computes CPU/memory utilization as a percentage _of the request value_, not of any absolute number — a Pod with no CPU request cannot be targeted by a CPU-based HPA at all, a subtlety that trips up many first HPA configurations.
+- **QoS class determines eviction order, not just performance.** Under node memory pressure, the kubelet evicts **BestEffort** Pods first, then **Burstable** Pods exceeding their requests, and only evicts **Guaranteed** Pods as an absolute last resort — a direct consequence of how you set requests/limits, tying this section to [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)'s Pod spec anatomy and to real production incident behavior.
+- **Requests are the scheduler's placement currency.** The scheduler's filtering phase (previewed in [§12](../Part2/Section-12-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md), fully covered in [§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md)-[§72](../Part9/Section-72-Part9-Topology-Spread-Constraints.md)) rejects any node that doesn't have enough _unreserved_ request capacity for a new Pod — meaning under-requesting leads to overcommitted nodes and over-requesting wastes cluster capacity, a tension every capacity-planning decision in Part 9 has to resolve.
+- **Autoscalers act on requests, not raw usage.** The Horizontal Pod Autoscaler ([§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) computes CPU/memory utilization as a percentage _of the request value_, not of any absolute number — a Pod with no CPU request cannot be targeted by a CPU-based HPA at all, a subtlety that trips up many first HPA configurations.
 
 🔑 **Key Takeaway:** Requests and limits aren't just "sizing hints" — they're the literal inputs to scheduling placement, eviction ordering, and autoscaling math, so setting them incorrectly has concrete operational consequences well beyond the container's own performance.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §24 (Pod spec anatomy, where `resources.requests`/`resources.limits` live in the container spec) and §37 (HPA, which consumes request values as its scaling denominator).
+Builds on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (Pod spec anatomy, where `resources.requests`/`resources.limits` live in the container spec) and [§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) (HPA, which consumes request values as its scaling denominator).
 
 ## 4. Architecture Diagram
 
@@ -134,19 +134,19 @@ spec:
 
 **Production usage example:** A team running a self-hosted Redis cache used as a single point of failure for session state deliberately sets requests equal to limits, accepting the loss of "bursting" headroom in exchange for being the last Pod the kubelet would ever evict under memory pressure — an explicit reliability trade-off, not an accident.
 
-**Common errors:** Setting requests equal to limits for CPU but not memory (or vice versa) still results in Burstable, not Guaranteed — the equality must hold for **every** resource type across **every** container in the Pod, including sidecars, which is a common oversight in multi-container Pods (§25).
+**Common errors:** Setting requests equal to limits for CPU but not memory (or vice versa) still results in Burstable, not Guaranteed — the equality must hold for **every** resource type across **every** container in the Pod, including sidecars, which is a common oversight in multi-container Pods ([§25](../Part4/Section-25-Part4-Multi-Container-Pods-Sidecar-Ambassador-Adapter-Patterns.md)).
 
 ## 6. Production Usage Notes
 
 - **Under-requesting to "fit more Pods per node" backfires** — it works until real usage exceeds what the node can actually supply across all its overcommitted Pods, at which point CPU throttling or OOMKills appear under load precisely when the application can least tolerate it.
 - **Limits without requests are silently defaulted** by many clusters' `LimitRange` objects, or left as an unbounded request equal to zero, which can make a Pod schedule onto an already-busy node and then get starved — always set both explicitly rather than relying on defaults you haven't inspected.
-- **Vertical Pod Autoscaler (§38) exists precisely because manually tuning requests/limits at scale is hard** — it observes actual usage over time and recommends (or automatically applies) revised request values, which is often more accurate than a static, guessed value.
+- **Vertical Pod Autoscaler ([§38](../Part5/Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md)) exists precisely because manually tuning requests/limits at scale is hard** — it observes actual usage over time and recommends (or automatically applies) revised request values, which is often more accurate than a static, guessed value.
 - **Memory limits are the more dangerous of the two to under-provision** — a CPU limit breach only slows the process down, but a memory limit breach kills the container outright, so memory limits deserve more conservative headroom than CPU limits in most workloads.
 
 ## 7. Security Considerations
 
 - **Pods without any resource limits are a denial-of-service vector** — a single misbehaving or compromised container can consume unbounded node CPU/memory, starving every other workload on that node; enforcing limits via `LimitRange` or admission policy is a baseline hardening measure.
-- **ResourceQuota objects (Part 16, §125) enforce requests/limits at the namespace level**, preventing a single team or tenant from being able to request more aggregate capacity than their namespace is entitled to — a multi-tenancy security and fairness boundary, not just a cost control.
+- **ResourceQuota objects (Part 16, [§125](../Part16/Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md)) enforce requests/limits at the namespace level**, preventing a single team or tenant from being able to request more aggregate capacity than their namespace is entitled to — a multi-tenancy security and fairness boundary, not just a cost control.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -180,7 +180,7 @@ _What the interviewer is probing for:_ Whether the candidate distinguishes the s
 _What the interviewer is probing for:_ Understanding that QoS is a derived property with real eviction consequences, not a label you set in the spec.
 
 **🎯 Senior:** _"A namespace's Pods are experiencing intermittent CPU throttling under load even though node-level CPU utilization looks fine. How do you investigate, and what would you change?"_
-**Model answer:** Node-wide CPU utilization being fine doesn't rule out a specific container hitting its own `limits.cpu` — cgroup CPU throttling is enforced per-container regardless of how much idle capacity the node has elsewhere. I'd check container-level throttling metrics (`container_cpu_cfs_throttled_seconds_total` from cAdvisor/Metrics pipeline, §91) rather than node CPU percentage, correlate throttling spikes with request traffic, and if confirmed, either raise the CPU limit for that container or, if the workload's usage pattern is genuinely bursty and unpredictable, consider whether a limit is appropriate at all for that specific container versus relying on requests plus namespace ResourceQuota for overall fairness.
+**Model answer:** Node-wide CPU utilization being fine doesn't rule out a specific container hitting its own `limits.cpu` — cgroup CPU throttling is enforced per-container regardless of how much idle capacity the node has elsewhere. I'd check container-level throttling metrics (`container_cpu_cfs_throttled_seconds_total` from cAdvisor/Metrics pipeline, [§91](../Part12/Section-91-Part12-Metrics-Server-Kubernetes-Metrics-Pipeline.md)) rather than node CPU percentage, correlate throttling spikes with request traffic, and if confirmed, either raise the CPU limit for that container or, if the workload's usage pattern is genuinely bursty and unpredictable, consider whether a limit is appropriate at all for that specific container versus relying on requests plus namespace ResourceQuota for overall fairness.
 _What the interviewer is probing for:_ Recognition that node-level metrics and container-level cgroup enforcement are different signals, and that fixing throttling requires per-container limit tuning, not node capacity changes.
 
 **🎯 Architect:** _"You're designing resource governance for a shared cluster with dozens of teams. How do requests, limits, QoS classes, and quotas combine into an overall strategy, and what failure mode are you specifically trying to prevent?"_
@@ -198,12 +198,12 @@ _What the interviewer is probing for:_ Whether the candidate can architect resou
 
 - Requests drive scheduler placement; limits are enforced at runtime via cgroups, with CPU throttled and memory OOMKilled on breach.
 - QoS class (Guaranteed/Burstable/BestEffort) is derived from requests-vs-limits equality and directly determines eviction order under node memory pressure.
-- The Horizontal Pod Autoscaler (§37) computes utilization as a percentage of the request value, so unset requests make CPU/memory-based autoscaling impossible.
+- The Horizontal Pod Autoscaler ([§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) computes utilization as a percentage of the request value, so unset requests make CPU/memory-based autoscaling impossible.
 - Under-requesting risks node overcommitment and throttling/OOMKills under real load; over-requesting wastes cluster capacity that other Pods can't use.
 - Namespace-level `ResourceQuota` and `LimitRange` (Part 16) extend this same request/limit model to multi-tenant fairness enforcement.
 
 ## 14. Related Concepts & What's Next
 
-§24 introduced where requests and limits live in the Pod spec; §37's HPA consumes request values as its scaling denominator, and §65-72 (Part 9) cover in full depth how the scheduler's filtering and scoring phases actually use requests during placement, along with resource-based scheduling and priority/preemption built on the same QoS foundation. §47 closes out Part 6 by looking at how requests/limits and other configuration vary across environments (dev/staging/prod) using Namespaces and a preview of Kustomize overlays.
+[§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) introduced where requests and limits live in the Pod spec; [§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)'s HPA consumes request values as its scaling denominator, and [§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md)-[§72](../Part9/Section-72-Part9-Topology-Spread-Constraints.md) cover in full depth how the scheduler's filtering and scoring phases actually use requests during placement, along with resource-based scheduling and priority/preemption built on the same QoS foundation. [§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md) closes out Part 6 by looking at how requests/limits and other configuration vary across environments (dev/staging/prod) using Namespaces and a preview of Kustomize overlays.
 
-**Next Section:** §47 — `Section-47-Part6-Multi-Environment-Configuration-Patterns.md`
+**Next Section:** [§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md) — `Section-47-Part6-Multi-Environment-Configuration-Patterns.md`

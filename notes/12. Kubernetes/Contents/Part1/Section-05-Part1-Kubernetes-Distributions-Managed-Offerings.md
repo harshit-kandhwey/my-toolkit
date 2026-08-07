@@ -9,14 +9,14 @@
 ## 2. Why the Distinction Matters
 
 - **"Which Kubernetes should we run?" is really several separate decisions** bundled into one question: who operates the control plane, how much operational overhead the team wants to own, whether the workload is production, CI, or a laptop demo, and whether cost, compliance, or vendor lock-in concerns dominate.
-- **Conformance certification is what makes portability real, not marketing.** Because EKS, AKS, GKE, and kubeadm-built clusters are all CNCF-conformant, the same Deployment/Service/Ingress manifests generally work unmodified across them — though cloud-specific integrations (load balancers, storage classes, IAM) differ (§21–§23, Part 3 covers this in depth).
+- **Conformance certification is what makes portability real, not marketing.** Because EKS, AKS, GKE, and kubeadm-built clusters are all CNCF-conformant, the same Deployment/Service/Ingress manifests generally work unmodified across them — though cloud-specific integrations (load balancers, storage classes, IAM) differ ([§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) covers this in depth).
 - **Choosing the wrong tier for the use case is a common and costly mistake** — running a full production-grade EKS cluster for local development wastes money and time; running minikube-grade tooling for a production workload is a reliability and security risk.
 
 🔑 **Key Takeaway:** Every Kubernetes distribution implements the same conformant API, but they occupy very different points on the "who operates this, and for what purpose" spectrum — and picking the right one for the job is itself a real architectural decision, not a formality.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §3 (control plane vs. data plane) — this section is essentially "who runs the control plane, and how." No new external prerequisites.
+Builds on [§3](./Section-03-Part1-Kubernetes-Architecture-Overview.md) (control plane vs. data plane) — this section is essentially "who runs the control plane, and how." No new external prerequisites.
 
 ## 4. The Distribution Spectrum
 
@@ -31,7 +31,7 @@ minikube, kind    ────────►   kubeadm, k3s, MicroK8s  ──�
 ```
 
 - **Managed cloud offerings — Amazon EKS, Azure AKS, Google GKE:** The provider runs, patches, and guarantees the availability of the control plane (api-server, etcd, scheduler, controller-manager); the customer manages worker nodes (or, in serverless-node modes like GKE Autopilot or EKS Fargate, not even that) and everything above the node layer. This is the dominant choice for production workloads at most companies, trading some control and cost for drastically reduced control-plane operational burden.
-- **kubeadm:** The official, vendor-neutral tool for bootstrapping a self-managed cluster from scratch on any infrastructure (bare metal, on-prem VMs, or cloud VMs where the customer wants full control). The operator owns every layer, including control-plane HA design, etcd backup, and version upgrades (§16–§19, Part 3 cover this directly). Used where full control, on-prem requirements, or specific compliance needs rule out a managed cloud offering.
+- **kubeadm:** The official, vendor-neutral tool for bootstrapping a self-managed cluster from scratch on any infrastructure (bare metal, on-prem VMs, or cloud VMs where the customer wants full control). The operator owns every layer, including control-plane HA design, etcd backup, and version upgrades ([§16](../Part3/Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md)–[§19](../Part3/Section-19-Part3-Joining-Nodes-Bootstrap-Tokens.md) cover this directly). Used where full control, on-prem requirements, or specific compliance needs rule out a managed cloud offering.
 - **k3s / MicroK8s:** Lightweight, resource-efficient Kubernetes distributions designed for edge computing, IoT, CI pipelines, and resource-constrained environments — full conformance, but stripped-down and optimized for smaller footprints than a typical kubeadm or cloud-managed cluster.
 - **kind ("Kubernetes IN Docker") / minikube:** Local, single-or-multi-node clusters that run entirely inside containers or a local VM, purpose-built for development, testing, and CI — never intended for production workloads.
 
@@ -88,7 +88,7 @@ Creating cluster "dev-test" ...
 Set kubectl context to "kind-dev-test"
 ```
 
-**Production usage example:** CI pipelines commonly spin up a fresh `kind` cluster per test run to validate manifests and Helm charts against a real (if minimal) Kubernetes API before promoting changes toward staging/production clusters — full bootstrapping mechanics covered in §21–§23, Part 3.
+**Production usage example:** CI pipelines commonly spin up a fresh `kind` cluster per test run to validate manifests and Helm charts against a real (if minimal) Kubernetes API before promoting changes toward staging/production clusters — full bootstrapping mechanics covered in [§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md).
 
 ## 6. Production Usage Notes: How Teams Actually Choose
 
@@ -99,17 +99,17 @@ Set kubectl context to "kind-dev-test"
 
 ## 7. Security Considerations
 
-- Managed offerings shift control-plane security patching to the provider, but IAM integration, node security, and workload-level RBAC remain fully the customer's responsibility regardless of which distribution is chosen (§73–§81, Part 10).
-- Self-managed (kubeadm) clusters require the operator to own certificate rotation, etcd encryption at rest, and control-plane network exposure decisions directly — a materially larger security surface to manage correctly (§113, Part 15 covers CKS-level hardening for exactly this scenario).
+- Managed offerings shift control-plane security patching to the provider, but IAM integration, node security, and workload-level RBAC remain fully the customer's responsibility regardless of which distribution is chosen ([§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§81](../Part10/Section-81-Part10-Kubernetes-Security-Best-Practices-Checklist.md)).
+- Self-managed (kubeadm) clusters require the operator to own certificate rotation, etcd encryption at rest, and control-plane network exposure decisions directly — a materially larger security surface to manage correctly ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) covers CKS-level hardening for exactly this scenario).
 - Never expose a kind/minikube cluster's API server beyond localhost — these tools are not hardened for any untrusted network exposure by default.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                                     | Likely Cause                                                                                                                                             | Resolution Path                                                                                         |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `kubectl` commands work locally but a teammate can't reach the same cluster | Pointed at a local-only cluster (kind/minikube) rather than a shared cluster                                                                             | Confirm cluster type via `kubectl cluster-info`; use a shared/managed cluster for team-visible work     |
-| Unexpected cloud costs on a "just testing something" cluster                | A managed cloud cluster (EKS/AKS/GKE) was provisioned for what should have been local/dev testing                                                        | Use kind/minikube for local iteration; reserve managed clusters for staging/production                  |
-| A feature works on kind but fails on the team's production EKS cluster      | Divergent Kubernetes minor version, or a cloud-specific integration (LoadBalancer type, storage class) not present in the lightweight local distribution | Match local cluster version to production; be aware of cloud-provider-specific resource types (§21–§23) |
+| Symptom                                                                     | Likely Cause                                                                                                                                             | Resolution Path                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kubectl` commands work locally but a teammate can't reach the same cluster | Pointed at a local-only cluster (kind/minikube) rather than a shared cluster                                                                             | Confirm cluster type via `kubectl cluster-info`; use a shared/managed cluster for team-visible work                                                                                                                                                                                |
+| Unexpected cloud costs on a "just testing something" cluster                | A managed cloud cluster (EKS/AKS/GKE) was provisioned for what should have been local/dev testing                                                        | Use kind/minikube for local iteration; reserve managed clusters for staging/production                                                                                                                                                                                             |
+| A feature works on kind but fails on the team's production EKS cluster      | Divergent Kubernetes minor version, or a cloud-specific integration (LoadBalancer type, storage class) not present in the lightweight local distribution | Match local cluster version to production; be aware of cloud-provider-specific resource types ([§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md)) |
 
 ## 9. Best Practices
 
@@ -121,7 +121,7 @@ Set kubectl context to "kind-dev-test"
 
 - **Running production traffic on kind or minikube** because "it's technically real Kubernetes" — conformance does not imply production-readiness.
 - **Choosing a fully self-managed kubeadm cluster without budgeting real ongoing operational capacity** for control-plane HA, backups, and upgrades, then being surprised by the workload.
-- **Assuming every cloud-managed cluster behaves identically** — EKS, AKS, and GKE share the core API but differ meaningfully in default networking, IAM integration, and node-pool management (§21–§23 covers these differences directly).
+- **Assuming every cloud-managed cluster behaves identically** — EKS, AKS, and GKE share the core API but differ meaningfully in default networking, IAM integration, and node-pool management ([§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) covers these differences directly).
 
 ## 11. Interview Questions
 
@@ -157,6 +157,6 @@ _What the interviewer is probing for:_ Whether the candidate can turn a spectrum
 
 ## 14. Related Concepts & What's Next
 
-§3 established the control-plane/data-plane split this section applied to "who operates which plane." §16–§23 (Part 3) cover the actual bootstrapping mechanics for kubeadm, managed cloud clusters, and lightweight local distributions in full depth. §122–§129 (Part 16) return to cloud-provider-specific EKS/AKS/GKE considerations at enterprise scale. §113 (Part 15) covers the security-hardening implications of self-managed vs. managed control planes introduced in §7.
+[§3](./Section-03-Part1-Kubernetes-Architecture-Overview.md) established the control-plane/data-plane split this section applied to "who operates which plane." [§16](../Part3/Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) cover the actual bootstrapping mechanics for kubeadm, managed cloud clusters, and lightweight local distributions in full depth. [§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md) return to cloud-provider-specific EKS/AKS/GKE considerations at enterprise scale. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) covers the security-hardening implications of self-managed vs. managed control planes introduced in [§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md).
 
-**Next Section:** §6 — `Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md`
+**Next Section:** [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md) — `Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md`

@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **iptables mode's linear rule-chain evaluation becomes a real bottleneck in large clusters.** A cluster with thousands of Services and tens of thousands of Endpoints can see measurable added latency and kube-proxy reconciliation slowness purely from iptables rule-chain length — a scaling concern that doesn't exist in the same way once the kube-proxy component (§9) is well understood.
-- **IPVS mode directly builds on the Service abstraction (§50) without changing its API surface at all** — a Deployment, its Service, and every client of that Service behave identically regardless of which kube-proxy mode is active underneath; the mode is a node-level implementation detail, not something application manifests ever reference.
-- **The choice is a genuine operational decision for platform teams running large-scale clusters**, directly relevant to CKA-style troubleshooting questions where a symptom ("Service traffic is slow/inconsistent at scale") traces back to proxy-mode choice rather than a CNI plugin (§49) or DNS (§52) issue.
+- **iptables mode's linear rule-chain evaluation becomes a real bottleneck in large clusters.** A cluster with thousands of Services and tens of thousands of Endpoints can see measurable added latency and kube-proxy reconciliation slowness purely from iptables rule-chain length — a scaling concern that doesn't exist in the same way once the kube-proxy component ([§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)) is well understood.
+- **IPVS mode directly builds on the Service abstraction ([§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)) without changing its API surface at all** — a Deployment, its Service, and every client of that Service behave identically regardless of which kube-proxy mode is active underneath; the mode is a node-level implementation detail, not something application manifests ever reference.
+- **The choice is a genuine operational decision for platform teams running large-scale clusters**, directly relevant to CKA-style troubleshooting questions where a symptom ("Service traffic is slow/inconsistent at scale") traces back to proxy-mode choice rather than a CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) or DNS ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) issue.
 
 🔑 **Key Takeaway:** iptables mode evaluates a sequential, linearly-growing chain of Netfilter rules per packet; IPVS mode uses kernel hash tables with real load-balancing algorithms and near-constant-time lookup — a difference invisible to any application talking to a Service, but a meaningful operational and scaling decision for the platform team running the cluster.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §9 (kube-proxy as one of the three node components) and §50 (Services — ClusterIP, NodePort, LoadBalancer, ExternalName — the abstraction kube-proxy exists to implement).
+Builds directly on [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) (kube-proxy as one of the three node components) and [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services — ClusterIP, NodePort, LoadBalancer, ExternalName — the abstraction kube-proxy exists to implement).
 
 ## 4. Architecture Diagram
 
@@ -71,7 +71,7 @@ $ kubectl get configmap kube-proxy -n kube-system -o yaml | grep mode
     mode: "iptables"
 ```
 
-**Production usage example:** This is the first check when a platform team is deciding whether a large cluster's Service-related latency symptoms are proxy-mode-related — before assuming a CNI plugin (§49) or DNS (§52) problem, confirming the current mode against the cluster's actual Service/Endpoint count rules out (or implicates) kube-proxy mode as a contributing factor.
+**Production usage example:** This is the first check when a platform team is deciding whether a large cluster's Service-related latency symptoms are proxy-mode-related — before assuming a CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) or DNS ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) problem, confirming the current mode against the cluster's actual Service/Endpoint count rules out (or implicates) kube-proxy mode as a contributing factor.
 
 ### 5.2 Inspecting iptables Rules Directly on a Node
 
@@ -94,7 +94,7 @@ KUBE-SVC-JD5MR3NA4I4DYORP  tcp  --  0.0.0.0/0    10.96.100.5  /* default/web-app
 ...
 ```
 
-**Production usage example:** SSHing to a node and inspecting `KUBE-SERVICES`/`KUBE-SVC-*`/`KUBE-SEP-*` chains directly is a standard escalation step when `kubectl` and `kubectl describe service` both look correct but traffic still isn't landing on the expected Pods — a real fallback used before assuming a CNI-level (§49) problem.
+**Production usage example:** SSHing to a node and inspecting `KUBE-SERVICES`/`KUBE-SVC-*`/`KUBE-SEP-*` chains directly is a standard escalation step when `kubectl` and `kubectl describe service` both look correct but traffic still isn't landing on the expected Pods — a real fallback used before assuming a CNI-level ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) problem.
 
 **Common errors:** Running this on a node where the mode is actually IPVS returns mostly-empty or unrelated chains (IPVS mode still uses a thin iptables layer for masquerading, but the bulk of Service routing logic lives in the IPVS tables instead) — always confirm the mode first via 5.1 before spending time reading the wrong rule set.
 
@@ -149,11 +149,11 @@ TCP  10.96.100.5:80 rr
 
 - **The default is iptables mode in most distributions and managed offerings**, and it is entirely adequate for small-to-mid-sized clusters (low hundreds of Services) — IPVS is a scale optimization, not a universally "better" default choice, and switching modes adds real operational complexity (kernel module management across the fleet) that should be justified by an actual measured need.
 - **IPVS mode exposes selectable load-balancing algorithms** (`rr`, `lc`, `dh`, `sh`, and others) via the kube-proxy IPVS configuration, giving finer control over Service traffic distribution than iptables mode's effectively-random selection — relevant for teams with specific session-affinity or load-distribution requirements beyond what `sessionAffinity: ClientIP` on the Service object already provides.
-- **Both modes coexist with the CNI plugin (§49), not compete with it** — kube-proxy's mode governs Service (virtual IP) routing specifically; actual Pod-to-Pod packet delivery across nodes is still the CNI plugin's responsibility regardless of which kube-proxy mode is active.
+- **Both modes coexist with the CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)), not compete with it** — kube-proxy's mode governs Service (virtual IP) routing specifically; actual Pod-to-Pod packet delivery across nodes is still the CNI plugin's responsibility regardless of which kube-proxy mode is active.
 
 ## 7. Security Considerations
 
-- Direct node access to inspect or modify iptables/IPVS rules is equivalent to the ability to redirect Service traffic on that node — securing SSH/node access is part of the same hardening posture that protects kube-proxy's configuration (§113, Part 15).
+- Direct node access to inspect or modify iptables/IPVS rules is equivalent to the ability to redirect Service traffic on that node — securing SSH/node access is part of the same hardening posture that protects kube-proxy's configuration ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 - A misconfigured or crash-looping kube-proxy (common during a botched iptables-to-IPVS migration) can leave Services completely unreachable cluster-wide, which is an availability concern with security-incident-response implications if mistaken for an attack rather than a rollout error.
 
 ## 8. Common Troubleshooting Scenarios
@@ -174,7 +174,7 @@ TCP  10.96.100.5:80 rr
 
 - **Switching to IPVS mode as a default "best practice" for every cluster**, regardless of actual scale, adding kernel-module operational overhead with no measurable benefit for a small cluster.
 - **Changing the kube-proxy ConfigMap's mode without first ensuring `ip_vs` kernel modules are loaded on every node**, producing crash-looping or silently-reverted kube-proxy Pods.
-- **Assuming Service-routing slowness must be a CNI plugin (§49) or DNS (§52) issue** without checking kube-proxy mode and rule/table size first, when iptables rule-chain length is a well-known, distinct contributor.
+- **Assuming Service-routing slowness must be a CNI plugin ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) or DNS ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) issue** without checking kube-proxy mode and rule/table size first, when iptables rule-chain length is a well-known, distinct contributor.
 
 ## 11. Interview Questions
 
@@ -198,7 +198,7 @@ _What the interviewer is probing for:_ Ability to reason about platform-wide sta
 
 1. **"IPVS mode changes how Services are defined or used."** It changes only the node-level mechanism implementing Service routing; the Service API object and client behavior are completely unaffected.
 2. **"IPVS is strictly better and should always be used."** It adds a real kernel-module operational dependency that iptables mode doesn't have, and its performance advantage only materializes at meaningful Service/Endpoint scale.
-3. **"kube-proxy mode affects Pod-to-Pod networking."** It governs Service (virtual IP) routing specifically; Pod-to-Pod packet delivery across nodes remains the CNI plugin's (§49) responsibility regardless of proxy mode.
+3. **"kube-proxy mode affects Pod-to-Pod networking."** It governs Service (virtual IP) routing specifically; Pod-to-Pod packet delivery across nodes remains the CNI plugin's ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) responsibility regardless of proxy mode.
 4. **"Switching modes is a simple, risk-free flag flip."** It requires kernel module prerequisites to be met on every node first, and a mismatch produces crash-looping kube-proxy Pods or broken Service routing, not a graceful fallback.
 
 ## 13. 🔑 Key Takeaways
@@ -211,6 +211,6 @@ _What the interviewer is probing for:_ Ability to reason about platform-wide sta
 
 ## 14. Related Concepts & What's Next
 
-§9 introduced kube-proxy as a node component; this section covers its two primary modes in full mechanical depth. §50 covers the Service abstraction this section's routing mechanism exists to implement, and §49 covers the CNI plugin responsible for the separate concern of actual Pod-to-Pod packet delivery. §52 continues the networking stack with DNS-based service discovery, which resolves Service names to the same virtual IPs this section's proxy modes route traffic toward.
+[§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) introduced kube-proxy as a node component; this section covers its two primary modes in full mechanical depth. [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) covers the Service abstraction this section's routing mechanism exists to implement, and [§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) covers the CNI plugin responsible for the separate concern of actual Pod-to-Pod packet delivery. [§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md) continues the networking stack with DNS-based service discovery, which resolves Service names to the same virtual IPs this section's proxy modes route traffic toward.
 
-**Next Section:** §52 — `Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md`
+**Next Section:** [§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md) — `Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md`

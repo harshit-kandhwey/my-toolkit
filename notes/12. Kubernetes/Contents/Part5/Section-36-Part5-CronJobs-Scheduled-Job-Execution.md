@@ -4,19 +4,19 @@
 
 **Plain language:** A lot of batch work isn't triggered on demand — it needs to happen on a recurring schedule: a nightly backup, an hourly report, a weekly cleanup pass. A CronJob is the object that takes the "run to completion" Job pattern and adds the missing piece: a schedule that fires it automatically, over and over, using familiar cron syntax.
 
-**Precise definition:** A **CronJob** is a controller that creates a new **Job** (§35) at each tick of a schedule expressed in standard **cron syntax** (`minute hour day-of-month month day-of-week`), evaluated in the timezone configured on the CronJob (or the kube-controller-manager's default, historically UTC, unless `spec.timeZone` is set explicitly). Each scheduled firing produces an entirely new Job object — and therefore new Pods — following exactly the completions/parallelism/backoffLimit mechanics already covered in §35; the CronJob itself owns and tracks these generated Jobs, retaining a bounded history of both successful and failed ones via `successfulJobsHistoryLimit`/`failedJobsHistoryLimit`. A **concurrencyPolicy** governs what happens if a previous scheduled run is still in progress when the next scheduled time arrives, and **`startingDeadlineSeconds`** bounds how late a missed schedule tick may still be started before Kubernetes gives up on that particular firing.
+**Precise definition:** A **CronJob** is a controller that creates a new **Job** ([§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md)) at each tick of a schedule expressed in standard **cron syntax** (`minute hour day-of-month month day-of-week`), evaluated in the timezone configured on the CronJob (or the kube-controller-manager's default, historically UTC, unless `spec.timeZone` is set explicitly). Each scheduled firing produces an entirely new Job object — and therefore new Pods — following exactly the completions/parallelism/backoffLimit mechanics already covered in [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md); the CronJob itself owns and tracks these generated Jobs, retaining a bounded history of both successful and failed ones via `successfulJobsHistoryLimit`/`failedJobsHistoryLimit`. A **concurrencyPolicy** governs what happens if a previous scheduled run is still in progress when the next scheduled time arrives, and **`startingDeadlineSeconds`** bounds how late a missed schedule tick may still be started before Kubernetes gives up on that particular firing.
 
 ## 2. Why This Matters
 
-- **Everything about Job semantics from §35 applies unchanged to each individual run** — a CronJob doesn't reinvent retry, completion tracking, or parallelism; it's purely the scheduling layer sitting on top of the exact same Job object, which is why understanding §35 thoroughly first is what actually makes CronJob behavior predictable rather than mysterious.
+- **Everything about Job semantics from [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) applies unchanged to each individual run** — a CronJob doesn't reinvent retry, completion tracking, or parallelism; it's purely the scheduling layer sitting on top of the exact same Job object, which is why understanding [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) thoroughly first is what actually makes CronJob behavior predictable rather than mysterious.
 - **`concurrencyPolicy` is the single most consequential and most commonly misconfigured field**, because the default (`Allow`) lets overlapping runs pile up if a job occasionally runs longer than the interval between schedule ticks — a nightly job that starts taking 25 hours under `Allow` silently starts stacking concurrent executions rather than skipping or replacing the overrunning one.
 - **`startingDeadlineSeconds` determines what happens after real-world outages**, like a control-plane downtime spanning several missed schedule ticks — without it, or with it set too generously, a cluster recovering from an outage can suddenly fire off a burst of "catch-up" Jobs for every tick that was missed, which is rarely the intended behavior for time-sensitive scheduled work.
 
-🔑 **Key Takeaway:** A CronJob is Job scheduling, not a distinct execution model — master the completions/parallelism/backoffLimit mechanics in §35 first, then layer on `schedule`, `concurrencyPolicy`, and `startingDeadlineSeconds` as the scheduling-specific decisions that determine how the cluster behaves around overlapping runs and missed ticks.
+🔑 **Key Takeaway:** A CronJob is Job scheduling, not a distinct execution model — master the completions/parallelism/backoffLimit mechanics in [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) first, then layer on `schedule`, `concurrencyPolicy`, and `startingDeadlineSeconds` as the scheduling-specific decisions that determine how the cluster behaves around overlapping runs and missed ticks.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §35 (Job completions/parallelism/backoffLimit mechanics, which every CronJob-generated run follows unchanged) and assumes the general controller/reconciliation model from §1.
+Builds directly on [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) (Job completions/parallelism/backoffLimit mechanics, which every CronJob-generated run follows unchanged) and assumes the general controller/reconciliation model from [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md).
 
 ## 4. Architecture Diagram
 
@@ -161,7 +161,7 @@ cronjob.batch/nightly-backup patched
 
 ## 7. Security Considerations
 
-- Every field from §35's Job security guidance applies unchanged to a CronJob's `jobTemplate` — ServiceAccount scope, SecurityContext, and Secret usage on the underlying Job deserve the same review, since a CronJob is simply a Job created repeatedly on a timer.
+- Every field from [§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md)'s Job security guidance applies unchanged to a CronJob's `jobTemplate` — ServiceAccount scope, SecurityContext, and Secret usage on the underlying Job deserve the same review, since a CronJob is simply a Job created repeatedly on a timer.
 - A CronJob with `concurrencyPolicy: Allow` and no `activeDeadlineSeconds` on its `jobTemplate` can, under sustained failure, accumulate an unbounded number of concurrently running Pods over time — a resource-exhaustion risk worth explicitly guarding against on any CronJob with elevated privileges or access to sensitive systems.
 
 ## 8. Common Troubleshooting Scenarios
@@ -212,7 +212,7 @@ _What the interviewer is probing for:_ Whether the candidate treats CronJob conf
 
 ## 13. 🔑 Key Takeaways
 
-- A CronJob is purely a scheduling layer over Jobs (§35) — every completions/parallelism/backoffLimit mechanic from that section applies unchanged to each scheduled run.
+- A CronJob is purely a scheduling layer over Jobs ([§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md)) — every completions/parallelism/backoffLimit mechanic from that section applies unchanged to each scheduled run.
 - `concurrencyPolicy` (`Allow`/`Forbid`/`Replace`) determines what happens when a run is still active at the next scheduled tick, and should be chosen deliberately per workload's tolerance for overlap.
 - `startingDeadlineSeconds` determines whether a missed schedule tick (e.g., during a cluster outage) is still started late or simply skipped.
 - `successfulJobsHistoryLimit`/`failedJobsHistoryLimit` bound retained Job history independently for successes and failures — not a substitute for real log aggregation.
@@ -220,6 +220,6 @@ _What the interviewer is probing for:_ Whether the candidate treats CronJob conf
 
 ## 14. Related Concepts & What's Next
 
-§35 supplied the Job mechanics (completions, parallelism, backoffLimit) that every CronJob-generated run follows unchanged; this section added only the scheduling layer on top — `schedule`, `concurrencyPolicy`, and `startingDeadlineSeconds`. Together, §33–§36 complete the "advanced workload shapes" beyond plain Deployments: stable-identity stateful workloads, node-level daemons, run-to-completion batch work, and its scheduled variant. §37 shifts from workload shape to automatic capacity response — scaling Pod replica count dynamically based on observed load.
+[§35](./Section-35-Part5-Jobs-Run-To-Completion-Workloads.md) supplied the Job mechanics (completions, parallelism, backoffLimit) that every CronJob-generated run follows unchanged; this section added only the scheduling layer on top — `schedule`, `concurrencyPolicy`, and `startingDeadlineSeconds`. Together, [§33](./Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)–[§36](./Section-36-Part5-CronJobs-Scheduled-Job-Execution.md) complete the "advanced workload shapes" beyond plain Deployments: stable-identity stateful workloads, node-level daemons, run-to-completion batch work, and its scheduled variant. [§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) shifts from workload shape to automatic capacity response — scaling Pod replica count dynamically based on observed load.
 
-**Next Section:** §37 — `Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md`
+**Next Section:** [§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) — `Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md`

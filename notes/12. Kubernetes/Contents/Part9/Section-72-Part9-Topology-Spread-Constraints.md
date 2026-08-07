@@ -4,7 +4,7 @@
 
 **Plain language:** Even after the scheduler decides which nodes have room for your Pods, you often care about _which_ of those candidate nodes gets picked — specifically, you don't want every replica of your Deployment to accidentally land in the same availability zone, or on the same rack, where a single failure could take out your entire application at once. Topology spread constraints let you tell the scheduler exactly how evenly to distribute Pods across whatever failure domains you define.
 
-**Precise definition:** A **topology spread constraint**, set via `spec.topologySpreadConstraints` on a Pod template, instructs the scheduler to distribute Pods matching a given label selector evenly across groups of nodes sharing the same value for a specified **topology key** (a node label such as `topology.kubernetes.io/zone`, `kubernetes.io/hostname`, or any custom label). Each constraint defines a `maxSkew` (the maximum allowed difference in matching-Pod count between the most- and least-populated topology domain), a `topologyKey`, a `whenUnsatisfiable` policy (`DoNotSchedule` to hard-fail placement, or `ScheduleAnyway` to prefer but not require even spread), and a `labelSelector` identifying which Pods count toward the skew calculation. This mechanism operates in the scheduler's filtering (for `DoNotSchedule`) and scoring (for `ScheduleAnyway`) phases, layering on top of — not replacing — the resource-based filtering from §70.
+**Precise definition:** A **topology spread constraint**, set via `spec.topologySpreadConstraints` on a Pod template, instructs the scheduler to distribute Pods matching a given label selector evenly across groups of nodes sharing the same value for a specified **topology key** (a node label such as `topology.kubernetes.io/zone`, `kubernetes.io/hostname`, or any custom label). Each constraint defines a `maxSkew` (the maximum allowed difference in matching-Pod count between the most- and least-populated topology domain), a `topologyKey`, a `whenUnsatisfiable` policy (`DoNotSchedule` to hard-fail placement, or `ScheduleAnyway` to prefer but not require even spread), and a `labelSelector` identifying which Pods count toward the skew calculation. This mechanism operates in the scheduler's filtering (for `DoNotSchedule`) and scoring (for `ScheduleAnyway`) phases, layering on top of — not replacing — the resource-based filtering from [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md).
 
 ## 2. Why This Matters
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §71 (Priority Classes and Preemption) as the final placement-control mechanism in Part 9's scheduling tour, and assumes familiarity with node labels and the general filtering/scoring pipeline vocabulary established across Part 9, alongside Deployment/ReplicaSet concepts from Part 4.
+Builds on [§71](./Section-71-Part9-Priority-Classes-Preemption.md) (Priority Classes and Preemption) as the final placement-control mechanism in Part 9's scheduling tour, and assumes familiarity with node labels and the general filtering/scoring pipeline vocabulary established across Part 9, alongside Deployment/ReplicaSet concepts from Part 4.
 
 ## 4. Architecture Diagram
 
@@ -227,7 +227,7 @@ _What the interviewer is probing for:_ Sophisticated understanding that strict s
 
 ## 13. 🔑 Key Takeaways
 
-- Topology spread constraints distribute Pods evenly across any topology domain (zone, node, custom label) using a quantifiable `maxSkew`, layered on top of resource-based filtering (§70).
+- Topology spread constraints distribute Pods evenly across any topology domain (zone, node, custom label) using a quantifiable `maxSkew`, layered on top of resource-based filtering ([§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)).
 - `DoNotSchedule` enforces spread as a hard filtering requirement (Pods may stay Pending); `ScheduleAnyway` treats it as a scoring preference that degrades gracefully.
 - Replica count alone says nothing about fault tolerance — topology spread constraints are what actually guarantee distribution across independent failure domains.
 - The topology key must be a genuinely populated node label for the constraint to have any real effect; missing labels silently produce a no-op.
@@ -235,6 +235,6 @@ _What the interviewer is probing for:_ Sophisticated understanding that strict s
 
 ## 14. Related Concepts & What's Next
 
-This section closes Part 9's scheduling tour, building on §71's priority/preemption mechanics and §70's resource-based filtering to complete the full picture of how the scheduler decides not just _whether_ a Pod can be placed, but _where_ among its viable candidates it ends up. Part 10 shifts from placement to security and access control, beginning with how Kubernetes authenticates the users, ServiceAccounts, and certificates that create and manage every object discussed so far.
+This section closes Part 9's scheduling tour, building on [§71](./Section-71-Part9-Priority-Classes-Preemption.md)'s priority/preemption mechanics and [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)'s resource-based filtering to complete the full picture of how the scheduler decides not just _whether_ a Pod can be placed, but _where_ among its viable candidates it ends up. Part 10 shifts from placement to security and access control, beginning with how Kubernetes authenticates the users, ServiceAccounts, and certificates that create and manage every object discussed so far.
 
-**Next Section:** §73 — `Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md`
+**Next Section:** [§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md) — `Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md`

@@ -4,11 +4,11 @@
 
 **Plain language:** Not every workload is meant to run forever — a database migration, a batch report, a one-off data-processing task needs to run exactly until it finishes successfully, and then stop, with the system remembering whether it actually succeeded. A Job is the object built for exactly that "run until done, then stop" shape, which a Deployment fundamentally cannot express.
 
-**Precise definition:** A **Job** is a controller that creates one or more Pods and ensures a specified number of them **terminate successfully** (exit code `0`), rather than running indefinitely. Unlike a Deployment's `restartPolicy: Always` assumption (§24), a Job's Pod template must specify `restartPolicy: OnFailure` or `restartPolicy: Never`, since "the container is supposed to eventually exit" is the entire premise. A Job tracks **completions** (how many Pods must succeed in total), **parallelism** (how many Pods may run concurrently while working toward that count), and a **backoffLimit** (how many Pod failures are tolerated, with exponential backoff between retries, before the Job itself is marked `Failed`). Once the required number of successful completions is reached, the Job is marked `Complete` and no further Pods are created.
+**Precise definition:** A **Job** is a controller that creates one or more Pods and ensures a specified number of them **terminate successfully** (exit code `0`), rather than running indefinitely. Unlike a Deployment's `restartPolicy: Always` assumption ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)), a Job's Pod template must specify `restartPolicy: OnFailure` or `restartPolicy: Never`, since "the container is supposed to eventually exit" is the entire premise. A Job tracks **completions** (how many Pods must succeed in total), **parallelism** (how many Pods may run concurrently while working toward that count), and a **backoffLimit** (how many Pod failures are tolerated, with exponential backoff between retries, before the Job itself is marked `Failed`). Once the required number of successful completions is reached, the Job is marked `Complete` and no further Pods are created.
 
 ## 2. Why This Matters
 
-- **A Deployment cannot express "run once and stop" without fighting its own reconciliation loop.** §24 established `restartPolicy: Always` as the default Pod assumption for long-running services; a Job is the object that formalizes the opposite assumption — the container is expected to exit, and that exit code determines whether the work is considered done or must be retried, not treated as a crash to restart forever.
+- **A Deployment cannot express "run once and stop" without fighting its own reconciliation loop.** [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) established `restartPolicy: Always` as the default Pod assumption for long-running services; a Job is the object that formalizes the opposite assumption — the container is expected to exit, and that exit code determines whether the work is considered done or must be retried, not treated as a crash to restart forever.
 - **`backoffLimit` and exponential backoff turn transient failures into a bounded, safe retry policy** instead of either giving up after one failure or retrying forever — this is precisely the operational gap a bare `kubectl run` one-off Pod leaves open, since a single Pod with no controller has no retry logic at all.
 - **`completions` and `parallelism` together model real batch-processing patterns directly** — a fixed work queue processed by several worker Pods concurrently, or a precise number of sequential validation runs — without needing external orchestration tooling for the common case.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §24 (Pod spec anatomy, specifically `restartPolicy` and its allowed values) and assumes familiarity with the general controller/reconciliation pattern from §1 and §13.
+Builds directly on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (Pod spec anatomy, specifically `restartPolicy` and its allowed values) and assumes familiarity with the general controller/reconciliation pattern from [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) and [§13](../Part2/Section-13-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md).
 
 ## 4. Architecture Diagram
 
@@ -183,11 +183,11 @@ Error from server (NotFound): jobs.batch "nightly-cleanup" not found
 
 - **`ttlSecondsAfterFinished` is worth setting on most batch Jobs** to avoid accumulating a long tail of completed Job objects (and their terminal Pods) cluttering `kubectl get jobs`/`get pods` output and consuming etcd storage indefinitely.
 - **Non-idempotent workloads need explicit idempotency handling in application logic**, not just relying on Kubernetes — a retried Pod re-executes the entire container command from the start, so partial-completion side effects (partial writes, sent notifications) must be safe to repeat or explicitly guarded against.
-- **CronJobs (§36) are built directly on top of Jobs** — every scheduled run a CronJob triggers is, underneath, exactly the Job object covered in this section, created and retired on a schedule.
+- **CronJobs ([§36](./Section-36-Part5-CronJobs-Scheduled-Job-Execution.md)) are built directly on top of Jobs** — every scheduled run a CronJob triggers is, underneath, exactly the Job object covered in this section, created and retired on a schedule.
 
 ## 7. Security Considerations
 
-- A Job's Pod template inherits the same SecurityContext, ServiceAccount, and image-pull considerations as any Pod (§45, Part 6) — batch/migration Jobs are frequently granted elevated database or infrastructure credentials, making their ServiceAccount scope and Secret usage a priority review target, not an afterthought because "it's just a one-off job."
+- A Job's Pod template inherits the same SecurityContext, ServiceAccount, and image-pull considerations as any Pod ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)) — batch/migration Jobs are frequently granted elevated database or infrastructure credentials, making their ServiceAccount scope and Secret usage a priority review target, not an afterthought because "it's just a one-off job."
 - `activeDeadlineSeconds` doubles as a safety control against a runaway or hung Job consuming cluster resources indefinitely — omitting it on Jobs with untrusted or unpredictable workloads is a real operational risk, not just a tidiness concern.
 
 ## 8. Common Troubleshooting Scenarios
@@ -246,6 +246,6 @@ _What the interviewer is probing for:_ Systems-level batch-pipeline design think
 
 ## 14. Related Concepts & What's Next
 
-§24's Pod spec anatomy, particularly `restartPolicy`, is the direct foundation this section built on to explain why Jobs require a different restart contract than ordinary workloads. §36 builds immediately on top of everything covered here: a CronJob is, mechanically, a controller that creates Job objects (exactly as defined in this section) on a recurring schedule.
+[§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)'s Pod spec anatomy, particularly `restartPolicy`, is the direct foundation this section built on to explain why Jobs require a different restart contract than ordinary workloads. [§36](./Section-36-Part5-CronJobs-Scheduled-Job-Execution.md) builds immediately on top of everything covered here: a CronJob is, mechanically, a controller that creates Job objects (exactly as defined in this section) on a recurring schedule.
 
-**Next Section:** §36 — `Section-36-Part5-CronJobs-Scheduled-Job-Execution.md`
+**Next Section:** [§36](./Section-36-Part5-CronJobs-Scheduled-Job-Execution.md) — `Section-36-Part5-CronJobs-Scheduled-Job-Execution.md`

@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** §37 covered making more (or fewer) copies of a Pod in response to load. But two other, entirely separate questions remain: what if each individual Pod is simply requesting the wrong amount of CPU/memory in the first place — too much, wasting cluster capacity, or too little, getting OOMKilled? And what happens when there's genuinely nowhere left to schedule more Pods because every node is full? Neither question is HPA's job. The first is answered by the Vertical Pod Autoscaler; the second by the Cluster Autoscaler.
+**Plain language:** [§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) covered making more (or fewer) copies of a Pod in response to load. But two other, entirely separate questions remain: what if each individual Pod is simply requesting the wrong amount of CPU/memory in the first place — too much, wasting cluster capacity, or too little, getting OOMKilled? And what happens when there's genuinely nowhere left to schedule more Pods because every node is full? Neither question is HPA's job. The first is answered by the Vertical Pod Autoscaler; the second by the Cluster Autoscaler.
 
 **Precise definition:** The **Vertical Pod Autoscaler (VPA)** is a **separate, non-core Kubernetes project** (not shipped as part of `kubernetes/kubernetes`, installed independently) that observes a workload's actual historical CPU/memory usage and recommends — or, in `Auto`/`Recreate` update mode, actively applies by evicting and recreating Pods — revised `resources.requests` (and optionally `limits`) values, right-sizing each individual Pod rather than changing how many exist. The **Cluster Autoscaler** is a separate control-loop component (cloud-provider-integrated, often installed as an in-cluster Deployment that calls out to cloud APIs) that watches for Pods stuck `Pending` due to insufficient cluster capacity and adds nodes to a node group/pool to accommodate them, and conversely removes underutilized nodes when their Pods can be safely rescheduled elsewhere — changing the number of **nodes**, not Pods or their resource requests.
 
 ## 2. Why This Matters
 
-- **These are three genuinely distinct scaling axes, and conflating them is one of the most common Kubernetes autoscaling misunderstandings.** HPA (§37) changes replica count; VPA changes per-Pod resource requests; Cluster Autoscaler changes node count. A workload can legitimately need all three simultaneously — right-sized Pods (VPA), the correct number of replicas for load (HPA), and enough nodes to actually host them (Cluster Autoscaler) — and each is configured, installed, and reasoned about completely independently.
+- **These are three genuinely distinct scaling axes, and conflating them is one of the most common Kubernetes autoscaling misunderstandings.** HPA ([§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) changes replica count; VPA changes per-Pod resource requests; Cluster Autoscaler changes node count. A workload can legitimately need all three simultaneously — right-sized Pods (VPA), the correct number of replicas for load (HPA), and enough nodes to actually host them (Cluster Autoscaler) — and each is configured, installed, and reasoned about completely independently.
 - **VPA is explicitly not a built-in Kubernetes feature**, unlike HPA, which ships as a core API object. Treating VPA as "the vertical equivalent of the HPA object you get for free" leads to real surprises — it must be separately installed (typically via the `kubernetes/autoscaler` project's VPA components), and its default recommendation-only mode makes no changes at all unless explicitly configured to act.
-- **VPA and HPA cannot safely target the same metric on the same workload simultaneously** — if both are configured to scale on CPU, they can fight each other (VPA changing the request that HPA's utilization percentage is computed against, while HPA changes replica count based on that same shifting baseline), a documented incompatibility that shapes real production configuration choices, connecting back to the replica-vs-resource distinction first drawn in §27/§28.
+- **VPA and HPA cannot safely target the same metric on the same workload simultaneously** — if both are configured to scale on CPU, they can fight each other (VPA changing the request that HPA's utilization percentage is computed against, while HPA changes replica count based on that same shifting baseline), a documented incompatibility that shapes real production configuration choices, connecting back to the replica-vs-resource distinction first drawn in [§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)/[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md).
 
-🔑 **Key Takeaway:** HPA (§37) scales replica count, VPA resizes each Pod's resource requests, and Cluster Autoscaler scales node count — three independent mechanisms, only one of which (HPA) is a built-in core Kubernetes API object; VPA and Cluster Autoscaler are separate projects installed on top of a cluster.
+🔑 **Key Takeaway:** HPA ([§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) scales replica count, VPA resizes each Pod's resource requests, and Cluster Autoscaler scales node count — three independent mechanisms, only one of which (HPA) is a built-in core Kubernetes API object; VPA and Cluster Autoscaler are separate projects installed on top of a cluster.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §37 (HPA, to establish the contrast this section depends on) and §27/§28 (ReplicaSets/Deployments, since VPA acts on the Pods those objects create and Cluster Autoscaler reacts to Pods those objects leave `Pending`).
+Builds directly on [§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) (HPA, to establish the contrast this section depends on) and [§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)/[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) (ReplicaSets/Deployments, since VPA acts on the Pods those objects create and Cluster Autoscaler reacts to Pods those objects leave `Pending`).
 
 ## 4. Architecture Diagram
 
@@ -53,7 +53,7 @@ VPA operating modes:
 ```
 
 - **VPA's `Recreate`/`Auto` modes cause Pod restarts** — because Kubernetes historically had no way to change a running container's resource requests without recreating the Pod, applying a VPA recommendation is inherently disruptive, a materially different operational cost than HPA's non-disruptive replica changes.
-- **Cluster Autoscaler's scale-down path is conservative by design** — it only removes a node once it has confirmed every Pod on it can be safely rescheduled elsewhere (respecting PodDisruptionBudgets, §39), and it will not touch nodes running Pods it cannot safely evict.
+- **Cluster Autoscaler's scale-down path is conservative by design** — it only removes a node once it has confirmed every Pod on it can be safely rescheduled elsewhere (respecting PodDisruptionBudgets, [§39](./Section-39-Part5-Pod-Disruption-Budgets.md)), and it will not touch nodes running Pods it cannot safely evict.
 
 ## 5. Hands-On: Installing and Observing VPA and Cluster Autoscaler
 
@@ -129,7 +129,7 @@ big-batch-job-x7f2   1/1     Running   0          2m
 
 **Production usage example:** The `TriggeredScaleUp` Event referencing a specific node group and its bounds (`5->8 (max: 10)`) is the standard diagnostic signal that Cluster Autoscaler — not the scheduler and not HPA — is the component responding to this exact `Pending` scenario; the node-group `max` ceiling is a hard stop that Cluster Autoscaler will not exceed regardless of how many Pods remain Pending.
 
-**Common errors:** Confusing a Cluster-Autoscaler-driven `Pending` (capacity genuinely exhausted, new nodes incoming) with a filtering-phase `Pending` from §14 that no amount of new capacity will fix (e.g., an unsatisfiable node selector) — always check whether the `FailedScheduling` reason is resource-based before assuming Cluster Autoscaler will resolve it.
+**Common errors:** Confusing a Cluster-Autoscaler-driven `Pending` (capacity genuinely exhausted, new nodes incoming) with a filtering-phase `Pending` from [§14](../Part2/Section-14-Part2-Scheduler-Internals-Preview-Filtering-Scoring.md) that no amount of new capacity will fix (e.g., an unsatisfiable node selector) — always check whether the `FailedScheduling` reason is resource-based before assuming Cluster Autoscaler will resolve it.
 
 ### 5.3 Configuring Cluster Autoscaler's Node Group Bounds
 
@@ -157,7 +157,7 @@ containers:
 ## 7. Security Considerations
 
 - Cluster Autoscaler requires cloud-provider IAM/credential access to create and destroy compute instances — that credential is a high-value target, since abuse could provision large amounts of billable infrastructure or destroy running capacity, and it should be scoped as narrowly as the cloud provider's IAM model allows.
-- VPA's eviction-driven Pod recreation on `Recreate`/`Auto` mode interacts with PodDisruptionBudgets (§39) exactly like a voluntary disruption — a workload without a PDB has no guaranteed floor of availability during a VPA-triggered resize, which matters for security-relevant availability SLAs as much as for ordinary reliability.
+- VPA's eviction-driven Pod recreation on `Recreate`/`Auto` mode interacts with PodDisruptionBudgets ([§39](./Section-39-Part5-Pod-Disruption-Budgets.md)) exactly like a voluntary disruption — a workload without a PDB has no guaranteed floor of availability during a VPA-triggered resize, which matters for security-relevant availability SLAs as much as for ordinary reliability.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -177,7 +177,7 @@ containers:
 ## 10. Common Anti-Patterns / Mistakes
 
 - **Assuming VPA ships as a core Kubernetes API object the way HPA does** — it must be separately installed from the `kubernetes/autoscaler` project and is not present by default on any cluster.
-- **Running VPA in `Auto`/`Recreate` mode on a low-replica, latency-sensitive service without a PodDisruptionBudget (§39)**, risking a real availability dip every time VPA applies a resize.
+- **Running VPA in `Auto`/`Recreate` mode on a low-replica, latency-sensitive service without a PodDisruptionBudget ([§39](./Section-39-Part5-Pod-Disruption-Budgets.md))**, risking a real availability dip every time VPA applies a resize.
 - **Relying purely on Cluster Autoscaler's reactive scale-up for strict low-latency scheduling needs**, ignoring the real 30–90+ second window a new Pod spends `Pending` while a new node boots and joins.
 
 ## 11. Interview Questions
@@ -195,7 +195,7 @@ _What the interviewer is probing for:_ Awareness that VPA is not "free" the way 
 _What the interviewer is probing for:_ Concrete understanding of the actual mechanical interaction that causes the conflict, not just "they can conflict," plus a workable mitigation.
 
 **🎯 Architect:** _"Design an autoscaling strategy for a platform with hundreds of services of varying traffic shape and criticality, using all three mechanisms together without them undermining each other."_
-**Model answer:** I'd treat the three mechanisms as answering three separate questions and assign clear default ownership: VPA in `Off` mode runs universally as a right-sizing advisory layer, feeding periodic, reviewed pull requests that adjust `resources.requests` baselines — not applied automatically in production for anything customer-facing, to avoid disruptive Recreate cycles on critical paths. HPA owns replica count for every service with variable load, scaling on CPU by default and on custom/external metrics (queue depth, request rate) for services where CPU is a poor proxy, with `behavior` policies tuned per criticality tier — fast scale-up/slow scale-down for user-facing tiers, more symmetric policies for cost-sensitive batch tiers. Cluster Autoscaler runs cluster-wide with node-group floors sized to absorb known daily/weekly traffic patterns without cold-start delay, and ceilings tied to a real budget review process, with PodDisruptionBudgets (§39) mandatory on every service so Cluster Autoscaler's scale-down path and any VPA-driven eviction both remain drain-safe. Finally, I'd bake a platform-level lint rule forbidding active-mode VPA and HPA on the same resource dimension for the same workload, since that specific conflict is well-understood and preventable at review time rather than needing to be debugged in production.
+**Model answer:** I'd treat the three mechanisms as answering three separate questions and assign clear default ownership: VPA in `Off` mode runs universally as a right-sizing advisory layer, feeding periodic, reviewed pull requests that adjust `resources.requests` baselines — not applied automatically in production for anything customer-facing, to avoid disruptive Recreate cycles on critical paths. HPA owns replica count for every service with variable load, scaling on CPU by default and on custom/external metrics (queue depth, request rate) for services where CPU is a poor proxy, with `behavior` policies tuned per criticality tier — fast scale-up/slow scale-down for user-facing tiers, more symmetric policies for cost-sensitive batch tiers. Cluster Autoscaler runs cluster-wide with node-group floors sized to absorb known daily/weekly traffic patterns without cold-start delay, and ceilings tied to a real budget review process, with PodDisruptionBudgets ([§39](./Section-39-Part5-Pod-Disruption-Budgets.md)) mandatory on every service so Cluster Autoscaler's scale-down path and any VPA-driven eviction both remain drain-safe. Finally, I'd bake a platform-level lint rule forbidding active-mode VPA and HPA on the same resource dimension for the same workload, since that specific conflict is well-understood and preventable at review time rather than needing to be debugged in production.
 _What the interviewer is probing for:_ Ability to design a coherent, governed multi-mechanism autoscaling strategy at platform scale, with explicit guardrails against the known VPA/HPA conflict and disruption-safety via PDBs.
 
 ## 12. Common Misconceptions
@@ -203,18 +203,18 @@ _What the interviewer is probing for:_ Ability to design a coherent, governed mu
 1. **"VPA is the vertical counterpart to HPA and ships the same way."** HPA is a core, built-in Kubernetes API object; VPA is a separate project that must be installed independently and is not present on a cluster by default.
 2. **"VPA and HPA can both freely scale the same metric on the same workload with no issue."** They can enter a feedback loop when both target the same resource dimension, since VPA changes the request that HPA's utilization percentage is computed against — documented as an unsupported/risky combination.
 3. **"Cluster Autoscaler and HPA are the same mechanism at different levels."** HPA changes replica count within existing capacity; Cluster Autoscaler changes the amount of capacity (nodes) available in the first place — a Pod can be correctly scaled by HPA and still sit Pending if Cluster Autoscaler hasn't (yet) added enough nodes.
-4. **"VPA in `Auto` mode resizes running Pods in place with zero disruption."** Until in-place resize matures as a stable feature, `Auto`/`Recreate` modes work by evicting and recreating the Pod with new resource requests — a real, if brief, disruption subject to PodDisruptionBudget protection (§39).
+4. **"VPA in `Auto` mode resizes running Pods in place with zero disruption."** Until in-place resize matures as a stable feature, `Auto`/`Recreate` modes work by evicting and recreating the Pod with new resource requests — a real, if brief, disruption subject to PodDisruptionBudget protection ([§39](./Section-39-Part5-Pod-Disruption-Budgets.md)).
 
 ## 13. 🔑 Key Takeaways
 
-- HPA (§37) changes replica count, VPA changes per-Pod resource requests, and Cluster Autoscaler changes node count — three independent mechanisms answering three different questions.
+- HPA ([§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) changes replica count, VPA changes per-Pod resource requests, and Cluster Autoscaler changes node count — three independent mechanisms answering three different questions.
 - VPA is not a core Kubernetes component; it is a separately installed project (`kubernetes/autoscaler`) with its own CRD and controller, defaulting safely to recommendation-only (`Off`) mode.
 - Cluster Autoscaler reacts to Pods stuck `Pending` for lack of capacity by adding nodes (bounded by node-group min/max), and conservatively removes underutilized nodes only when their Pods can be safely rescheduled elsewhere.
 - Running an active-mode VPA and an HPA on the same resource metric for the same workload is a documented, risky combination that can produce a feedback loop — split responsibility across different resource dimensions instead.
-- VPA's `Recreate`/`Auto` modes cause real Pod disruption (eviction and recreation), making PodDisruptionBudgets (§39) directly relevant to safe VPA operation.
+- VPA's `Recreate`/`Auto` modes cause real Pod disruption (eviction and recreation), making PodDisruptionBudgets ([§39](./Section-39-Part5-Pod-Disruption-Budgets.md)) directly relevant to safe VPA operation.
 
 ## 14. Related Concepts & What's Next
 
-§37 established HPA as the replica-count axis of autoscaling; this section completed the picture with the per-Pod-resource axis (VPA) and the node-count axis (Cluster Autoscaler), making explicit that only HPA is a core, built-in API object. §27/§28 remain the foundation all three mechanisms ultimately act upon or around. §39 (next) covers Pod Disruption Budgets, directly relevant to both VPA's eviction-driven resize and Cluster Autoscaler's scale-down path, since both are voluntary-disruption scenarios a PDB can bound.
+[§37](./Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) established HPA as the replica-count axis of autoscaling; this section completed the picture with the per-Pod-resource axis (VPA) and the node-count axis (Cluster Autoscaler), making explicit that only HPA is a core, built-in API object. [§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)/[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) remain the foundation all three mechanisms ultimately act upon or around. [§39](./Section-39-Part5-Pod-Disruption-Budgets.md) (next) covers Pod Disruption Budgets, directly relevant to both VPA's eviction-driven resize and Cluster Autoscaler's scale-down path, since both are voluntary-disruption scenarios a PDB can bound.
 
-**Next Section:** §39 — `Section-39-Part5-Pod-Disruption-Budgets.md`
+**Next Section:** [§39](./Section-39-Part5-Pod-Disruption-Budgets.md) — `Section-39-Part5-Pod-Disruption-Budgets.md`

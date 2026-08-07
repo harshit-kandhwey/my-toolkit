@@ -4,11 +4,11 @@
 
 **Plain language:** The control plane is made of a handful of distinct programs, each with one clear job — one is the front door, one is the memory, one is the placement decision-maker, and one or two are the "keep fixing things" workers. Knowing each one's single responsibility is what makes the rest of Kubernetes' behavior predictable instead of magical.
 
-**Precise definition:** The Kubernetes control plane is composed of five components, each a separate process (or, in most self-managed clusters, a separate static Pod): **kube-apiserver** (the sole entry point for all cluster reads/writes), **etcd** (the cluster's persistent, consistent key-value data store), **kube-scheduler** (decides which node each new Pod runs on), **kube-controller-manager** (runs the built-in reconciliation loops), and the optional **cloud-controller-manager** (integrates cluster state with a specific cloud provider's APIs, e.g., provisioning load balancers). Together, these five components implement everything described conceptually in §3's control-plane/data-plane split.
+**Precise definition:** The Kubernetes control plane is composed of five components, each a separate process (or, in most self-managed clusters, a separate static Pod): **kube-apiserver** (the sole entry point for all cluster reads/writes), **etcd** (the cluster's persistent, consistent key-value data store), **kube-scheduler** (decides which node each new Pod runs on), **kube-controller-manager** (runs the built-in reconciliation loops), and the optional **cloud-controller-manager** (integrates cluster state with a specific cloud provider's APIs, e.g., provisioning load balancers). Together, these five components implement everything described conceptually in [§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md)'s control-plane/data-plane split.
 
 ## 2. Why Understanding Each Component Individually Matters
 
-- **Each component fails independently and differently.** An api-server outage, an etcd quorum loss, and a scheduler crash produce three completely different symptom sets — conflating them wastes time during an incident (§99, Part 13 depends directly on this section's component breakdown).
+- **Each component fails independently and differently.** An api-server outage, an etcd quorum loss, and a scheduler crash produce three completely different symptom sets — conflating them wastes time during an incident ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md) depends directly on this section's component breakdown).
 - **This is CKA's single highest-weighted domain area.** "Cluster Architecture, Installation & Configuration" is 25% of the CKA exam, and fluent, precise knowledge of what each control-plane component does (and doesn't do) is directly tested.
 - **Every later Part refers back to one of these five components by name.** Scheduling (Part 9) is "kube-scheduler in depth"; security (Part 10) is largely "how kube-apiserver authenticates and authorizes requests"; troubleshooting (Part 13) is frequently "which of these five components is actually broken." This section is the anchor those later Parts build on.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §3 (control plane vs. data plane split). No new external prerequisites.
+Builds directly on [§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md) (control plane vs. data plane split). No new external prerequisites.
 
 ## 4. Architecture Diagram: How the Five Components Interact
 
@@ -54,11 +54,11 @@ Builds directly on §3 (control plane vs. data plane split). No new external pre
 
 ### 5.1 kube-apiserver — The Front Door
 
-**Purpose:** Every single interaction with the cluster — `kubectl` commands, other control-plane components, the kubelet on every node — goes through the api-server. It validates requests, enforces authentication and authorization (§73–§74, Part 10), runs admission control (§77), and is the only component that reads from or writes to etcd.
+**Purpose:** Every single interaction with the cluster — `kubectl` commands, other control-plane components, the kubelet on every node — goes through the api-server. It validates requests, enforces authentication and authorization ([§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md)), runs admission control ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)), and is the only component that reads from or writes to etcd.
 
 **Key characteristics:**
 
-- Stateless itself (all real state lives in etcd) — this is why api-server replicas can be scaled horizontally behind a load balancer for high availability (§15).
+- Stateless itself (all real state lives in etcd) — this is why api-server replicas can be scaled horizontally behind a load balancer for high availability ([§15](./Section-15-Part2-High-Availability-Control-Plane-Architectures.md)).
 - Exposes the versioned Kubernetes REST API (`apps/v1`, `batch/v1`, etc.) that every manifest's `apiVersion` field targets.
 
 **Production usage example:** `kubectl get nodes` sends a request to the api-server, which reads the relevant data from etcd and returns it — `kubectl` never talks to etcd, the scheduler, or any node directly.
@@ -69,25 +69,25 @@ Builds directly on §3 (control plane vs. data plane split). No new external pre
 
 **Key characteristics:**
 
-- Uses the Raft consensus algorithm to maintain consistency across multiple etcd replicas (§10 covers this in full).
+- Uses the Raft consensus algorithm to maintain consistency across multiple etcd replicas ([§10](./Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) covers this in full).
 - Typically run as an odd number of instances (3 or 5) for quorum — losing quorum means losing the ability to make any cluster state changes, and potentially losing state entirely if unrecoverable.
 
-**Production usage example:** Regular etcd snapshots (`etcdctl snapshot save`) are the actual backup mechanism for an entire cluster's state — losing etcd without a recent backup means losing the cluster's declared configuration entirely, even if every node and running Pod is otherwise healthy (§107, Part 14 covers backup/restore procedures in full).
+**Production usage example:** Regular etcd snapshots (`etcdctl snapshot save`) are the actual backup mechanism for an entire cluster's state — losing etcd without a recent backup means losing the cluster's declared configuration entirely, even if every node and running Pod is otherwise healthy ([§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md) covers backup/restore procedures in full).
 
 ### 5.3 kube-scheduler — The Placement Decision-Maker
 
-**Purpose:** Watches the api-server for Pods that have been created but not yet assigned to a node, then selects the best-fit node for each one based on resource availability, constraints (affinity, taints/tolerations), and policy — full mechanics in Part 9 (§65–§72).
+**Purpose:** Watches the api-server for Pods that have been created but not yet assigned to a node, then selects the best-fit node for each one based on resource availability, constraints (affinity, taints/tolerations), and policy — full mechanics in Part 9 ([§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md)–[§72](../Part9/Section-72-Part9-Topology-Spread-Constraints.md)).
 
 **Key characteristics:**
 
 - Only _decides_ placement — it writes its decision back via the api-server; it is the kubelet on the chosen node that actually starts the Pod.
-- Runs a two-phase process per Pod: filtering (which nodes are even eligible) then scoring (which eligible node is best) — previewed here, covered in full in §65.
+- Runs a two-phase process per Pod: filtering (which nodes are even eligible) then scoring (which eligible node is best) — previewed here, covered in full in [§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md).
 
-**Production usage example:** A Pod stuck in `Pending` status is very often a scheduler-side symptom — no node satisfied the Pod's resource requests or constraints — distinguishable from a `kubelet`-side or image-pull-side failure precisely because of this component breakdown (§97, Part 13).
+**Production usage example:** A Pod stuck in `Pending` status is very often a scheduler-side symptom — no node satisfied the Pod's resource requests or constraints — distinguishable from a `kubelet`-side or image-pull-side failure precisely because of this component breakdown ([§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)).
 
 ### 5.4 kube-controller-manager — The Reconciliation Engine
 
-**Purpose:** Runs dozens of individual controllers (Node controller, ReplicaSet controller, Endpoint controller, Job controller, and many more) bundled into a single binary/process for operational simplicity. Each controller watches the api-server for a specific resource type and reconciles actual state toward declared state — this is the literal implementation of the reconciliation loop introduced conceptually in §1.
+**Purpose:** Runs dozens of individual controllers (Node controller, ReplicaSet controller, Endpoint controller, Job controller, and many more) bundled into a single binary/process for operational simplicity. Each controller watches the api-server for a specific resource type and reconciles actual state toward declared state — this is the literal implementation of the reconciliation loop introduced conceptually in [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md).
 
 **Key characteristics:**
 
@@ -118,29 +118,29 @@ Builds directly on §3 (control plane vs. data plane split). No new external pre
 
 ## 7. Security Considerations
 
-- **kube-apiserver** is the single highest-value attack surface in the entire cluster — every authentication and authorization decision (Part 10) is enforced here, making its configuration the top priority in cluster-hardening work (§113, Part 15).
-- **etcd** stores Secrets in plaintext by default unless encryption at rest is explicitly configured — direct network or filesystem access to etcd should be treated as equivalent to full cluster compromise (§113 covers this explicitly).
+- **kube-apiserver** is the single highest-value attack surface in the entire cluster — every authentication and authorization decision (Part 10) is enforced here, making its configuration the top priority in cluster-hardening work ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
+- **etcd** stores Secrets in plaintext by default unless encryption at rest is explicitly configured — direct network or filesystem access to etcd should be treated as equivalent to full cluster compromise ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) covers this explicitly).
 - **cloud-controller-manager** typically holds real cloud-provider IAM credentials to provision infrastructure — compromising it can mean compromising cloud resources well beyond the Kubernetes cluster itself.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                             | Likely Cause                                                       | Resolution Path                                                                                         |
-| --------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `kubectl` reports `connection refused` cluster-wide | kube-apiserver process down or unreachable                         | Check api-server Pod/process logs directly on the control-plane node (§99)                              |
-| Cluster accepts reads but writes fail or time out   | etcd quorum lost (majority of etcd members unreachable)            | Check etcd member health; quorum loss requires restoring member connectivity or restoring from snapshot |
-| Many Pods simultaneously stuck `Pending`            | kube-scheduler crashed or unable to reach api-server               | Check scheduler Pod/process logs and its api-server connectivity                                        |
-| Deleted Pods under a Deployment aren't replaced     | kube-controller-manager crashed or its relevant controller stalled | Check controller-manager Pod/process logs                                                               |
+| Symptom                                             | Likely Cause                                                       | Resolution Path                                                                                                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kubectl` reports `connection refused` cluster-wide | kube-apiserver process down or unreachable                         | Check api-server Pod/process logs directly on the control-plane node ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)) |
+| Cluster accepts reads but writes fail or time out   | etcd quorum lost (majority of etcd members unreachable)            | Check etcd member health; quorum loss requires restoring member connectivity or restoring from snapshot                                                            |
+| Many Pods simultaneously stuck `Pending`            | kube-scheduler crashed or unable to reach api-server               | Check scheduler Pod/process logs and its api-server connectivity                                                                                                   |
+| Deleted Pods under a Deployment aren't replaced     | kube-controller-manager crashed or its relevant controller stalled | Check controller-manager Pod/process logs                                                                                                                          |
 
 ## 9. Best Practices
 
 - Always identify which of the five components a symptom points to before choosing a diagnostic path — this single-component focus dramatically narrows investigation time.
 - On self-managed clusters, monitor all five components' health independently (not just "is the cluster reachable") since they fail in different ways with different operational responses.
-- Treat kube-apiserver and etcd as the two highest-priority components for both availability engineering (HA, §15) and security hardening (§113), given their outsized blast radius.
+- Treat kube-apiserver and etcd as the two highest-priority components for both availability engineering (HA, [§15](./Section-15-Part2-High-Availability-Control-Plane-Architectures.md)) and security hardening ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)), given their outsized blast radius.
 
 ## 10. Common Anti-Patterns / Mistakes
 
 - **Treating "the control plane" as one monolithic thing** when diagnosing issues, rather than isolating which of the five specific components is actually implicated.
-- **Assuming the scheduler "runs" Pods.** It only decides placement; the kubelet and container runtime on the chosen node do the actual execution (§9 covers this data-plane half directly).
+- **Assuming the scheduler "runs" Pods.** It only decides placement; the kubelet and container runtime on the chosen node do the actual execution ([§9](./Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) covers this data-plane half directly).
 - **Forgetting cloud-controller-manager exists as a distinct component** when troubleshooting cloud-integration-specific symptoms (LoadBalancer Services, volume attachment) on a self-managed cluster running on cloud infrastructure.
 
 ## 11. Interview Questions
@@ -178,6 +178,6 @@ _What the interviewer is probing for:_ Whether the candidate can translate compo
 
 ## 14. Related Concepts & What's Next
 
-§3 introduced the control-plane/data-plane split this section fully unpacks on the control-plane side. §9 (next) does the same for the data-plane/node components (kubelet, kube-proxy, container runtime). §10 covers etcd's Raft consensus mechanics in full depth. §65 (Part 9) returns to kube-scheduler's filtering/scoring phases in complete detail. §73–§74 (Part 10) cover kube-apiserver's authentication/authorization enforcement introduced here at a summary level. §107 (Part 14) covers etcd backup/restore procedures referenced in the etcd discussion above.
+[§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md) introduced the control-plane/data-plane split this section fully unpacks on the control-plane side. [§9](./Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) (next) does the same for the data-plane/node components (kubelet, kube-proxy, container runtime). [§10](./Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) covers etcd's Raft consensus mechanics in full depth. [§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md) returns to kube-scheduler's filtering/scoring phases in complete detail. [§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md) cover kube-apiserver's authentication/authorization enforcement introduced here at a summary level. [§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md) covers etcd backup/restore procedures referenced in the etcd discussion above.
 
-**Next Section:** §9 — `Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md`
+**Next Section:** [§9 — Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md](./Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)

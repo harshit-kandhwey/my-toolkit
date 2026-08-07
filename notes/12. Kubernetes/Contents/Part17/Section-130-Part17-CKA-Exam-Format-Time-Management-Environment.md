@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-This section assumes the full technical depth of Parts 1–16 as prerequisite Kubernetes knowledge — in particular Part 2 (Cluster Architecture), Part 3 (Installation and Bootstrapping), Part 9 (Scheduling), Part 7 (Networking), Part 8 (Storage), and Part 13 (Troubleshooting), which map directly onto the five official CKA domains. It also assumes familiarity with `kubectl` from Part 4 §28 and general Linux terminal proficiency from this repo's Linux knowledge base. This section is the first of Part 17's exam-and-interview-preparation coverage and does not introduce new Kubernetes concepts — it reframes existing knowledge around exam mechanics, format, and time allocation.
+This section assumes the full technical depth of Parts 1–16 as prerequisite Kubernetes knowledge — in particular Part 2 (Cluster Architecture), Part 3 (Installation and Bootstrapping), Part 9 (Scheduling), Part 7 (Networking), Part 8 (Storage), and Part 13 (Troubleshooting), which map directly onto the five official CKA domains. It also assumes familiarity with `kubectl` from Part 4 [§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) and general Linux terminal proficiency from this repo's Linux knowledge base. This section is the first of Part 17's exam-and-interview-preparation coverage and does not introduce new Kubernetes concepts — it reframes existing knowledge around exam mechanics, format, and time allocation.
 
 ## 4. Architecture Diagram
 
@@ -120,7 +120,7 @@ kubectl config current-context
 
 - The exam is remotely proctored: a webcam and microphone must remain on throughout, the room must be scanned and kept clear of secondary monitors, notes, or other people, and any unusual behavior (looking away for extended periods, background noise, a second device) can trigger a proctor challenge or termination.
 - Only the exam's provided browser-based terminal and the single permitted documentation tab are allowed — no other applications, browser tabs, virtual machines, or copy-paste from outside the exam environment are permitted, and using an unauthorized resource is treated as a violation of exam integrity, not merely a rules infraction.
-- The exam environment itself is ephemeral and isolated per session — clusters are provisioned fresh for the exam and are not connected to any personal or organizational infrastructure, so there is no risk of exam actions affecting real systems, but conversely nothing from a personal environment (custom aliases, dotfiles) carries over unless explicitly configured within the exam session itself (see §133 for exam-session `kubectl` configuration techniques).
+- The exam environment itself is ephemeral and isolated per session — clusters are provisioned fresh for the exam and are not connected to any personal or organizational infrastructure, so there is no risk of exam actions affecting real systems, but conversely nothing from a personal environment (custom aliases, dotfiles) carries over unless explicitly configured within the exam session itself (see [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md) for exam-session `kubectl` configuration techniques).
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -183,6 +183,6 @@ _What the interviewer is probing for:_ Ability to design a systematic, data-info
 
 ## 14. Related Concepts & What's Next
 
-This section built directly on the technical depth of Parts 1–16 (particularly Part 2, Part 3, Part 9, Part 7, Part 8, and Part 13, which map onto the CKA's five official domains) and reframed it around the CKA exam's specific format, domain weighting, and time-management demands. The strategy introduced here — timed practice, two-pass triage, context verification — carries forward as a foundation for the other two CNCF certifications, each of which shares the same performance-based format but differs in domain composition and target audience. Next, §131 applies this same time-management lens to the CKAD exam, contrasting its five application-developer-focused domains and shorter troubleshooting emphasis against the CKA's infrastructure-heavy weighting.
+This section built directly on the technical depth of Parts 1–16 (particularly Part 2, Part 3, Part 9, Part 7, Part 8, and Part 13, which map onto the CKA's five official domains) and reframed it around the CKA exam's specific format, domain weighting, and time-management demands. The strategy introduced here — timed practice, two-pass triage, context verification — carries forward as a foundation for the other two CNCF certifications, each of which shares the same performance-based format but differs in domain composition and target audience. Next, [§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md) applies this same time-management lens to the CKAD exam, contrasting its five application-developer-focused domains and shorter troubleshooting emphasis against the CKA's infrastructure-heavy weighting.
 
-**Next Section:** §131 — `Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md`
+**Next Section:** [§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md) — `Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md`

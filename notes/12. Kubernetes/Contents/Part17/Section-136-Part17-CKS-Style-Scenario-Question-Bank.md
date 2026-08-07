@@ -2,9 +2,9 @@
 
 ## 1. Definition
 
-**Plain language:** §134 drilled operator scenarios and §135 drilled developer scenarios; this section drills the third lens entirely — attacker-minded, security-first scenarios where the "correct" answer is frequently the most restrictive configuration that still lets the workload function, not the one that merely makes an error message disappear.
+**Plain language:** [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md) drilled operator scenarios and [§135](./Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md) drilled developer scenarios; this section drills the third lens entirely — attacker-minded, security-first scenarios where the "correct" answer is frequently the most restrictive configuration that still lets the workload function, not the one that merely makes an error message disappear.
 
-**Precise definition:** This section is a **scenario question bank** modeled on the CKS's actual performance-based task format, weighted toward its six official domains — Cluster Setup, Cluster Hardening, System Hardening, Minimize Microservice Vulnerabilities, Supply Chain Security, and Monitoring/Logging/Runtime Security. Each scenario states the exam-style prompt, a worked solution, and the specific hardening or detection skill it validates. The CKS assumes an active CKA, so scenarios below build on §134's cluster-operator competence rather than re-teaching it.
+**Precise definition:** This section is a **scenario question bank** modeled on the CKS's actual performance-based task format, weighted toward its six official domains — Cluster Setup, Cluster Hardening, System Hardening, Minimize Microservice Vulnerabilities, Supply Chain Security, and Monitoring/Logging/Runtime Security. Each scenario states the exam-style prompt, a worked solution, and the specific hardening or detection skill it validates. The CKS assumes an active CKA, so scenarios below build on [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md)'s cluster-operator competence rather than re-teaching it.
 
 ## 2. Why This Matters
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Requires CKA-level competence (§134) and builds directly on Part 15's CKS deep dive: cluster setup hardening and kube-bench (§113), system hardening with seccomp/AppArmor (§114), microservice vulnerability minimization and SecurityContext hardening (§115), supply chain security — image scanning and signing (§116), static manifest analysis (§117), runtime security with Falco (§118), network security and mTLS (§119), secrets encryption (§120), and monitoring/logging for security (§121). Also assumes RBAC (§75) and Pod Security Admission (§77) from Part 10.
+Requires CKA-level competence ([§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md)) and builds directly on Part 15's CKS deep dive: cluster setup hardening and kube-bench ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)), system hardening with seccomp/AppArmor ([§114](../Part15/Section-114-Part15-System-Hardening-Minimizing-Host-OS-Attack-Surface-seccomp-AppArmor.md)), microservice vulnerability minimization and SecurityContext hardening ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)), supply chain security — image scanning and signing ([§116](../Part15/Section-116-Part15-Supply-Chain-Security-Image-Scanning-Trivy-Signing-Cosign-Sigstore-SBOM.md)), static manifest analysis ([§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md)), runtime security with Falco ([§118](../Part15/Section-118-Part15-Runtime-Security-Threat-Detection-Falco.md)), network security and mTLS ([§119](../Part15/Section-119-Part15-Network-Security-Deep-Dive-mTLS-Service-Mesh-Security.md)), secrets encryption ([§120](../Part15/Section-120-Part15-Secrets-Encryption-External-Secret-Stores-Deep-Dive.md)), and monitoring/logging for security ([§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)). Also assumes RBAC ([§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)) and Pod Security Admission ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) from Part 10.
 
 ## 4. Architecture Diagram: Scenario Category Breakdown
 
@@ -69,7 +69,7 @@ kubectl get pods -n kube-system | grep apiserver
 kube-bench run --targets master
 ```
 
-**What it's testing:** Direct kube-bench workflow and remediation of a static-pod-manifest flag (§113), and understanding that editing a static Pod manifest triggers an automatic kubelet-driven restart rather than requiring `kubectl apply`.
+**What it's testing:** Direct kube-bench workflow and remediation of a static-pod-manifest flag ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)), and understanding that editing a static Pod manifest triggers an automatic kubelet-driven restart rather than requiring `kubectl apply`.
 
 ### Scenario 2 — Hardening a Pod's SecurityContext to the Restricted Baseline (6 minutes)
 
@@ -109,7 +109,7 @@ kubectl -n apps rollout status deployment api-gateway
 kubectl -n apps exec deploy/api-gateway -- touch /tmp/test-write
 ```
 
-**What it's testing:** SecurityContext hardening exactly (§115) — `runAsNonRoot`, dropping all capabilities, `readOnlyRootFilesystem` — combined with recognizing that "writes only to /tmp" requires an `emptyDir` volume mounted at `/tmp` specifically so the read-only root filesystem doesn't break the one legitimate write path the application needs.
+**What it's testing:** SecurityContext hardening exactly ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)) — `runAsNonRoot`, dropping all capabilities, `readOnlyRootFilesystem` — combined with recognizing that "writes only to /tmp" requires an `emptyDir` volume mounted at `/tmp` specifically so the read-only root filesystem doesn't break the one legitimate write path the application needs.
 
 ### Scenario 3 — Blocking Unscanned Images With an Admission Controller (8 minutes)
 
@@ -159,7 +159,7 @@ kubectl -n production run test-good --image=registry.internal.corp/nginx:1.25
 # expect: created
 ```
 
-**What it's testing:** Supply chain enforcement at admission time (§116) using a CEL-based `ValidatingAdmissionPolicy`, and correctly scoping the binding to a single namespace via `namespaceSelector` rather than accidentally applying a registry restriction cluster-wide where it could break unrelated system namespaces.
+**What it's testing:** Supply chain enforcement at admission time ([§116](../Part15/Section-116-Part15-Supply-Chain-Security-Image-Scanning-Trivy-Signing-Cosign-Sigstore-SBOM.md)) using a CEL-based `ValidatingAdmissionPolicy`, and correctly scoping the binding to a single namespace via `namespaceSelector` rather than accidentally applying a registry restriction cluster-wide where it could break unrelated system namespaces.
 
 ### Scenario 4 — Restricting a Container's Syscalls With a seccomp Profile (7 minutes)
 
@@ -198,7 +198,7 @@ kubectl apply -f untrusted-workload.yaml
 kubectl -n sandbox get pod untrusted-workload -o jsonpath='{.spec.securityContext.seccompProfile}'
 ```
 
-**What it's testing:** seccomp profile types exactly (§114) — `RuntimeDefault` versus `Localhost` with a `localhostProfile` path — and the operational reality that a `Localhost` profile requires the JSON file to already be staged identically on every node the Pod could schedule to, or the Pod fails to start with an unhelpfully generic error.
+**What it's testing:** seccomp profile types exactly ([§114](../Part15/Section-114-Part15-System-Hardening-Minimizing-Host-OS-Attack-Surface-seccomp-AppArmor.md)) — `RuntimeDefault` versus `Localhost` with a `localhostProfile` path — and the operational reality that a `Localhost` profile requires the JSON file to already be staged identically on every node the Pod could schedule to, or the Pod fails to start with an unhelpfully generic error.
 
 ### Scenario 5 — Detecting and Removing an Unnecessary hostPath Mount and Privileged Flag (5 minutes)
 
@@ -239,7 +239,7 @@ kubectl -n legacy apply -f legacy-agent.yaml
 kubectl -n legacy exec legacy-agent -- ls /host/var/log
 ```
 
-**What it's testing:** The core "minimize microservice vulnerabilities" instinct (§115) of narrowing both the `privileged` flag and the `hostPath` scope to exactly what's functionally required — a full-root hostPath mount plus `privileged: true` is one of the most common CKS anti-patterns, effectively equivalent to handing the container root on the underlying node.
+**What it's testing:** The core "minimize microservice vulnerabilities" instinct ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)) of narrowing both the `privileged` flag and the `hostPath` scope to exactly what's functionally required — a full-root hostPath mount plus `privileged: true` is one of the most common CKS anti-patterns, effectively equivalent to handing the container root on the underlying node.
 
 ### Scenario 6 — Writing a Falco Rule to Detect Shell Spawned Inside a Container (6 minutes)
 
@@ -272,7 +272,7 @@ kubectl -n production exec <some-pod> -- sh -c "echo test"
 kubectl -n falco-system logs -l app=falco --tail=20
 ```
 
-**What it's testing:** Custom Falco rule authoring against real Sysdig filter fields (§118) — `k8s.ns.name`, `proc.name`, `spawned_process` — and recognizing that an interactive shell inside a production container is itself a runtime security signal worth alerting on, independent of whatever the shell command actually did.
+**What it's testing:** Custom Falco rule authoring against real Sysdig filter fields ([§118](../Part15/Section-118-Part15-Runtime-Security-Threat-Detection-Falco.md)) — `k8s.ns.name`, `proc.name`, `spawned_process` — and recognizing that an interactive shell inside a production container is itself a runtime security signal worth alerting on, independent of whatever the shell command actually did.
 
 ### Scenario 7 — Enabling Audit Logging to Capture Secret Access Events (7 minutes)
 
@@ -313,7 +313,7 @@ kubectl get secret -n default
 tail -20 /var/log/kubernetes/audit.log | grep secrets
 ```
 
-**What it's testing:** API server audit policy authoring (§121), and the crucial `Metadata` versus `RequestResponse` distinction — logging Secret access at `Metadata` level captures who accessed what and when without ever writing the Secret's actual decoded contents into the audit log itself, which would otherwise create a second, less-guarded copy of sensitive data.
+**What it's testing:** API server audit policy authoring ([§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)), and the crucial `Metadata` versus `RequestResponse` distinction — logging Secret access at `Metadata` level captures who accessed what and when without ever writing the Secret's actual decoded contents into the audit log itself, which would otherwise create a second, less-guarded copy of sensitive data.
 
 ## 6. Production Usage Notes: Practicing Under Real Exam Time Pressure
 
@@ -363,7 +363,7 @@ _What the interviewer is probing for:_ Understanding that audit logging itself c
 _What the interviewer is probing for:_ A surgical debugging mindset for hardening regressions, versus the common shortcut of abandoning the hardening entirely when the first attempt breaks something.
 
 **🎯 Architect:** _"Design a defense-in-depth strategy for a multi-tenant cluster running untrusted third-party workloads, combining admission control, runtime detection, and audit logging so that no single layer's failure fully exposes the cluster."_
-**Model answer:** At admission time, I'd enforce Pod Security Admission at the `restricted` level (§77) plus a supply-chain `ValidatingAdmissionPolicy` requiring images from a scanned, signed registry with pinned digests (never `:latest`), rejecting anything privileged or using `hostPath` outright for tenant workloads — this is the first layer, preventing the worst configurations from ever running. As a second layer assuming something still gets through (a supply-chain compromise of an otherwise-trusted image, for instance), Falco rules watching for shell spawns, unexpected outbound connections, and sensitive file reads inside tenant namespaces provide runtime detection independent of whether the workload passed admission cleanly. As a third layer, audit logging at `Metadata` level across Secret and RBAC-object access gives a forensic trail if the first two layers are bypassed, letting incident response reconstruct exactly what a compromised workload touched — critically, none of these three layers assumes the others are working, so a gap in admission control doesn't leave the cluster fully blind, and a missed Falco alert doesn't leave zero record of what happened. I'd also isolate tenants with dedicated namespaces plus default-deny NetworkPolicies (Part 7) and, if genuinely mutually-distrusting tenants share nodes, consider gVisor/Kata Containers (§115) for stronger kernel-level isolation than SecurityContext hardening alone provides.
+**Model answer:** At admission time, I'd enforce Pod Security Admission at the `restricted` level ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) plus a supply-chain `ValidatingAdmissionPolicy` requiring images from a scanned, signed registry with pinned digests (never `:latest`), rejecting anything privileged or using `hostPath` outright for tenant workloads — this is the first layer, preventing the worst configurations from ever running. As a second layer assuming something still gets through (a supply-chain compromise of an otherwise-trusted image, for instance), Falco rules watching for shell spawns, unexpected outbound connections, and sensitive file reads inside tenant namespaces provide runtime detection independent of whether the workload passed admission cleanly. As a third layer, audit logging at `Metadata` level across Secret and RBAC-object access gives a forensic trail if the first two layers are bypassed, letting incident response reconstruct exactly what a compromised workload touched — critically, none of these three layers assumes the others are working, so a gap in admission control doesn't leave the cluster fully blind, and a missed Falco alert doesn't leave zero record of what happened. I'd also isolate tenants with dedicated namespaces plus default-deny NetworkPolicies (Part 7) and, if genuinely mutually-distrusting tenants share nodes, consider gVisor/Kata Containers ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)) for stronger kernel-level isolation than SecurityContext hardening alone provides.
 _What the interviewer is probing for:_ Genuine defense-in-depth reasoning — each layer assumed to eventually fail on its own, with the next layer compensating — rather than treating any single control (even a well-configured one) as sufficient.
 
 ## 12. Common Misconceptions
@@ -383,6 +383,6 @@ _What the interviewer is probing for:_ Genuine defense-in-depth reasoning — ea
 
 ## 14. Related Concepts & What's Next
 
-This section drew its scenario material directly from Part 15's CKS deep dive — cluster setup and kube-bench (§113), system hardening (§114), SecurityContext hardening (§115), supply chain security (§116–§117), runtime security with Falco (§118), and audit logging (§121) — and assumed CKA-level operator competence from §134 as a baseline. §137, the capstone of Part 17, moves up a level from certification-specific scenarios to architect-level and behavioral-technical crossover questions, synthesizing this entire exam-prep Part alongside senior-level concepts from across the whole knowledge base.
+This section drew its scenario material directly from Part 15's CKS deep dive — cluster setup and kube-bench ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)), system hardening ([§114](../Part15/Section-114-Part15-System-Hardening-Minimizing-Host-OS-Attack-Surface-seccomp-AppArmor.md)), SecurityContext hardening ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)), supply chain security ([§116](../Part15/Section-116-Part15-Supply-Chain-Security-Image-Scanning-Trivy-Signing-Cosign-Sigstore-SBOM.md)–[§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md)), runtime security with Falco ([§118](../Part15/Section-118-Part15-Runtime-Security-Threat-Detection-Falco.md)), and audit logging ([§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)) — and assumed CKA-level operator competence from [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md) as a baseline. [§137](./Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md), the capstone of Part 17, moves up a level from certification-specific scenarios to architect-level and behavioral-technical crossover questions, synthesizing this entire exam-prep Part alongside senior-level concepts from across the whole knowledge base.
 
-**Next Section:** §137 — `Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md`
+**Next Section:** [§137](./Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md) — `Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md`

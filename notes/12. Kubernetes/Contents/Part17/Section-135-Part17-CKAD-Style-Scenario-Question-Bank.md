@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Where §134 drilled cluster-operator problems — broken nodes, stuck PVCs, etcd — this section drills the application-developer's half of the exam world: building, configuring, deploying, and exposing an application correctly, fast, from the developer's seat rather than the administrator's.
+**Plain language:** Where [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md) drilled cluster-operator problems — broken nodes, stuck PVCs, etcd — this section drills the application-developer's half of the exam world: building, configuring, deploying, and exposing an application correctly, fast, from the developer's seat rather than the administrator's.
 
 **Precise definition:** This section is a **scenario question bank** modeled on the CKAD's actual performance-based task format, weighted toward its five official domains — Application Design and Build, Application Deployment, Observability and Maintenance, Application Environment/Configuration/Security, and Services and Networking. Each scenario states the exam-style prompt, a worked `kubectl`/YAML solution, and the specific developer-facing skill it validates.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §134 (this bank assumes the same context-switch and time-box discipline already drilled there) and draws its scenario content from Pods and multi-container patterns (§24–§25), Deployments (§27–§28), ConfigMaps and Secrets (§41–§42), SecurityContext (§45), probes (§89), and Services/Ingress (Part 7). Where §134 tested cluster-operator instincts, this section tests the developer-facing use of the same underlying Kubernetes API objects.
+Builds on [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md) (this bank assumes the same context-switch and time-box discipline already drilled there) and draws its scenario content from Pods and multi-container patterns ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§25](../Part4/Section-25-Part4-Multi-Container-Pods-Sidecar-Ambassador-Adapter-Patterns.md)), Deployments ([§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)–[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md)), ConfigMaps and Secrets ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)), SecurityContext ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)), probes ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)), and Services/Ingress (Part 7). Where [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md) tested cluster-operator instincts, this section tests the developer-facing use of the same underlying Kubernetes API objects.
 
 ## 4. Architecture Diagram: Scenario Category Breakdown
 
@@ -82,7 +82,7 @@ kubectl apply -f order-api.yaml
 kubectl -n orders get pod order-api -w
 ```
 
-**What it's testing:** Recognizing an init-container use case from a plain-language dependency description (§24–§25), and correct DNS-name construction (`<service>.<namespace>.svc.cluster.local`) rather than assuming same-namespace short names always resolve across contexts.
+**What it's testing:** Recognizing an init-container use case from a plain-language dependency description ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§25](../Part4/Section-25-Part4-Multi-Container-Pods-Sidecar-Ambassador-Adapter-Patterns.md)), and correct DNS-name construction (`<service>.<namespace>.svc.cluster.local`) rather than assuming same-namespace short names always resolve across contexts.
 
 ### Scenario 2 — Injecting a Secret as an Environment Variable Without Exposing It in Plaintext YAML (5 minutes)
 
@@ -112,7 +112,7 @@ kubectl -n payments rollout status deployment billing
 kubectl -n payments exec deploy/billing -- printenv DB_PASSWORD
 ```
 
-**What it's testing:** `secretKeyRef` env injection syntax exactly (§42), and the discipline of never typing a decoded Secret value directly into a manifest even during troubleshooting — a habit the exam and real production security practice both reward identically.
+**What it's testing:** `secretKeyRef` env injection syntax exactly ([§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)), and the discipline of never typing a decoded Secret value directly into a manifest even during troubleshooting — a habit the exam and real production security practice both reward identically.
 
 ### Scenario 3 — Fixing a Misconfigured Liveness Probe Causing Restart Loops (6 minutes)
 
@@ -144,7 +144,7 @@ kubectl -n web edit deployment app-frontend
 kubectl -n web rollout status deployment app-frontend
 ```
 
-**What it's testing:** Distinguishing a probe misconfiguration from an actual application failure (§89), and the important exam trap that a bare Pod's probe spec is immutable in place — if the Pod is controller-owned, the fix belongs on the Deployment, not a direct Pod edit that will fail or silently not apply as expected.
+**What it's testing:** Distinguishing a probe misconfiguration from an actual application failure ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)), and the important exam trap that a bare Pod's probe spec is immutable in place — if the Pod is controller-owned, the fix belongs on the Deployment, not a direct Pod edit that will fail or silently not apply as expected.
 
 ### Scenario 4 — Blue/Green Style Deployment Cutover Using Labels (7 minutes)
 
@@ -162,7 +162,7 @@ kubectl -n checkout get endpoints checkout-svc
 kubectl -n checkout run debug --image=busybox:1.36 --rm -it --restart=Never -- wget -qO- checkout-svc:80
 ```
 
-**What it's testing:** Blue/green deployment strategy as a label-selector operation rather than a scaling operation (§28), and verifying the cutover via Endpoints rather than assuming a patched selector immediately took effect without checking.
+**What it's testing:** Blue/green deployment strategy as a label-selector operation rather than a scaling operation ([§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md)), and verifying the cutover via Endpoints rather than assuming a patched selector immediately took effect without checking.
 
 ### Scenario 5 — ConfigMap-Driven Configuration With a Volume Mount (5 minutes)
 
@@ -201,7 +201,7 @@ kubectl -n reporting exec report-gen -- ls /etc/config
 kubectl -n reporting exec report-gen -- cat /etc/config/MAX_ROWS
 ```
 
-**What it's testing:** Correctly choosing volume-mount consumption over env-var consumption when the prompt explicitly asks for a file-based config (§41), since defaulting to env vars out of habit is a common exam point-loser when the prompt is specific about delivery mechanism.
+**What it's testing:** Correctly choosing volume-mount consumption over env-var consumption when the prompt explicitly asks for a file-based config ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)), since defaulting to env vars out of habit is a common exam point-loser when the prompt is specific about delivery mechanism.
 
 ### Scenario 6 — Exposing an Application via Ingress With Path-Based Routing (7 minutes)
 
@@ -266,7 +266,7 @@ exit
 kubectl -n legacy get pod old-app
 ```
 
-**What it's testing:** `kubectl debug` with `--target` for process-namespace sharing against a distroless container (§90), a CKAD-relevant observability skill specifically because distroless/minimal images are increasingly common in real application delivery and `kubectl exec` genuinely cannot debug them without this mechanism.
+**What it's testing:** `kubectl debug` with `--target` for process-namespace sharing against a distroless container ([§90](../Part12/Section-90-Part12-kubectl-logs-exec-debug-Ephemeral-Containers.md)), a CKAD-relevant observability skill specifically because distroless/minimal images are increasingly common in real application delivery and `kubectl exec` genuinely cannot debug them without this mechanism.
 
 ## 6. Production Usage Notes: Practicing Under Real Exam Time Pressure
 
@@ -279,7 +279,7 @@ kubectl -n legacy get pod old-app
 
 - Scenario 2's Secret-injection pattern is the CKAD's most direct security-adjacent task: never let a decoded Secret value appear literally in a manifest, command history, or terminal output you'd leave visible — `secretKeyRef` exists precisely so the value never needs to be typed or seen during normal operation.
 - Distroless images (Scenario 7) are themselves a security best practice — smaller attack surface, no shell for an attacker to pivot through — and the `kubectl debug --target` ephemeral-container pattern exists specifically so teams don't have to compromise that hardening just to gain debuggability.
-- Any Pod or Deployment scenario that doesn't specify a SecurityContext should still default to non-root, read-only-root-filesystem thinking during practice (§45) — the exam sometimes rewards (and sometimes explicitly requires) hardened defaults even when the prompt doesn't mention security by name.
+- Any Pod or Deployment scenario that doesn't specify a SecurityContext should still default to non-root, read-only-root-filesystem thinking during practice ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)) — the exam sometimes rewards (and sometimes explicitly requires) hardened defaults even when the prompt doesn't mention security by name.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -318,7 +318,7 @@ _What the interviewer is probing for:_ Real understanding of the live-update beh
 _What the interviewer is probing for:_ Recognizing that Kubernetes's declarative success signals are only as trustworthy as the probes backing them, a subtlety many candidates miss by treating `rollout status` as ground truth.
 
 **🎯 Architect:** _"Design the configuration and secrets strategy for an application that needs to hot-reload most of its config but must never expose one specific highly sensitive credential to a file on disk, even temporarily."_
-**Model answer:** I'd split the concern in two: general configuration goes into a ConfigMap mounted as a volume so the application can watch the mount path and hot-reload without a restart, giving operational flexibility for the majority of settings that aren't sensitive. The one highly sensitive credential is deliberately kept out of that same mechanism — instead injected as an environment variable via `secretKeyRef` sourced from a Secret (ideally backed by an external secret store per Part 10's Vault/External Secrets Operator integration, so it's not even resting in etcd in plaintext without EncryptionConfiguration), specifically because a volume-mounted Secret still touches the container's filesystem as a file, however transient, while an env var sourced this way exists only in process memory and the container's environment block, never on disk. I'd also ensure the container's SecurityContext (§45) sets a read-only root filesystem so nothing — including that credential — could be persisted to disk by the application itself even accidentally, closing the gap the delivery mechanism alone doesn't fully cover. The architectural principle is treating "how sensitive is this value" as a first-class input to the delivery-mechanism choice, not defaulting to one mechanism for all configuration uniformly.
+**Model answer:** I'd split the concern in two: general configuration goes into a ConfigMap mounted as a volume so the application can watch the mount path and hot-reload without a restart, giving operational flexibility for the majority of settings that aren't sensitive. The one highly sensitive credential is deliberately kept out of that same mechanism — instead injected as an environment variable via `secretKeyRef` sourced from a Secret (ideally backed by an external secret store per Part 10's Vault/External Secrets Operator integration, so it's not even resting in etcd in plaintext without EncryptionConfiguration), specifically because a volume-mounted Secret still touches the container's filesystem as a file, however transient, while an env var sourced this way exists only in process memory and the container's environment block, never on disk. I'd also ensure the container's SecurityContext ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)) sets a read-only root filesystem so nothing — including that credential — could be persisted to disk by the application itself even accidentally, closing the gap the delivery mechanism alone doesn't fully cover. The architectural principle is treating "how sensitive is this value" as a first-class input to the delivery-mechanism choice, not defaulting to one mechanism for all configuration uniformly.
 _What the interviewer is probing for:_ Ability to reason about configuration delivery as a security-tiered decision rather than a one-size-fits-all mechanism, and awareness that env-var vs. volume-mount has a genuine "touches disk or doesn't" security distinction beyond mere convenience.
 
 ## 12. Common Misconceptions
@@ -338,6 +338,6 @@ _What the interviewer is probing for:_ Ability to reason about configuration del
 
 ## 14. Related Concepts & What's Next
 
-This section drew its scenario material from multi-container Pod patterns (§24–§25), Deployments (§27–§28), ConfigMaps/Secrets (§41–§42), SecurityContext (§45), probes (§89), and Services/Ingress (Part 7), and built on §134's exam-discipline foundation (context switching, time-boxing, verify-then-move-on). §136 shifts focus again — from developer-facing correctness to security-first thinking, covering CKS-style scenarios that draw on the Part 15 security deep dive: cluster hardening, supply chain security, and runtime threat detection.
+This section drew its scenario material from multi-container Pod patterns ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§25](../Part4/Section-25-Part4-Multi-Container-Pods-Sidecar-Ambassador-Adapter-Patterns.md)), Deployments ([§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)–[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md)), ConfigMaps/Secrets ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)), SecurityContext ([§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)), probes ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)), and Services/Ingress (Part 7), and built on [§134](./Section-134-Part17-CKA-Style-Scenario-Question-Bank.md)'s exam-discipline foundation (context switching, time-boxing, verify-then-move-on). [§136](./Section-136-Part17-CKS-Style-Scenario-Question-Bank.md) shifts focus again — from developer-facing correctness to security-first thinking, covering CKS-style scenarios that draw on the Part 15 security deep dive: cluster hardening, supply chain security, and runtime threat detection.
 
-**Next Section:** §136 — `Section-136-Part17-CKS-Style-Scenario-Question-Bank.md`
+**Next Section:** [§136](./Section-136-Part17-CKS-Style-Scenario-Question-Bank.md) — `Section-136-Part17-CKS-Style-Scenario-Question-Bank.md`

@@ -4,19 +4,19 @@
 
 **Plain language:** If the control plane is the brain deciding what should happen, every worker node has its own small set of "hands" that actually make it happen — one that talks to the control plane and manages containers, one that manages network traffic rules, and one that actually starts and stops container processes.
 
-**Precise definition:** Every Kubernetes worker node runs three components that together implement the data-plane half of the architecture introduced in §3: **kubelet** (the primary node agent that registers the node with the control plane, watches for Pods assigned to it, and ensures their containers are running as specified), **kube-proxy** (maintains network rules on the node that implement Kubernetes' Service abstraction, covered fully in §51), and a **container runtime** (the actual software — containerd or CRI-O — that creates and manages container processes, communicating with the kubelet via the **Container Runtime Interface**, covered in §11).
+**Precise definition:** Every Kubernetes worker node runs three components that together implement the data-plane half of the architecture introduced in [§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md): **kubelet** (the primary node agent that registers the node with the control plane, watches for Pods assigned to it, and ensures their containers are running as specified), **kube-proxy** (maintains network rules on the node that implement Kubernetes' Service abstraction, covered fully in [§51](../Part7/Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md)), and a **container runtime** (the actual software — containerd or CRI-O — that creates and manages container processes, communicating with the kubelet via the **Container Runtime Interface**, covered in [§11](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md)).
 
 ## 2. Why Understanding Each Component Individually Matters
 
-- **The kubelet is the single point of contact between a node and the control plane.** If it crashes or loses connectivity, the node's existing Pods often keep running (their processes don't depend on continuous kubelet supervision to keep executing) but the node stops reporting status and can't accept new assignments — a specific, recognizable failure mode covered in §97 (Part 13).
-- **kube-proxy is invisible until Service networking breaks.** Most engineers never think about kube-proxy directly, but "a Service isn't routing traffic correctly" almost always traces back to kube-proxy's rules on the relevant node(s) — understanding what it actually does removes a huge amount of networking mystery (§51, Part 7).
-- **The container runtime split (kubelet talks CRI, not directly to Docker) explains the 2020s "dockershim removal" disruption** many teams experienced — understanding the CRI abstraction (§11) explains why that transition happened and what it actually changed operationally (mostly nothing, for workloads using standard container images).
+- **The kubelet is the single point of contact between a node and the control plane.** If it crashes or loses connectivity, the node's existing Pods often keep running (their processes don't depend on continuous kubelet supervision to keep executing) but the node stops reporting status and can't accept new assignments — a specific, recognizable failure mode covered in [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md).
+- **kube-proxy is invisible until Service networking breaks.** Most engineers never think about kube-proxy directly, but "a Service isn't routing traffic correctly" almost always traces back to kube-proxy's rules on the relevant node(s) — understanding what it actually does removes a huge amount of networking mystery ([§51](../Part7/Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md)).
+- **The container runtime split (kubelet talks CRI, not directly to Docker) explains the 2020s "dockershim removal" disruption** many teams experienced — understanding the CRI abstraction ([§11](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md)) explains why that transition happened and what it actually changed operationally (mostly nothing, for workloads using standard container images).
 
 🔑 **Key Takeaway:** Every node runs exactly three components — kubelet (control-plane liaison and container supervisor), kube-proxy (Service networking rules), and a container runtime (actual container execution) — and node-side troubleshooting almost always starts by identifying which of these three is implicated.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §3 (control plane vs. data plane) and §8 (control-plane components this section's node components communicate with). No new external prerequisites.
+Builds on [§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md) (control plane vs. data plane) and [§8](./Section-08-Part2-Control-Plane-Components.md) (control-plane components this section's node components communicate with). No new external prerequisites.
 
 ## 4. Architecture Diagram
 
@@ -32,7 +32,7 @@ Builds on §3 (control plane vs. data plane) and §8 (control-plane components t
                              │  - registers node            │
                              │  - watches for assigned Pods │
                              │  - runs liveness/readiness   │
-                             │    probes (§89, Part 12)     │
+                             │    probes (§89)              │
                              └──────────┬───────────────────┘
                                         │ CRI (gRPC API)
                                         ▼
@@ -65,49 +65,49 @@ Builds on §3 (control plane vs. data plane) and §8 (control-plane components t
 **Key characteristics:**
 
 - Reports node and Pod status back to the api-server, which is what populates `kubectl get nodes` and `kubectl get pods` output.
-- Runs **static Pods** directly from local manifest files without going through the api-server for their initial definition (§46, Part 3) — this is how kubeadm-bootstrapped clusters run control-plane components as Pods even before a full api-server is available.
+- Runs **static Pods** directly from local manifest files without going through the api-server for their initial definition ([§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md)) — this is how kubeadm-bootstrapped clusters run control-plane components as Pods even before a full api-server is available.
 
 **Production usage example:** A `kubectl describe pod` showing recent events like "Pulling image," "Pulled," "Created," "Started" are all kubelet-reported events, generated as it walks through getting a Pod's containers running via the container runtime.
 
 ### 5.2 kube-proxy — The Service Networking Enforcer
 
-**Purpose:** Watches the api-server for Service and Endpoint (or EndpointSlice) objects, and programs the local node's networking rules (via iptables or IPVS, §52) so that traffic sent to a Service's virtual IP gets correctly routed to one of the Pods backing it.
+**Purpose:** Watches the api-server for Service and Endpoint (or EndpointSlice) objects, and programs the local node's networking rules (via iptables or IPVS, [§51](../Part7/Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md)) so that traffic sent to a Service's virtual IP gets correctly routed to one of the Pods backing it.
 
 **Key characteristics:**
 
-- Runs on every node as a DaemonSet (§34, Part 5 covers DaemonSets) — each node needs its own copy since networking rules are per-node.
+- Runs on every node as a DaemonSet ([§34](../Part5/Section-34-Part5-DaemonSets-Node-Level-Agent-Workloads.md) covers DaemonSets) — each node needs its own copy since networking rules are per-node.
 - Does not carry traffic itself — it programs the kernel's networking rules (iptables/IPVS), which then handle the actual packet routing at the kernel level.
 
 **Production usage example:** When a Service's backing Pods change (a new replica added, an old one removed), kube-proxy on every node updates its local rules accordingly — this is why Service load balancing continues correctly across rolling updates without any manual reconfiguration.
 
 ### 5.3 Container Runtime — The Actual Execution Layer
 
-**Purpose:** Implements the mechanics of pulling images, creating containers, allocating their namespaces/cgroups (the Linux primitives covered in the Linux roadmap's §99), and starting/stopping the actual processes — all in response to instructions from the kubelet via the CRI.
+**Purpose:** Implements the mechanics of pulling images, creating containers, allocating their namespaces/cgroups (the Linux primitives covered in the Linux roadmap's [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)), and starting/stopping the actual processes — all in response to instructions from the kubelet via the CRI.
 
 **Key characteristics:**
 
-- **containerd** and **CRI-O** are the two dominant CRI-compliant runtimes in modern Kubernetes; Docker Engine itself is no longer used directly (the "dockershim" compatibility shim was removed in Kubernetes 1.24 — §11 covers this transition and why it mattered far less than many teams feared).
+- **containerd** and **CRI-O** are the two dominant CRI-compliant runtimes in modern Kubernetes; Docker Engine itself is no longer used directly (the "dockershim" compatibility shim was removed in Kubernetes 1.24 — [§11](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md) covers this transition and why it mattered far less than many teams feared).
 - The CRI is a gRPC API — any runtime implementing it can be used interchangeably from the kubelet's perspective, which is what allows this pluggability.
 
-**Production usage example:** `crictl` (a CLI tool analogous to `docker` but talking directly to a CRI runtime) is the standard debugging tool for inspecting containers at the node level when `kubectl` alone doesn't provide enough detail — used heavily in real troubleshooting scenarios (§99, Part 13).
+**Production usage example:** `crictl` (a CLI tool analogous to `docker` but talking directly to a CRI runtime) is the standard debugging tool for inspecting containers at the node level when `kubectl` alone doesn't provide enough detail — used heavily in real troubleshooting scenarios ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)).
 
 ## 6. Production Usage Notes: How These Three Interact During Normal Operation
 
 - **Pod creation flow:** api-server accepts a new Pod spec → scheduler assigns it to a node → the kubelet _on that node_ notices (via its watch on the api-server) that a Pod has been assigned to it → kubelet instructs the container runtime (via CRI) to pull the image and start the container(s) → kubelet reports status back to the api-server → if the Pod backs a Service, kube-proxy on every node (not just this one) updates its rules once the api-server reflects the new Endpoint.
-- **Node failure detection:** if a kubelet stops reporting to the api-server (network partition, crash, or node failure), the control plane's Node controller (part of kube-controller-manager, §8) eventually marks the node `NotReady` and, after a further grace period, begins evicting and rescheduling its Pods elsewhere — a process covered fully in §99 (Part 13).
+- **Node failure detection:** if a kubelet stops reporting to the api-server (network partition, crash, or node failure), the control plane's Node controller (part of kube-controller-manager, [§8](./Section-08-Part2-Control-Plane-Components.md)) eventually marks the node `NotReady` and, after a further grace period, begins evicting and rescheduling its Pods elsewhere — a process covered fully in [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md).
 
 ## 7. Security Considerations
 
-- The kubelet exposes an API of its own (the kubelet API, typically on port 10250) that, if left unauthenticated or overly permissive, allows direct container execution and log access on that node — a real, historically-exploited attack surface covered in cluster-hardening depth (§113, Part 15).
-- The container runtime's configuration (e.g., whether privileged containers are permitted) is a primary lever for the "Minimize Microservice Vulnerabilities" CKS domain (§115).
+- The kubelet exposes an API of its own (the kubelet API, typically on port 10250) that, if left unauthenticated or overly permissive, allows direct container execution and log access on that node — a real, historically-exploited attack surface covered in cluster-hardening depth ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
+- The container runtime's configuration (e.g., whether privileged containers are permitted) is a primary lever for the "Minimize Microservice Vulnerabilities" CKS domain ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                       | Likely Cause                                                           | Resolution Path                                                                 |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Node shows `NotReady` but existing Pods still respond briefly | kubelet lost contact with api-server (network issue or kubelet crash)  | Check kubelet process/logs on that specific node (§97, Part 13)                 |
-| A Service's traffic isn't reaching any backing Pods           | kube-proxy rules stale or not programmed correctly on relevant node(s) | Check kube-proxy logs and current iptables/IPVS rules on the node (§51)         |
-| Pod stuck `ContainerCreating` indefinitely                    | Container runtime failing to pull image or allocate resources          | Check container runtime logs (`crictl` on the node) and image pull status (§97) |
+| Symptom                                                       | Likely Cause                                                           | Resolution Path                                                                                                                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node shows `NotReady` but existing Pods still respond briefly | kubelet lost contact with api-server (network issue or kubelet crash)  | Check kubelet process/logs on that specific node ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md))                      |
+| A Service's traffic isn't reaching any backing Pods           | kube-proxy rules stale or not programmed correctly on relevant node(s) | Check kube-proxy logs and current iptables/IPVS rules on the node ([§51](../Part7/Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md))                           |
+| Pod stuck `ContainerCreating` indefinitely                    | Container runtime failing to pull image or allocate resources          | Check container runtime logs (`crictl` on the node) and image pull status ([§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)) |
 
 ## 9. Best Practices
 
@@ -156,6 +156,6 @@ _What the interviewer is probing for:_ Whether the candidate understands the CRI
 
 ## 14. Related Concepts & What's Next
 
-§3 and §8 established the control-plane side this section's node components communicate with. §11 covers the Container Runtime Interface and the dockershim transition referenced here in full technical depth. §51 (Part 7) covers kube-proxy's Service-routing mechanics (iptables vs. IPVS modes) completely. §97–§101 (Part 13) build the full node-level troubleshooting methodology this section's scenarios only previewed. §113 (Part 15) returns to the kubelet API security concern noted in §7 with full CKS-level hardening guidance.
+[§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md) and [§8](./Section-08-Part2-Control-Plane-Components.md) established the control-plane side this section's node components communicate with. [§11](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md) covers the Container Runtime Interface and the dockershim transition referenced here in full technical depth. [§51](../Part7/Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md) covers kube-proxy's Service-routing mechanics (iptables vs. IPVS modes) completely. [§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)–[§101](../Part13/Section-101-Part13-Networking-Troubleshooting-Scenarios-Unreachable-Services-DNS-Failures.md) build the full node-level troubleshooting methodology this section's scenarios only previewed. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) returns to the kubelet API security concern noted in [§7](../Part1/Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md) with full CKS-level hardening guidance.
 
-**Next Section:** §10 — `Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md`
+**Next Section:** [§10 — Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md](./Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)

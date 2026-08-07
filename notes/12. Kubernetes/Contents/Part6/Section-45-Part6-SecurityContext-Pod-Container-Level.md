@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **SecurityContext is the direct, hands-on enforcement mechanism for nearly every hardening principle in this roadmap's security material.** The Pod spec anatomy in §24 already showed `runAsNonRoot`, `allowPrivilegeEscalation`, and `readOnlyRootFilesystem` used inline — this section is the full, dedicated treatment of exactly how those fields behave, interact, and fail.
-- **Pod Security Admission and Pod Security Standards enforce SecurityContext fields as policy**, meaning a cluster's Restricted profile (§77, Part 10) will reject Pods that don't set these fields correctly — understanding SecurityContext here is the direct prerequisite for not having Pods rejected at admission time in a hardened cluster.
-- **This section's baseline is exactly what Part 15's CKS material builds on for full exam-level depth** — seccomp profiles, AppArmor, and gVisor/Kata Container runtime isolation (§115–§117, Part 15) all layer additional hardening on top of the SecurityContext fields covered here, not instead of them.
+- **SecurityContext is the direct, hands-on enforcement mechanism for nearly every hardening principle in this roadmap's security material.** The Pod spec anatomy in [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) already showed `runAsNonRoot`, `allowPrivilegeEscalation`, and `readOnlyRootFilesystem` used inline — this section is the full, dedicated treatment of exactly how those fields behave, interact, and fail.
+- **Pod Security Admission and Pod Security Standards enforce SecurityContext fields as policy**, meaning a cluster's Restricted profile ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) will reject Pods that don't set these fields correctly — understanding SecurityContext here is the direct prerequisite for not having Pods rejected at admission time in a hardened cluster.
+- **This section's baseline is exactly what Part 15's CKS material builds on for full exam-level depth** — seccomp profiles, AppArmor, and gVisor/Kata Container runtime isolation ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)–[§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md)) all layer additional hardening on top of the SecurityContext fields covered here, not instead of them.
 
 🔑 **Key Takeaway:** SecurityContext exists at both Pod and container level, with container-level settings overriding Pod-level defaults per field; `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`, and capability dropping together form the practical baseline every production container should set explicitly rather than trusting Kubernetes' permissive defaults.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §24 (Pod spec anatomy, where `securityContext` first appeared at both Pod and container level inline in the full example manifest) and assumes basic familiarity with Linux user/group/capability concepts from the Linux track.
+Builds directly on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (Pod spec anatomy, where `securityContext` first appeared at both Pod and container level inline in the full example manifest) and assumes basic familiarity with Linux user/group/capability concepts from the Linux track.
 
 ## 4. Architecture: Pod-Level Defaults vs. Container-Level Overrides
 
@@ -72,7 +72,7 @@ spec:
     runAsUser: 1000
     runAsGroup: 3000
     fsGroup: 2000
-    seccompProfile: # baseline seccomp (full depth in §115, Part 15)
+    seccompProfile: # baseline seccomp (full depth in §115)
       type: RuntimeDefault
   containers:
     - name: app
@@ -181,13 +181,13 @@ uid=0 gid=0
 
 - **`readOnlyRootFilesystem: true` is one of the single highest-value hardening settings available**, and its main practical cost is simply identifying every path the application actually needs to write to and mounting a scoped `emptyDir` or volume there — this is usually a short, one-time discovery effort per application, not an ongoing burden.
 - **`capabilities.drop: ["ALL"]` should be the default starting point for essentially every container**, with specific capabilities added back only when a concrete, identified need exists (binding a privileged port, manipulating network interfaces) — most application containers need zero additional capabilities beyond the drop-all baseline.
-- **Pod Security Admission's Restricted profile (§77, Part 10) codifies most of this section's recommendations as enforced policy** — in a cluster where that profile is active on a namespace, Pods violating these SecurityContext expectations are rejected outright at admission time rather than merely flagged.
+- **Pod Security Admission's Restricted profile ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) codifies most of this section's recommendations as enforced policy** — in a cluster where that profile is active on a namespace, Pods violating these SecurityContext expectations are rejected outright at admission time rather than merely flagged.
 
 ## 7. Security Considerations
 
 - **`allowPrivilegeEscalation: false` blocks a specific, well-known escalation vector** — setuid/setgid binaries and certain capability-granting mechanisms that would otherwise let a process gain more privilege than the one it started with — and should be set explicitly on essentially every production container; it is not the default.
 - **A Pod-level `runAsNonRoot: true` doesn't automatically protect every container** in a multi-container Pod if any individual container overrides it back to `false` — always audit every container's _effective_ (Pod default merged with container override) SecurityContext, not just the Pod-level block.
-- **This section's fields are the SecurityContext baseline; genuine defense-in-depth requires layering seccomp profiles, AppArmor profiles, and potentially a hardened runtime (gVisor/Kata) on top**, all covered at full CKS depth in §115–§117 (Part 15) — SecurityContext alone reduces risk substantially but is not a complete container-escape mitigation on its own.
+- **This section's fields are the SecurityContext baseline; genuine defense-in-depth requires layering seccomp profiles, AppArmor profiles, and potentially a hardened runtime (gVisor/Kata) on top**, all covered at full CKS depth in [§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)–[§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md) — SecurityContext alone reduces risk substantially but is not a complete container-escape mitigation on its own.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -224,7 +224,7 @@ _What the interviewer is probing for:_ Practical debugging instinct — diagnosi
 _What the interviewer is probing for:_ Understanding of allow-list versus deny-list security reasoning, applied to a concrete Kubernetes mechanism.
 
 **🎯 Architect:** _"Design the SecurityContext policy you'd enforce platform-wide across a large organization's Kubernetes workloads, and how you'd actually enforce it rather than just document it."_
-**Model answer:** I'd define a baseline template requiring `runAsNonRoot: true` with an explicit `runAsUser`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: ["ALL"]` with only justified additions, and a `seccompProfile.type: RuntimeDefault` at minimum — essentially codifying this section's baseline as the organizational default. Enforcement, though, can't rely on teams remembering to copy the template correctly; I'd apply the Pod Security Standards' Restricted profile (§77, Part 10) via Pod Security Admission at the namespace level for any namespace running production workloads, so non-compliant Pods are rejected outright at admission time rather than merely flagged in a review. For legitimate exceptions (a legacy vendor sidecar genuinely requiring root, for instance), I'd require those to run in a separately labeled namespace with a lower enforcement profile and an explicit, time-bound, reviewed exception ticket, rather than allowing the Restricted profile to be silently disabled wherever it's inconvenient. I'd also wire static manifest linting (kube-linter or Kubesec, §114, Part 15) into CI so violations are caught before a PR merges, not just at cluster admission time — catching a violation in CI is a faster, cheaper feedback loop for the developer than a rejected `kubectl apply` in a shared cluster.
+**Model answer:** I'd define a baseline template requiring `runAsNonRoot: true` with an explicit `runAsUser`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: ["ALL"]` with only justified additions, and a `seccompProfile.type: RuntimeDefault` at minimum — essentially codifying this section's baseline as the organizational default. Enforcement, though, can't rely on teams remembering to copy the template correctly; I'd apply the Pod Security Standards' Restricted profile ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) via Pod Security Admission at the namespace level for any namespace running production workloads, so non-compliant Pods are rejected outright at admission time rather than merely flagged in a review. For legitimate exceptions (a legacy vendor sidecar genuinely requiring root, for instance), I'd require those to run in a separately labeled namespace with a lower enforcement profile and an explicit, time-bound, reviewed exception ticket, rather than allowing the Restricted profile to be silently disabled wherever it's inconvenient. I'd also wire static manifest linting (kube-linter or Kubesec, [§114](../Part15/Section-114-Part15-System-Hardening-Minimizing-Host-OS-Attack-Surface-seccomp-AppArmor.md)) into CI so violations are caught before a PR merges, not just at cluster admission time — catching a violation in CI is a faster, cheaper feedback loop for the developer than a rejected `kubectl apply` in a shared cluster.
 _What the interviewer is probing for:_ Ability to translate a SecurityContext baseline into layered, actually-enforced governance (admission control plus CI linting plus an exception process), not just a written standard teams are expected to follow voluntarily.
 
 ## 12. Common Misconceptions
@@ -232,7 +232,7 @@ _What the interviewer is probing for:_ Ability to translate a SecurityContext ba
 1. **"Setting SecurityContext fields is optional hardening, not something that affects whether a Pod runs at all."** `runAsNonRoot: true` is actively enforced at container creation — a violating image causes `CreateContainerConfigError`, not a warning.
 2. **"A Pod-level SecurityContext setting guarantees the same behavior for every container in the Pod."** Any container can override a Pod-level default field-by-field; a hardened Pod-level block doesn't protect against one permissively-configured container.
 3. **"`readOnlyRootFilesystem: true` means the application can't write anything anywhere."** It only locks the root filesystem; explicitly mounted volumes remain writable unless separately marked read-only, which is exactly how applications needing scratch space are accommodated.
-4. **"SecurityContext alone is sufficient container hardening."** It's the essential baseline, but genuine defense-in-depth requires layering seccomp, AppArmor, and potentially a hardened runtime on top, covered at CKS depth in §115–§117.
+4. **"SecurityContext alone is sufficient container hardening."** It's the essential baseline, but genuine defense-in-depth requires layering seccomp, AppArmor, and potentially a hardened runtime on top, covered at CKS depth in [§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)–[§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md).
 
 ## 13. 🔑 Key Takeaways
 
@@ -240,10 +240,10 @@ _What the interviewer is probing for:_ Ability to translate a SecurityContext ba
 - `runAsNonRoot: true` is an actively enforced assertion at container start, not descriptive metadata — a violating image fails with `CreateContainerConfigError`.
 - `readOnlyRootFilesystem: true` combined with a narrowly scoped writable volume for actual write paths is the standard, high-value production pairing.
 - `capabilities.drop: ["ALL"]` plus a narrow, justified `add` list is a stronger, more auditable posture than trying to remove specific capabilities from a permissive default set.
-- This section's fields are the essential baseline that Pod Security Admission's Restricted profile (§77) enforces as policy, and that CKS-level material (§115–§121, Part 15) builds further hardening on top of.
+- This section's fields are the essential baseline that Pod Security Admission's Restricted profile ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) enforces as policy, and that CKS-level material ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)–[§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)) builds further hardening on top of.
 
 ## 14. Related Concepts & What's Next
 
-This section builds directly on §24's Pod spec anatomy, where SecurityContext fields first appeared inline, and connects forward to §77 (Part 10, Pod Security Standards and Pod Security Admission, which enforces much of this section's baseline as active policy) and to Part 15's CKS-level hardening material (§115–§121), which layers seccomp, AppArmor, and hardened container runtimes on top of the SecurityContext foundation established here. §46, next, moves from security posture to resource governance — requests, limits, and Quality-of-Service classes.
+This section builds directly on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)'s Pod spec anatomy, where SecurityContext fields first appeared inline, and connects forward to [§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md) (Part 10, Pod Security Standards and Pod Security Admission, which enforces much of this section's baseline as active policy) and to Part 15's CKS-level hardening material ([§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md)–[§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)), which layers seccomp, AppArmor, and hardened container runtimes on top of the SecurityContext foundation established here. [§46](./Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md), next, moves from security posture to resource governance — requests, limits, and Quality-of-Service classes.
 
-**Next Section:** §46 — `Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md`
+**Next Section:** [§46](./Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md) — `Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md`

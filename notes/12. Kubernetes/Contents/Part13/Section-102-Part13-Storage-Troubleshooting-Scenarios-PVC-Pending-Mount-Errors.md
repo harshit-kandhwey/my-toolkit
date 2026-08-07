@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** §64's toolkit gave you the ordered checklist for a stuck PVC or failed mount. This section goes one level deeper into specific, named failure scenarios — a StorageClass whose provisioner itself is failing (not just missing), a PV whose node affinity conflicts with where a Pod actually needs to run, and a CSI driver Pod crashing in a way that silently breaks storage for every workload on a node, not just one.
+**Plain language:** [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s toolkit gave you the ordered checklist for a stuck PVC or failed mount. This section goes one level deeper into specific, named failure scenarios — a StorageClass whose provisioner itself is failing (not just missing), a PV whose node affinity conflicts with where a Pod actually needs to run, and a CSI driver Pod crashing in a way that silently breaks storage for every workload on a node, not just one.
 
-**Precise definition:** This section catalogs **specific storage failure scenarios** that extend beyond §64's general diagnostic flow — dynamic-provisioning failures where the StorageClass and provisioner both exist but the provisioning call itself errors out (quota, IAM, or backend API failures), volume node-affinity conflicts examined in more topological depth than §64's introduction, and CSI driver crash scenarios where the node or controller plugin itself is unhealthy, producing symptoms that look like dozens of unrelated PVC problems at once. Each scenario follows the same object-state-first, node-access-last discipline established in §64 and §100.
+**Precise definition:** This section catalogs **specific storage failure scenarios** that extend beyond [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s general diagnostic flow — dynamic-provisioning failures where the StorageClass and provisioner both exist but the provisioning call itself errors out (quota, IAM, or backend API failures), volume node-affinity conflicts examined in more topological depth than [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s introduction, and CSI driver crash scenarios where the node or controller plugin itself is unhealthy, producing symptoms that look like dozens of unrelated PVC problems at once. Each scenario follows the same object-state-first, node-access-last discipline established in [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md) and [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md).
 
 ## 2. Why This Matters
 
 - **A StorageClass and its provisioner both existing and looking healthy doesn't guarantee provisioning succeeds** — cloud-side quota exhaustion, expired or under-scoped IAM credentials, and backend API throttling all produce a `Pending` PVC even when every Kubernetes-side object looks correct, and the real cause only surfaces in the CSI controller's own logs.
-- **Node affinity conflicts are easy to half-diagnose** — recognizing "volume node affinity conflict" in a `FailedScheduling` event (§64) is only the first half; understanding _why_ the volume landed in the wrong zone or node in the first place (immediate binding, a node pool that changed after provisioning, manual PV creation with a wrong label) determines whether the real fix is a StorageClass change, a node pool fix, or neither.
+- **Node affinity conflicts are easy to half-diagnose** — recognizing "volume node affinity conflict" in a `FailedScheduling` event ([§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)) is only the first half; understanding _why_ the volume landed in the wrong zone or node in the first place (immediate binding, a node pool that changed after provisioning, manual PV creation with a wrong label) determines whether the real fix is a StorageClass change, a node pool fix, or neither.
 - **A single unhealthy CSI driver Pod can present as many unrelated-looking tickets simultaneously** — "PVC A is stuck," "PVC B won't mount," "PVC C's Pod is CrashLooping on a mount timeout" can all trace back to one crashing CSI node plugin on one node, and treating them as three separate investigations wastes significant time.
 
 🔑 **Key Takeaway:** These scenarios share a common trap — the Kubernetes-side objects (StorageClass, PVC, PV) can all look entirely correct while the actual failure lives one layer down, in the CSI driver's own logs, the cloud provider's API responses, or the driver Pod's own health — so escalating to that layer promptly, once object-level checks are exhausted, is what separates a fast resolution from a long one.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §64 (storage troubleshooting toolkit) and §100 (Part 13's structured troubleshooting methodology), and assumes familiarity with §59 (StorageClasses/dynamic provisioning) and §60 (CSI architecture). Back-references §101 (networking troubleshooting scenarios) as the prior section in Part 13's scenario sequence, and forwards into §103 (application-level debugging).
+Builds directly on [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md) (storage troubleshooting toolkit) and [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md) (Part 13's structured troubleshooting methodology), and assumes familiarity with [§59](../Part8/Section-59-Part8-StorageClasses-Dynamic-Provisioning.md) (StorageClasses/dynamic provisioning) and [§60](../Part8/Section-60-Part8-CSI-Container-Storage-Interface-Architecture.md) (CSI architecture). Back-references [§101](./Section-101-Part13-Networking-Troubleshooting-Scenarios-Unreachable-Services-DNS-Failures.md) (networking troubleshooting scenarios) as the prior section in Part 13's scenario sequence, and forwards into [§103](./Section-103-Part13-Application-Level-Debugging-Misconfigured-Probes-Resource-Starvation-OOMKilled.md) (application-level debugging).
 
 ## 4. Architecture Diagram
 
@@ -56,15 +56,15 @@ Builds directly on §64 (storage troubleshooting toolkit) and §100 (Part 13's s
    └───────────────────────────────────────────────────────────────┘
 ```
 
-- Scenario A's key signal is that every Kubernetes-native object check passes — the failure only appears in the CSI controller container's own logs, one layer below what §64's Step 2 checks.
-- Scenario B extends §64's introduction of "volume node affinity conflict" by tracing the failure back to _why_ the mismatch occurred — usually `Immediate` binding combined with a node pool topology that shifted after the volume was already provisioned.
+- Scenario A's key signal is that every Kubernetes-native object check passes — the failure only appears in the CSI controller container's own logs, one layer below what [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s Step 2 checks.
+- Scenario B extends [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s introduction of "volume node affinity conflict" by tracing the failure back to _why_ the mismatch occurred — usually `Immediate` binding combined with a node pool topology that shifted after the volume was already provisioned.
 - Scenario C's key signal is the pattern across tickets, not any single ticket — multiple, differently-worded storage failures all tracing to Pods scheduled on the same node is the tell that the CSI node plugin itself, not any individual PVC, is the root cause.
 
 ## 5. Hands-On
 
 ### 5.1 Provisioner Healthy, But Provisioning Calls Fail (Quota/IAM)
 
-**Purpose:** Diagnose a `Pending` PVC where the StorageClass exists and the CSI controller Pod is Running, so §64's Step 2 passes cleanly, but the actual provisioning API call is failing.
+**Purpose:** Diagnose a `Pending` PVC where the StorageClass exists and the CSI controller Pod is Running, so [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s Step 2 passes cleanly, but the actual provisioning API call is failing.
 
 **Syntax:**
 
@@ -95,7 +95,7 @@ E0731 provisioner.go:284 error creating volume: rpc error: code = ResourceExhaus
 
 ### 5.2 Node Affinity Conflict Traced to Its Root Cause
 
-**Purpose:** Go beyond recognizing "volume node affinity conflict" (§64) to determine _why_ the volume ended up in a zone with no eligible nodes, and apply the correct fix at the right layer.
+**Purpose:** Go beyond recognizing "volume node affinity conflict" ([§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)) to determine _why_ the volume ended up in a zone with no eligible nodes, and apply the correct fix at the right layer.
 
 **Syntax:**
 
@@ -163,9 +163,9 @@ Warning  BackOff  90s (x30 over 20m)  kubelet
 
 ## 7. Security Considerations
 
-- CSI controller logs (Scenario A) can reveal cloud-account-level details (account IDs, IAM role ARNs, quota limits) — treat `kube-system` log access with the same care as any other control-plane-adjacent log source (§113, Part 15).
+- CSI controller logs (Scenario A) can reveal cloud-account-level details (account IDs, IAM role ARNs, quota limits) — treat `kube-system` log access with the same care as any other control-plane-adjacent log source ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 - Overly broad IAM permissions granted to a CSI driver to "make provisioning errors go away" is a common but risky over-correction — a `ResourceExhausted` or permission-denied error should be diagnosed and right-sized, not resolved by granting the driver's service account broader cloud permissions than it needs.
-- CSI driver Pods typically run with elevated node-level privileges (to perform mount operations) — restricting who can modify their DaemonSet manifests or exec into them is as important as restricting raw node access itself (§56, §64).
+- CSI driver Pods typically run with elevated node-level privileges (to perform mount operations) — restricting who can modify their DaemonSet manifests or exec into them is as important as restricting raw node access itself ([§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md), [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -204,7 +204,7 @@ _What the interviewer is probing for:_ Distinguishing a symptom-level fix from a
 _What the interviewer is probing for:_ Pattern recognition across seemingly unrelated tickets, and knowing to check shared infrastructure (a single node's CSI plugin) before investigating each symptom independently.
 
 **🎯 Architect:** _"How would you build safeguards so cloud-provider volume quota exhaustion doesn't surface first as a production incident?"_
-**Model answer:** I'd treat cloud-provider storage quotas the same way I'd treat any other finite capacity resource — with proactive monitoring and alerting on headroom, not just reactive diagnosis when a PVC gets stuck. Concretely, that means exporting quota utilization metrics (via the cloud provider's own APIs or a periodic check) into the same monitoring stack as cluster resource metrics (§92, Part 12), with an alert threshold well before the hard limit, giving the platform team time to request an increase or clean up unused volumes before it becomes user-facing. I'd also build a lightweight automated check for orphaned volumes (PVs with `Reclaim: Retain` left behind by deleted PVCs) since these silently consume quota without any workload actively using them, and are a common, avoidable contributor to hitting the ceiling sooner than expected. Finally, I'd fold the CSI controller sidecar logs into the same centralized logging pipeline (§94, Part 12) used for everything else, so `ResourceExhausted`-class errors are visible in dashboards rather than requiring someone to manually `kubectl logs` into a specific controller Pod during an active incident.
+**Model answer:** I'd treat cloud-provider storage quotas the same way I'd treat any other finite capacity resource — with proactive monitoring and alerting on headroom, not just reactive diagnosis when a PVC gets stuck. Concretely, that means exporting quota utilization metrics (via the cloud provider's own APIs or a periodic check) into the same monitoring stack as cluster resource metrics ([§92](../Part12/Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)), with an alert threshold well before the hard limit, giving the platform team time to request an increase or clean up unused volumes before it becomes user-facing. I'd also build a lightweight automated check for orphaned volumes (PVs with `Reclaim: Retain` left behind by deleted PVCs) since these silently consume quota without any workload actively using them, and are a common, avoidable contributor to hitting the ceiling sooner than expected. Finally, I'd fold the CSI controller sidecar logs into the same centralized logging pipeline ([§94](../Part12/Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md)) used for everything else, so `ResourceExhausted`-class errors are visible in dashboards rather than requiring someone to manually `kubectl logs` into a specific controller Pod during an active incident.
 _What the interviewer is probing for:_ Proactive capacity monitoring and centralized observability applied specifically to storage quota, rather than relying purely on reactive per-incident diagnosis.
 
 ## 12. Common Misconceptions
@@ -224,6 +224,6 @@ _What the interviewer is probing for:_ Proactive capacity monitoring and central
 
 ## 14. Related Concepts & What's Next
 
-This section extends §64's storage troubleshooting toolkit with deeper scenario coverage, building on §59 (StorageClasses/dynamic provisioning) and §60 (CSI architecture), and follows §101's networking scenario deep dive as the second entry in Part 13's scenario sequence. §103 moves from infrastructure-layer troubleshooting (networking, storage) into application-level debugging next.
+This section extends [§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)'s storage troubleshooting toolkit with deeper scenario coverage, building on [§59](../Part8/Section-59-Part8-StorageClasses-Dynamic-Provisioning.md) (StorageClasses/dynamic provisioning) and [§60](../Part8/Section-60-Part8-CSI-Container-Storage-Interface-Architecture.md) (CSI architecture), and follows [§101](./Section-101-Part13-Networking-Troubleshooting-Scenarios-Unreachable-Services-DNS-Failures.md)'s networking scenario deep dive as the second entry in Part 13's scenario sequence. [§103](./Section-103-Part13-Application-Level-Debugging-Misconfigured-Probes-Resource-Starvation-OOMKilled.md) moves from infrastructure-layer troubleshooting (networking, storage) into application-level debugging next.
 
-**Next Section:** §103 — `Section-103-Part13-Application-Level-Debugging-Misconfigured-Probes-Resource-Starvation-OOMKilled.md`
+**Next Section:** [§103](./Section-103-Part13-Application-Level-Debugging-Misconfigured-Probes-Resource-Starvation-OOMKilled.md) — `Section-103-Part13-Application-Level-Debugging-Misconfigured-Probes-Resource-Starvation-OOMKilled.md`

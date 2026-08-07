@@ -4,19 +4,19 @@
 
 **Plain language:** Not every Kubernetes cluster needs a fleet of servers and a dedicated platform team. Sometimes you just want a real, working cluster on your laptop in under a minute, or a small, resource-frugal cluster running on a single edge device — and a separate family of tools exists specifically for that.
 
-**Precise definition:** **k3s**, **MicroK8s**, **kind**, and **minikube** are lightweight, CNCF-conformant Kubernetes distributions purpose-built for **local development, CI pipelines, edge/IoT deployments, and learning environments**, rather than large-scale production traffic. They achieve their small footprint and fast startup through different mechanisms — k3s strips and consolidates control-plane binaries into a single lightweight process with a smaller default datastore, MicroK8s ships as a single confined snap package with pluggable add-ons, kind runs entire Kubernetes nodes as Docker containers on a single host, and minikube provisions a local VM (or container) running a full or near-full Kubernetes stack. All four were previewed at a summary level in §5; this section covers the actual installation and day-to-day usage mechanics of each.
+**Precise definition:** **k3s**, **MicroK8s**, **kind**, and **minikube** are lightweight, CNCF-conformant Kubernetes distributions purpose-built for **local development, CI pipelines, edge/IoT deployments, and learning environments**, rather than large-scale production traffic. They achieve their small footprint and fast startup through different mechanisms — k3s strips and consolidates control-plane binaries into a single lightweight process with a smaller default datastore, MicroK8s ships as a single confined snap package with pluggable add-ons, kind runs entire Kubernetes nodes as Docker containers on a single host, and minikube provisions a local VM (or container) running a full or near-full Kubernetes stack. All four were previewed at a summary level in [§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md); this section covers the actual installation and day-to-day usage mechanics of each.
 
 ## 2. Why This Matters
 
-- **Local iteration speed directly affects developer productivity.** A developer who can spin up a disposable, conformant cluster in seconds to validate a manifest change iterates far faster than one who must push to a shared staging cluster for every test — a workflow difference that compounds across a team over months (§32, Part 4 covers the `kubectl apply` workflow these tools make fast to practice).
-- **CI pipelines depend on ephemeral clusters, and kind is the dominant choice for that job.** Testing Helm charts (§83, Part 11) or raw manifests against a real API server, then discarding the cluster, is only practical because kind clusters start in seconds and cost nothing beyond compute time already budgeted for CI.
-- **Edge and resource-constrained deployments are a legitimate production use case for k3s/MicroK8s specifically** — unlike kind/minikube, these two are sometimes run in production at the edge (retail point-of-sale, industrial IoT), which is why understanding their operational differences from kind/minikube matters beyond "which is easiest to install" (§16, Part 3 covers the heavier kubeadm alternative for comparison).
+- **Local iteration speed directly affects developer productivity.** A developer who can spin up a disposable, conformant cluster in seconds to validate a manifest change iterates far faster than one who must push to a shared staging cluster for every test — a workflow difference that compounds across a team over months ([§32](../Part4/Section-32-Part4-YAML-Manifest-Authoring-Kubectl-Apply-Workflow.md) covers the `kubectl apply` workflow these tools make fast to practice).
+- **CI pipelines depend on ephemeral clusters, and kind is the dominant choice for that job.** Testing Helm charts ([§83](../Part11/Section-83-Part11-Writing-Helm-Charts-Templates-Values-Helpers.md)) or raw manifests against a real API server, then discarding the cluster, is only practical because kind clusters start in seconds and cost nothing beyond compute time already budgeted for CI.
+- **Edge and resource-constrained deployments are a legitimate production use case for k3s/MicroK8s specifically** — unlike kind/minikube, these two are sometimes run in production at the edge (retail point-of-sale, industrial IoT), which is why understanding their operational differences from kind/minikube matters beyond "which is easiest to install" ([§16](./Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md) covers the heavier kubeadm alternative for comparison).
 
 🔑 **Key Takeaway:** k3s, MicroK8s, kind, and minikube all deliver conformant Kubernetes clusters with minimal setup cost, but they are not interchangeable — kind and minikube are strictly local/CI tools, while k3s and MicroK8s are lightweight enough for genuine edge production use, and picking the wrong one for the job wastes either developer time or operational reliability.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §5 (distribution spectrum overview, where these four tools were first introduced at a summary level) and assumes Docker/container fundamentals from §6. No other new external prerequisites.
+Builds on [§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) (distribution spectrum overview, where these four tools were first introduced at a summary level) and assumes Docker/container fundamentals from [§6](../Part1/Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md). No other new external prerequisites.
 
 ## 4. Architecture Comparison
 
@@ -124,7 +124,7 @@ $ minikube addons enable ingress
 🌟  The 'ingress' addon is enabled
 ```
 
-**Production usage example:** Developers commonly keep a single long-lived minikube instance running locally for weeks at a time while iterating on manifests, using `minikube addons enable ingress` and `minikube tunnel` to fully exercise Ingress-based routing (§85, Part 7) without needing any external infrastructure.
+**Production usage example:** Developers commonly keep a single long-lived minikube instance running locally for weeks at a time while iterating on manifests, using `minikube addons enable ingress` and `minikube tunnel` to fully exercise Ingress-based routing ([§53](../Part7/Section-53-Part7-Ingress-Ingress-Controllers.md)) without needing any external infrastructure.
 
 **Common errors:** `minikube start` hanging or failing on `--driver=docker` when the host's Docker daemon has insufficient memory allocated (common on Docker Desktop with default resource limits) — increasing Docker Desktop's memory allocation resolves the majority of these failures.
 
@@ -169,7 +169,7 @@ edge-node  Ready    control-plane,master   30s   v1.30.2+k3s1
 ## 7. Security Considerations
 
 - None of these four tools should ever have their API server exposed to an untrusted network by default — kind, minikube, and MicroK8s all bind to localhost or a private bridge network out of the box specifically because they assume a trusted, single-user host.
-- k3s ships with several defaults tuned for edge convenience (e.g., a bundled Traefik ingress controller, permissive default network policy) that should be explicitly reviewed and hardened before any edge production rollout, rather than assumed safe as-is (§113, Part 15 covers CIS benchmark hardening applicable here).
+- k3s ships with several defaults tuned for edge convenience (e.g., a bundled Traefik ingress controller, permissive default network policy) that should be explicitly reviewed and hardened before any edge production rollout, rather than assumed safe as-is ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) covers CIS benchmark hardening applicable here).
 - Because these tools are frequently run with elevated local privileges (root-level installs for k3s, privileged Docker containers for kind), treat the host machine itself as part of the cluster's security boundary — a compromised laptop or CI runner running any of these tools exposes the "cluster" trivially.
 
 ## 8. Common Troubleshooting Scenarios
@@ -184,7 +184,7 @@ edge-node  Ready    control-plane,master   30s   v1.30.2+k3s1
 
 - Default to kind for CI and any scenario needing multiple ephemeral nodes quickly; default to minikube when richer built-in add-ons (dashboard, tunnel-based LoadBalancer support) are wanted for a single long-lived local cluster.
 - For genuine edge or resource-constrained production use, choose k3s or MicroK8s deliberately and explicitly configure their HA datastore options rather than accepting single-node defaults for anything meant to be durable.
-- Pin the Kubernetes version of any local/CI cluster (`--kubernetes-version` on minikube, node image tag on kind) to match the target production cluster's version, avoiding "works locally, fails in prod" version-skew surprises (§111, Part 14 covers version skew policy).
+- Pin the Kubernetes version of any local/CI cluster (`--kubernetes-version` on minikube, node image tag on kind) to match the target production cluster's version, avoiding "works locally, fails in prod" version-skew surprises ([§111](../Part14/Section-111-Part14-Version-Skew-Policy-Deprecation-Handling.md) covers version skew policy).
 
 ## 10. Common Anti-Patterns / Mistakes
 
@@ -227,6 +227,6 @@ _What the interviewer is probing for:_ Ability to map a specific operational con
 
 ## 14. Related Concepts & What's Next
 
-§5 introduced all four tools at a summary level within the broader distribution spectrum; this section supplied the actual installation and operational mechanics. §16 (kubeadm) and §21 (managed cloud bootstrap differences) cover the heavier, fully self-managed and provider-managed alternatives these lightweight tools are contrasted against. §23 closes out Part 3 by covering the cluster networking prerequisites — including CNI plugin selection — that apply at install time across all of these distributions, lightweight or otherwise.
+[§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) introduced all four tools at a summary level within the broader distribution spectrum; this section supplied the actual installation and operational mechanics. [§16](./Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md) (kubeadm) and [§21](./Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md) (managed cloud bootstrap differences) cover the heavier, fully self-managed and provider-managed alternatives these lightweight tools are contrasted against. [§23](./Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) closes out Part 3 by covering the cluster networking prerequisites — including CNI plugin selection — that apply at install time across all of these distributions, lightweight or otherwise.
 
-**Next Section:** §23 — `Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md`
+**Next Section:** [§23](./Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) — `Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md`

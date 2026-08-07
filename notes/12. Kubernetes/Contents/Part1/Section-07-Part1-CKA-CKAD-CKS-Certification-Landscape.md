@@ -9,14 +9,14 @@
 ## 2. Why Understanding This Landscape Matters
 
 - **These exams test doing, not recalling.** Because CKA/CKAD/CKS are 100% performance-based (candidates complete real tasks against a live cluster under a timer), memorizing facts is far less valuable than practiced hands-on fluency with `kubectl`, YAML authoring speed, and the exam's permitted documentation. This is why every section in this roadmap includes a "Hands-On" segment with real commands, not just conceptual explanation.
-- **The three exams test different job roles, not different skill "levels."** CKAD is not "CKA but easier" — it's a different focus (application deployment vs. cluster administration) with real overlapping content but a genuinely different center of gravity, which is why §6's reading-priority guidance differs meaningfully between them.
+- **The three exams test different job roles, not different skill "levels."** CKAD is not "CKA but easier" — it's a different focus (application deployment vs. cluster administration) with real overlapping content but a genuinely different center of gravity, which is why [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s reading-priority guidance differs meaningfully between them.
 - **CKS's CKA prerequisite is a hard gate, not just a suggestion.** A candidate cannot sit the CKS exam without holding an active CKA certification, which directly shapes the order this roadmap expects CKS-track readers to actually attempt the exams in, even though the content itself (Part 15) can be studied at any point.
 
 🔑 **Key Takeaway:** All three Kubernetes certifications are hands-on, terminal-based exams testing real operational skill under time pressure — which is exactly why this roadmap emphasizes practiced command fluency throughout, not just conceptual understanding, and why Part 17's exam prep is built around timed scenario practice rather than a multiple-choice question bank.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §6's roadmap-organization overview; this section is the certification-specific deepening of that overview.
+Builds on [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s roadmap-organization overview; this section is the certification-specific deepening of that overview.
 
 ## 4. The Three Certifications Compared
 
@@ -49,12 +49,12 @@ Builds on §6's roadmap-organization overview; this section is the certification
 
 **CKS domains** (see `00-Roadmap.md` for the full breakdown — requires active CKA):
 
-- Cluster Setup (10%) → §113
-- Cluster Hardening (15%) → Part 10, §113
-- System Hardening (15%) → §114
-- Minimize Microservice Vulnerabilities (20%) → §115, §119, §120
-- Supply Chain Security (20%) → §116, §117
-- Monitoring, Logging and Runtime Security (20%) → Part 12, §118, §121
+- Cluster Setup (10%) → [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)
+- Cluster Hardening (15%) → Part 10, [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)
+- System Hardening (15%) → [§114](../Part15/Section-114-Part15-System-Hardening-Minimizing-Host-OS-Attack-Surface-seccomp-AppArmor.md)
+- Minimize Microservice Vulnerabilities (20%) → [§115](../Part15/Section-115-Part15-Minimizing-Microservice-Vulnerabilities-SecurityContext-Hardening-gVisor-Kata.md), [§119](../Part15/Section-119-Part15-Network-Security-Deep-Dive-mTLS-Service-Mesh-Security.md), [§120](../Part15/Section-120-Part15-Secrets-Encryption-External-Secret-Stores-Deep-Dive.md)
+- Supply Chain Security (20%) → [§116](../Part15/Section-116-Part15-Supply-Chain-Security-Image-Scanning-Trivy-Signing-Cosign-Sigstore-SBOM.md), [§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md)
+- Monitoring, Logging and Runtime Security (20%) → Part 12, [§118](../Part15/Section-118-Part15-Runtime-Security-Threat-Detection-Falco.md), [§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)
 
 ## 6. Hands-On: What "Performance-Based" Actually Means in Practice
 
@@ -76,9 +76,9 @@ $ kubectl expose deployment web --port=80 -n prod
 
 ## 7. Production Usage Notes: How This Shapes Part 17 and 18
 
-- **Part 17 (§130–137) is built around scenario tasks, not a multiple-choice question bank** — deliberately mirroring the actual exam format, with separate CKA-style, CKAD-style, and CKS-style scenario sections (§135–137).
-- **Part 18's hands-on labs (§138)** are explicitly designed as timed, exam-simulation practice — the roadmap's final practical checkpoint before attempting a real certification.
-- **kubectl speed techniques (§134)** — aliases, imperative one-liners, `--dry-run=client -o yaml` for fast YAML generation — are covered as a dedicated section specifically because exam time pressure makes raw command efficiency a real, scoreable skill, not a minor convenience.
+- **Part 17 ([§130](../Part17/Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md)) is built around scenario tasks, not a multiple-choice question bank** — deliberately mirroring the actual exam format, with separate CKA-style, CKAD-style, and CKS-style scenario sections ([§135](../Part17/Section-135-Part17-CKAD-Style-Scenario-Question-Bank.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md)).
+- **Part 18's hands-on labs ([§138](../Part18/Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md))** are explicitly designed as timed, exam-simulation practice — the roadmap's final practical checkpoint before attempting a real certification.
+- **kubectl speed techniques ([§134](../Part17/Section-134-Part17-CKA-Style-Scenario-Question-Bank.md))** — aliases, imperative one-liners, `--dry-run=client -o yaml` for fast YAML generation — are covered as a dedicated section specifically because exam time pressure makes raw command efficiency a real, scoreable skill, not a minor convenience.
 
 ## 8. Security Considerations
 
@@ -86,15 +86,15 @@ CKS exists as a separate, deeper certification specifically because Kubernetes s
 
 ## 9. Common Troubleshooting Scenarios
 
-| Symptom                                                            | Likely Cause                                                            | Resolution Path                                                                    |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Confident in concepts but running out of time on practice exams    | Insufficient raw hands-on `kubectl` repetition; over-indexed on reading | Shift practice time toward Part 18's timed labs and §134's speed techniques        |
-| Attempted to register for CKS but registration is blocked          | No active CKA certification on file                                     | Complete and pass CKA first — this is a hard platform-enforced prerequisite        |
-| Studied CKA-weighted material for what turns out to be a CKAD goal | Didn't apply §6's certification-specific reading-priority guidance      | Re-check the domain tables in §5 above and reprioritize toward CKAD-relevant Parts |
+| Symptom                                                            | Likely Cause                                                                                                                                  | Resolution Path                                                                                                                                        |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Confident in concepts but running out of time on practice exams    | Insufficient raw hands-on `kubectl` repetition; over-indexed on reading                                                                       | Shift practice time toward Part 18's timed labs and [§134](../Part17/Section-134-Part17-CKA-Style-Scenario-Question-Bank.md)'s speed techniques        |
+| Attempted to register for CKS but registration is blocked          | No active CKA certification on file                                                                                                           | Complete and pass CKA first — this is a hard platform-enforced prerequisite                                                                            |
+| Studied CKA-weighted material for what turns out to be a CKAD goal | Didn't apply [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s certification-specific reading-priority guidance | Re-check the domain tables in [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) above and reprioritize toward CKAD-relevant Parts |
 
 ## 10. Best Practices
 
-- Identify which certification (if any) is the actual goal before allocating study time, and use §5's domain tables to prioritize accordingly rather than reading uniformly.
+- Identify which certification (if any) is the actual goal before allocating study time, and use [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)'s domain tables to prioritize accordingly rather than reading uniformly.
 - Practice hands-on, timed `kubectl` scenarios throughout the roadmap, not only in Part 17 — the exam format rewards practiced speed, not just conceptual correctness.
 - If CKS is the eventual goal, treat CKA as a hard sequencing requirement, not a suggestion, and plan study/exam timing accordingly.
 
@@ -119,7 +119,7 @@ _What the interviewer is probing for:_ Understanding that exam format should dir
 _What the interviewer is probing for:_ Accurate knowledge of a real, occasionally-misunderstood platform constraint, and the ability to explain the pedagogical reasoning behind it rather than treating it as arbitrary.
 
 **🎯 Architect:** _"You're setting a Kubernetes certification strategy for a platform team of 15 engineers with mixed roles (SRE, security, and application-platform engineers). How do you map this roadmap and these three certifications onto that team?"_
-**Model answer:** I'd map roles to certifications rather than mandating one exam for everyone: SRE/platform engineers toward CKA (and later CKS, once CKA is held, for anyone moving into a dedicated security-adjacent role), application-platform engineers building internal developer tooling toward CKAD, and any engineer with an explicit security remit toward the full CKA→CKS path. I'd use this roadmap's phase structure as the shared onboarding curriculum for everyone (Parts 1–9 build common ground), then branch study priority using §5's domain-weighting tables once a role-specific exam target is set, rather than having all 15 engineers work through all 141 sections with equal depth regardless of role. The goal is matching certification investment to actual job function, since CKA, CKAD, and CKS have real, different centers of gravity despite sharing foundational material.
+**Model answer:** I'd map roles to certifications rather than mandating one exam for everyone: SRE/platform engineers toward CKA (and later CKS, once CKA is held, for anyone moving into a dedicated security-adjacent role), application-platform engineers building internal developer tooling toward CKAD, and any engineer with an explicit security remit toward the full CKA→CKS path. I'd use this roadmap's phase structure as the shared onboarding curriculum for everyone (Parts 1–9 build common ground), then branch study priority using [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)'s domain-weighting tables once a role-specific exam target is set, rather than having all 15 engineers work through all 141 sections with equal depth regardless of role. The goal is matching certification investment to actual job function, since CKA, CKAD, and CKS have real, different centers of gravity despite sharing foundational material.
 _What the interviewer is probing for:_ Ability to turn certification landscape knowledge into an actual team-level training and role-mapping strategy, not just individual exam advice.
 
 ## 13. Common Misconceptions
@@ -132,12 +132,12 @@ _What the interviewer is probing for:_ Ability to turn certification landscape k
 
 - CKA, CKAD, and CKS are all Linux Foundation/CNCF performance-based exams conducted in a live terminal against real clusters, not multiple-choice tests.
 - Each targets a distinct role: CKA (cluster administration), CKAD (application deployment), CKS (security hardening — requires active CKA first).
-- This roadmap's §5 domain tables (in `00-Roadmap.md`) map every official exam domain from all three certifications to specific Parts, enabling certification-targeted reading priority per §6's guidance.
+- This roadmap's [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) domain tables (in `00-Roadmap.md`) map every official exam domain from all three certifications to specific Parts, enabling certification-targeted reading priority per [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s guidance.
 - The performance-based format means hands-on, timed practice — not just reading — is essential preparation, which is why this roadmap's Hands-On sections and Part 17–18's scenario/lab content exist as designed.
 - Certification strategy for a team should map roles to exams rather than mandating uniform certification targets across different job functions.
 
 ## 15. Related Concepts & What's Next
 
-§5–§6 established the roadmap's structure and prerequisites this section's certification mapping builds directly on. Part 2 (§8–§15) begins the actual technical content — Cluster Architecture — which is simultaneously CKA's highest-weighted domain (25%) and this roadmap's next Part. §130–§137 (Part 17) delivers the full exam-strategy and scenario-question-bank content this section only previewed. §113–§121 (Part 15) delivers the CKS-specific deep dive this section's domain table referenced only at a summary level.
+[§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)–[§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md) established the roadmap's structure and prerequisites this section's certification mapping builds directly on. Part 2 ([§8](../Part2/Section-08-Part2-Control-Plane-Components.md)–[§15](../Part2/Section-15-Part2-High-Availability-Control-Plane-Architectures.md)) begins the actual technical content — Cluster Architecture — which is simultaneously CKA's highest-weighted domain (25%) and this roadmap's next Part. [§130](../Part17/Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md) delivers the full exam-strategy and scenario-question-bank content this section only previewed. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)–[§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md) delivers the CKS-specific deep dive this section's domain table referenced only at a summary level.
 
-**Next Section:** §8 — `Section-08-Part2-Control-Plane-Components.md`
+**Next Section:** [§8](../Part2/Section-08-Part2-Control-Plane-Components.md) — `Section-08-Part2-Control-Plane-Components.md`

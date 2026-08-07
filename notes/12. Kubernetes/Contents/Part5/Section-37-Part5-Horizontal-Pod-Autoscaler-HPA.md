@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** A Deployment (§28) declares a fixed replica count, but real traffic doesn't hold still — it spikes at lunch, drops overnight, and surges during a marketing push. Manually editing `replicas` to chase that curve doesn't scale as an operating model. The Horizontal Pod Autoscaler automates exactly that edit: it watches a metric, compares it against a target, and adjusts the replica count of a Deployment, ReplicaSet (§27), or StatefulSet (§33) up or down on a recurring schedule, with no human in the loop.
+**Plain language:** A Deployment ([§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md)) declares a fixed replica count, but real traffic doesn't hold still — it spikes at lunch, drops overnight, and surges during a marketing push. Manually editing `replicas` to chase that curve doesn't scale as an operating model. The Horizontal Pod Autoscaler automates exactly that edit: it watches a metric, compares it against a target, and adjusts the replica count of a Deployment, ReplicaSet ([§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)), or StatefulSet ([§33](./Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)) up or down on a recurring schedule, with no human in the loop.
 
-**Precise definition:** The **HorizontalPodAutoscaler (HPA)** is a Kubernetes API object and accompanying controller (running inside kube-controller-manager) that periodically queries a **metrics source** for a target workload's current metric value, computes a **desired replica count** using the formula `desiredReplicas = ceil(currentReplicas × (currentMetricValue / desiredMetricValue))`, and — subject to configured min/max bounds and stabilization windows — patches the target's `spec.replicas` field to match. HPA reads metrics through the **metrics.k8s.io** (resource metrics: CPU/memory, served by metrics-server), **custom.metrics.k8s.io** (per-Pod or per-object custom metrics, e.g., queue depth), and **external.metrics.k8s.io** (metrics from outside the cluster, e.g., a cloud provider queue length) APIs — HPA itself contains no metric-collection logic; without a working metrics pipeline (§89, Part 12) registered against one of these APIs, HPA has nothing to act on and cannot function.
+**Precise definition:** The **HorizontalPodAutoscaler (HPA)** is a Kubernetes API object and accompanying controller (running inside kube-controller-manager) that periodically queries a **metrics source** for a target workload's current metric value, computes a **desired replica count** using the formula `desiredReplicas = ceil(currentReplicas × (currentMetricValue / desiredMetricValue))`, and — subject to configured min/max bounds and stabilization windows — patches the target's `spec.replicas` field to match. HPA reads metrics through the **metrics.k8s.io** (resource metrics: CPU/memory, served by metrics-server), **custom.metrics.k8s.io** (per-Pod or per-object custom metrics, e.g., queue depth), and **external.metrics.k8s.io** (metrics from outside the cluster, e.g., a cloud provider queue length) APIs — HPA itself contains no metric-collection logic; without a working metrics pipeline ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)) registered against one of these APIs, HPA has nothing to act on and cannot function.
 
 ## 2. Why This Matters
 
-- **HPA is the mechanism that makes "elastic" mean something concrete in Kubernetes.** Without it, the replica counts set in §27/§28 are static declarations that a human must revise by hand every time load shifts — HPA turns replica count itself into a second, continuously reconciled desired state, layered on top of the Deployment's own reconciliation loop.
-- **It has a hard, easy-to-forget dependency on the metrics pipeline covered in §89 (Part 12).** An HPA object with no metrics-server (or custom/external metrics adapter) installed and healthy will sit reporting `<unknown>` for its current metric indefinitely — a very common "HPA doesn't do anything" support case that is actually a missing-prerequisite case, not an HPA bug.
-- **HPA only ever changes replica count — it never changes what a single Pod is allowed to consume.** That's a distinct axis of scaling (§38, Vertical Pod Autoscaler) that a lot of engineers conflate with HPA until the distinction is made explicit.
+- **HPA is the mechanism that makes "elastic" mean something concrete in Kubernetes.** Without it, the replica counts set in [§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md)/[§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) are static declarations that a human must revise by hand every time load shifts — HPA turns replica count itself into a second, continuously reconciled desired state, layered on top of the Deployment's own reconciliation loop.
+- **It has a hard, easy-to-forget dependency on the metrics pipeline covered in [§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md).** An HPA object with no metrics-server (or custom/external metrics adapter) installed and healthy will sit reporting `<unknown>` for its current metric indefinitely — a very common "HPA doesn't do anything" support case that is actually a missing-prerequisite case, not an HPA bug.
+- **HPA only ever changes replica count — it never changes what a single Pod is allowed to consume.** That's a distinct axis of scaling ([§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md), Vertical Pod Autoscaler) that a lot of engineers conflate with HPA until the distinction is made explicit.
 
-🔑 **Key Takeaway:** HPA is a periodic reconciliation loop that adjusts replica count based on live metrics fetched from the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs — it has zero built-in metric collection of its own, so a functioning metrics pipeline (§89) is a strict prerequisite, not an optional add-on.
+🔑 **Key Takeaway:** HPA is a periodic reconciliation loop that adjusts replica count based on live metrics fetched from the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs — it has zero built-in metric collection of its own, so a functioning metrics pipeline ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)) is a strict prerequisite, not an optional add-on.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §27 (ReplicaSets, the object whose `replicas` field HPA ultimately patches) and §28 (Deployments, the most common HPA scale target); depends on the metrics pipeline detailed in §89 (Part 12) to have any data to act on.
+Builds directly on [§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) (ReplicaSets, the object whose `replicas` field HPA ultimately patches) and [§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) (Deployments, the most common HPA scale target); depends on the metrics pipeline detailed in [§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md) to have any data to act on.
 
 ## 4. Architecture Diagram
 
@@ -110,7 +110,7 @@ app-hpa   Deployment/app     45%/60%   3         20        4          2m
 
 **Production usage example:** The `behavior` block's asymmetric policy — instant scale-up in bursts of up to 4 Pods per minute, but a 5-minute stabilization window before scaling down — is standard for latency-sensitive services, absorbing traffic spikes quickly while avoiding premature scale-down during brief metric dips.
 
-**Common errors:** Requesting `resource: cpu` on containers with no `resources.requests.cpu` set (§6, Part 6, once written) results in a `TARGETS` column showing `<unknown>/60%` — utilization targets are computed as a percentage of the request, so an unset request makes the percentage undefined, not zero.
+**Common errors:** Requesting `resource: cpu` on containers with no `resources.requests.cpu` set ([§46](../Part6/Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md)) results in a `TARGETS` column showing `<unknown>/60%` — utilization targets are computed as a percentage of the request, so an unset request makes the percentage undefined, not zero.
 
 ### 5.2 Diagnosing an HPA Stuck at `<unknown>`
 
@@ -132,7 +132,7 @@ $ kubectl get apiservices | grep metrics
 v1beta1.metrics.k8s.io                False (MissingEndpoints)
 ```
 
-**Production usage example:** `MissingEndpoints` on the `metrics.k8s.io` APIService almost always means metrics-server isn't installed or its Pod is unhealthy — the fix is installing or repairing metrics-server (§89), not touching the HPA object at all.
+**Production usage example:** `MissingEndpoints` on the `metrics.k8s.io` APIService almost always means metrics-server isn't installed or its Pod is unhealthy — the fix is installing or repairing metrics-server ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)), not touching the HPA object at all.
 
 **Common errors:** Assuming a `<unknown>` target means the HPA YAML itself is wrong; in the overwhelming majority of cases the HPA spec is fine and the metrics pipeline is the actual gap.
 
@@ -171,7 +171,7 @@ spec:
 ## 6. Production Usage Notes
 
 - **`autoscaling/v2` (formerly `v2beta2`) is the API version to use for anything beyond a single CPU metric** — `autoscaling/v1` only supports CPU utilization and lacks the `behavior` block entirely; most production HPAs should be authored directly as `v2` manifests rather than generated via `kubectl autoscale`, which only produces a `v1`-style single-metric object.
-- **HPA and a CI/CD pipeline that also sets `replicas` in its manifests will fight each other** — once an HPA is targeting a Deployment, any subsequent `kubectl apply` that includes an explicit `replicas` value will be immediately overridden on the next HPA sync; GitOps pipelines (§88, Part 11) commonly omit `replicas` entirely from Deployment manifests once HPA owns that field.
+- **HPA and a CI/CD pipeline that also sets `replicas` in its manifests will fight each other** — once an HPA is targeting a Deployment, any subsequent `kubectl apply` that includes an explicit `replicas` value will be immediately overridden on the next HPA sync; GitOps pipelines ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) commonly omit `replicas` entirely from Deployment manifests once HPA owns that field.
 - **Multiple metrics in one HPA use a "highest wins" resolution** — when several metrics are specified, the HPA controller computes a desired replica count per metric and scales to the largest resulting number, so a workload can be simultaneously protected against CPU pressure and queue backlog without either metric being silently ignored.
 
 ## 7. Security Considerations
@@ -181,29 +181,29 @@ spec:
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                             | Likely Cause                                                           | Resolution Path                                                                   |
-| --------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `TARGETS` column shows `<unknown>/60%`              | metrics-server (or custom/external adapter) not installed or unhealthy | Check `kubectl get apiservices`; repair or install the metrics pipeline (§89)     |
-| Replica count oscillates rapidly up and down        | No or too-short stabilization window on scale-down                     | Set `behavior.scaleDown.stabilizationWindowSeconds` to a larger value (e.g., 300) |
-| HPA computes a target but replicas never change     | `minReplicas`/`maxReplicas` bounds already satisfied at current level  | Confirm the computed desired count against the configured min/max clamp           |
-| CI/CD keeps resetting replicas, undoing HPA scaling | Deployment manifest still hardcodes `spec.replicas`                    | Remove `replicas` from the manifest once an HPA owns that field                   |
+| Symptom                                             | Likely Cause                                                           | Resolution Path                                                                                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TARGETS` column shows `<unknown>/60%`              | metrics-server (or custom/external adapter) not installed or unhealthy | Check `kubectl get apiservices`; repair or install the metrics pipeline ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)) |
+| Replica count oscillates rapidly up and down        | No or too-short stabilization window on scale-down                     | Set `behavior.scaleDown.stabilizationWindowSeconds` to a larger value (e.g., 300)                                                                 |
+| HPA computes a target but replicas never change     | `minReplicas`/`maxReplicas` bounds already satisfied at current level  | Confirm the computed desired count against the configured min/max clamp                                                                           |
+| CI/CD keeps resetting replicas, undoing HPA scaling | Deployment manifest still hardcodes `spec.replicas`                    | Remove `replicas` from the manifest once an HPA owns that field                                                                                   |
 
 ## 9. Best Practices
 
 - Author HPAs as `autoscaling/v2` manifests directly rather than relying on `kubectl autoscale`'s CPU-only, `behavior`-less output for anything production-grade.
-- Set resource requests (§6, Part 6, once written) on every container targeted by a CPU/memory-based HPA — utilization targets are meaningless without a request to compute the percentage against.
+- Set resource requests ([§46](../Part6/Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md)) on every container targeted by a CPU/memory-based HPA — utilization targets are meaningless without a request to compute the percentage against.
 - Tune `behavior` stabilization windows deliberately per workload risk profile rather than accepting defaults blindly — bursty, latency-sensitive services usually want fast scale-up and conservative scale-down.
 
 ## 10. Common Anti-Patterns / Mistakes
 
-- **Deploying an HPA without first confirming the metrics pipeline (§89) is healthy**, then treating the resulting `<unknown>` target as an HPA bug rather than a missing prerequisite.
+- **Deploying an HPA without first confirming the metrics pipeline ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)) is healthy**, then treating the resulting `<unknown>` target as an HPA bug rather than a missing prerequisite.
 - **Leaving `spec.replicas` hardcoded in a Deployment manifest that's also targeted by an HPA**, causing every subsequent `kubectl apply`/GitOps sync to fight the autoscaler's decision.
 - **Setting `maxReplicas` far above genuine capacity or budget limits** "just in case," turning a metric spike or misconfigured custom metric into an unbounded cost-amplification incident.
 
 ## 11. Interview Questions
 
 **🎯 Beginner:** _"What does a Horizontal Pod Autoscaler actually do, and what does it never do?"_
-**Model answer:** It watches a configured metric (CPU utilization, a custom metric, or an external metric) for a target workload and adjusts that workload's replica count up or down to keep the metric near a desired target, within a configured min/max bound. It never changes the CPU/memory resource requests or limits of individual Pods — that's a separate concern (Vertical Pod Autoscaler, §38) — and it never provisions nodes itself either.
+**Model answer:** It watches a configured metric (CPU utilization, a custom metric, or an external metric) for a target workload and adjusts that workload's replica count up or down to keep the metric near a desired target, within a configured min/max bound. It never changes the CPU/memory resource requests or limits of individual Pods — that's a separate concern (Vertical Pod Autoscaler, [§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md)) — and it never provisions nodes itself either.
 _What the interviewer is probing for:_ Clear boundary between HPA's actual scope (replica count only) and adjacent autoscaling concepts.
 
 **🎯 Intermediate:** _"An HPA has been applied but its TARGETS column has shown `<unknown>/60%` for ten minutes. Walk through your diagnosis."_
@@ -220,21 +220,21 @@ _What the interviewer is probing for:_ Ability to turn HPA mechanics into a gove
 
 ## 12. Common Misconceptions
 
-1. **"HPA scales nodes as well as Pods."** It only ever changes a workload's replica count; provisioning or removing nodes is Cluster Autoscaler's job (§38), an entirely separate component that HPA has no direct relationship with.
-2. **"HPA collects its own metrics."** It contains no metric-collection logic at all — it is purely a consumer of the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs, which must be populated by metrics-server or a custom/external adapter (§89).
+1. **"HPA scales nodes as well as Pods."** It only ever changes a workload's replica count; provisioning or removing nodes is Cluster Autoscaler's job ([§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md)), an entirely separate component that HPA has no direct relationship with.
+2. **"HPA collects its own metrics."** It contains no metric-collection logic at all — it is purely a consumer of the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs, which must be populated by metrics-server or a custom/external adapter ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)).
 3. **"A CPU utilization target of 60% means 60% of a full CPU core."** It means 60% of the Pod's configured CPU **request**, not an absolute core count — an unset request makes the percentage undefined rather than zero.
 4. **"HPA and manually running `kubectl scale` are equally valid ways to set replica count on an HPA-managed Deployment."** Once an HPA targets a workload, any manual or CI/CD-driven `replicas` change is transient — the HPA controller's next sync will override it back to its own computed value.
 
 ## 13. 🔑 Key Takeaways
 
 - HPA adjusts replica count only, computed from `ceil(currentReplicas × (currentMetricValue / desiredMetricValue))`, clamped to configured min/max bounds.
-- It depends entirely on the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs being populated by a healthy metrics pipeline (§89) — HPA has no built-in metric collection.
+- It depends entirely on the metrics.k8s.io/custom.metrics.k8s.io/external.metrics.k8s.io APIs being populated by a healthy metrics pipeline ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)) — HPA has no built-in metric collection.
 - `autoscaling/v2` supports multiple simultaneous metrics (highest-wins resolution) and a `behavior` block for asymmetric scale-up/scale-down policy tuning.
 - A Deployment manifest that still hardcodes `replicas` will fight an HPA targeting it on every subsequent apply — remove that field once HPA owns it.
-- HPA is one of three distinct autoscaling axes alongside Vertical Pod Autoscaler (resource requests per Pod) and Cluster Autoscaler (node count) — §38 draws that full three-way distinction.
+- HPA is one of three distinct autoscaling axes alongside Vertical Pod Autoscaler (resource requests per Pod) and Cluster Autoscaler (node count) — [§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md) draws that full three-way distinction.
 
 ## 14. Related Concepts & What's Next
 
-§27 and §28 established the ReplicaSet/Deployment mechanics that HPA's replica-count patches ultimately act on. §89 (Part 12) covers the metrics pipeline — metrics-server and the custom/external metrics adapter ecosystem — that HPA has a hard, non-optional dependency on. §38 (next) introduces Vertical Pod Autoscaler and Cluster Autoscaler, the two other autoscaling axes that are frequently confused with HPA despite operating on entirely different dimensions (per-Pod resource sizing and node count, respectively, rather than replica count).
+[§27](../Part4/Section-27-Part4-ReplicaSets-Purpose-Relationship-To-Deployments.md) and [§28](../Part4/Section-28-Part4-Deployments-Rolling-Updates-Rollbacks-Revision-History.md) established the ReplicaSet/Deployment mechanics that HPA's replica-count patches ultimately act on. [§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md) covers the metrics pipeline — metrics-server and the custom/external metrics adapter ecosystem — that HPA has a hard, non-optional dependency on. [§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md) (next) introduces Vertical Pod Autoscaler and Cluster Autoscaler, the two other autoscaling axes that are frequently confused with HPA despite operating on entirely different dimensions (per-Pod resource sizing and node count, respectively, rather than replica count).
 
-**Next Section:** §38 — `Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md`
+**Next Section:** [§38](./Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md) — `Section-38-Part5-Vertical-Pod-Autoscaler-Cluster-Autoscaler.md`

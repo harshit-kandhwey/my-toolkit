@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **DNS is the mechanism that makes the Service abstraction (§50) actually usable by applications without extra plumbing.** A Service's ClusterIP is stable, but an application still needs to know it — CoreDNS is what lets a Pod simply resolve `my-service.my-namespace.svc.cluster.local` (or just `my-service` from within the same namespace) rather than requiring the IP to be injected through some other mechanism.
+- **DNS is the mechanism that makes the Service abstraction ([§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)) actually usable by applications without extra plumbing.** A Service's ClusterIP is stable, but an application still needs to know it — CoreDNS is what lets a Pod simply resolve `my-service.my-namespace.svc.cluster.local` (or just `my-service` from within the same namespace) rather than requiring the IP to be injected through some other mechanism.
 - **Headless Services (`clusterIP: None`) change DNS behavior fundamentally, not just cosmetically** — instead of resolving to one stable virtual IP, a headless Service's DNS name resolves directly to the IP addresses of all backing Pods, which is the exact mechanism StatefulSets rely on for stable, individually-addressable Pod network identities.
-- **DNS failures are one of the most common "networking" symptoms that are actually application-layer or CoreDNS-specific**, not CNI (§49) or kube-proxy (§51) problems — correctly distinguishing "Service unreachable by IP" from "Service unreachable by name" is a critical first triage step covered in the troubleshooting toolkit ahead (§56).
+- **DNS failures are one of the most common "networking" symptoms that are actually application-layer or CoreDNS-specific**, not CNI ([§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md)) or kube-proxy ([§51](./Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md)) problems — correctly distinguishing "Service unreachable by IP" from "Service unreachable by name" is a critical first triage step covered in the troubleshooting toolkit ahead ([§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)).
 
 🔑 **Key Takeaway:** CoreDNS dynamically serves DNS records reflecting live cluster state, giving every Pod predictable, name-based service discovery instead of requiring hardcoded IPs — and understanding its naming convention and headless-Service behavior precisely is essential for correctly diagnosing whether a connectivity problem is a DNS issue or something further down the network stack.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §50 (Services — the objects whose ClusterIPs CoreDNS resolves names to) and §9 (kubelet, which configures each Pod's `/etc/resolv.conf` to point at CoreDNS).
+Builds directly on [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services — the objects whose ClusterIPs CoreDNS resolves names to) and [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) (kubelet, which configures each Pod's `/etc/resolv.conf` to point at CoreDNS).
 
 ## 4. Architecture Diagram
 
@@ -51,7 +51,7 @@ Builds directly on §50 (Services — the objects whose ClusterIPs CoreDNS resol
 
 - **CoreDNS has no static configuration to keep in sync** — it is driven directly off live Kubernetes API state via its `kubernetes` plugin, so a new Service is resolvable within moments of creation, with no separate DNS-record management step required.
 - **The `search` domains in `/etc/resolv.conf` are what let short names resolve** — a Pod in the `default` namespace querying just `my-svc` works because the resolver automatically appends `default.svc.cluster.local` (and the other search domains in order) until one resolves.
-- **Headless Services skip the ClusterIP layer entirely**, making DNS itself the load-balancing/discovery mechanism — clients get back every backing Pod IP directly and choose (or the client library round-robins) among them, rather than relying on kube-proxy (§51) to pick one.
+- **Headless Services skip the ClusterIP layer entirely**, making DNS itself the load-balancing/discovery mechanism — clients get back every backing Pod IP directly and choose (or the client library round-robins) among them, rather than relying on kube-proxy ([§51](./Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md)) to pick one.
 
 ## 5. Hands-On: Working With Cluster DNS
 
@@ -76,7 +76,7 @@ Name:      web-app.default.svc.cluster.local
 Address:   10.96.100.5
 ```
 
-**Production usage example:** This is the standard first command run when diagnosing "my app can't reach this other Service" — confirming DNS resolves to the expected ClusterIP isolates the problem to either (a) below DNS, in kube-proxy/CNI routing, or (b) an application-level connection issue, before any deeper investigation (§56).
+**Production usage example:** This is the standard first command run when diagnosing "my app can't reach this other Service" — confirming DNS resolves to the expected ClusterIP isolates the problem to either (a) below DNS, in kube-proxy/CNI routing, or (b) an application-level connection issue, before any deeper investigation ([§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)).
 
 **Common errors:** `nslookup` returning `NXDOMAIN` or timing out entirely (rather than resolving to a wrong IP) almost always points to CoreDNS itself being unhealthy or unreachable, or the queried name being wrong (wrong namespace, typo) — not a routing problem further down the stack.
 
@@ -109,7 +109,7 @@ _http._tcp.web-app.default.svc.cluster.local  service = 10 33 8080 web-app.defau
 
 ### 5.3 Headless Service DNS Behavior for StatefulSet Pods
 
-**Purpose:** Demonstrate how a headless Service (`clusterIP: None`) resolves to individual Pod IPs directly — the mechanism StatefulSets (§33) depend on for stable network identity.
+**Purpose:** Demonstrate how a headless Service (`clusterIP: None`) resolves to individual Pod IPs directly — the mechanism StatefulSets ([§33](../Part5/Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)) depend on for stable network identity.
 
 **Syntax:**
 
@@ -149,17 +149,17 @@ Address:   10.244.3.4
 
 ## 7. Security Considerations
 
-- CoreDNS resolves and exposes Service names cluster-wide by default, including across namespaces — this means Service existence and naming conventions are discoverable by any Pod, a factor relevant when NetworkPolicies (§55) are used to prevent unwanted access, since DNS visibility alone doesn't imply reachability but does imply information disclosure.
+- CoreDNS resolves and exposes Service names cluster-wide by default, including across namespaces — this means Service existence and naming conventions are discoverable by any Pod, a factor relevant when NetworkPolicies ([§55](./Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)) are used to prevent unwanted access, since DNS visibility alone doesn't imply reachability but does imply information disclosure.
 - The `kube-dns`/CoreDNS Service and its RBAC permissions (it needs API server read access to Services/Endpoints/Pods) are a sensitive cluster component — compromising CoreDNS or tampering with its `Corefile` could enable DNS spoofing/redirection attacks against in-cluster traffic.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                           | Likely Cause                                                                  | Resolution Path                                                                                                  |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `nslookup`/`dig` for a Service name times out entirely            | CoreDNS Pods unhealthy, crash-looping, or unreachable                         | `kubectl get pods -n kube-system -l k8s-app=kube-dns`; check CoreDNS logs and resource limits                    |
-| Service resolves to an IP, but connections still fail             | DNS is fine; the issue is below DNS (kube-proxy §51 or CNI §49 routing)       | Move to `curl`/`telnet` against the resolved IP directly to isolate DNS from routing (§56)                       |
-| Headless Service bare name doesn't behave like a normal ClusterIP | Misunderstanding: headless Services intentionally return all Pod IPs, not one | Confirm expected behavior; client code must handle multiple A records, or use the `<pod>.<svc>` per-Pod DNS name |
-| High/unexpected DNS query volume or latency for external domains  | Default `ndots:5` causing repeated search-domain lookup attempts              | Consider per-Pod `dnsConfig` tuning or `dnsPolicy` adjustments for high-QPS workloads calling external services  |
+| Symptom                                                           | Likely Cause                                                                                                                                                                                                 | Resolution Path                                                                                                                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nslookup`/`dig` for a Service name times out entirely            | CoreDNS Pods unhealthy, crash-looping, or unreachable                                                                                                                                                        | `kubectl get pods -n kube-system -l k8s-app=kube-dns`; check CoreDNS logs and resource limits                                                                  |
+| Service resolves to an IP, but connections still fail             | DNS is fine; the issue is below DNS (kube-proxy [§51](./Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md) or CNI [§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) routing) | Move to `curl`/`telnet` against the resolved IP directly to isolate DNS from routing ([§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)) |
+| Headless Service bare name doesn't behave like a normal ClusterIP | Misunderstanding: headless Services intentionally return all Pod IPs, not one                                                                                                                                | Confirm expected behavior; client code must handle multiple A records, or use the `<pod>.<svc>` per-Pod DNS name                                               |
+| High/unexpected DNS query volume or latency for external domains  | Default `ndots:5` causing repeated search-domain lookup attempts                                                                                                                                             | Consider per-Pod `dnsConfig` tuning or `dnsPolicy` adjustments for high-QPS workloads calling external services                                                |
 
 ## 9. Best Practices
 
@@ -188,7 +188,7 @@ _What the interviewer is probing for:_ Precise understanding of headless Service
 _What the interviewer is probing for:_ A structured approach to separating DNS-layer symptoms from routing/backend symptoms, and awareness that CoreDNS itself is a workload subject to resource pressure.
 
 **🎯 Architect:** _"You're designing DNS architecture for a platform hosting hundreds of namespaces with strict multi-tenant isolation requirements. What DNS-related considerations matter at that scale?"_
-**Model answer:** Since CoreDNS resolves Service names cluster-wide by default, I'd treat DNS-based Service name/existence visibility as an information-disclosure concern distinct from actual network reachability — mitigated primarily through NetworkPolicies (§55) rather than trying to restrict DNS visibility itself, since Kubernetes DNS isn't designed to be a tenant isolation boundary. I'd scale CoreDNS replicas and resource allocation proportionally to the platform's total Service/Pod count and query volume, since a single shared CoreDNS deployment is now a shared dependency across every tenant namespace — a CoreDNS capacity or availability incident becomes a platform-wide incident, not a per-tenant one. I'd also standardize `ndots`/`dnsConfig` guidance for tenant workloads making heavy external DNS calls, to prevent one noisy tenant's DNS query pattern from degrading shared CoreDNS capacity for everyone else — treating CoreDNS capacity planning as a first-class multi-tenant platform concern, not an afterthought.
+**Model answer:** Since CoreDNS resolves Service names cluster-wide by default, I'd treat DNS-based Service name/existence visibility as an information-disclosure concern distinct from actual network reachability — mitigated primarily through NetworkPolicies ([§55](./Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)) rather than trying to restrict DNS visibility itself, since Kubernetes DNS isn't designed to be a tenant isolation boundary. I'd scale CoreDNS replicas and resource allocation proportionally to the platform's total Service/Pod count and query volume, since a single shared CoreDNS deployment is now a shared dependency across every tenant namespace — a CoreDNS capacity or availability incident becomes a platform-wide incident, not a per-tenant one. I'd also standardize `ndots`/`dnsConfig` guidance for tenant workloads making heavy external DNS calls, to prevent one noisy tenant's DNS query pattern from degrading shared CoreDNS capacity for everyone else — treating CoreDNS capacity planning as a first-class multi-tenant platform concern, not an afterthought.
 _What the interviewer is probing for:_ Recognition that DNS is a shared, potentially noisy-neighbor-prone dependency at multi-tenant scale, and that isolation for DNS visibility versus actual traffic control require different mechanisms.
 
 ## 12. Common Misconceptions
@@ -208,6 +208,6 @@ _What the interviewer is probing for:_ Recognition that DNS is a shared, potenti
 
 ## 14. Related Concepts & What's Next
 
-§50 covers the Service abstraction whose ClusterIPs this section's DNS records resolve to, and §51 covers the kube-proxy mechanism that actually routes traffic once DNS has resolved a name to an IP. §55 returns to headless-Service-adjacent security considerations around DNS visibility as part of NetworkPolicy design, and §56 folds `dig`/`nslookup` into the full in-cluster network troubleshooting toolkit this section's hands-on commands previewed.
+[§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) covers the Service abstraction whose ClusterIPs this section's DNS records resolve to, and [§51](./Section-51-Part7-kube-proxy-Modes-iptables-vs-IPVS.md) covers the kube-proxy mechanism that actually routes traffic once DNS has resolved a name to an IP. [§55](./Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) returns to headless-Service-adjacent security considerations around DNS visibility as part of NetworkPolicy design, and [§56](./Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) folds `dig`/`nslookup` into the full in-cluster network troubleshooting toolkit this section's hands-on commands previewed.
 
-**Next Section:** §53 — `Section-53-Part7-Ingress-Ingress-Controllers.md`
+**Next Section:** [§53](./Section-53-Part7-Ingress-Ingress-Controllers.md) — `Section-53-Part7-Ingress-Ingress-Controllers.md`

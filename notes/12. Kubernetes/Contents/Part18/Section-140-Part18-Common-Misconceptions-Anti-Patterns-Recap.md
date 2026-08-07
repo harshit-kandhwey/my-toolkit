@@ -10,13 +10,13 @@
 
 - **The same few reasoning errors recur across unrelated technical topics** — "it looks secure/durable/enforced because the object exists" is the same mistake whether applied to a Secret, a NetworkPolicy, a PersistentVolume, or an RBAC binding, and seeing the pattern once makes it recognizable everywhere else.
 - **Certification exams and production incidents both disproportionately hinge on these exact misconceptions**, not on obscure edge cases — a CKS candidate who assumes Secrets are encrypted by default, or a CKA candidate who assumes any CNI plugin enforces NetworkPolicy, will fail the exact same class of question regardless of how much surrounding material they've memorized.
-- **This is the roadmap's final error-correction pass** — after the labs (§138) built integration skill and the checklist (§139) consolidated what to remember, this section consolidates what to actively unlearn or double-check before an exam attempt or a production sign-off.
+- **This is the roadmap's final error-correction pass** — after the labs ([§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)) built integration skill and the checklist ([§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md)) consolidated what to remember, this section consolidates what to actively unlearn or double-check before an exam attempt or a production sign-off.
 
 🔑 **Key Takeaway:** Nearly every high-impact mistake in this roadmap traces back to trusting that an object's existence guarantees its intended property — a Secret exists but isn't necessarily encrypted, a NetworkPolicy exists but isn't necessarily enforced, a PVC exists but doesn't guarantee data durability — and the fix is always the same discipline: verify the actual guarantee, don't assume it from the object's presence.
 
 ## 3. Prerequisites and Dependencies
 
-This section assumes the full roadmap (§1–§139) has been read, and specifically re-references the "Common Misconceptions" and "Common Anti-Patterns / Mistakes" subsections of §41–§47 (Part 6, Configuration), §48–§56 (Part 7, Networking), §57–§64 (Part 8, Storage), §73–§81 (Part 10, Security and RBAC), §113–§121 (Part 15, CKS Deep Dive), and §122–§129 (Part 16, Enterprise Patterns) as its source material.
+This section assumes the full roadmap ([§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)–[§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md)) has been read, and specifically re-references the "Common Misconceptions" and "Common Anti-Patterns / Mistakes" subsections of [§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§47](../Part6/Section-47-Part6-Multi-Environment-Configuration-Patterns.md) (Part 6, Configuration), [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)–[§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) (Part 7, Networking), [§57](../Part8/Section-57-Part8-Volumes-emptyDir-hostPath-Ephemeral-Storage.md)–[§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md) (Part 8, Storage), [§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§81](../Part10/Section-81-Part10-Kubernetes-Security-Best-Practices-Checklist.md) (Part 10, Security and RBAC), [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)–[§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md) (Part 15, CKS Deep Dive), and [§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md) (Part 16, Enterprise Patterns) as its source material.
 
 ## 4. Architecture Diagram
 
@@ -79,9 +79,9 @@ Rather than new commands, this section's "hands-on" is a **verification drill**:
 
 ### 5.7 Theme: "Reading About It Is the Same as Doing It"
 
-- **Misconception (Part 17, and reinforced by §138):** Passive review of exam-domain breakdowns and question banks is assumed to be sufficient exam preparation.
+- **Misconception (Part 17, and reinforced by [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)):** Passive review of exam-domain breakdowns and question banks is assumed to be sufficient exam preparation.
 - **Reality:** The CKA/CKAD/CKS exams are 100% hands-on and time-boxed; the skill being certified is executing correctly under time pressure with only `kubectl` and the docs, which only timed, repeated hands-on practice builds.
-- **Verify:** Time-boxed lab completion (as in §138's Lab 4) is the actual test of readiness, not confidence built from reading alone.
+- **Verify:** Time-boxed lab completion (as in [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)'s Lab 4) is the actual test of readiness, not confidence built from reading alone.
 
 ## 6. Production Usage Notes
 
@@ -109,7 +109,7 @@ Rather than new commands, this section's "hands-on" is a **verification drill**:
 
 - Default to **verifying the live guarantee, not the declared configuration**, for every security-, durability-, or isolation-relevant object in this roadmap — this single habit prevents the large majority of the mistakes recapped above.
 - Build "what enforces this?" into any design review as a standard question, specifically for anything described informally as a "standard," "policy," or "baseline" — a standard without an enforcement mechanism is a suggestion, not a guarantee.
-- Revisit this recap periodically alongside the §139 checklist, since the seven themes here compress a much larger set of individually-documented mistakes throughout the roadmap, and recognizing the pattern is more durable knowledge than remembering any single instance of it.
+- Revisit this recap periodically alongside the [§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md) checklist, since the seven themes here compress a much larger set of individually-documented mistakes throughout the roadmap, and recognizing the pattern is more durable knowledge than remembering any single instance of it.
 
 ## 10. Common Anti-Patterns / Mistakes
 
@@ -140,7 +140,7 @@ _What the interviewer is probing for:_ Ability to turn a recognized failure patt
 
 1. **"This recap is introducing new material."** It deliberately isn't — every item here was already documented in its originating Part; this section's value is in the cross-cutting pattern recognition, not new facts.
 2. **"These seven themes are independent, unrelated gotchas to memorize separately."** They are seven instances of one underlying reasoning error — trusting an object's existence over its verified, live guarantee — and recognizing that unifying pattern is more durable and transferable than memorizing each instance.
-3. **"Since this recap only lists seven themes, that's the complete list of every misconception in the roadmap."** These are representative, high-impact examples pulled from the much larger set of misconceptions documented per-section throughout §1–§137; this recap is a sample illustrating the pattern, not an exhaustive inventory.
+3. **"Since this recap only lists seven themes, that's the complete list of every misconception in the roadmap."** These are representative, high-impact examples pulled from the much larger set of misconceptions documented per-section throughout [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md); this recap is a sample illustrating the pattern, not an exhaustive inventory.
 
 ## 13. 🔑 Key Takeaways
 
@@ -152,6 +152,6 @@ _What the interviewer is probing for:_ Ability to turn a recognized failure patt
 
 ## 14. Related Concepts & What's Next
 
-Where §139 consolidated what to actively remember across all 17 preceding Parts, this section consolidated what to actively unlearn or double-check — together they form this capstone Part's "remember, then correct" review pairing, following directly from the integration practice built in §138's hands-on labs. With the technical roadmap now fully reviewed, consolidated, and error-corrected, the final section of the entire 141-section roadmap turns outward: what to learn next, and a closing look back at where this whole journey began.
+Where [§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md) consolidated what to actively remember across all 17 preceding Parts, this section consolidated what to actively unlearn or double-check — together they form this capstone Part's "remember, then correct" review pairing, following directly from the integration practice built in [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)'s hands-on labs. With the technical roadmap now fully reviewed, consolidated, and error-corrected, the final section of the entire 141-section roadmap turns outward: what to learn next, and a closing look back at where this whole journey began.
 
-**Next Section:** §141 — `Section-141-Part18-Related-Technologies-Recommended-Next-Topics.md`
+**Next Section:** [§141](./Section-141-Part18-Related-Technologies-Recommended-Next-Topics.md) — `Section-141-Part18-Related-Technologies-Recommended-Next-Topics.md`

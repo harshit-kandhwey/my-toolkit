@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Once the API server knows _who_ is making a request (§73), it needs a separate mechanism to decide _what that identity is allowed to do_. Authorization is that decision layer — and unlike authentication, where a cluster typically settles on one or two mechanisms, a Kubernetes cluster can have several authorization modes active simultaneously, each getting a chance to approve a request before it's denied.
+**Plain language:** Once the API server knows _who_ is making a request ([§73](./Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)), it needs a separate mechanism to decide _what that identity is allowed to do_. Authorization is that decision layer — and unlike authentication, where a cluster typically settles on one or two mechanisms, a Kubernetes cluster can have several authorization modes active simultaneously, each getting a chance to approve a request before it's denied.
 
 **Precise definition:** **Authorization** is the stage of the API server request lifecycle, immediately following authentication, that determines whether an already-identified user, group, or ServiceAccount may perform a specific **verb** (get, list, create, update, delete, watch, patch) against a specific **resource** (pods, secrets, deployments) in a specific **namespace** (or cluster-wide). Kubernetes supports four **authorization modes**, configured via the API server's `--authorization-mode` flag as an ordered, comma-separated list: **RBAC** (Role-Based Access Control — declarative, API-object-based, the de facto default in every modern cluster), **ABAC** (Attribute-Based Access Control — static policy files evaluated against request attributes, largely legacy), **Node** (a specialized authorizer granting kubelets access scoped only to resources related to their own node), and **Webhook** (delegating the authorization decision to an external HTTP service). When multiple modes are configured, the API server evaluates them in order and grants access on the **first explicit allow**; if every configured mode either denies or has no opinion, the request is rejected with `403 Forbidden`.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §73 (Authentication — the username/group identity that authorization decisions are made against). Assumes familiarity with the Pod spec anatomy (§24) and basic namespace concepts. Forward-references §75 for the full mechanics of RBAC's own API objects.
+Builds directly on [§73](./Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md) (Authentication — the username/group identity that authorization decisions are made against). Assumes familiarity with the Pod spec anatomy ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)) and basic namespace concepts. Forward-references [§75](./Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md) for the full mechanics of RBAC's own API objects.
 
 ## 4. Architecture: The Authorization Decision Chain
 
@@ -51,7 +51,7 @@ Builds directly on §73 (Authentication — the username/group identity that aut
 
 - **A mode with "no opinion" is not the same as a denial** — the Node authorizer, for example, simply abstains on any request from a non-kubelet identity, passing evaluation to the next configured mode rather than blocking it.
 - **Order in `--authorization-mode` is significant only in the sense that evaluation proceeds left to right until an explicit allow is found** — there is no equivalent of RBAC's explicit-deny concept across modes; authorization overall is purely additive (allow-only), never subtractive.
-- **RBAC itself has no explicit "deny" rule type** — a Role or ClusterRole can only grant permissions, never revoke them, which is why RBAC policy design is fundamentally an allow-list exercise (full mechanics in §75).
+- **RBAC itself has no explicit "deny" rule type** — a Role or ClusterRole can only grant permissions, never revoke them, which is why RBAC policy design is fundamentally an allow-list exercise (full mechanics in [§75](./Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)).
 
 ## 5. Hands-On: Configuring and Observing Authorization Modes
 
@@ -158,7 +158,7 @@ $ curl -s -X POST https://policy-engine.example.com/authorize -d '{
 
 - **ABAC is effectively legacy** in modern Kubernetes — it requires a static JSON policy file on every control plane node with no dynamic update mechanism (a full API server restart is needed to pick up changes), which RBAC's live, API-object-based model made largely obsolete; new clusters essentially never enable it.
 - **The recommended, near-universal `--authorization-mode` setting for a self-managed cluster is `Node,RBAC`** — this combination handles both kubelet-scoped access and all human/workload permissions without needing ABAC or Webhook at all, unless a genuine need for external dynamic policy exists.
-- **Managed Kubernetes offerings (EKS, AKS, GKE) each pre-configure authorization modes as part of the managed control plane** and typically don't expose the raw `--authorization-mode` flag for direct editing — RBAC configuration (§75) remains the primary lever available to cluster operators on these platforms.
+- **Managed Kubernetes offerings (EKS, AKS, GKE) each pre-configure authorization modes as part of the managed control plane** and typically don't expose the raw `--authorization-mode` flag for direct editing — RBAC configuration ([§75](./Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)) remains the primary lever available to cluster operators on these platforms.
 
 ## 7. Security Considerations
 
@@ -168,12 +168,12 @@ $ curl -s -X POST https://policy-engine.example.com/authorize -d '{
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                                            | Likely Cause                                                                                               | Resolution Path                                                                                                                    |
-| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| A request is unexpectedly allowed despite no matching RBAC binding                 | Another authorization mode (Webhook or legacy ABAC) is explicitly allowing it before RBAC is reached       | Review `--authorization-mode` order and each mode's policy independently, not just RBAC                                            |
-| Every request from a kubelet fails against resources it should legitimately access | Node authorizer misconfigured, or kubelet's client certificate isn't in the `system:nodes` group correctly | Verify the kubelet's certificate CN/group via `kubectl get csr` and confirm `Node` is in `--authorization-mode`                    |
-| `kubectl auth can-i` reports `yes` but the actual `kubectl` command still fails    | A subsequent admission controller (§77) is rejecting the request after authorization succeeded             | Distinguish authorization success from admission rejection; check `kubectl describe` events for the actual admission denial reason |
-| Webhook authorizer causes cluster-wide request timeouts                            | External policy engine is slow, unreachable, or the failure policy isn't configured correctly              | Check webhook endpoint health and latency; ensure a sane timeout and explicit fail-closed behavior is configured                   |
+| Symptom                                                                            | Likely Cause                                                                                                                                                                | Resolution Path                                                                                                                    |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| A request is unexpectedly allowed despite no matching RBAC binding                 | Another authorization mode (Webhook or legacy ABAC) is explicitly allowing it before RBAC is reached                                                                        | Review `--authorization-mode` order and each mode's policy independently, not just RBAC                                            |
+| Every request from a kubelet fails against resources it should legitimately access | Node authorizer misconfigured, or kubelet's client certificate isn't in the `system:nodes` group correctly                                                                  | Verify the kubelet's certificate CN/group via `kubectl get csr` and confirm `Node` is in `--authorization-mode`                    |
+| `kubectl auth can-i` reports `yes` but the actual `kubectl` command still fails    | A subsequent admission controller ([§77](./Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) is rejecting the request after authorization succeeded | Distinguish authorization success from admission rejection; check `kubectl describe` events for the actual admission denial reason |
+| Webhook authorizer causes cluster-wide request timeouts                            | External policy engine is slow, unreachable, or the failure policy isn't configured correctly                                                                               | Check webhook endpoint health and latency; ensure a sane timeout and explicit fail-closed behavior is configured                   |
 
 ## 9. Best Practices
 
@@ -190,7 +190,7 @@ $ curl -s -X POST https://policy-engine.example.com/authorize -d '{
 ## 11. Interview Questions
 
 **🎯 Beginner:** _"What's the difference between authentication and authorization in Kubernetes?"_
-**Model answer:** Authentication (§73) establishes who is making a request — resolving it to a username and group set through a mechanism like an X.509 certificate or OIDC token. Authorization is the separate, subsequent stage that decides what that already-identified caller is allowed to do — which verbs against which resources, in which namespaces. A request can pass authentication cleanly (the caller's identity is confirmed) and still be denied at authorization if no policy grants that identity the requested action, producing a `403 Forbidden` rather than a `401 Unauthorized`.
+**Model answer:** Authentication ([§73](./Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)) establishes who is making a request — resolving it to a username and group set through a mechanism like an X.509 certificate or OIDC token. Authorization is the separate, subsequent stage that decides what that already-identified caller is allowed to do — which verbs against which resources, in which namespaces. A request can pass authentication cleanly (the caller's identity is confirmed) and still be denied at authorization if no policy grants that identity the requested action, producing a `403 Forbidden` rather than a `401 Unauthorized`.
 _What the interviewer is probing for:_ Clean separation of the two stages and the distinct HTTP status codes each produces.
 
 **🎯 Intermediate:** _"If a cluster is configured with `--authorization-mode=Node,RBAC,Webhook`, and a request would be denied by RBAC but explicitly allowed by the Webhook authorizer, what happens?"_
@@ -209,7 +209,7 @@ _What the interviewer is probing for:_ Ability to extend Kubernetes' native auth
 
 1. **"RBAC is the only authorization mechanism in Kubernetes."** It's the default and near-universal choice, but ABAC, Node, and Webhook are all distinct, independently configurable authorization modes that can run alongside it.
 2. **"Multiple authorization modes work like a voting system, requiring majority approval."** Evaluation is sequential, and the very first explicit allow from any configured mode grants the request — there's no aggregation across modes.
-3. **"A `403 Forbidden` and admission controller rejection are the same kind of failure."** They occur at genuinely different stages of the request lifecycle (authorization versus admission, §77) and require different diagnostic approaches.
+3. **"A `403 Forbidden` and admission controller rejection are the same kind of failure."** They occur at genuinely different stages of the request lifecycle (authorization versus admission, [§77](./Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)) and require different diagnostic approaches.
 4. **"The Node authorizer is redundant with RBAC."** It enforces node-scoped relevance as a distinct rule that RBAC's group/user model cannot express on its own, meaningfully limiting the blast radius of a single compromised kubelet.
 
 ## 13. 🔑 Key Takeaways
@@ -222,6 +222,6 @@ _What the interviewer is probing for:_ Ability to extend Kubernetes' native auth
 
 ## 14. Related Concepts & What's Next
 
-This section builds directly on §73's authentication chain, which establishes the identity that every authorization decision is made against. With the four authorization modes now understood at a conceptual level, §75 goes deep on the mode virtually every production cluster actually relies on day to day: RBAC's own API objects — Roles, ClusterRoles, RoleBindings, and ClusterRoleBindings — and exactly how their scoping and aggregation rules work in practice.
+This section builds directly on [§73](./Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)'s authentication chain, which establishes the identity that every authorization decision is made against. With the four authorization modes now understood at a conceptual level, [§75](./Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md) goes deep on the mode virtually every production cluster actually relies on day to day: RBAC's own API objects — Roles, ClusterRoles, RoleBindings, and ClusterRoleBindings — and exactly how their scoping and aggregation rules work in practice.
 
-**Next Section:** §75 — `Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md`
+**Next Section:** [§75](./Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md) — `Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md`

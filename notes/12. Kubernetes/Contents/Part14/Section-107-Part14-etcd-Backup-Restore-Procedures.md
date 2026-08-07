@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** Every Deployment, Secret, ConfigMap, and Namespace a cluster has ever been told to run lives inside etcd (§10). If etcd is lost with no backup, that knowledge is gone — even if every node and container is still physically running, the cluster no longer remembers what it's supposed to look like. Backing up etcd, and knowing exactly how to restore it, is the real disaster-recovery plan for an entire Kubernetes cluster.
+**Plain language:** Every Deployment, Secret, ConfigMap, and Namespace a cluster has ever been told to run lives inside etcd ([§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)). If etcd is lost with no backup, that knowledge is gone — even if every node and container is still physically running, the cluster no longer remembers what it's supposed to look like. Backing up etcd, and knowing exactly how to restore it, is the real disaster-recovery plan for an entire Kubernetes cluster.
 
 **Precise definition:** An **etcd backup** is a point-in-time **snapshot** of etcd's entire data store, taken with `etcdctl snapshot save` against a live etcd member, producing a single portable `.db` file that captures every key-value pair etcd holds at that moment. **Restore** is the reverse operation, `etcdctl snapshot restore`, which reconstructs a fresh etcd data directory from that snapshot file — a destructive, offline operation that requires stopping the existing etcd static Pod, replacing its data directory, and restarting it, since restore always creates a **new** etcd cluster from the snapshot rather than rejoining an existing one.
 
 ## 2. Why This Matters
 
-- **etcd backup is the highest-priority operational responsibility for any self-managed cluster** — this is the section §10 explicitly promised: understanding etcd's data model there is the prerequisite for understanding exactly what a snapshot captures and why restoring it correctly reconstructs cluster state.
+- **etcd backup is the highest-priority operational responsibility for any self-managed cluster** — this is the section [§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) explicitly promised: understanding etcd's data model there is the prerequisite for understanding exactly what a snapshot captures and why restoring it correctly reconstructs cluster state.
 - **Restore is fundamentally different from a normal etcd restart** — it doesn't rejoin the existing Raft cluster; it creates a new one from the snapshot's contents, which has direct consequences for cluster membership, node IPs, and multi-member etcd topologies that must be handled deliberately, not assumed away.
 - **This is one of the single most heavily tested CKA scenarios** — "back up etcd, then restore it" appears in the exam's Cluster Architecture, Installation & Configuration domain precisely because it's both operationally critical and easy to get subtly wrong under time pressure.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §10 (etcd Deep Dive — the data model, Raft consensus, and quorum mechanics that this section's backup/restore procedures operate on) and §17 (Part 3, static Pods — etcd itself runs as a static Pod in a stacked topology, which is why restore requires manipulating its manifest and data directory directly rather than using `kubectl`). §106 covers cluster upgrades, which should always be preceded by a fresh snapshot using the procedure here.
+Builds directly on [§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) (etcd Deep Dive — the data model, Raft consensus, and quorum mechanics that this section's backup/restore procedures operate on) and [§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md) (Part 3, static Pods — etcd itself runs as a static Pod in a stacked topology, which is why restore requires manipulating its manifest and data directory directly rather than using `kubectl`). [§106](./Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md) covers cluster upgrades, which should always be preceded by a fresh snapshot using the procedure here.
 
 ## 4. Architecture Diagram
 
@@ -97,7 +97,7 @@ $ ETCDCTL_API=3 etcdctl snapshot status /backup/etcd-snapshot-20260731-0200.db -
 
 **Production usage example:** Snapshots taken with `snapshot save` are non-disruptive — they don't require stopping etcd or the control plane — which is why they're safely automatable via a cron job or CronJob-driven sidecar, copying the resulting `.db` file off-node (S3, NFS, another region entirely) immediately after each save, since a snapshot sitting on the same disk as the live etcd data provides no protection against a node or disk failure.
 
-**Common errors:** Running `etcdctl snapshot save` without the correct `--cacert`/`--cert`/`--key` flags fails with a TLS handshake error — etcd's client endpoint requires mutual TLS by default in a kubeadm cluster (§8), and the correct certificate paths are always under `/etc/kubernetes/pki/etcd/`.
+**Common errors:** Running `etcdctl snapshot save` without the correct `--cacert`/`--cert`/`--key` flags fails with a TLS handshake error — etcd's client endpoint requires mutual TLS by default in a kubeadm cluster ([§8](../Part2/Section-08-Part2-Control-Plane-Components.md)), and the correct certificate paths are always under `/etc/kubernetes/pki/etcd/`.
 
 ### 5.2 Restoring from a Snapshot (`etcdctl snapshot restore`)
 
@@ -156,13 +156,13 @@ $ ETCDCTL_API=3 etcdctl snapshot restore /backup/etcd-snapshot-20260731-0200.db 
 ## 6. Production Usage Notes
 
 - **Automate `snapshot save` on a schedule (e.g., hourly or every few hours) via a cron job or CronJob-driven sidecar**, and always copy the resulting file off the control-plane node immediately — a snapshot that never leaves the node it was taken on provides zero protection against that node's own disk or hardware failure.
-- **Test the restore procedure on a non-production cluster or in a lab periodically** — a backup that has never been restored is an unverified assumption, not a working disaster-recovery plan; §107's most common real-world failure mode is discovering restore doesn't work as expected during an actual outage.
+- **Test the restore procedure on a non-production cluster or in a lab periodically** — a backup that has never been restored is an unverified assumption, not a working disaster-recovery plan; [§107](./Section-107-Part14-etcd-Backup-Restore-Procedures.md)'s most common real-world failure mode is discovering restore doesn't work as expected during an actual outage.
 - **Snapshot size and `snapshot status`'s reported key count are a useful early signal of etcd bloat** — a rapidly growing key count over time (often from excessive Event objects or unbounded custom resources) is worth investigating independently of backup hygiene.
 
 ## 7. Security Considerations
 
-- **Snapshot files contain the entire cluster's data, including all Secrets** — if encryption at rest (§113, Part 15) isn't enabled, this means every Secret in plaintext; snapshot files must be encrypted at rest wherever they're stored and access-restricted exactly as strictly as the etcd data directory itself.
-- **The TLS certificates used to authenticate `etcdctl` against etcd are themselves sensitive** (§18) — reusing the control plane's own `/etc/kubernetes/pki/etcd/` certificates for backup automation means that automation's credentials are as sensitive as direct etcd access.
+- **Snapshot files contain the entire cluster's data, including all Secrets** — if encryption at rest ([§120](../Part15/Section-120-Part15-Secrets-Encryption-External-Secret-Stores-Deep-Dive.md)) isn't enabled, this means every Secret in plaintext; snapshot files must be encrypted at rest wherever they're stored and access-restricted exactly as strictly as the etcd data directory itself.
+- **The TLS certificates used to authenticate `etcdctl` against etcd are themselves sensitive** ([§18](../Part3/Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)) — reusing the control plane's own `/etc/kubernetes/pki/etcd/` certificates for backup automation means that automation's credentials are as sensitive as direct etcd access.
 - **Off-node backup storage (S3, NFS, etc.) needs its own access controls** — a snapshot file leaked from backup storage is equivalent to a full cluster data breach, not a lesser incident just because it didn't come from the live cluster.
 
 ## 8. Common Troubleshooting Scenarios
@@ -189,7 +189,7 @@ $ ETCDCTL_API=3 etcdctl snapshot restore /backup/etcd-snapshot-20260731-0200.db 
 ## 11. Interview Questions
 
 **🎯 Beginner:** _"What does `etcdctl snapshot save` actually capture, and why does it matter for a Kubernetes cluster?"_
-**Model answer:** It captures a complete, point-in-time copy of everything stored in etcd — every Pod, Deployment, Secret, ConfigMap, and Namespace definition the cluster currently has, as a single portable file. It matters because etcd is the only place this state persists (§10); if etcd is lost with no snapshot, the cluster loses all memory of what it's supposed to be running, even if every node and container is still physically fine.
+**Model answer:** It captures a complete, point-in-time copy of everything stored in etcd — every Pod, Deployment, Secret, ConfigMap, and Namespace definition the cluster currently has, as a single portable file. It matters because etcd is the only place this state persists ([§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)); if etcd is lost with no snapshot, the cluster loses all memory of what it's supposed to be running, even if every node and container is still physically fine.
 _What the interviewer is probing for:_ Understanding that this is a full cluster-state backup, not a minor operational detail.
 
 **🎯 Intermediate:** _"After restoring an etcd snapshot, why do you have to edit the static Pod manifest's `hostPath` instead of just restarting etcd?"_
@@ -201,12 +201,12 @@ _What the interviewer is probing for:_ Concrete understanding of the restore mec
 _What the interviewer is probing for:_ Understanding that multi-member restore must be simultaneous and fully coordinated, unlike node-by-node procedures like upgrades, plus awareness of the control-plane outage window this implies.
 
 **🎯 Architect:** _"How would you design an etcd backup strategy for a fleet of production kubeadm clusters, balancing recovery point objective (RPO), storage cost, and operational complexity?"_
-**Model answer:** I'd automate `etcdctl snapshot save` on a schedule tuned to the acceptable RPO for each cluster's workload criticality — e.g., every 15-30 minutes for a high-change-rate production cluster, hourly for lower-churn clusters — rather than a single fixed cadence across the whole fleet. Every snapshot would be copied off-node immediately to durable, geographically separate storage (cross-region object storage), encrypted at rest, with lifecycle policies retaining a tiered set (recent snapshots at high frequency, older ones thinned out) to control storage cost without losing meaningful recovery points. I'd build automated snapshot verification (`snapshot status` plus a periodic actual test-restore into an isolated scratch environment) into the pipeline itself, since an unverified snapshot is functionally not a backup. Operationally, I'd document and rehearse the exact multi-member restore sequence as a runbook exercised on a real schedule (e.g., quarterly game days), because the complexity of coordinating a simultaneous multi-node restore under real incident pressure is exactly the kind of procedure that fails when it's only ever been read, not practiced. Finally, I'd pair this with the broader cluster backup strategy (§110, Velero) for workload-level and PV-level recovery, since an etcd snapshot alone doesn't capture persistent volume data.
+**Model answer:** I'd automate `etcdctl snapshot save` on a schedule tuned to the acceptable RPO for each cluster's workload criticality — e.g., every 15-30 minutes for a high-change-rate production cluster, hourly for lower-churn clusters — rather than a single fixed cadence across the whole fleet. Every snapshot would be copied off-node immediately to durable, geographically separate storage (cross-region object storage), encrypted at rest, with lifecycle policies retaining a tiered set (recent snapshots at high frequency, older ones thinned out) to control storage cost without losing meaningful recovery points. I'd build automated snapshot verification (`snapshot status` plus a periodic actual test-restore into an isolated scratch environment) into the pipeline itself, since an unverified snapshot is functionally not a backup. Operationally, I'd document and rehearse the exact multi-member restore sequence as a runbook exercised on a real schedule (e.g., quarterly game days), because the complexity of coordinating a simultaneous multi-node restore under real incident pressure is exactly the kind of procedure that fails when it's only ever been read, not practiced. Finally, I'd pair this with the broader cluster backup strategy ([§110](./Section-110-Part14-Cluster-Backup-Strategies-Velero.md), Velero) for workload-level and PV-level recovery, since an etcd snapshot alone doesn't capture persistent volume data.
 _What the interviewer is probing for:_ Ability to reason about RPO/cost/complexity tradeoffs holistically, and recognition that etcd backup is necessary but not sufficient for full cluster disaster recovery.
 
 ## 12. Common Misconceptions
 
-1. **"etcd backups are optional if the cluster's nodes and workloads are healthy."** etcd is the sole source of persisted cluster state (§10) — its loss is catastrophic regardless of current node/workload health, making backups mandatory, not optional insurance.
+1. **"etcd backups are optional if the cluster's nodes and workloads are healthy."** etcd is the sole source of persisted cluster state ([§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)) — its loss is catastrophic regardless of current node/workload health, making backups mandatory, not optional insurance.
 2. **"Restoring a snapshot just restarts etcd with the old data intact."** Restore builds a brand-new data directory and, functionally, a new cluster identity from the snapshot's contents — it does not rejoin or resume the previous Raft cluster.
 3. **"You can restore just one member of a multi-member etcd cluster and the rest will catch up."** All members must be restored from the identical snapshot in one coordinated action; partial restores leave the cluster in a broken, quorum-inconsistent state.
 4. **"A snapshot taken but never test-restored is a working backup."** An unverified snapshot is an assumption, not a proven recovery path — the only way to know restore actually works is to have exercised it.
@@ -221,6 +221,6 @@ _What the interviewer is probing for:_ Ability to reason about RPO/cost/complexi
 
 ## 14. Related Concepts & What's Next
 
-§10 covered etcd's data model and Raft quorum mechanics that this section's backup/restore procedures directly operate on. §17 (Part 3) covers the static Pod mechanism this section manipulates directly during restore. §106 covers cluster upgrades, which should always be preceded by a fresh, verified etcd snapshot using this section's procedure. §108 (next) covers node maintenance (cordon/drain/uncordon) — the next operational lifecycle skill after backup/restore.
+[§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) covered etcd's data model and Raft quorum mechanics that this section's backup/restore procedures directly operate on. [§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md) (Part 3) covers the static Pod mechanism this section manipulates directly during restore. [§106](./Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md) covers cluster upgrades, which should always be preceded by a fresh, verified etcd snapshot using this section's procedure. [§108](./Section-108-Part14-Node-Maintenance-cordon-drain-uncordon.md) (next) covers node maintenance (cordon/drain/uncordon) — the next operational lifecycle skill after backup/restore.
 
-**Next Section:** §108 — `Section-108-Part14-Node-Maintenance-cordon-drain-uncordon.md`
+**Next Section:** [§108](./Section-108-Part14-Node-Maintenance-cordon-drain-uncordon.md) — `Section-108-Part14-Node-Maintenance-cordon-drain-uncordon.md`

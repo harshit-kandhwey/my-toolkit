@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** §123 showed that Istio delivers immense flexibility — but that flexibility comes with a large control-plane surface (many CRDs, `istiod`'s scope, Envoy's extensive configuration model) that many teams simply don't need. Linkerd exists for the teams who want the core service-mesh benefits — mTLS, retries, request-level metrics — with the smallest possible operational footprint and the fewest configuration decisions to get wrong.
+**Plain language:** [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md) showed that Istio delivers immense flexibility — but that flexibility comes with a large control-plane surface (many CRDs, `istiod`'s scope, Envoy's extensive configuration model) that many teams simply don't need. Linkerd exists for the teams who want the core service-mesh benefits — mTLS, retries, request-level metrics — with the smallest possible operational footprint and the fewest configuration decisions to get wrong.
 
 **Precise definition:** **Linkerd** is a service mesh implementation whose defining design choice is minimalism: rather than adopting Envoy, its data plane is **`linkerd-proxy`**, a purpose-built proxy written in **Rust** specifically to be smaller, faster to start, and lower-overhead per-Pod than a general-purpose proxy like Envoy. Its control plane consists of a small set of components (`linkerd-destination`, `linkerd-identity`, `linkerd-proxy-injector`) rather than a single large binary, and it deliberately ships **automatic mTLS between meshed workloads with zero required configuration** — every meshed-to-meshed connection is encrypted and authenticated by default the moment injection happens, with no `PeerAuthentication`-equivalent resource to author. Traffic management is expressed through a much smaller CRD surface — primarily **`ServiceProfile`** (per-route metrics, retries, and timeouts) and, in newer versions, the Gateway-API-aligned **`HTTPRoute`** for traffic splitting — intentionally trading away some of Istio's fine-grained flexibility for a dramatically simpler operational model and lower resource cost.
 
 ## 2. Why This Matters
 
-- **Linkerd's "batteries included, minimal configuration" philosophy directly answers the resource-overhead and operational-complexity concerns raised about Istio in §123** — for organizations whose primary need is mTLS-by-default and basic per-route observability rather than complex traffic-shaping rules, Linkerd can deliver the core value with meaningfully less to operate and upgrade.
-- **Its Rust-based `linkerd-proxy` is a direct architectural counterpoint to Envoy** — smaller binary, lower memory footprint, and faster startup, all of which matter at scale in exactly the way §122's sidecar-overhead discussion flagged as a real cost.
+- **Linkerd's "batteries included, minimal configuration" philosophy directly answers the resource-overhead and operational-complexity concerns raised about Istio in [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md)** — for organizations whose primary need is mTLS-by-default and basic per-route observability rather than complex traffic-shaping rules, Linkerd can deliver the core value with meaningfully less to operate and upgrade.
+- **Its Rust-based `linkerd-proxy` is a direct architectural counterpoint to Envoy** — smaller binary, lower memory footprint, and faster startup, all of which matter at scale in exactly the way [§122](./Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)'s sidecar-overhead discussion flagged as a real cost.
 - **Choosing between Istio and Linkerd is one of the most common real architectural decisions a platform team makes**, and being able to articulate the actual trade-off (flexibility and CRD surface vs. operational simplicity and resource cost) rather than a vague brand preference is a genuinely practical skill.
 
 🔑 **Key Takeaway:** Linkerd trades away Istio's expansive CRD surface and Envoy-based flexibility for a purpose-built Rust data plane (`linkerd-proxy`), automatic zero-configuration mTLS between meshed workloads, and a smaller control plane — making it the right choice when the primary need is mTLS-by-default and basic observability with the lowest possible operational and resource overhead.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §122 (the sidecar proxy pattern, which Linkerd implements with its own proxy rather than Envoy) and §123 (Istio, since this section is explicitly comparative against it). Also assumes familiarity with §119 (mTLS concepts) since Linkerd's automatic mTLS is best understood as one specific, opinionated implementation choice against that backdrop. Forwards into §125 (Multi-Cluster Architectures), where both mesh implementations' multi-cluster extension models become relevant.
+Builds directly on [§122](./Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md) (the sidecar proxy pattern, which Linkerd implements with its own proxy rather than Envoy) and [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md) (Istio, since this section is explicitly comparative against it). Also assumes familiarity with [§119](../Part15/Section-119-Part15-Network-Security-Deep-Dive-mTLS-Service-Mesh-Security.md) (mTLS concepts) since Linkerd's automatic mTLS is best understood as one specific, opinionated implementation choice against that backdrop. Forwards into [§125](./Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md) (Multi-Cluster Architectures), where both mesh implementations' multi-cluster extension models become relevant.
 
 ## 4. Architecture Diagram
 
@@ -45,7 +45,7 @@ Builds directly on §122 (the sidecar proxy pattern, which Linkerd implements wi
 
 - **`linkerd-identity` issuing per-Pod certificates automatically at injection time is the mechanism behind "mTLS with zero configuration"** — there is no equivalent step to authoring an Istio `PeerAuthentication` resource; encryption between meshed workloads simply happens as soon as both sides have a sidecar.
 - **The control plane is intentionally split into small, single-purpose components** rather than the more consolidated `istiod` binary, reflecting the same minimalism philosophy applied to the control plane as to the data plane.
-- **`linkerd-proxy-injector` uses the identical mutating-webhook admission mechanism** covered in §77 and used by Istio's own injector — the injection mechanics are shared industry practice, not a Linkerd-specific invention.
+- **`linkerd-proxy-injector` uses the identical mutating-webhook admission mechanism** covered in [§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md) and used by Istio's own injector — the injection mechanics are shared industry practice, not a Linkerd-specific invention.
 
 ## 5. Hands-On
 
@@ -133,14 +133,14 @@ spec:
 
 ## 6. Production Usage Notes
 
-- **`linkerd-proxy`'s smaller memory footprint and faster startup relative to Envoy is a genuine, measurable operational advantage at scale**, particularly for clusters running large numbers of small Pods where sidecar overhead (§122) is proportionally more significant.
+- **`linkerd-proxy`'s smaller memory footprint and faster startup relative to Envoy is a genuine, measurable operational advantage at scale**, particularly for clusters running large numbers of small Pods where sidecar overhead ([§122](./Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)) is proportionally more significant.
 - **Linkerd's smaller CRD surface means faster onboarding and fewer configuration mistakes**, but it also means some advanced traffic-management patterns straightforward in Istio (complex header-based routing across many services, for instance) require more workarounds or aren't supported at all.
 - **Linkerd's control-plane upgrade model is comparatively simpler** than Istio's canary-revision approach, owing to its smaller and more modular control-plane component set, though production upgrades should still be staged and verified with `linkerd check` before and after.
 
 ## 7. Security Considerations
 
-- **Automatic mTLS by default is Linkerd's single biggest security differentiator** — because there is no explicit `PeerAuthentication`-equivalent policy to misconfigure or leave at a permissive default, the most common Istio mTLS misconfiguration (leaving `PERMISSIVE` mode in place indefinitely, as flagged in §123) simply has no direct equivalent failure mode in Linkerd.
-- **`linkerd-identity`'s certificate issuance is still a high-value target**, identical in principle to `istiod`'s CA concern from §123 — compromise of the identity component compromises every workload's cryptographic identity across the mesh, and production deployments should treat its trust anchor with the same care as any root CA.
+- **Automatic mTLS by default is Linkerd's single biggest security differentiator** — because there is no explicit `PeerAuthentication`-equivalent policy to misconfigure or leave at a permissive default, the most common Istio mTLS misconfiguration (leaving `PERMISSIVE` mode in place indefinitely, as flagged in [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md)) simply has no direct equivalent failure mode in Linkerd.
+- **`linkerd-identity`'s certificate issuance is still a high-value target**, identical in principle to `istiod`'s CA concern from [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md) — compromise of the identity component compromises every workload's cryptographic identity across the mesh, and production deployments should treat its trust anchor with the same care as any root CA.
 - **Linkerd's authorization model (`Server` and `AuthorizationPolicy` CRDs in newer versions) is intentionally simpler than Istio's `AuthorizationPolicy`** — adequate for straightforward allow/deny-by-identity rules, but teams needing complex conditional authorization logic may find Istio's richer policy language a better fit.
 
 ## 8. Common Troubleshooting Scenarios
@@ -191,13 +191,13 @@ _What the interviewer is probing for:_ Ability to reason about mesh selection as
 
 ## 13. 🔑 Key Takeaways
 
-- Linkerd's `linkerd-proxy` (Rust-based) and modular control plane are a deliberate minimalist counterpoint to Istio's Envoy-based, more expansive architecture from §123.
+- Linkerd's `linkerd-proxy` (Rust-based) and modular control plane are a deliberate minimalist counterpoint to Istio's Envoy-based, more expansive architecture from [§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md).
 - Automatic, zero-configuration mTLS between meshed workloads is Linkerd's defining security differentiator, verifiable concretely via `linkerd viz edges`.
 - `ServiceProfile` retries and timeouts must be scoped by actual route idempotency — blanket retry eligibility risks duplicating side effects on non-idempotent operations.
 - Choosing between Linkerd and Istio is a genuine architectural trade-off between operational simplicity/resource cost and traffic-management flexibility, not a brand preference.
 
 ## 14. Related Concepts & What's Next
 
-§123 established Istio's flexible, CRD-rich approach to traffic management, mTLS, and observability; this section presented Linkerd as the deliberately minimalist alternative implementing the same §122 sidecar pattern with a purpose-built Rust proxy and zero-configuration mTLS. §125 shifts focus from single-cluster mesh choice to multi-cluster architecture entirely — how organizations extend either mesh (or avoid needing to) across multiple clusters via federation-style patterns and Cluster API, building on the managed-Kubernetes foundations from §21.
+[§123](./Section-123-Part16-Istio-Fundamentals-Traffic-Management-mTLS-Observability.md) established Istio's flexible, CRD-rich approach to traffic management, mTLS, and observability; this section presented Linkerd as the deliberately minimalist alternative implementing the same [§122](./Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md) sidecar pattern with a purpose-built Rust proxy and zero-configuration mTLS. [§125](./Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md) shifts focus from single-cluster mesh choice to multi-cluster architecture entirely — how organizations extend either mesh (or avoid needing to) across multiple clusters via federation-style patterns and Cluster API, building on the managed-Kubernetes foundations from [§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md).
 
-**Next Section:** §125 — `Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md`
+**Next Section:** [§125](./Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md) — `Section-125-Part16-Multi-Cluster-Architectures-Federation-Cluster-API.md`

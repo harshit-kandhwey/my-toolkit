@@ -10,15 +10,15 @@
 
 ## 2. Why This Split Matters
 
-- **Failure domains are different for each plane.** A control-plane outage (api-server down, etcd corrupted) can mean the cluster can't accept new instructions or reschedule failed Pods — but, critically, **already-running Pods on data-plane nodes keep running** even if the entire control plane is unreachable. This single fact resolves a huge amount of incident-response confusion (§99, Part 13 covers this scenario directly).
-- **Scaling considerations differ.** The control plane typically runs as a small, highly available set of machines (often 3 or 5 for etcd quorum — §11); the data plane can scale to hundreds or thousands of nodes independently.
-- **Security boundaries differ.** The control plane holds the cluster's "keys to the kingdom" — API access, etcd's stored state, service account tokens — and is the highest-value target for an attacker, which is why control-plane hardening (§113, Part 15) is treated as its own dedicated exam domain in CKS.
+- **Failure domains are different for each plane.** A control-plane outage (api-server down, etcd corrupted) can mean the cluster can't accept new instructions or reschedule failed Pods — but, critically, **already-running Pods on data-plane nodes keep running** even if the entire control plane is unreachable. This single fact resolves a huge amount of incident-response confusion ([§100](../Part13/Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md) covers this scenario directly).
+- **Scaling considerations differ.** The control plane typically runs as a small, highly available set of machines (often 3 or 5 for etcd quorum — [§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)); the data plane can scale to hundreds or thousands of nodes independently.
+- **Security boundaries differ.** The control plane holds the cluster's "keys to the kingdom" — API access, etcd's stored state, service account tokens — and is the highest-value target for an attacker, which is why control-plane hardening ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)) is treated as its own dedicated exam domain in CKS.
 
 🔑 **Key Takeaway:** The control plane decides; the data plane executes. They are independently deployed, independently scaled, and independently fail — and distinguishing them is the first diagnostic question in almost any Kubernetes investigation.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §1 (Pods, nodes, reconciliation) and §2 (Borg lineage). No new external prerequisites.
+Builds on [§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) (Pods, nodes, reconciliation) and [§2](./Section-02-Part1-History-Borg-Omega-Kubernetes-CNCF-Governance.md) (Borg lineage). No new external prerequisites.
 
 ## 4. Architecture Diagram
 
@@ -48,8 +48,8 @@ Builds on §1 (Pods, nodes, reconciliation) and §2 (Borg lineage). No new exter
    └───────────────────┘   └───────────────────┘   └───────────────────┘
 ```
 
-- **Control plane components** (full deep dive in §8–§15, Part 2): kube-apiserver, etcd, kube-scheduler, kube-controller-manager, and optionally cloud-controller-manager.
-- **Data plane / node components** (full deep dive in §9, Part 2): kubelet, kube-proxy, and a container runtime (containerd or CRI-O).
+- **Control plane components** (full deep dive in [§8](../Part2/Section-08-Part2-Control-Plane-Components.md)–[§15](../Part2/Section-15-Part2-High-Availability-Control-Plane-Architectures.md)): kube-apiserver, etcd, kube-scheduler, kube-controller-manager, and optionally cloud-controller-manager.
+- **Data plane / node components** (full deep dive in [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)): kubelet, kube-proxy, and a container runtime (containerd or CRI-O).
 - **The API server is the only door.** Every other component — including the scheduler and controllers — talks to cluster state exclusively through the api-server's API, never by reading etcd directly. This is a deliberate architectural choice that keeps etcd's access model simple and auditable.
 
 ## 5. Hands-On: Distinguishing Control Plane From Data Plane on a Running Cluster
@@ -74,11 +74,11 @@ worker-1    Ready    <none>          30d   v1.30.2   10.0.2.11
 worker-2    Ready    <none>          30d   v1.30.2   10.0.2.12
 ```
 
-**Production usage example:** In a self-managed (kubeadm) cluster, this immediately shows the operator which machines are control-plane and thus the highest-priority targets for hardening, backup (etcd snapshots — §108), and access restriction. On managed clusters (EKS/AKS/GKE), the control plane is entirely hidden from this output — the cloud provider hosts and manages it, and `kubectl get nodes` shows only worker nodes (§21, Part 3 covers this managed-vs-self-managed distinction).
+**Production usage example:** In a self-managed (kubeadm) cluster, this immediately shows the operator which machines are control-plane and thus the highest-priority targets for hardening, backup (etcd snapshots — [§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md)), and access restriction. On managed clusters (EKS/AKS/GKE), the control plane is entirely hidden from this output — the cloud provider hosts and manages it, and `kubectl get nodes` shows only worker nodes ([§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md) covers this managed-vs-self-managed distinction).
 
 ### 5.2 `kubectl get pods -n kube-system -o wide` — See Control-Plane Components (Self-Managed Clusters)
 
-**Purpose:** On a kubeadm-bootstrapped cluster, control-plane components typically run as Pods themselves (static Pods — §46, Part 3), visible in the `kube-system` namespace.
+**Purpose:** On a kubeadm-bootstrapped cluster, control-plane components typically run as Pods themselves (static Pods — [§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md)), visible in the `kube-system` namespace.
 
 **Example usage and expected output:**
 
@@ -100,21 +100,21 @@ kube-proxy-xyz89                1/1     Running   worker-1
 ## 6. Production Usage Notes: Reasoning About Failures With This Model
 
 - **"The control plane is down" does not mean "the application is down."** Running Pods continue serving traffic via kube-proxy's already-programmed rules even if the api-server is completely unreachable — what breaks is the ability to _change_ anything (new deployments, scaling, rescheduling failed Pods) until the control plane recovers. This is one of the most important facts for calibrating incident severity correctly.
-- **Managed Kubernetes offerings sell control-plane operation as a service.** EKS, AKS, and GKE each run and patch the control plane on the customer's behalf, charging for it, precisely because control-plane operation (etcd backup, api-server HA, certificate rotation) is real, ongoing operational work that most teams would rather not own directly (§22, Part 3 covers this trade-off).
+- **Managed Kubernetes offerings sell control-plane operation as a service.** EKS, AKS, and GKE each run and patch the control plane on the customer's behalf, charging for it, precisely because control-plane operation (etcd backup, api-server HA, certificate rotation) is real, ongoing operational work that most teams would rather not own directly ([§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md) covers this trade-off).
 - **Data-plane node failure is routine and expected; control-plane failure is not.** Kubernetes is explicitly designed to tolerate individual node failures as a normal event (that's the entire point of the reconciliation loop) — but control-plane unavailability, even briefly, is treated as a more serious operational event because it removes the cluster's ability to self-heal during the outage.
 
 ## 7. Security Considerations
 
-- The control plane is the single highest-value target in a cluster: api-server access, etcd's raw data (which contains Secrets in plaintext by default unless encryption at rest is configured — §113, Part 15), and controller-manager's credentials all live there.
-- Network access to the control plane (particularly the api-server's port and etcd's client port) should be restricted far more tightly than access to data-plane nodes — this is a foundational CKS "Cluster Hardening" concern (§113).
+- The control plane is the single highest-value target in a cluster: api-server access, etcd's raw data (which contains Secrets in plaintext by default unless encryption at rest is configured — [§43](../Part6/Section-43-Part6-Encrypting-Secrets-At-Rest-EncryptionConfiguration.md)), and controller-manager's credentials all live there.
+- Network access to the control plane (particularly the api-server's port and etcd's client port) should be restricted far more tightly than access to data-plane nodes — this is a foundational CKS "Cluster Hardening" concern ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                         | Likely Cause                                                                              | Resolution Path                                                                                |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Existing Pods keep serving traffic, but `kubectl apply` hangs   | Control-plane component (api-server or etcd) is degraded or unreachable                   | Check control-plane component health directly (§99, Part 13); do not assume application outage |
-| A node shows as `NotReady` but Pods on it still respond briefly | kubelet lost contact with api-server, but existing Pod processes haven't been evicted yet | Investigate kubelet/node networking (§99); expect eventual eviction if unresolved              |
-| `kubectl get pods -n kube-system` shows no control-plane Pods   | Running on managed Kubernetes (EKS/AKS/GKE) where the control plane is hidden             | Expected behavior — verify via the cloud provider's console/API instead                        |
+| Symptom                                                         | Likely Cause                                                                              | Resolution Path                                                                                                                                                                           |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Existing Pods keep serving traffic, but `kubectl apply` hangs   | Control-plane component (api-server or etcd) is degraded or unreachable                   | Check control-plane component health directly ([§100](../Part13/Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md)); do not assume application outage |
+| A node shows as `NotReady` but Pods on it still respond briefly | kubelet lost contact with api-server, but existing Pod processes haven't been evicted yet | Investigate kubelet/node networking ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)); expect eventual eviction if unresolved                 |
+| `kubectl get pods -n kube-system` shows no control-plane Pods   | Running on managed Kubernetes (EKS/AKS/GKE) where the control plane is hidden             | Expected behavior — verify via the cloud provider's console/API instead                                                                                                                   |
 
 ## 9. Best Practices
 
@@ -162,6 +162,6 @@ _What the interviewer is probing for:_ Whether the candidate translates the conc
 
 ## 14. Related Concepts & What's Next
 
-§8–§15 (Part 2) open every control-plane component introduced here individually in full depth. §9 does the same for data-plane/node components. §21–§23 (Part 3) cover the practical difference between bootstrapping a self-managed control plane with kubeadm versus consuming a managed one (EKS/AKS/GKE). §99–§101 (Part 13) build the full troubleshooting methodology this section's failure-mode discussion only previews. §113 (Part 15) returns to the control-plane security priority noted in §7 with full CKS-level hardening depth.
+[§8](../Part2/Section-08-Part2-Control-Plane-Components.md)–[§15](../Part2/Section-15-Part2-High-Availability-Control-Plane-Architectures.md) open every control-plane component introduced here individually in full depth. [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) does the same for data-plane/node components. [§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) cover the practical difference between bootstrapping a self-managed control plane with kubeadm versus consuming a managed one (EKS/AKS/GKE). [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)–[§101](../Part13/Section-101-Part13-Networking-Troubleshooting-Scenarios-Unreachable-Services-DNS-Failures.md) build the full troubleshooting methodology this section's failure-mode discussion only previews. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) returns to the control-plane security priority noted in [§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md) with full CKS-level hardening depth.
 
-**Next Section:** §4 — `Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md`
+**Next Section:** [§4 — Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md](./Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md)

@@ -8,15 +8,15 @@
 
 ## 2. Why etcd's Internals Matter
 
-- **etcd's availability _is_ the cluster's ability to change state.** Because kube-apiserver refuses writes it cannot durably commit to etcd, an etcd quorum loss doesn't just slow the cluster down — it stops all writes entirely, even though already-running Pods keep serving traffic (§3).
+- **etcd's availability _is_ the cluster's ability to change state.** Because kube-apiserver refuses writes it cannot durably commit to etcd, an etcd quorum loss doesn't just slow the cluster down — it stops all writes entirely, even though already-running Pods keep serving traffic ([§3](../Part1/Section-03-Part1-Kubernetes-Architecture-Overview.md)).
 - **Sizing etcd (3 vs. 5 members) is a direct, quantifiable trade-off**, not an arbitrary choice — understanding Raft's quorum math is what lets an operator correctly reason about how many simultaneous node failures a given etcd cluster size can survive.
-- **etcd backup/restore is the actual disaster-recovery plan for an entire Kubernetes cluster.** Losing etcd without a recent snapshot means losing every Deployment, Secret, and configuration the cluster ever had — even if every node and workload is otherwise perfectly healthy. This is why etcd backup procedure (§107, Part 14) is treated as one of the highest-priority operational responsibilities in self-managed Kubernetes.
+- **etcd backup/restore is the actual disaster-recovery plan for an entire Kubernetes cluster.** Losing etcd without a recent snapshot means losing every Deployment, Secret, and configuration the cluster ever had — even if every node and workload is otherwise perfectly healthy. This is why etcd backup procedure ([§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md)) is treated as one of the highest-priority operational responsibilities in self-managed Kubernetes.
 
 🔑 **Key Takeaway:** etcd is Kubernetes' only source of persisted truth, made consistent across replicas via Raft's quorum requirement — understanding quorum math directly explains both how many etcd failures a cluster tolerates and why etcd backups are the real disaster-recovery plan for the entire cluster.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §8 (etcd's role among the five control-plane components). No new external prerequisites.
+Builds directly on [§8](./Section-08-Part2-Control-Plane-Components.md) (etcd's role among the five control-plane components). No new external prerequisites.
 
 ## 4. The Data Model
 
@@ -31,7 +31,7 @@ etcd stores everything as a flat key-value map, keyed hierarchically:
 ```
 
 - **Everything the api-server manages ends up here, in this same flat key-value structure** — there is no separate "Pod database" and "Secret database"; it's one consistent store, organized by key path.
-- **Only kube-apiserver ever reads or writes these keys directly** (§8) — no other component, including the scheduler or controller-manager, connects to etcd on its own.
+- **Only kube-apiserver ever reads or writes these keys directly** ([§8](./Section-08-Part2-Control-Plane-Components.md)) — no other component, including the scheduler or controller-manager, connects to etcd on its own.
 
 ## 5. Raft Consensus and Quorum
 
@@ -90,7 +90,7 @@ https://10.0.1.11:2379 is healthy: successfully committed proposal: took = 14ms
 https://10.0.1.12:2379 is healthy: successfully committed proposal: took = 11ms
 ```
 
-**Production usage example:** During an incident where `kubectl apply` commands are hanging or failing cluster-wide, this is a direct, immediate check for whether etcd itself has lost quorum — a materially different root cause than an api-server-specific problem, requiring a different response (§99, Part 13).
+**Production usage example:** During an incident where `kubectl apply` commands are hanging or failing cluster-wide, this is a direct, immediate check for whether etcd itself has lost quorum — a materially different root cause than an api-server-specific problem, requiring a different response ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)).
 
 ### 6.3 `etcdctl snapshot save` — The Actual Backup Mechanism
 
@@ -100,7 +100,7 @@ https://10.0.1.12:2379 is healthy: successfully committed proposal: took = 11ms
 $ ETCDCTL_API=3 etcdctl snapshot save /backup/etcd-snapshot-$(date +%Y%m%d).db ...
 ```
 
-**Production usage example:** This command, run on a schedule and stored off-node, is the actual disaster-recovery mechanism for a self-managed cluster — full restore procedure covered in §107 (Part 14). Losing etcd without a recent snapshot means every Deployment, Secret, and Namespace definition is gone, even if every node's containers are still technically running.
+**Production usage example:** This command, run on a schedule and stored off-node, is the actual disaster-recovery mechanism for a self-managed cluster — full restore procedure covered in [§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md). Losing etcd without a recent snapshot means every Deployment, Secret, and Namespace definition is gone, even if every node's containers are still technically running.
 
 ## 7. Production Usage Notes: Latency and Placement Sensitivity
 
@@ -109,16 +109,16 @@ $ ETCDCTL_API=3 etcdctl snapshot save /backup/etcd-snapshot-$(date +%Y%m%d).db .
 
 ## 8. Security Considerations
 
-- **etcd stores Secrets in plaintext by default** unless encryption at rest (`EncryptionConfiguration`) is explicitly configured — direct filesystem or network access to etcd's data should be treated as equivalent to full cluster compromise, a core CKS cluster-hardening concern (§113, Part 15).
+- **etcd stores Secrets in plaintext by default** unless encryption at rest (`EncryptionConfiguration`) is explicitly configured — direct filesystem or network access to etcd's data should be treated as equivalent to full cluster compromise, a core CKS cluster-hardening concern ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 - etcd's client and peer communication should always use mutual TLS in production — an unauthenticated etcd endpoint is a direct path to reading or forging any cluster state, including Secrets.
 
 ## 9. Common Troubleshooting Scenarios
 
-| Symptom                                                            | Likely Cause                                                                             | Resolution Path                                                                                         |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `kubectl apply`/writes hang or fail cluster-wide, reads still work | etcd quorum lost (majority of members unreachable)                                       | Check `etcdctl endpoint health`/`member list`; restore connectivity to enough members to regain quorum  |
-| etcd cluster is slow under load, even with adequate CPU/memory     | Slow disk I/O or high network latency between etcd members                               | Check disk write latency and inter-member network latency specifically, not just general resource usage |
-| Cluster state appears to have reverted to an old configuration     | A restore was performed from a stale snapshot, or split-brain during a network partition | Verify snapshot recency before restore; investigate network partition history (§107, Part 14)           |
+| Symptom                                                            | Likely Cause                                                                             | Resolution Path                                                                                                                                        |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kubectl apply`/writes hang or fail cluster-wide, reads still work | etcd quorum lost (majority of members unreachable)                                       | Check `etcdctl endpoint health`/`member list`; restore connectivity to enough members to regain quorum                                                 |
+| etcd cluster is slow under load, even with adequate CPU/memory     | Slow disk I/O or high network latency between etcd members                               | Check disk write latency and inter-member network latency specifically, not just general resource usage                                                |
+| Cluster state appears to have reverted to an old configuration     | A restore was performed from a stale snapshot, or split-brain during a network partition | Verify snapshot recency before restore; investigate network partition history ([§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md)) |
 
 ## 10. Best Practices
 
@@ -167,6 +167,6 @@ _What the interviewer is probing for:_ Whether the candidate connects quorum mat
 
 ## 15. Related Concepts & What's Next
 
-§8 introduced etcd's role among the five control-plane components at a summary level; this section delivered its full internal mechanics. §11 (next) covers the Container Runtime Interface, moving from the control-plane's data store to the data-plane's execution layer. §107 (Part 14) covers etcd backup and restore procedures in complete operational depth. §113 (Part 15) covers etcd encryption at rest and access hardening as part of full CKS-level cluster hardening.
+[§8](./Section-08-Part2-Control-Plane-Components.md) introduced etcd's role among the five control-plane components at a summary level; this section delivered its full internal mechanics. [§11](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md) (next) covers the Container Runtime Interface, moving from the control-plane's data store to the data-plane's execution layer. [§107](../Part14/Section-107-Part14-etcd-Backup-Restore-Procedures.md) covers etcd backup and restore procedures in complete operational depth. [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) covers etcd encryption at rest and access hardening as part of full CKS-level cluster hardening.
 
-**Next Section:** §11 — `Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md`
+**Next Section:** [§11 — Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md](./Section-11-Part2-Container-Runtime-Interface-Containerd-CRIO-Dockershim.md)

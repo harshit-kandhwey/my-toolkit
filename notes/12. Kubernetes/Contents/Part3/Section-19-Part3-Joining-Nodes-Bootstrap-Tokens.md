@@ -4,19 +4,19 @@
 
 **Plain language:** A brand-new machine with a fresh kubelet installed doesn't automatically know anything about an existing cluster, and the cluster doesn't automatically trust it either — there has to be a controlled handshake where the new node proves it's authorized to join, and the cluster hands it back the credentials it needs to operate as a real member.
 
-**Precise definition:** A **bootstrap token** is a short-lived, narrowly-scoped shared secret (format `[a-z0-9]{6}.[a-z0-9]{16}`) that kubeadm generates on the control plane and that a joining node presents to authenticate temporarily as the special `system:bootstrappers` group. That temporary identity is authorized — via a pre-configured RBAC binding — to do exactly one thing: submit a **Certificate Signing Request (CSR)** to the api-server so the new node can obtain its own real kubelet client certificate signed by the cluster CA (§18). Once that CSR is approved (automatically, by the default `kubelet-bootstrap` auto-approval controller), the node has a durable, long-lived identity and the bootstrap token itself is discarded.
+**Precise definition:** A **bootstrap token** is a short-lived, narrowly-scoped shared secret (format `[a-z0-9]{6}.[a-z0-9]{16}`) that kubeadm generates on the control plane and that a joining node presents to authenticate temporarily as the special `system:bootstrappers` group. That temporary identity is authorized — via a pre-configured RBAC binding — to do exactly one thing: submit a **Certificate Signing Request (CSR)** to the api-server so the new node can obtain its own real kubelet client certificate signed by the cluster CA ([§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)). Once that CSR is approved (automatically, by the default `kubelet-bootstrap` auto-approval controller), the node has a durable, long-lived identity and the bootstrap token itself is discarded.
 
 ## 2. Why This Matters
 
 - **This is the mechanism that turns "a Linux box with kubelet installed" into "a trusted cluster member,"** and it's deliberately time-boxed and minimally privileged specifically so a leaked join command doesn't grant standing cluster access forever — tokens expire (24 hours by default) and only ever authorize the CSR-submission step, nothing more.
-- **§18's entire certificate-issuance story has to start somewhere for a new node**, and this section is exactly that starting point — bootstrap tokens are the credential a node uses before it has any real cluster identity of its own.
+- **[§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)'s entire certificate-issuance story has to start somewhere for a new node**, and this section is exactly that starting point — bootstrap tokens are the credential a node uses before it has any real cluster identity of its own.
 - **Both CKA (cluster installation domain) and real production onboarding workflows depend on fluent command-line handling of this flow** — generating tokens, printing join commands, and diagnosing a node stuck in `NotReady` because its join never completed correctly are routine, testable, real-world tasks.
 
 🔑 **Key Takeaway:** A bootstrap token is a deliberately short-lived, narrowly-scoped credential whose only job is to let a brand-new node request its own real, cluster-CA-signed certificate — after which the token itself becomes irrelevant and the node's ongoing identity comes entirely from that certificate.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §16 (`kubeadm init`, which creates the first bootstrap token and control plane) and §18 (the PKI that ultimately issues the new node's real, durable certificate). Establishes the identity foundation that worker-node kubelet operation depends on throughout the rest of this roadmap.
+Builds directly on [§16](./Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md) (`kubeadm init`, which creates the first bootstrap token and control plane) and [§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md) (the PKI that ultimately issues the new node's real, durable certificate). Establishes the identity foundation that worker-node kubelet operation depends on throughout the rest of this roadmap.
 
 ## 4. Node-Join Sequence Diagram
 
@@ -111,7 +111,7 @@ This node has joined the cluster:
 Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
 ```
 
-**Production usage example:** Immediately after this completes, verify from the control plane with `kubectl get nodes` — a node that never transitions from absent to `NotReady` to `Ready` usually indicates a CNI plugin not yet applied (§23 covers cluster networking prerequisites at install time) rather than a join failure per se.
+**Production usage example:** Immediately after this completes, verify from the control plane with `kubectl get nodes` — a node that never transitions from absent to `NotReady` to `Ready` usually indicates a CNI plugin not yet applied ([§23](./Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md) covers cluster networking prerequisites at install time) rather than a join failure per se.
 
 **Common errors:** `--discovery-token-ca-cert-hash` mismatch (stale hash copied from an old cluster, or the control plane's CA was regenerated) causes the join to fail fast with a certificate validation error — regenerate both the token and the hash together with `kubeadm token create --print-join-command` rather than reusing a stale hash with a fresh token.
 
@@ -134,7 +134,7 @@ bootstrap token "abcdef" deleted
 
 - **The default 24-hour token TTL is intentional and should rarely be extended** — infrastructure-as-code node-provisioning pipelines should generate a fresh token at the moment of use rather than baking a long-lived or extended-TTL token into a golden image or long-running automation script.
 - **Auto-approval of kubelet-serving CSRs from `system:bootstrappers` is a default RBAC-configured behavior**, not something hardcoded — in higher-security environments this auto-approval can be tightened or replaced with a manual/audited approval workflow for CSRs, at the cost of losing zero-touch node onboarding.
-- **The control-plane endpoint used in `kubeadm join` should be a stable, highly-available address** (a load balancer VIP in HA topologies, §15) rather than a single control-plane node's IP — joining against one specific node's address creates a single point of failure for all future node onboarding.
+- **The control-plane endpoint used in `kubeadm join` should be a stable, highly-available address** (a load balancer VIP in HA topologies, [§15](../Part2/Section-15-Part2-High-Availability-Control-Plane-Architectures.md)) rather than a single control-plane node's IP — joining against one specific node's address creates a single point of failure for all future node onboarding.
 
 ## 7. Security Considerations
 
@@ -174,7 +174,7 @@ _What the interviewer is probing for:_ Basic understanding that node-joining is 
 _What the interviewer is probing for:_ Understanding of why the hash exists (a security purpose, not an arbitrary parameter) and practical remediation steps.
 
 **🎯 Senior:** _"Why does kubeadm design bootstrap tokens to be short-lived and narrowly scoped to just CSR submission, rather than just handing the new node a full kubeconfig directly during join?"_
-**Model answer:** It's a least-privilege and blast-radius design decision. A bootstrap token that could do more than submit one CSR — say, a token equivalent to a full admin kubeconfig — would be a much higher-value target if a join command leaked (e.g., pasted into a support ticket, left in shell history, or intercepted). By scoping the token to exactly one narrow action (CSR submission as `system:bootstrappers`) and giving it a short default TTL (24 hours), even a leaked token is only useful for a brief window and only for the single, auditable action of requesting a certificate — it can't be used to read Secrets, list Pods, or take any other cluster action. The node's actual ongoing capability comes entirely from the real, CA-signed certificate it earns afterward, which is subject to the cluster's normal RBAC and certificate-rotation lifecycle (§18), not the bootstrap mechanism.
+**Model answer:** It's a least-privilege and blast-radius design decision. A bootstrap token that could do more than submit one CSR — say, a token equivalent to a full admin kubeconfig — would be a much higher-value target if a join command leaked (e.g., pasted into a support ticket, left in shell history, or intercepted). By scoping the token to exactly one narrow action (CSR submission as `system:bootstrappers`) and giving it a short default TTL (24 hours), even a leaked token is only useful for a brief window and only for the single, auditable action of requesting a certificate — it can't be used to read Secrets, list Pods, or take any other cluster action. The node's actual ongoing capability comes entirely from the real, CA-signed certificate it earns afterward, which is subject to the cluster's normal RBAC and certificate-rotation lifecycle ([§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)), not the bootstrap mechanism.
 _What the interviewer is probing for:_ Genuine grasp of least-privilege design reasoning, not just recall of the mechanism's steps.
 
 **🎯 Architect:** _"You're designing an auto-scaling worker-node pool for a self-managed kubeadm cluster that needs to add and remove nodes dynamically based on load. How does the bootstrap token mechanism factor into that design, and what would you automate around it?"_
@@ -192,12 +192,12 @@ _What the interviewer is probing for:_ Ability to translate a security-scoped bo
 
 - Bootstrap tokens are short-lived (24-hour default), narrowly-scoped credentials that let a new node authenticate as `system:bootstrappers` for exactly one purpose: submitting a CSR.
 - `--discovery-token-ca-cert-hash` pins the expected CA certificate hash, protecting the discovery step from man-in-the-middle attacks before the node trusts the control-plane endpoint at all.
-- Once the CSR is auto-approved and signed, the node's real, durable identity comes from its cluster-CA-issued certificate (§18) — the bootstrap token itself becomes irrelevant afterward.
+- Once the CSR is auto-approved and signed, the node's real, durable identity comes from its cluster-CA-issued certificate ([§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)) — the bootstrap token itself becomes irrelevant afterward.
 - Always generate fresh tokens at time of use rather than baking them into long-lived images or reusing stale join commands.
 - A successful join confirms only the certificate exchange — reaching `Ready` status still depends on CNI and kubelet health, which is where troubleshooting should continue if a node stalls post-join.
 
 ## 14. Related Concepts & What's Next
 
-This section built directly on §16 (`kubeadm init`, which mints the first token and control plane) and depends entirely on §18's PKI for the real certificate a joining node ultimately receives. It sets up the worker-node operational model that the rest of this roadmap's data-plane and networking sections assume is already in place. §20 (next) covers how the resulting cluster access — for both nodes and human operators — is packaged and switched between via kubeconfig files and contexts.
+This section built directly on [§16](./Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md) (`kubeadm init`, which mints the first token and control plane) and depends entirely on [§18](./Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)'s PKI for the real certificate a joining node ultimately receives. It sets up the worker-node operational model that the rest of this roadmap's data-plane and networking sections assume is already in place. [§20](./Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md) (next) covers how the resulting cluster access — for both nodes and human operators — is packaged and switched between via kubeconfig files and contexts.
 
-**Next Section:** §20 — `Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md`
+**Next Section:** [§20](./Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md) — `Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md`

@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **This precedence order is exactly what resolves the "which value actually won" confusion** that arises the moment a Pod spec combines ConfigMap-sourced (§41) and Secret-sourced (§42) environment variables with the same name — a scenario that comes up constantly in real manifests inheriting from a shared base plus environment-specific overrides.
+- **This precedence order is exactly what resolves the "which value actually won" confusion** that arises the moment a Pod spec combines ConfigMap-sourced ([§41](./Section-41-Part6-ConfigMaps-Creation-Consumption.md)) and Secret-sourced ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) environment variables with the same name — a scenario that comes up constantly in real manifests inheriting from a shared base plus environment-specific overrides.
 - **Debugging "the app is reading the wrong config value" incidents requires knowing this order cold.** Without it, engineers resort to trial-and-error editing instead of reading the merge rule directly off the spec, which is both slower and more error-prone during an active incident.
-- **Kustomize overlays and Helm values layering (§47, Part 6; §84, Part 11) depend on this same underlying precedence model** — an overlay that adds an `env` entry is relying on exactly this "explicit `env` beats `envFrom`" rule to override a base-layer ConfigMap value predictably.
+- **Kustomize overlays and Helm values layering ([§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md); [§84](../Part11/Section-84-Part11-Kustomize-Bases-Overlays-Patches.md)) depend on this same underlying precedence model** — an overlay that adds an `env` entry is relying on exactly this "explicit `env` beats `envFrom`" rule to override a base-layer ConfigMap value predictably.
 
 🔑 **Key Takeaway:** Kubernetes merges environment variables in a strict, deterministic order — image `ENV` first, then `envFrom` in list order, then explicit `env` entries in list order — with explicit `env` always winning over `envFrom` regardless of YAML ordering, and later list entries always winning over earlier ones within the same block.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §41 (ConfigMaps as an env source via `envFrom`/`env`) and §42 (Secrets as an env source via `secretKeyRef`), and assumes the Pod spec structure introduced in §24.
+Builds directly on [§41](./Section-41-Part6-ConfigMaps-Creation-Consumption.md) (ConfigMaps as an env source via `envFrom`/`env`) and [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) (Secrets as an env source via `secretKeyRef`), and assumes the Pod spec structure introduced in [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md).
 
 ## 4. Architecture: The Environment Variable Merge Order
 
@@ -111,7 +111,7 @@ $ kubectl exec precedence-demo-2 -- env | grep LOG_LEVEL
 LOG_LEVEL=trace
 ```
 
-**Production usage example:** This rule is exactly why a Kustomize overlay (§47) can safely add a targeted `env` entry to override one specific value from a shared base Deployment's `envFrom` block, without needing to touch or duplicate the base ConfigMap at all — the override is guaranteed to win structurally, not by coincidence of ordering.
+**Production usage example:** This rule is exactly why a Kustomize overlay ([§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md)) can safely add a targeted `env` entry to override one specific value from a shared base Deployment's `envFrom` block, without needing to touch or duplicate the base ConfigMap at all — the override is guaranteed to win structurally, not by coincidence of ordering.
 
 **Common errors:** Engineers sometimes reorder `env` and `envFrom` blocks in YAML expecting that to change the outcome — it never does; the mechanism used (explicit `env` vs. bulk `envFrom`), not block position, determines precedence.
 
@@ -149,13 +149,13 @@ DATABASE_URL=postgres://db-service:5432/app
 ## 6. Production Usage Notes
 
 - **`kubectl set env` provides a fast imperative way to add or override a single environment variable** on a running Deployment (`kubectl set env deployment/app LOG_LEVEL=debug`), which triggers a rollout — useful for a quick production diagnostic toggle, though it should generally be followed up by updating the actual manifest so the change isn't lost on the next `kubectl apply`.
-- **Neither `env` nor `envFrom` changes propagate to already-running containers** (as established in §41/§42) — any precedence resolution described here happens once, at container start, not continuously; a running container never re-evaluates its environment.
+- **Neither `env` nor `envFrom` changes propagate to already-running containers** (as established in [§41](./Section-41-Part6-ConfigMaps-Creation-Consumption.md)/[§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) — any precedence resolution described here happens once, at container start, not continuously; a running container never re-evaluates its environment.
 - **Helm's `values.yaml` layering and Kustomize's `configMapGenerator`/patches both ultimately compile down to this exact same `env`/`envFrom` merge model** — understanding the raw Kubernetes precedence rule makes debugging a templated chart's or overlay's final rendered environment far more tractable than treating the templating tool as a black box.
 
 ## 7. Security Considerations
 
 - A misconfigured precedence order can cause a production Pod to silently pick up a lower-privilege or stale credential from an `envFrom` source that was meant to be overridden — always verify the actual resolved environment (`kubectl exec ... -- env`) rather than trusting the manifest's apparent intent, especially after a refactor that reorders `env`/`envFrom` blocks.
-- Environment variables resolved from a Secret (§42) are visible in the running container's process environment to any process with access to `/proc/<pid>/environ` inside that container — precedence resolution doesn't change this exposure surface, it only determines _which_ value ends up exposed.
+- Environment variables resolved from a Secret ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) are visible in the running container's process environment to any process with access to `/proc/<pid>/environ` inside that container — precedence resolution doesn't change this exposure surface, it only determines _which_ value ends up exposed.
 - When debugging precedence issues in a shared, multi-team manifest, avoid pasting the full resolved environment (which may include Secret values) into a shared ticket or chat channel — redact sensitive keys before sharing troubleshooting output.
 
 ## 8. Common Troubleshooting Scenarios
@@ -189,7 +189,7 @@ _What the interviewer is probing for:_ Basic, correct grasp of the `env`-beats-`
 _What the interviewer is probing for:_ Understanding that silent overwrites, not errors, are the failure mode — and that this requires active verification, not just careful reading of the spec.
 
 **🎯 Senior:** _"A team's Kustomize overlay adds an `env` entry to override a single value that comes from a shared base Deployment's `envFrom`-referenced ConfigMap. Explain why this works reliably without needing to fork or duplicate the base ConfigMap."_
-**Model answer:** It works because of the fixed precedence rule that explicit `env` entries always beat `envFrom`-sourced values for the same variable name, independent of block position. The overlay's patch adds a single `env` entry with the override value; when merged with the base Deployment's `envFrom` reference to the shared ConfigMap, Kubernetes resolves the final container environment with the overlay's explicit `env` value winning, because that's a structural guarantee of the merge order, not an artifact of how the patch happens to be positioned in the merged YAML. This lets teams keep one shared base ConfigMap (avoiding duplication and drift across environments) while still allowing narrowly-scoped per-environment or per-team overrides through Kustomize patches, which is exactly the pattern behind multi-environment configuration strategies (§47).
+**Model answer:** It works because of the fixed precedence rule that explicit `env` entries always beat `envFrom`-sourced values for the same variable name, independent of block position. The overlay's patch adds a single `env` entry with the override value; when merged with the base Deployment's `envFrom` reference to the shared ConfigMap, Kubernetes resolves the final container environment with the overlay's explicit `env` value winning, because that's a structural guarantee of the merge order, not an artifact of how the patch happens to be positioned in the merged YAML. This lets teams keep one shared base ConfigMap (avoiding duplication and drift across environments) while still allowing narrowly-scoped per-environment or per-team overrides through Kustomize patches, which is exactly the pattern behind multi-environment configuration strategies ([§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md)).
 _What the interviewer is probing for:_ Ability to connect the low-level precedence rule to a higher-level tooling pattern (Kustomize overlays) that depends on it working correctly and predictably.
 
 **🎯 Architect:** _"You're reviewing a platform-wide Helm chart used by fifty teams, where `values.yaml` can inject both `envFrom` block references and explicit `env` overrides. What guardrails would you put in place around environment variable precedence to prevent incidents at that scale?"_
@@ -212,6 +212,6 @@ _What the interviewer is probing for:_ Ability to turn a subtle, silent-failure-
 
 ## 14. Related Concepts & What's Next
 
-This section builds directly on §41 (ConfigMaps as an `envFrom`/`env` source) and §42 (Secrets as an `envFrom`/`env` source), and connects forward to §47 (Kustomize overlays, which rely on this exact precedence model for environment-specific configuration) and §84 (Part 11, Helm values layering, which compiles down to the same underlying merge rule). §45, next, shifts from configuration data to Pod and container-level security posture via SecurityContext.
+This section builds directly on [§41](./Section-41-Part6-ConfigMaps-Creation-Consumption.md) (ConfigMaps as an `envFrom`/`env` source) and [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) (Secrets as an `envFrom`/`env` source), and connects forward to [§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md) (Kustomize overlays, which rely on this exact precedence model for environment-specific configuration) and [§84](../Part11/Section-84-Part11-Kustomize-Bases-Overlays-Patches.md) (Part 11, Helm values layering, which compiles down to the same underlying merge rule). [§45](./Section-45-Part6-SecurityContext-Pod-Container-Level.md), next, shifts from configuration data to Pod and container-level security posture via SecurityContext.
 
-**Next Section:** §45 — `Section-45-Part6-SecurityContext-Pod-Container-Level.md`
+**Next Section:** [§45](./Section-45-Part6-SecurityContext-Pod-Container-Level.md) — `Section-45-Part6-SecurityContext-Pod-Container-Level.md`

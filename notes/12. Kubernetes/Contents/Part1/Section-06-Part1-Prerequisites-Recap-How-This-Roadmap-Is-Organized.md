@@ -10,7 +10,7 @@
 
 - **Skipping prerequisite gaps silently compounds.** A reader who is shaky on Linux processes or basic networking will hit real friction in Part 7 (Networking) or Part 13 (Troubleshooting) specifically because those Parts assume that foundation is already solid — better to identify and close any gap now than mid-roadmap.
 - **Knowing the roadmap's shape in advance changes how each Part is read.** Recognizing that Part 4–6 build core workload literacy, Part 7–9 build connectivity and scheduling, and Part 10 onward build security, delivery, and operations means each new Part can be immediately placed in context rather than encountered as an isolated topic.
-- **This roadmap is certification-mapped, not just topic-organized** (§7 covers this explicitly next) — knowing that up front changes how a reader preparing for CKA, CKAD, or CKS specifically should navigate it.
+- **This roadmap is certification-mapped, not just topic-organized** ([§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md) covers this explicitly next) — knowing that up front changes how a reader preparing for CKA, CKAD, or CKS specifically should navigate it.
 
 🔑 **Key Takeaway:** This roadmap assumes real but modest prerequisites (Linux, containers, YAML, basic networking) and is deliberately sequenced across 18 Parts and 10 phases so that later, harder material (networking, security, troubleshooting) always has its dependencies already built.
 
@@ -20,14 +20,14 @@ This section is itself a consolidation point — it depends on nothing new, but 
 
 ## 4. The Four Assumed Prerequisites
 
-| Prerequisite                                                | Why It's Needed                                                                                                                            | Where to Close the Gap if Missing                                            |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Linux fundamentals (processes, filesystem, users, services) | The kubelet, container runtime, and most troubleshooting techniques ultimately operate at the Linux level on each node                     | [[../../../2. Linux/00-Roadmap]] (125-section dedicated roadmap)             |
-| Container/Docker fundamentals (images, layers, runtime)     | A Pod is fundamentally a wrapper around one or more containers; without this, Part 4's Pod spec is opaque                                  | Brief recap here; deeper container mechanics in §99 (Part 13, Linux roadmap) |
-| YAML syntax                                                 | Every Kubernetes manifest, from Part 4 onward, is written in YAML — indentation and structure errors are a top source of early frustration | Deep dive arrives in §26                                                     |
-| Core networking (IP addressing, DNS, TCP/UDP)               | Part 7's Services, Ingress, and NetworkPolicy content assumes these fundamentals as given                                                  | Briefly recapped in §48                                                      |
+| Prerequisite                                                | Why It's Needed                                                                                                                            | Where to Close the Gap if Missing                                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linux fundamentals (processes, filesystem, users, services) | The kubelet, container runtime, and most troubleshooting techniques ultimately operate at the Linux level on each node                     | [[../../../2. Linux/00-Roadmap]] (125-section dedicated roadmap)                                                                                                     |
+| Container/Docker fundamentals (images, layers, runtime)     | A Pod is fundamentally a wrapper around one or more containers; without this, Part 4's Pod spec is opaque                                  | Brief recap here; deeper container mechanics in [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md) (Part 13, Linux roadmap) |
+| YAML syntax                                                 | Every Kubernetes manifest, from Part 4 onward, is written in YAML — indentation and structure errors are a top source of early frustration | Deep dive arrives in [§26](../Part4/Section-26-Part4-Init-Containers.md)                                                                                             |
+| Core networking (IP addressing, DNS, TCP/UDP)               | Part 7's Services, Ingress, and NetworkPolicy content assumes these fundamentals as given                                                  | Briefly recapped in [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)                                                                     |
 
-**Container fundamentals brief recap:** A container is a running instance of an image — a packaged filesystem plus metadata (entrypoint, environment) — isolated from the host and other containers using Linux kernel primitives (namespaces, cgroups — covered at the OS level in the Linux roadmap's §99). If `docker run nginx` and "an image is a filesystem snapshot plus instructions for how to start a process from it" both make sense already, this prerequisite is satisfied.
+**Container fundamentals brief recap:** A container is a running instance of an image — a packaged filesystem plus metadata (entrypoint, environment) — isolated from the host and other containers using Linux kernel primitives (namespaces, cgroups — covered at the OS level in the Linux roadmap's [§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)). If `docker run nginx` and "an image is a filesystem snapshot plus instructions for how to start a process from it" both make sense already, this prerequisite is satisfied.
 
 ## 5. Roadmap Structure Preview
 
@@ -45,7 +45,7 @@ Phase 10 (P18)     — Wrap-Up
 ```
 
 - **Why this order:** Each phase deliberately depends only on phases before it. Networking (Phase 4) comes after core workloads (Phase 3) because Services and Ingress route traffic _to_ Pods that must already make sense first. Security/RBAC (Phase 5) comes after scheduling because understanding what actually runs where is a prerequisite for reasoning about who should be allowed to affect it. Troubleshooting (Phase 6) deliberately comes late — it synthesizes networking, storage, scheduling, and security failure modes that must already be individually understood.
-- **The certification mapping (§5 in the roadmap's `00-Roadmap.md`) runs orthogonally to this phase structure** — CKA, CKAD, and CKS domains each draw from multiple phases, which is why Part 17's exam prep exists as a dedicated late-roadmap synthesis rather than being folded into Phase 1.
+- **The certification mapping ([§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) in the roadmap's `00-Roadmap.md`) runs orthogonally to this phase structure** — CKA, CKAD, and CKS domains each draw from multiple phases, which is why Part 17's exam prep exists as a dedicated late-roadmap synthesis rather than being folded into Phase 1.
 
 ## 6. Production Usage Notes: Reading This Roadmap With a Specific Goal
 
@@ -56,22 +56,22 @@ Phase 10 (P18)     — Wrap-Up
 
 ## 7. Common Troubleshooting Scenarios
 
-| Symptom                                                             | Likely Cause                                   | Resolution Path                                                                  |
-| ------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| Part 4's Pod spec YAML feels unfamiliar and hard to parse           | YAML syntax prerequisite gap                   | Pause and work through §26 before continuing, rather than pushing forward        |
-| Part 7's Service/networking content feels disconnected from reality | Core networking (IP/DNS/TCP) prerequisite gap  | Review §48's recap, or the dedicated Networking topic if a deeper gap exists     |
-| Struggling to place a new Part in context                           | Skipped this section's phase-structure preview | Re-reference §5's phase diagram to see how the current Part fits the overall arc |
+| Symptom                                                             | Likely Cause                                   | Resolution Path                                                                                                                                       |
+| ------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Part 4's Pod spec YAML feels unfamiliar and hard to parse           | YAML syntax prerequisite gap                   | Pause and work through [§26](../Part4/Section-26-Part4-Init-Containers.md) before continuing, rather than pushing forward                             |
+| Part 7's Service/networking content feels disconnected from reality | Core networking (IP/DNS/TCP) prerequisite gap  | Review [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)'s recap, or the dedicated Networking topic if a deeper gap exists |
+| Struggling to place a new Part in context                           | Skipped this section's phase-structure preview | Re-reference [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)'s phase diagram to see how the current Part fits the overall arc  |
 
 ## 8. Best Practices
 
-- Honestly self-assess against the four prerequisites in §4 before proceeding — closing a real gap now is far cheaper than discovering it mid-Part-7 or mid-Part-13.
-- If reading with a specific certification target, use §6's guidance to prioritize reading order rather than assuming strict sequential Part-by-Part reading is mandatory.
+- Honestly self-assess against the four prerequisites in [§4](./Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md) before proceeding — closing a real gap now is far cheaper than discovering it mid-Part-7 or mid-Part-13.
+- If reading with a specific certification target, use [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s guidance to prioritize reading order rather than assuming strict sequential Part-by-Part reading is mandatory.
 - Revisit this section's phase diagram whenever a new Part's relevance feels unclear — it's designed to answer "why does this topic come now" at every transition point.
 
 ## 9. Common Anti-Patterns / Mistakes
 
 - **Pushing forward through Part 4 onward with a shaky YAML or container-fundamentals prerequisite**, then attributing the resulting confusion to Kubernetes itself rather than the actual gap.
-- **Reading this roadmap purely linearly when preparing for a specific, narrower certification** (e.g., CKAD) without using the certification-priority guidance in §6, wasting study time on lower-yield material for that specific goal.
+- **Reading this roadmap purely linearly when preparing for a specific, narrower certification** (e.g., CKAD) without using the certification-priority guidance in [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md), wasting study time on lower-yield material for that specific goal.
 - **Treating CKS preparation as achievable without first genuinely completing the CKA-aligned material**, ignoring that CKS formally requires an active CKA credential as a prerequisite.
 
 ## 10. Interview Questions
@@ -89,25 +89,25 @@ _What the interviewer is probing for:_ Awareness that "learning Kubernetes" isn'
 _What the interviewer is probing for:_ Understanding of pedagogical sequencing as a deliberate design choice, which also reflects how real incident diagnosis actually works in practice.
 
 **🎯 Architect:** _"You're building an internal Kubernetes onboarding program for engineers with highly variable backgrounds — some strong in Linux, some coming from a pure application-development background with no infrastructure exposure. How do you use a prerequisite structure like this one to design that program?"_
-**Model answer:** I'd start with a prerequisite self-assessment mapped directly to this roadmap's four prerequisites, routing engineers with real gaps (e.g., no Linux or networking background) through a short remedial module before they hit Kubernetes-specific content, rather than letting them struggle silently through Part 4 or Part 7 and misattribute the difficulty to Kubernetes' inherent complexity. I'd also branch the program's depth using something like §6's certification-priority guidance — application developers get a CKAD-weighted path emphasizing workloads and configuration, while engineers heading toward platform/SRE roles get the full CKA-and-beyond path including troubleshooting and cluster lifecycle. The underlying principle is that "learn Kubernetes" is not one curriculum — treating it as one, without accounting for both prerequisite gaps and differing end goals, produces uneven outcomes and wastes engineers' time on material that isn't actually relevant to their role.
+**Model answer:** I'd start with a prerequisite self-assessment mapped directly to this roadmap's four prerequisites, routing engineers with real gaps (e.g., no Linux or networking background) through a short remedial module before they hit Kubernetes-specific content, rather than letting them struggle silently through Part 4 or Part 7 and misattribute the difficulty to Kubernetes' inherent complexity. I'd also branch the program's depth using something like [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s certification-priority guidance — application developers get a CKAD-weighted path emphasizing workloads and configuration, while engineers heading toward platform/SRE roles get the full CKA-and-beyond path including troubleshooting and cluster lifecycle. The underlying principle is that "learn Kubernetes" is not one curriculum — treating it as one, without accounting for both prerequisite gaps and differing end goals, produces uneven outcomes and wastes engineers' time on material that isn't actually relevant to their role.
 _What the interviewer is probing for:_ Ability to turn a roadmap's structure into an actual organizational training design decision, accounting for both variable starting points and variable goals.
 
 ## 11. Common Misconceptions
 
 1. **"Kubernetes has no real prerequisites — you can start from zero."** Genuine, if modest, Linux/container/YAML/networking literacy is assumed; skipping this creates compounding confusion later, not a shortcut.
-2. **"This roadmap must be read strictly Part 1 through Part 18 regardless of goal."** §6 explicitly supports certification-targeted reading orders that reprioritize which Parts matter most for CKA vs. CKAD vs. CKS.
+2. **"This roadmap must be read strictly Part 1 through Part 18 regardless of goal."** [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md) explicitly supports certification-targeted reading orders that reprioritize which Parts matter most for CKA vs. CKAD vs. CKS.
 3. **"CKS can be pursued independently of CKA."** CKS formally requires an active CKA certification as a prerequisite — the roadmap's Part 15 (CKS deep dive) assumes Parts required for CKA are already solid.
 
 ## 12. 🔑 Key Takeaways
 
 - This roadmap assumes four prerequisites: Linux fundamentals, container/Docker basics, YAML syntax, and core networking — each with a specific place in the roadmap where it's recapped or can be back-filled.
 - The 18-part roadmap is organized into 10 learning phases, each deliberately dependent only on phases before it.
-- Certification-targeted readers (CKA/CKAD/CKS) should use §6's prioritization guidance rather than assuming strict linear reading is mandatory.
+- Certification-targeted readers (CKA/CKAD/CKS) should use [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md)'s prioritization guidance rather than assuming strict linear reading is mandatory.
 - CKS formally requires an active CKA credential — Part 15's CKS depth assumes CKA-aligned material is already mastered.
 - Recognizing a genuine prerequisite gap early and closing it is far cheaper than pushing forward and misattributing resulting confusion to Kubernetes itself.
 
 ## 13. Related Concepts & What's Next
 
-§1–§5 established what Kubernetes is, its history, its architecture, its declarative model, and its distribution spectrum — the conceptual foundation this section's phase-structure preview builds on. §7 (next) goes deeper on exactly how CKA, CKAD, and CKS map onto this roadmap's Parts, extending the brief mention in §6 into a full domain-by-domain breakdown. §26 (Part 4) delivers the YAML deep dive flagged as a prerequisite gap-closer here. §48 (Part 7) delivers the networking recap flagged here.
+[§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)–[§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) established what Kubernetes is, its history, its architecture, its declarative model, and its distribution spectrum — the conceptual foundation this section's phase-structure preview builds on. [§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md) (next) goes deeper on exactly how CKA, CKAD, and CKS map onto this roadmap's Parts, extending the brief mention in [§6](./Section-06-Part1-Prerequisites-Recap-How-This-Roadmap-Is-Organized.md) into a full domain-by-domain breakdown. [§26](../Part4/Section-26-Part4-Init-Containers.md) delivers the YAML deep dive flagged as a prerequisite gap-closer here. [§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md) delivers the networking recap flagged here.
 
-**Next Section:** §7 — `Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md`
+**Next Section:** [§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md) — `Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md`

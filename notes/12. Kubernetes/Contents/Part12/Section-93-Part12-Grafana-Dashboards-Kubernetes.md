@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** Prometheus (§92) collects and stores metrics as time-series numbers, but a raw PromQL query result is just a table of numbers — useless for spotting a trend, a spike, or a slow degradation at a glance. Grafana is the visualization layer that turns those numbers into dashboards: graphs, gauges, and heatmaps a human can actually look at during an incident and immediately understand.
+**Plain language:** Prometheus ([§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) collects and stores metrics as time-series numbers, but a raw PromQL query result is just a table of numbers — useless for spotting a trend, a spike, or a slow degradation at a glance. Grafana is the visualization layer that turns those numbers into dashboards: graphs, gauges, and heatmaps a human can actually look at during an incident and immediately understand.
 
-**Precise definition:** **Grafana** is an open-source observability platform that queries one or more data sources — most commonly, in a Kubernetes context, a **Prometheus** server (§92) — and renders the results as configurable **dashboards** composed of **panels** (graph, gauge, table, heatmap, and stat panel types). Dashboards are defined as **JSON models**, which makes them version-controllable, importable/exportable, and provisionable as code rather than built by hand in a UI every time. Grafana runs in-cluster as a Deployment (typically installed via the `kube-prometheus-stack` Helm chart alongside Prometheus and Alertmanager), reads its dashboard definitions from **ConfigMaps** (§41) or a **Sidecar** container that watches for labeled ConfigMaps, and queries Prometheus using **PromQL** expressions embedded in each panel's configuration.
+**Precise definition:** **Grafana** is an open-source observability platform that queries one or more data sources — most commonly, in a Kubernetes context, a **Prometheus** server ([§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) — and renders the results as configurable **dashboards** composed of **panels** (graph, gauge, table, heatmap, and stat panel types). Dashboards are defined as **JSON models**, which makes them version-controllable, importable/exportable, and provisionable as code rather than built by hand in a UI every time. Grafana runs in-cluster as a Deployment (typically installed via the `kube-prometheus-stack` Helm chart alongside Prometheus and Alertmanager), reads its dashboard definitions from **ConfigMaps** ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)) or a **Sidecar** container that watches for labeled ConfigMaps, and queries Prometheus using **PromQL** expressions embedded in each panel's configuration.
 
 ## 2. Why This Matters
 
-- **Grafana is the visualization half of the observability pair whose collection half was built in §92** — Prometheus without Grafana is functional but operationally unusable at a glance; Grafana without Prometheus (or another data source) has nothing to render, so the two are almost always deployed and reasoned about together.
+- **Grafana is the visualization half of the observability pair whose collection half was built in [§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)** — Prometheus without Grafana is functional but operationally unusable at a glance; Grafana without Prometheus (or another data source) has nothing to render, so the two are almost always deployed and reasoned about together.
 - **Dashboards-as-code (JSON model provisioning) is what makes Grafana a genuine platform capability rather than a one-off convenience** — a dashboard built by clicking in the UI and never exported is lost the moment the Grafana Pod is rescheduled onto a fresh PersistentVolume without that state, which is precisely why production Grafana deployments provision dashboards via ConfigMap rather than relying on UI-created state.
-- **This section is the direct visualization layer for the centralized logging (§94) and distributed tracing (§95) sections that follow** — Grafana itself increasingly renders logs (via Loki) and traces (via Tempo/Jaeger data sources) alongside metrics, making it the common visualization surface across all three observability signal types this Part covers.
+- **This section is the direct visualization layer for the centralized logging ([§94](./Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md)) and distributed tracing ([§95](./Section-95-Part12-Distributed-Tracing-Kubernetes-Jaeger-OpenTelemetry.md)) sections that follow** — Grafana itself increasingly renders logs (via Loki) and traces (via Tempo/Jaeger data sources) alongside metrics, making it the common visualization surface across all three observability signal types this Part covers.
 
-🔑 **Key Takeaway:** Grafana queries Prometheus (and other data sources) and renders the results as JSON-defined, version-controllable dashboards — the human-facing visualization layer that makes the metrics §92 collects and stores actually usable during day-to-day operations and live incidents.
+🔑 **Key Takeaway:** Grafana queries Prometheus (and other data sources) and renders the results as JSON-defined, version-controllable dashboards — the human-facing visualization layer that makes the metrics [§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md) collects and stores actually usable during day-to-day operations and live incidents.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §92 (Prometheus on Kubernetes — ServiceMonitors, node-exporter, kube-state-metrics), which supplies the metrics Grafana queries, and on §41 (ConfigMaps, Part 6), the mechanism used to provision dashboard JSON declaratively. Sets up §94 (Centralized Logging), where Grafana reappears as a query surface for Loki logs alongside the metrics dashboards this section covers.
+Builds directly on [§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md) (Prometheus on Kubernetes — ServiceMonitors, node-exporter, kube-state-metrics), which supplies the metrics Grafana queries, and on [§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md) (ConfigMaps, Part 6), the mechanism used to provision dashboard JSON declaratively. Sets up [§94](./Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md) (Centralized Logging), where Grafana reappears as a query surface for Loki logs alongside the metrics dashboards this section covers.
 
 ## 4. Architecture Diagram
 
@@ -144,13 +144,13 @@ $ kubectl logs -n monitoring deploy/kube-prom-stack-grafana -c grafana-sc-dashbo
 # sidecar picked up the new ConfigMap without a Grafana restart
 ```
 
-**Production usage example:** Storing this ConfigMap manifest in the same GitOps repository (§88) that manages the rest of cluster configuration means a dashboard change goes through the identical pull-request review process as any other infrastructure change — the dashboard's PromQL expressions are reviewable diffs, not opaque UI clicks nobody can audit after the fact.
+**Production usage example:** Storing this ConfigMap manifest in the same GitOps repository ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) that manages the rest of cluster configuration means a dashboard change goes through the identical pull-request review process as any other infrastructure change — the dashboard's PromQL expressions are reviewable diffs, not opaque UI clicks nobody can audit after the fact.
 
 **Common errors:** Forgetting the `grafana_dashboard: "1"` label (or whatever label the sidecar was configured to watch, via `sidecar.dashboards.label`) — the ConfigMap applies cleanly with no error, but the dashboard silently never appears in Grafana, since the sidecar only watches labeled ConfigMaps.
 
 ### 5.3 Building a PromQL-Driven Panel for Resource Saturation
 
-**Purpose:** Demonstrate a panel expression that directly reuses PromQL patterns from §92's metrics pipeline to visualize a common capacity-planning signal.
+**Purpose:** Demonstrate a panel expression that directly reuses PromQL patterns from [§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)'s metrics pipeline to visualize a common capacity-planning signal.
 
 **Syntax:**
 
@@ -181,7 +181,7 @@ Panel renders as a graph, one line per Pod, showing:
 
 ## 7. Security Considerations
 
-- **Grafana's own RBAC (Viewer/Editor/Admin roles, folder permissions) is entirely separate from Kubernetes RBAC (§74–§75)** — a user with cluster-admin Kubernetes access has no implicit Grafana permissions at all, and vice versa; these two authorization systems must be configured and audited independently.
+- **Grafana's own RBAC (Viewer/Editor/Admin roles, folder permissions) is entirely separate from Kubernetes RBAC ([§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md)–[§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md))** — a user with cluster-admin Kubernetes access has no implicit Grafana permissions at all, and vice versa; these two authorization systems must be configured and audited independently.
 - **The default admin credentials generated by the Helm chart must be rotated or sourced from a proper secrets-management pipeline** (external Secrets Operator, Vault) rather than left as the chart-generated default, especially if the Grafana Ingress is internet-facing.
 - **Dashboards can leak sensitive operational detail (internal hostnames, capacity numbers, business metrics) if exposed without authentication** — a Grafana instance reachable without login, even "just for viewing," is a real information-disclosure risk in a production environment.
 
@@ -211,7 +211,7 @@ Panel renders as a graph, one line per Pod, showing:
 
 **🎯 Beginner:** _"What is the relationship between Prometheus and Grafana?"_
 **Model answer:** Prometheus is the data source — it scrapes and stores time-series metrics and can evaluate PromQL queries against them. Grafana is a separate visualization layer that queries Prometheus (or other data sources) and renders the results as dashboards with graph, gauge, and table panels. Grafana never collects metrics itself; it's purely a query-and-render tool sitting on top of a data source like Prometheus.
-_What the interviewer is probing for:_ Clear separation between the collection layer (§92) and the visualization layer (this section), rather than conflating the two tools.
+_What the interviewer is probing for:_ Clear separation between the collection layer ([§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) and the visualization layer (this section), rather than conflating the two tools.
 
 **🎯 Intermediate:** _"How would you ensure a custom Grafana dashboard survives a Pod restart or rescheduling?"_
 **Model answer:** I'd never rely on a dashboard built purely through the Grafana UI, since that state lives on the Grafana Pod's PersistentVolume and is lost if that volume isn't preserved or if the dashboard was never exported. Instead, I'd export the dashboard's JSON model and provision it as a ConfigMap labeled with whatever key the deployment's dashboard sidecar is configured to watch (commonly `grafana_dashboard: "1"`) — the sidecar auto-discovers and loads it without a Grafana restart, and because it's a ConfigMap in Git, it survives any Pod lifecycle event and is reviewable like any other infrastructure change.
@@ -219,7 +219,7 @@ _What the interviewer is probing for:_ Practical knowledge of dashboards-as-code
 
 **🎯 Senior:** _"A dashboard panel shows a Pod's CPU usage consistently over 100% of its 'allocation.' What's the likely bug, and why does it matter?"_
 **Model answer:** This is almost always a panel built dividing CPU usage by `kube_pod_container_resource_requests` instead of `kube_pod_container_resource_limits`. Requests represent a scheduling guarantee, not a hard ceiling — a Pod can legitimately burst well above its request (assuming spare node capacity) without being throttled at all, so a request-based denominator will show apparently-alarming numbers during entirely normal operation. The fix is to point the panel at the limits metric instead, since limits are the actual value the CFS bandwidth controller enforces and beyond which throttling (or an OOM kill, for memory) occurs. This matters because a mis-built panel like this trains on-call engineers to either ignore a real signal (alert fatigue from constant false "over-100%" panels) or chase a saturation problem that isn't actually happening.
-_What the interviewer is probing for:_ Understanding the semantic difference between requests and limits (§46, Part 6) as it concretely manifests in dashboard correctness, not just abstract recall of the definitions.
+_What the interviewer is probing for:_ Understanding the semantic difference between requests and limits ([§46](../Part6/Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md)) as it concretely manifests in dashboard correctness, not just abstract recall of the definitions.
 
 **🎯 Architect:** _"Design the Grafana strategy for a platform supporting 40 application teams, each wanting their own dashboards, with a shared underlying Prometheus."_
 **Model answer:** I'd run a single, centrally-managed Grafana instance backed by the shared Prometheus (or Thanos/Cortex if scale demands global query federation across multiple Prometheus instances) rather than 40 individual Grafana deployments, since a shared instance amortizes operational overhead and lets platform-wide dashboards (cluster health, node saturation) live alongside team-specific ones in one place. I'd use Grafana folders with per-team edit permissions (mapped from the organization's SSO groups via Grafana's OAuth/LDAP integration) so each team can build and own dashboards scoped to their own namespace's metrics without needing platform-team involvement for every change, while restricting who can edit shared, platform-owned dashboards. Every dashboard meant to be durable would be provisioned as a ConfigMap in that team's own GitOps repository rather than created ad hoc in the UI, keeping dashboard changes in the same review pipeline as the rest of their infrastructure. I'd also set up dashboard JSON linting in CI (checking for the requests-vs-limits mistake above, for instance) before it merges, and establish a small set of platform-blessed dashboard templates (a Pod-health template, a Service-latency template) that teams can fork rather than building every panel from scratch, keeping visual and semantic consistency across 40 otherwise-independent teams' dashboards.
@@ -234,7 +234,7 @@ _What the interviewer is probing for:_ Ability to design Grafana as a genuinely 
 
 ## 13. 🔑 Key Takeaways
 
-- Grafana is the visualization layer over Prometheus (§92) — it queries and renders, but never collects or stores metrics itself.
+- Grafana is the visualization layer over Prometheus ([§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) — it queries and renders, but never collects or stores metrics itself.
 - Dashboards should be provisioned as ConfigMaps (dashboards-as-code) rather than built solely in the UI, so they survive Pod rescheduling and are reviewable in Git.
 - Grafana's own RBAC is entirely separate from Kubernetes RBAC and must be configured and audited independently.
 - Saturation/utilization panels must be built against `resource_limits`, not `resource_requests`, to avoid misleading "over 100%" readings during normal bursting.
@@ -242,6 +242,6 @@ _What the interviewer is probing for:_ Ability to design Grafana as a genuinely 
 
 ## 14. Related Concepts & What's Next
 
-This section built directly on §92's Prometheus metrics pipeline, turning the raw time-series data collected there into human-usable dashboards, and used §41's ConfigMap mechanism as the dashboards-as-code provisioning path. §94, next, extends the observability story from metrics to logs — covering Fluentd/Fluent Bit, Loki, and the EFK stack as the centralized logging equivalent of what Prometheus and Grafana provide for metrics, and Grafana itself reappears there as a query surface for Loki-backed log data.
+This section built directly on [§92](./Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)'s Prometheus metrics pipeline, turning the raw time-series data collected there into human-usable dashboards, and used [§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)'s ConfigMap mechanism as the dashboards-as-code provisioning path. [§94](./Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md), next, extends the observability story from metrics to logs — covering Fluentd/Fluent Bit, Loki, and the EFK stack as the centralized logging equivalent of what Prometheus and Grafana provide for metrics, and Grafana itself reappears there as a query surface for Loki-backed log data.
 
-**Next Section:** §94 — `Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md`
+**Next Section:** [§94](./Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md) — `Section-94-Part12-Centralized-Logging-Patterns-Fluentd-FluentBit-Loki-EFK.md`

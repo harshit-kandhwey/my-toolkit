@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §9's introduction of the container runtime as one of the three node components. No new external prerequisites.
+Builds directly on [§9](./Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md)'s introduction of the container runtime as one of the three node components. No new external prerequisites.
 
 ## 4. Architecture Diagram
 
@@ -93,7 +93,7 @@ CONTAINER ID   IMAGE               STATE      NAME    POD ID
 a1b2c3d4e5f6   nginx:1.25          Running    web     f6e5d4c3b2a1
 ```
 
-**Production usage example:** When a Pod is stuck in a confusing state and `kubectl describe pod`'s Events aren't detailed enough, SSHing onto the affected node and running `crictl ps`/`crictl inspect` gives direct runtime-level visibility that `kubectl` doesn't expose — a standard escalation step in real incident response (§99, Part 13).
+**Production usage example:** When a Pod is stuck in a confusing state and `kubectl describe pod`'s Events aren't detailed enough, SSHing onto the affected node and running `crictl ps`/`crictl inspect` gives direct runtime-level visibility that `kubectl` doesn't expose — a standard escalation step in real incident response ([§99](../Part13/Section-99-Part13-Debugging-Node-Issues-NotReady-Nodes-kubelet-Failures.md)).
 
 **Common errors:** Running `crictl` without specifying the correct runtime endpoint socket (e.g., `/run/containerd/containerd.sock`) results in a connection error — `crictl` needs to know which runtime's socket to talk to, configurable via `/etc/crictl.yaml` or the `--runtime-endpoint` flag.
 
@@ -105,16 +105,16 @@ a1b2c3d4e5f6   nginx:1.25          Running    web     f6e5d4c3b2a1
 
 ## 7. Security Considerations
 
-- containerd and CRI-O have different default security postures and configuration surfaces (e.g., CRI-O is often chosen in security-conscious OpenShift-style environments for its minimal, Kubernetes-specific design) — a platform team's runtime choice is a genuine, if usually secondary, security consideration (§113, Part 15).
+- containerd and CRI-O have different default security postures and configuration surfaces (e.g., CRI-O is often chosen in security-conscious OpenShift-style environments for its minimal, Kubernetes-specific design) — a platform team's runtime choice is a genuine, if usually secondary, security consideration ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 - Runtime-level access (via `crictl` or direct socket access) on a node is equivalent to significant control over that node's containers — securing access to the container runtime's socket is part of node-level hardening.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                     | Likely Cause                                                               | Resolution Path                                                                                                            |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Cluster upgrade to a recent Kubernetes version fails/blocks | Still configured with Docker Engine as the runtime on unsupported versions | Migrate node container runtime to containerd or CRI-O before upgrading (§106, Part 14)                                     |
-| `crictl` commands fail with a connection error              | Wrong or unspecified runtime endpoint socket                               | Check `/etc/crictl.yaml` or pass `--runtime-endpoint` explicitly matching the node's actual runtime                        |
-| Confusion about whether "Docker" images still work          | Misunderstanding of what the dockershim removal actually changed           | Clarify: OCI images built by any tool run identically; only the Docker Engine daemon as the Kubernetes runtime was removed |
+| Symptom                                                     | Likely Cause                                                               | Resolution Path                                                                                                                                                               |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cluster upgrade to a recent Kubernetes version fails/blocks | Still configured with Docker Engine as the runtime on unsupported versions | Migrate node container runtime to containerd or CRI-O before upgrading ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) |
+| `crictl` commands fail with a connection error              | Wrong or unspecified runtime endpoint socket                               | Check `/etc/crictl.yaml` or pass `--runtime-endpoint` explicitly matching the node's actual runtime                                                                           |
+| Confusion about whether "Docker" images still work          | Misunderstanding of what the dockershim removal actually changed           | Clarify: OCI images built by any tool run identically; only the Docker Engine daemon as the Kubernetes runtime was removed                                                    |
 
 ## 9. Best Practices
 
@@ -162,6 +162,6 @@ _What the interviewer is probing for:_ Whether the candidate correctly scopes th
 
 ## 14. Related Concepts & What's Next
 
-§9 introduced the container runtime as one of three node components this section covers in full technical depth. §46 (Part 3) covers static Pods, which is how kubelet runs control-plane components directly from local manifests before a full api-server is available. §106 (Part 14) covers cluster upgrade mechanics, including scenarios where a lingering Docker Engine runtime configuration must be migrated first. §97–§101 (Part 13) build the full node-level troubleshooting methodology this section's `crictl` introduction supports directly.
+[§9](./Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) introduced the container runtime as one of three node components this section covers in full technical depth. [§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md) covers static Pods, which is how kubelet runs control-plane components directly from local manifests before a full api-server is available. [§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md) covers cluster upgrade mechanics, including scenarios where a lingering Docker Engine runtime configuration must be migrated first. [§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)–[§101](../Part13/Section-101-Part13-Networking-Troubleshooting-Scenarios-Unreachable-Services-DNS-Failures.md) build the full node-level troubleshooting methodology this section's `crictl` introduction supports directly.
 
-**Next Section:** §12 — `Section-12-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md`
+**Next Section:** [§12 — Section-12-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md](./Section-12-Part2-API-Server-Deep-Dive-Groups-Versioning-Admission-Chain.md)

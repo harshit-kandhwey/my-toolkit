@@ -4,19 +4,19 @@
 
 **Plain language:** There are two ways to tell a computer what to do: give it a list of steps to follow ("do this, then this, then this"), or tell it what the end result should look like and let it figure out the steps itself. Kubernetes is built almost entirely around the second approach.
 
-**Precise definition:** In the **imperative model**, an operator issues specific commands that directly cause a specific action (e.g., "create this Pod now"). In the **declarative model**, an operator submits a specification of the desired end state (e.g., "3 replicas of this Pod should exist"), and the system's controllers continuously reconcile actual state toward that declaration — reapplying it, correcting drift, and recovering from failures without further instruction. Kubernetes supports imperative commands for convenience and debugging, but its entire controller architecture (§1) is built to serve the declarative model, and production workflows are expected to use it almost exclusively.
+**Precise definition:** In the **imperative model**, an operator issues specific commands that directly cause a specific action (e.g., "create this Pod now"). In the **declarative model**, an operator submits a specification of the desired end state (e.g., "3 replicas of this Pod should exist"), and the system's controllers continuously reconcile actual state toward that declaration — reapplying it, correcting drift, and recovering from failures without further instruction. Kubernetes supports imperative commands for convenience and debugging, but its entire controller architecture ([§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)) is built to serve the declarative model, and production workflows are expected to use it almost exclusively.
 
 ## 2. Why the Distinction Matters
 
 - **Declarative state is self-healing; imperative actions are not.** If an imperative `kubectl run` creates a Pod and that Pod later crashes, nothing recreates it — the imperative command already "happened" and is over. A declarative Deployment, by contrast, has a controller continuously ensuring the declared replica count exists, so a crash triggers automatic recreation.
 - **Declarative state is git-diffable and auditable.** A YAML manifest committed to version control gives a clear historical record of intended state over time; a sequence of imperative commands run against a cluster leaves no equivalent trail unless separately logged.
-- **GitOps (§88, Part 11) is only possible because Kubernetes' API is declarative and idempotent.** Applying the same manifest repeatedly produces no unintended side effects — a property imperative command sequences don't generally have (running "create X" twice usually errors or duplicates X).
+- **GitOps ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) is only possible because Kubernetes' API is declarative and idempotent.** Applying the same manifest repeatedly produces no unintended side effects — a property imperative command sequences don't generally have (running "create X" twice usually errors or duplicates X).
 
 🔑 **Key Takeaway:** Imperative commands are useful for quick exploration, debugging, and generating starter YAML — but declarative manifests, applied via `kubectl apply`, are the production standard because they're what makes self-healing, auditability, and GitOps possible at all.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §1 (reconciliation model) and §3 (control plane makes these decisions). No new external prerequisites.
+Builds on [§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) (reconciliation model) and [§3](./Section-03-Part1-Kubernetes-Architecture-Overview.md) (control plane makes these decisions). No new external prerequisites.
 
 ## 4. The Three Management Approaches Compared
 
@@ -90,7 +90,7 @@ $ kubectl apply -f web-deployment.yaml    # running it again is safe
 deployment.apps/web unchanged
 ```
 
-**Production usage example:** Because re-running `kubectl apply -f web-deployment.yaml` is safe and produces no error or duplication, this exact command is what CI/CD pipelines and GitOps controllers (§88, Part 11) run on every deploy, and it's also what an operator re-runs by hand during an incident to "re-assert" desired state without needing to know exactly what drifted.
+**Production usage example:** Because re-running `kubectl apply -f web-deployment.yaml` is safe and produces no error or duplication, this exact command is what CI/CD pipelines and GitOps controllers ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) run on every deploy, and it's also what an operator re-runs by hand during an incident to "re-assert" desired state without needing to know exactly what drifted.
 
 ### 5.3 `kubectl diff` — Preview Before Applying
 
@@ -111,7 +111,7 @@ $ kubectl diff -f web-deployment.yaml
 ## 7. Security Considerations
 
 - Declarative manifests stored in version control create an audit trail of _intended_ state changes, which is valuable for compliance and incident forensics — imperative command histories are typically only as good as separate shell/audit logging.
-- `kubectl edit`-style live imperative changes bypass any review process (pull requests, CI checks) that a GitOps-based declarative workflow would otherwise enforce — a real security/change-management gap worth closing deliberately (§88, Part 11).
+- `kubectl edit`-style live imperative changes bypass any review process (pull requests, CI checks) that a GitOps-based declarative workflow would otherwise enforce — a real security/change-management gap worth closing deliberately ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -148,7 +148,7 @@ _What the interviewer is probing for:_ Understanding of _why_ declarative wins i
 _What the interviewer is probing for:_ Awareness that live imperative fixes are incomplete without closing the loop back to the declarative source of truth.
 
 **🎯 Architect:** _"You're designing change-management policy for a platform team's Kubernetes clusters. How does the declarative model shape what you'd allow, restrict, or automate?"_
-**Model answer:** I'd make declarative, version-controlled manifests the only sanctioned path for anything persistent, enforced by routing all changes through a GitOps controller (§88) rather than direct `kubectl apply`/`edit` access to production, which also gives me a natural place to insert review (pull requests), policy checks (admission control, §77, Part 10), and `kubectl diff`-style previews before anything lands. I'd still leave direct, imperative `kubectl` access available for genuine incident response, but paired with a hard requirement that any live change gets backported into the tracked manifest within a defined window, and I'd monitor for drift between live cluster state and the Git-declared state as an ongoing signal that this policy is being followed. The core architectural bet is that the declarative model's idempotency and auditability are worth the discipline required to keep imperative "escape hatches" genuinely rare.
+**Model answer:** I'd make declarative, version-controlled manifests the only sanctioned path for anything persistent, enforced by routing all changes through a GitOps controller ([§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)) rather than direct `kubectl apply`/`edit` access to production, which also gives me a natural place to insert review (pull requests), policy checks (admission control, [§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md)), and `kubectl diff`-style previews before anything lands. I'd still leave direct, imperative `kubectl` access available for genuine incident response, but paired with a hard requirement that any live change gets backported into the tracked manifest within a defined window, and I'd monitor for drift between live cluster state and the Git-declared state as an ongoing signal that this policy is being followed. The core architectural bet is that the declarative model's idempotency and auditability are worth the discipline required to keep imperative "escape hatches" genuinely rare.
 _What the interviewer is probing for:_ Whether the candidate can turn the declarative/imperative distinction into an actual organizational policy with guardrails, not just a technical preference.
 
 ## 12. Common Misconceptions
@@ -167,6 +167,6 @@ _What the interviewer is probing for:_ Whether the candidate can turn the declar
 
 ## 14. Related Concepts & What's Next
 
-§1 introduced the reconciliation loop this section's declarative model depends on. §32 (Part 4) revisits imperative vs. declarative specifically in the context of `kubectl` command patterns and generators. §88 (Part 11) covers GitOps tooling (ArgoCD, Flux) that automates the declarative-apply workflow described here at scale. §77 (Part 10) covers admission control, one of the guardrails a declarative change-management pipeline can enforce.
+[§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) introduced the reconciliation loop this section's declarative model depends on. [§31](../Part4/Section-31-Part4-Kubectl-Fundamentals-Imperative-Commands-Generators-Dry-Run-Diff.md) revisits imperative vs. declarative specifically in the context of `kubectl` command patterns and generators. [§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md) covers GitOps tooling (ArgoCD, Flux) that automates the declarative-apply workflow described here at scale. [§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md) covers admission control, one of the guardrails a declarative change-management pipeline can enforce.
 
-**Next Section:** §5 — `Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md`
+**Next Section:** [§5 — Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)

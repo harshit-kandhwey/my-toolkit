@@ -9,14 +9,14 @@
 ## 2. Why This Matters
 
 - **The identity-to-RBAC mapping step is the single most common "why can't I access my new cluster" surprise across all three providers**, but the actual mechanism (and how automatic vs. manual it is) differs substantially — EKS in particular has caught many teams off guard because IAM identities have zero Kubernetes RBAC access by default until explicitly mapped.
-- **This section is the practical continuation of §5's distribution spectrum** (Part 1), narrowing specifically into the "managed cloud" tier of that spectrum and showing that even within "managed," EKS/AKS/GKE are not interchangeable in their bootstrap and identity models.
-- **Enterprise platform teams standardizing on one or multiple clouds need this comparison to make real architectural decisions** — §122–§129 (Part 16) builds directly on this section for enterprise-scale, cloud-specific considerations (cost governance, multi-cluster patterns, landing zones).
+- **This section is the practical continuation of [§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)'s distribution spectrum** (Part 1), narrowing specifically into the "managed cloud" tier of that spectrum and showing that even within "managed," EKS/AKS/GKE are not interchangeable in their bootstrap and identity models.
+- **Enterprise platform teams standardizing on one or multiple clouds need this comparison to make real architectural decisions** — [§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md) builds directly on this section for enterprise-scale, cloud-specific considerations (cost governance, multi-cluster patterns, landing zones).
 
 🔑 **Key Takeaway:** All three major managed offerings host the control plane for you, but EKS demands an explicit IAM-to-RBAC mapping step (`aws-auth` ConfigMap or access entries), AKS leans on native Azure AD group-to-RBAC integration, and GKE offers the tightest built-in IAM integration plus a genuine architectural fork between Standard and Autopilot modes — none of these details are optional trivia once you're actually operating one of these clusters.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §5 (Part 1, the distribution spectrum, specifically the "managed cloud offerings" tier) and §20 (kubeconfig files and contexts, since each provider's bootstrap ends by populating exactly that kind of file). Assumes basic familiarity with each cloud's respective IAM model.
+Builds directly on [§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) (Part 1, the distribution spectrum, specifically the "managed cloud offerings" tier) and [§20](./Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md) (kubeconfig files and contexts, since each provider's bootstrap ends by populating exactly that kind of file). Assumes basic familiarity with each cloud's respective IAM model.
 
 ## 4. Bootstrap Model Comparison Diagram
 
@@ -216,10 +216,10 @@ _What the interviewer is probing for:_ Ability to reason about cross-cloud gover
 - EKS's "creator-only default access" is the single most common managed-Kubernetes onboarding surprise and must be explicitly addressed for every team member or automation identity needing access.
 - GKE's Standard vs. Autopilot split is a genuine architectural fork (node-level access and billing model), not a superficial configuration flag — choose deliberately based on whether the workload needs node-level access.
 - Every provider's kubeconfig-populating CLI command depends on that cloud's own CLI being authenticated first, a frequently-missed prerequisite in CI/automation contexts.
-- Enterprise-scale governance across multiple managed providers benefits from centralizing identity through a common IdP rather than relying on each provider's native integration in isolation (§122–§129 build on this at enterprise depth).
+- Enterprise-scale governance across multiple managed providers benefits from centralizing identity through a common IdP rather than relying on each provider's native integration in isolation ([§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md) build on this at enterprise depth).
 
 ## 14. Related Concepts & What's Next
 
-This section narrowed §5's (Part 1) broader distribution spectrum specifically into the "managed cloud" tier, and built on §20's kubeconfig mechanics, since every provider's bootstrap flow ends by populating exactly that kind of file. §122–§129 (Part 16) return to EKS/AKS/GKE at enterprise scale — multi-cluster governance, cost optimization, and landing-zone patterns that assume this section's bootstrap-level differences as a starting point. §22 (next) shifts from managed cloud offerings to the opposite end of the distribution spectrum: lightweight distributions and local dev clusters (k3s, MicroK8s, kind, minikube).
+This section narrowed [§5](../Part1/Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md)'s (Part 1) broader distribution spectrum specifically into the "managed cloud" tier, and built on [§20](./Section-20-Part3-Kubeconfig-Files-Contexts-Multi-Cluster-Switching.md)'s kubeconfig mechanics, since every provider's bootstrap flow ends by populating exactly that kind of file. [§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md) return to EKS/AKS/GKE at enterprise scale — multi-cluster governance, cost optimization, and landing-zone patterns that assume this section's bootstrap-level differences as a starting point. [§22](./Section-22-Part3-Lightweight-Distributions-Local-Dev-Clusters.md) (next) shifts from managed cloud offerings to the opposite end of the distribution spectrum: lightweight distributions and local dev clusters (k3s, MicroK8s, kind, minikube).
 
-**Next Section:** §22 — `Section-22-Part3-Lightweight-Distributions-Local-Dev-Clusters.md`
+**Next Section:** [§22](./Section-22-Part3-Lightweight-Distributions-Local-Dev-Clusters.md) — `Section-22-Part3-Lightweight-Distributions-Local-Dev-Clusters.md`

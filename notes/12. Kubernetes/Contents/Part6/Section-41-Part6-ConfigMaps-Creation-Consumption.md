@@ -4,19 +4,19 @@
 
 **Plain language:** Application code shouldn't have database hostnames, feature flags, or log levels baked into its container image — otherwise every environment (dev, staging, production) needs its own rebuilt image just to change a setting. A ConfigMap is Kubernetes' answer: a small, separately-managed bucket of configuration data that gets attached to a Pod at runtime, so the same image can run anywhere with different config.
 
-**Precise definition:** A **ConfigMap** is a non-secret, namespaced Kubernetes API object that stores configuration data as a set of **key-value pairs**, where values can be short strings or entire file contents (via the `data` field for UTF-8 text, or `binaryData` for base64-encoded binary content). A ConfigMap is not itself consumed directly by a container process — it is injected into a Pod through one of three mechanisms: as individual **environment variables**, as a full environment variable set via `envFrom`, as **mounted files** in a volume, or as **command-line arguments** via environment variable substitution. ConfigMaps hold no confidentiality guarantees whatsoever — they are stored and transmitted identically to any other API object, which is precisely why Secrets (§42) exist as a parallel, distinct object type for sensitive values.
+**Precise definition:** A **ConfigMap** is a non-secret, namespaced Kubernetes API object that stores configuration data as a set of **key-value pairs**, where values can be short strings or entire file contents (via the `data` field for UTF-8 text, or `binaryData` for base64-encoded binary content). A ConfigMap is not itself consumed directly by a container process — it is injected into a Pod through one of three mechanisms: as individual **environment variables**, as a full environment variable set via `envFrom`, as **mounted files** in a volume, or as **command-line arguments** via environment variable substitution. ConfigMaps hold no confidentiality guarantees whatsoever — they are stored and transmitted identically to any other API object, which is precisely why Secrets ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) exist as a parallel, distinct object type for sensitive values.
 
 ## 2. Why This Matters
 
-- **Decoupling configuration from the container image is the single biggest reason ConfigMaps exist.** The full Pod spec anatomy covered in §24 shows `envFrom` and `configMap` volume references directly inside `spec.containers` — this section expands on exactly how those fields work end to end.
+- **Decoupling configuration from the container image is the single biggest reason ConfigMaps exist.** The full Pod spec anatomy covered in [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) shows `envFrom` and `configMap` volume references directly inside `spec.containers` — this section expands on exactly how those fields work end to end.
 - **ConfigMap changes propagate differently depending on consumption method, which is a frequent source of confusion.** Volume-mounted ConfigMaps update in place (with a propagation delay) when the source object changes, while environment-variable-injected values are frozen at container start — understanding this distinction prevents "I updated the ConfigMap but nothing changed" incidents.
-- **Every multi-environment deployment pattern in this roadmap builds on ConfigMaps as the primary customization lever.** Namespaces as an isolation boundary and Kustomize overlays (§47) both frequently vary nothing but the ConfigMap contents between environments, leaving the rest of the manifest untouched.
+- **Every multi-environment deployment pattern in this roadmap builds on ConfigMaps as the primary customization lever.** Namespaces as an isolation boundary and Kustomize overlays ([§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md)) both frequently vary nothing but the ConfigMap contents between environments, leaving the rest of the manifest untouched.
 
-🔑 **Key Takeaway:** A ConfigMap decouples configuration from the container image through three consumption patterns — environment variables, `envFrom`, and volume mounts — each with different update-propagation behavior, and none of which provide any confidentiality (that's what Secrets, §42, are for).
+🔑 **Key Takeaway:** A ConfigMap decouples configuration from the container image through three consumption patterns — environment variables, `envFrom`, and volume mounts — each with different update-propagation behavior, and none of which provide any confidentiality (that's what Secrets, [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md), are for).
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §24 (full Pod spec anatomy, where ConfigMap references first appear structurally inside `env`, `envFrom`, and `volumes`) and assumes familiarity with basic `kubectl apply` workflows from Part 4.
+Builds on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md) (full Pod spec anatomy, where ConfigMap references first appear structurally inside `env`, `envFrom`, and `volumes`) and assumes familiarity with basic `kubectl apply` workflows from Part 4.
 
 ## 4. Architecture: How a ConfigMap Reaches a Running Container
 
@@ -143,7 +143,7 @@ MAX_CONNECTIONS=100
 
 **Production usage example:** `envFrom` is common for services with dozens of tunable settings (feature flags, timeouts) where explicitly listing every key under `env` would be unwieldy; `env` with `configMapKeyRef` is preferred when only one or two specific values matter and explicitness in the manifest aids readability during review.
 
-**Common errors:** Editing the source ConfigMap after the Pod is running has **no effect** on already-injected environment variables — they were resolved once at container start; the Pod must be recreated (typically via a Deployment rollout) to pick up new values, a very common point of confusion covered further in §44.
+**Common errors:** Editing the source ConfigMap after the Pod is running has **no effect** on already-injected environment variables — they were resolved once at container start; the Pod must be recreated (typically via a Deployment rollout) to pick up new values, a very common point of confusion covered further in [§44](./Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md).
 
 ### 5.3 Consuming as a Mounted Volume
 
@@ -193,13 +193,13 @@ app.properties
 
 - ConfigMaps have a **1 MiB size limit** (etcd's default object size ceiling) — large configuration files should be split across multiple ConfigMaps or reconsidered as an external configuration service rather than forced into a single object.
 - Combining `immutable: true` on a ConfigMap (a field available since Kubernetes 1.19+) prevents accidental edits and improves api-server performance by letting it skip watching that object for changes — recommended for ConfigMaps that are meant to be replaced wholesale (new name, new rollout) rather than edited in place.
-- Because Deployment rollouts don't automatically restart Pods on a referenced ConfigMap change (§44 covers this precedence and refresh behavior in depth), many teams embed a hash of the ConfigMap's contents into a Pod template annotation specifically to force a rollout whenever the config changes.
+- Because Deployment rollouts don't automatically restart Pods on a referenced ConfigMap change ([§44](./Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md) covers this precedence and refresh behavior in depth), many teams embed a hash of the ConfigMap's contents into a Pod template annotation specifically to force a rollout whenever the config changes.
 
 ## 7. Security Considerations
 
-- ConfigMaps are **not encrypted at rest by any special mechanism** beyond whatever applies to etcd generally (§43) and are readable by anyone with `get`/`list` RBAC permission on ConfigMaps in that namespace — never place sensitive values here, even "just for now."
+- ConfigMaps are **not encrypted at rest by any special mechanism** beyond whatever applies to etcd generally ([§43](./Section-43-Part6-Encrypting-Secrets-At-Rest-EncryptionConfiguration.md)) and are readable by anyone with `get`/`list` RBAC permission on ConfigMaps in that namespace — never place sensitive values here, even "just for now."
 - `kubectl describe pod` and `kubectl get pod -o yaml` both reveal environment variables sourced from ConfigMaps in plaintext to anyone with Pod read access, reinforcing that ConfigMaps are for non-sensitive settings only.
-- Volume-mounted ConfigMap files inherit permissive default file permissions (`0644`) unless `defaultMode` is explicitly set on the volume — for hardened Pod Security Standard compliance (§45, §117) it's worth setting this explicitly even for non-secret data.
+- Volume-mounted ConfigMap files inherit permissive default file permissions (`0644`) unless `defaultMode` is explicitly set on the volume — for hardened Pod Security Standard compliance ([§45](./Section-45-Part6-SecurityContext-Pod-Container-Level.md), [§117](../Part15/Section-117-Part15-Static-Analysis-Manifests-kube-linter-Kubesec.md)) it's worth setting this explicitly even for non-secret data.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -217,7 +217,7 @@ app.properties
 
 ## 10. Common Anti-Patterns / Mistakes
 
-- **Storing secrets inside a ConfigMap** "temporarily" — there is no confidentiality boundary here at all; use a Secret (§42) even for values that feel low-risk.
+- **Storing secrets inside a ConfigMap** "temporarily" — there is no confidentiality boundary here at all; use a Secret ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) even for values that feel low-risk.
 - **Assuming an `envFrom` update automatically refreshes a running Pod's environment** — it does not; only a new Pod (via rollout) picks up the new values.
 - **Mounting a ConfigMap over an existing directory without `subPath`**, unintentionally deleting expected files baked into the container image.
 
@@ -236,12 +236,12 @@ _What the interviewer is probing for:_ Understanding that consumption method fun
 _What the interviewer is probing for:_ Practical experience with a real gap in Kubernetes' native behavior and the common workarounds used in production.
 
 **🎯 Architect:** _"You're designing the configuration strategy for a platform serving dozens of teams' microservices across dev/staging/production. How would you structure ConfigMap usage to avoid drift and sprawl?"_
-**Model answer:** I'd standardize on Kustomize overlays (§47) with a common base ConfigMap per service and per-environment patches only for values that genuinely differ, rather than letting each team hand-author near-duplicate ConfigMaps per environment. I'd enforce `immutable: true` combined with a content-hash suffix in the ConfigMap name for anything beyond the most trivial toggle, so every config version is a distinct, auditable object rather than an object silently mutated in place, and pair that with automatic Pod template hash injection so rollouts happen deterministically on config change. I'd also draw a hard line in tooling/policy (via an admission policy or CI lint) that nothing resembling a credential, token, or connection string with embedded auth ever lands in a ConfigMap — that boundary needs to be enforced structurally, not left to individual team discipline, given how easy it is to blur the line under deadline pressure.
+**Model answer:** I'd standardize on Kustomize overlays ([§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md)) with a common base ConfigMap per service and per-environment patches only for values that genuinely differ, rather than letting each team hand-author near-duplicate ConfigMaps per environment. I'd enforce `immutable: true` combined with a content-hash suffix in the ConfigMap name for anything beyond the most trivial toggle, so every config version is a distinct, auditable object rather than an object silently mutated in place, and pair that with automatic Pod template hash injection so rollouts happen deterministically on config change. I'd also draw a hard line in tooling/policy (via an admission policy or CI lint) that nothing resembling a credential, token, or connection string with embedded auth ever lands in a ConfigMap — that boundary needs to be enforced structurally, not left to individual team discipline, given how easy it is to blur the line under deadline pressure.
 _What the interviewer is probing for:_ Ability to think about ConfigMap usage as a platform-governance problem — consistency, auditability, and enforcement — not just single-Pod mechanics.
 
 ## 12. Common Misconceptions
 
-1. **"ConfigMaps and Secrets are basically the same thing, just named differently."** ConfigMaps provide zero confidentiality; Secrets (§42) are a distinct object type specifically because sensitive data needs different handling, even though the API mechanics look superficially similar.
+1. **"ConfigMaps and Secrets are basically the same thing, just named differently."** ConfigMaps provide zero confidentiality; Secrets ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) are a distinct object type specifically because sensitive data needs different handling, even though the API mechanics look superficially similar.
 2. **"Updating a ConfigMap immediately updates every Pod using it."** Only volume-mounted consumption updates live (with a propagation delay); environment-variable-based consumption is frozen at container start.
 3. **"Mounting a ConfigMap as a volume merges its files into whatever's already in that directory."** Without `subPath`, mounting a ConfigMap volume replaces the entire target directory's contents with only the ConfigMap's keys.
 
@@ -249,12 +249,12 @@ _What the interviewer is probing for:_ Ability to think about ConfigMap usage as
 
 - A ConfigMap stores non-sensitive key-value configuration data, decoupled from the container image, consumed via `env`, `envFrom`, or a volume mount.
 - Environment-variable consumption is resolved once at container start and never updates live; volume-mounted consumption updates within roughly a minute of a ConfigMap change.
-- ConfigMaps carry no confidentiality guarantee whatsoever — Secrets (§42) exist precisely because ConfigMaps are unsuitable for sensitive values.
+- ConfigMaps carry no confidentiality guarantee whatsoever — Secrets ([§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) exist precisely because ConfigMaps are unsuitable for sensitive values.
 - Forcing a rollout on ConfigMap change (via content-hash annotations or tooling like Reloader) is a standard production pattern, not a native Kubernetes behavior.
 - A 1 MiB size ceiling and `subPath` mount semantics are two practical constraints worth knowing before designing a configuration strategy around ConfigMaps.
 
 ## 14. Related Concepts & What's Next
 
-This section built on §24's Pod spec anatomy, where `env`, `envFrom`, and `configMap` volumes first appeared structurally. §42, immediately next, covers Secrets — the parallel object type for sensitive values, sharing much of the same consumption mechanics shown here but with critical differences around encoding and confidentiality. §44 (Part 6) returns to environment variable precedence when multiple sources define the same variable name, and §47 (Part 6) covers Kustomize overlays as the standard way to vary ConfigMap contents across environments.
+This section built on [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)'s Pod spec anatomy, where `env`, `envFrom`, and `configMap` volumes first appeared structurally. [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md), immediately next, covers Secrets — the parallel object type for sensitive values, sharing much of the same consumption mechanics shown here but with critical differences around encoding and confidentiality. [§44](./Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md) returns to environment variable precedence when multiple sources define the same variable name, and [§47](./Section-47-Part6-Multi-Environment-Configuration-Patterns.md) covers Kustomize overlays as the standard way to vary ConfigMap contents across environments.
 
-**Next Section:** §42 — `Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md`
+**Next Section:** [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) — `Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md`

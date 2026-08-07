@@ -9,14 +9,14 @@
 ## 2. Why This Matters
 
 - **Priority determines both scheduling order and eviction survivability.** Pods are dequeued from the scheduling queue in priority order, and separately, priority governs preemption eviction targeting — a single `priorityClassName` field influences both "when do I get considered" and "am I at risk of being evicted for someone else."
-- **Preemption interacts directly with the resource-based filtering covered in §70.** Preemption only activates when normal filtering (based on requests, as established in §70) finds zero viable nodes — it's the fallback when the request/allocatable arithmetic comes up short everywhere, not an independent scheduling path.
+- **Preemption interacts directly with the resource-based filtering covered in [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md).** Preemption only activates when normal filtering (based on requests, as established in [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)) finds zero viable nodes — it's the fallback when the request/allocatable arithmetic comes up short everywhere, not an independent scheduling path.
 - **Misconfigured priority is a production incident waiting to happen.** Giving every workload the same high priority defeats the entire mechanism (nothing is preemptible relative to anything else), while giving a genuinely critical workload low priority means it can be evicted by anything, including workloads that matter far less.
 
 🔑 **Key Takeaway:** PriorityClass assigns an integer importance value to Pods, and preemption is the scheduler's last-resort mechanism — triggered only when a Pod can't be placed any other way — for evicting lower-priority Pods to make room, making thoughtful priority assignment as operationally significant as resource requests themselves.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §70 (Resource-Based Scheduling), since preemption is specifically the scheduler's response to a filtering-phase failure driven by the same requests-vs-allocatable arithmetic, and assumes the general filtering/scoring pipeline vocabulary established across Part 9.
+Builds directly on [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md) (Resource-Based Scheduling), since preemption is specifically the scheduler's response to a filtering-phase failure driven by the same requests-vs-allocatable arithmetic, and assumes the general filtering/scoring pipeline vocabulary established across Part 9.
 
 ## 4. Architecture Diagram
 
@@ -154,14 +154,14 @@ LAST SEEN   TYPE     REASON       OBJECT                    MESSAGE
 ## 6. Production Usage Notes
 
 - Kubernetes ships two built-in PriorityClasses for system components — `system-cluster-critical` and `system-node-critical` — with extremely high values; custom application PriorityClasses should always use values well below these to avoid ever contending with or accidentally preempting core cluster infrastructure Pods.
-- `PodDisruptionBudget` (§37, Part 5) is **not** consulted by the preemption path the same way it is for voluntary evictions like node drains — preemption is considered involuntary disruption and can violate a PDB's minimum availability, which is a deliberate design trade-off (a higher-priority Pod's need to run outweighs a PDB), worth explicitly accounting for in capacity planning.
+- `PodDisruptionBudget` ([§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) is **not** consulted by the preemption path the same way it is for voluntary evictions like node drains — preemption is considered involuntary disruption and can violate a PDB's minimum availability, which is a deliberate design trade-off (a higher-priority Pod's need to run outweighs a PDB), worth explicitly accounting for in capacity planning.
 - Preemption is disabled per-Pod via `preemptionPolicy: Never` on the PriorityClass or Pod spec — useful for high-priority Pods that should win scheduling order but should never cause disruption to others, common for priority values used purely for queue-ordering purposes rather than eviction rights.
 
 ## 7. Security Considerations
 
 - Any user able to create Pods with an arbitrary `priorityClassName` could assign themselves artificially high priority to preempt other tenants' workloads — RBAC should restrict which ServiceAccounts/users may reference high-value PriorityClasses using the `scheduling.k8s.io` API group's resource-name-scoped permissions, not left open by default.
 - A namespace-level `ResourceQuota` (Part 16) can be scoped to specific PriorityClasses, which is a meaningful multi-tenancy control — without it, a single tenant with access to a high-priority class could preempt across the entire cluster regardless of namespace boundaries.
-- Because preemption deletes Pods (a real, observable disruption), audit logging (§96, Part 12) of Pod deletions attributable to preemption is worth retaining distinctly from user-initiated deletions when investigating unexpected workload terminations.
+- Because preemption deletes Pods (a real, observable disruption), audit logging ([§96](../Part12/Section-96-Part12-Events-Audit-Logs-kubectl-describe-Deep-Dive.md)) of Pod deletions attributable to preemption is worth retaining distinctly from user-initiated deletions when investigating unexpected workload terminations.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -204,7 +204,7 @@ _What the interviewer is probing for:_ Ability to combine priority, RBAC, quota,
 
 ## 12. Common Misconceptions
 
-1. **"Higher priority means the Pod runs with more resources or performs better."** Priority affects scheduling order and preemption eligibility only — it has no bearing on the Pod's actual runtime resource allocation, which is entirely governed by requests/limits (§46, §70).
+1. **"Higher priority means the Pod runs with more resources or performs better."** Priority affects scheduling order and preemption eligibility only — it has no bearing on the Pod's actual runtime resource allocation, which is entirely governed by requests/limits ([§46](../Part6/Section-46-Part6-Resource-Requests-Limits-QoS-Classes.md), [§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)).
 2. **"Preemption happens continuously to optimize cluster utilization."** It only triggers when a specific pending Pod cannot be scheduled through normal filtering — it's reactive to a scheduling failure, not a proactive rebalancing mechanism.
 3. **"PodDisruptionBudgets fully protect a workload from any kind of eviction."** They protect against voluntary disruptions (drains, descheduling); preemption is explicitly allowed to violate them.
 4. **"Unset priority means neutral, mid-tier priority."** It defaults to `0`, which in a cluster with explicitly negative-priority tiers (like batch workloads) is actually higher than intended relative to those tiers — always assign priority explicitly rather than relying on the default.
@@ -212,13 +212,13 @@ _What the interviewer is probing for:_ Ability to combine priority, RBAC, quota,
 ## 13. 🔑 Key Takeaways
 
 - A PriorityClass assigns an integer value Pods reference via `priorityClassName`, governing both scheduling queue order and preemption eviction eligibility.
-- Preemption is a last-resort scheduler action triggered only when normal filtering (§70) finds zero viable nodes for a pending Pod — never a proactive or continuous process.
+- Preemption is a last-resort scheduler action triggered only when normal filtering ([§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md)) finds zero viable nodes for a pending Pod — never a proactive or continuous process.
 - Victim Pod deletion during preemption respects `terminationGracePeriodSeconds`, so the pending Pod's actual scheduling is delayed until the victim fully terminates, not instantaneous.
 - Preemption is not bound by PodDisruptionBudget guarantees — a deliberate design trade-off worth explicitly accounting for in availability planning.
 - Multi-tenant clusters should govern PriorityClass access via RBAC and PriorityClass-scoped `ResourceQuota` to prevent tenants from self-assigning disproportionate eviction power.
 
 ## 14. Related Concepts & What's Next
 
-§70 established how the scheduler's filtering phase uses requests to determine node candidacy; this section covered what happens when that filtering fails everywhere and a higher-priority Pod needs room made for it via preemption. §72 covers Topology Spread Constraints — the mechanism for controlling _how_ Pods distribute across failure domains once they are scheduled, completing Part 9's tour of placement controls.
+[§70](./Section-70-Part9-Resource-Based-Scheduling-Requests-Limits-Placement.md) established how the scheduler's filtering phase uses requests to determine node candidacy; this section covered what happens when that filtering fails everywhere and a higher-priority Pod needs room made for it via preemption. [§72](./Section-72-Part9-Topology-Spread-Constraints.md) covers Topology Spread Constraints — the mechanism for controlling _how_ Pods distribute across failure domains once they are scheduled, completing Part 9's tour of placement controls.
 
-**Next Section:** §72 — `Section-72-Part9-Topology-Spread-Constraints.md`
+**Next Section:** [§72](./Section-72-Part9-Topology-Spread-Constraints.md) — `Section-72-Part9-Topology-Spread-Constraints.md`

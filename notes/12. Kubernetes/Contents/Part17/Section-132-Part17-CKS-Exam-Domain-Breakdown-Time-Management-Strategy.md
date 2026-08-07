@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-This section assumes §130 and §131's shared exam-mechanics foundation (proctoring rules, triage strategy, time-budget planning) as already established and focuses on what is unique to the CKS: domain composition, prerequisite eligibility, and security-tool-pipeline fluency. It assumes the full technical depth of Part 15 (Advanced Security: CKS Deep Dive — CIS Benchmarks/kube-bench, system hardening, gVisor/Kata, supply chain security via Trivy/Cosign/SBOM, static manifest analysis, Falco runtime security) as the primary curriculum mapping, plus Part 10 (Security and RBAC) for Cluster Hardening domain coverage. Critically, it assumes an active CKA certification as a literal eligibility prerequisite for sitting the CKS exam at all — this is not optional preparatory knowledge but a certification-body requirement.
+This section assumes [§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md) and [§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md)'s shared exam-mechanics foundation (proctoring rules, triage strategy, time-budget planning) as already established and focuses on what is unique to the CKS: domain composition, prerequisite eligibility, and security-tool-pipeline fluency. It assumes the full technical depth of Part 15 (Advanced Security: CKS Deep Dive — CIS Benchmarks/kube-bench, system hardening, gVisor/Kata, supply chain security via Trivy/Cosign/SBOM, static manifest analysis, Falco runtime security) as the primary curriculum mapping, plus Part 10 (Security and RBAC) for Cluster Hardening domain coverage. Critically, it assumes an active CKA certification as a literal eligibility prerequisite for sitting the CKS exam at all — this is not optional preparatory knowledge but a certification-body requirement.
 
 ## 4. Architecture Diagram
 
@@ -159,7 +159,7 @@ kubectl get pod my-pod -o jsonpath='{.metadata.annotations}'
 
 ## 7. Exam-Environment Security and Proctoring Rules
 
-- Proctoring mechanics are identical to the CKA and CKAD (§130): continuous webcam/microphone monitoring, a clear scanned room, single documentation tab, no secondary devices — a candidate should not expect the CKS's security subject matter to translate into a stricter or different proctoring process itself.
+- Proctoring mechanics are identical to the CKA and CKAD ([§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)): continuous webcam/microphone monitoring, a clear scanned room, single documentation tab, no secondary devices — a candidate should not expect the CKS's security subject matter to translate into a stricter or different proctoring process itself.
 - Given the CKS's emphasis on runtime threat detection and supply-chain enforcement, exam tasks may involve deliberately triggering a "malicious" action (spawning a shell, running a privileged container) purely to test that a detection or admission-control mechanism correctly blocks or alerts on it — this is expected, sanctioned exam behavior within the isolated exam cluster and is not itself a violation, but should never be confused with attempting anything against real infrastructure.
 - As with the other two exams, all work must stay within the exam's browser-based terminal and single documentation tab; installing or downloading additional tooling beyond what the exam environment already provides is not expected to be necessary and attempting external downloads risks both wasted time and an integrity flag.
 
@@ -179,7 +179,7 @@ kubectl get pod my-pod -o jsonpath='{.metadata.annotations}'
 - Rehearse full security-tool pipelines (Trivy scan → Cosign sign → admission-policy enforcement; Falco rule → triggered detection → log confirmation) as single timed units, not as isolated tool-by-tool exercises.
 - Always verify a security control's actual runtime effect (attempt the blocked action, trigger the detected condition) rather than confirming only that the configuration's syntax is valid.
 - Confirm active CKA certification status well before attempting to schedule the CKS, since this is a hard eligibility gate rather than a recommendation.
-- Reuse the exam-mechanics discipline from §130/§131 (proctoring familiarity, per-task time-capping) directly, since the CKS's operational format doesn't differ from the other two exams even though its subject matter does.
+- Reuse the exam-mechanics discipline from [§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)/[§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md) (proctoring familiarity, per-task time-capping) directly, since the CKS's operational format doesn't differ from the other two exams even though its subject matter does.
 
 ## 10. Common Anti-Patterns / Mistakes
 
@@ -220,10 +220,10 @@ _What the interviewer is probing for:_ Ability to design a training program that
 - Unlike the CKA's single dominant domain or the CKAD's mild peak, the CKS has three domains tied at 20% as co-equal top priorities, requiring balanced rather than concentrated preparation.
 - CKS tasks frequently chain multiple security tools (Trivy, Cosign, Falco, admission policies) into single pipeline-style scenarios, rewarding rehearsed end-to-end workflows over isolated tool fluency.
 - Grading verifies actual runtime security effect (a blocked syscall, a fired alert, a rejected unsigned image), not merely syntactically valid configuration — always confirm effect, not just presence.
-- Shared exam mechanics from §130/§131 (proctoring, time-capping, triage discipline) transfer directly to the CKS without needing separate rehearsal.
+- Shared exam mechanics from [§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)/[§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md) (proctoring, time-capping, triage discipline) transfer directly to the CKS without needing separate rehearsal.
 
 ## 14. Related Concepts & What's Next
 
-This section extended the shared exam-mechanics foundation from §130 and §131 into the CKS's uniquely security-focused, CKA-gated, six-domain structure, drawing on the technical depth of Part 15 (CKS Deep Dive) and Part 10 (Security and RBAC). Having now covered exam format, domain weighting, and time-management strategy for all three certifications, Part 17 turns next to the practical execution layer shared across all of them: the actual speed of typing, editing, and navigating `kubectl` under a live clock. Next, §133 covers concrete kubectl speed techniques — aliases, vim/editor configuration, and imperative one-liners — that apply equally whether the exam being sat is the CKA, CKAD, or CKS.
+This section extended the shared exam-mechanics foundation from [§130](./Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md) and [§131](./Section-131-Part17-CKAD-Exam-Domain-Breakdown-Time-Management-Strategy.md) into the CKS's uniquely security-focused, CKA-gated, six-domain structure, drawing on the technical depth of Part 15 (CKS Deep Dive) and Part 10 (Security and RBAC). Having now covered exam format, domain weighting, and time-management strategy for all three certifications, Part 17 turns next to the practical execution layer shared across all of them: the actual speed of typing, editing, and navigating `kubectl` under a live clock. Next, [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md) covers concrete kubectl speed techniques — aliases, vim/editor configuration, and imperative one-liners — that apply equally whether the exam being sat is the CKA, CKAD, or CKS.
 
-**Next Section:** §133 — `Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md`
+**Next Section:** [§133](./Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md) — `Section-133-Part17-kubectl-Speed-Techniques-Aliases-Vim-Editor-Config-Imperative-One-Liners.md`

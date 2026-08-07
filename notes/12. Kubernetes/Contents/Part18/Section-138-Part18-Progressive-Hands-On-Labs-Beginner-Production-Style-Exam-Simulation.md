@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-This section assumes the entire roadmap through §137 (Part 17's exam and interview preparation) has been read at least once, and specifically draws on: §24–§29 (Part 4, Pods/Deployments), §33 (Part 5, StatefulSets), §37 (Part 5, HPA), §41–§45 (Part 6, ConfigMaps/Secrets/probes), §57–§60 (Part 8, Volumes/PVC), §75 (Part 10, RBAC), §55 (Part 7, NetworkPolicy), and §97 (Part 13, structured troubleshooting methodology). A working cluster (kind, minikube, or a cloud sandbox) with `kubectl` configured is required to actually perform these labs; they are not theoretical.
+This section assumes the entire roadmap through [§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md) (Part 17's exam and interview preparation) has been read at least once, and specifically draws on: [§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§29](../Part4/Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md) (Part 4, Pods/Deployments), [§33](../Part5/Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md) (Part 5, StatefulSets), [§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md) (Part 5, HPA), [§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md) (Part 6, ConfigMaps/Secrets/probes), [§57](../Part8/Section-57-Part8-Volumes-emptyDir-hostPath-Ephemeral-Storage.md)–[§60](../Part8/Section-60-Part8-CSI-Container-Storage-Interface-Architecture.md) (Part 8, Volumes/PVC), [§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md) (Part 10, RBAC), [§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) (Part 7, NetworkPolicy), and [§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md) (Part 13, structured troubleshooting methodology). A working cluster (kind, minikube, or a cloud sandbox) with `kubectl` configured is required to actually perform these labs; they are not theoretical.
 
 ## 4. Architecture Diagram
 
@@ -54,7 +54,7 @@ This section assumes the entire roadmap through §137 (Part 17's exam and interv
 5. From a temporary debug Pod in the same namespace, `curl web-svc` and confirm you get an nginx response.
 6. Scale the Deployment to 5 replicas with `kubectl scale` and confirm the Service load-balances across all 5 without any manifest change to the Service itself.
 
-**What this exercises:** Pod/Deployment fundamentals and rolling updates (§24–§29), Service-to-Pod selector matching and ClusterIP routing (introduced in Part 7's Services coverage), and the basic `kubectl get`/`describe`/`logs` inspection loop from §1.
+**What this exercises:** Pod/Deployment fundamentals and rolling updates ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§29](../Part4/Section-29-Part4-Deployment-Strategies-RollingUpdate-Recreate-BlueGreen-Canary.md)), Service-to-Pod selector matching and ClusterIP routing (introduced in Part 7's Services coverage), and the basic `kubectl get`/`describe`/`logs` inspection loop from [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md).
 
 **Common errors:** Forgetting that a Service's `selector` must match the Deployment's Pod template labels exactly, not the Deployment's own labels — a mismatch here produces a Service with zero Endpoints while every Pod still reports `Running`, the single most common Lab 1 stumbling block.
 
@@ -71,7 +71,7 @@ This section assumes the entire roadmap through §137 (Part 17's exam and interv
 5. Fix the probe and confirm the Pods rejoin the Service automatically, with no manual intervention.
 6. Update the ConfigMap value and confirm — without editing the Deployment — that pods do **not** pick up the change until they are recreated, and explain why in your own words.
 
-**What this exercises:** ConfigMap/Secret creation and consumption patterns (§41–§45), the distinction between "container running" and "container ready to serve traffic" (§1's core misconception, revisited concretely), and the config-propagation behavior that trips up nearly everyone the first time they encounter it.
+**What this exercises:** ConfigMap/Secret creation and consumption patterns ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§45](../Part6/Section-45-Part6-SecurityContext-Pod-Container-Level.md)), the distinction between "container running" and "container ready to serve traffic" ([§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)'s core misconception, revisited concretely), and the config-propagation behavior that trips up nearly everyone the first time they encounter it.
 
 **Common errors:** Mounting the Secret as an environment variable "for consistency" with the ConfigMap, then wondering why `kubectl describe pod` shows the value in plaintext under `Environment:` — environment variables are visible to anything that can read the Pod spec or exec into the container, which is exactly why the task specifies a volume mount instead.
 
@@ -88,7 +88,7 @@ This section assumes the entire roadmap through §137 (Part 17's exam and interv
 5. Stop the load and confirm the HPA scales back down after its stabilization window.
 6. Intentionally delete one StatefulSet Pod's PVC directly and observe what happens to that replica on next restart — document the failure mode.
 
-**What this exercises:** StatefulSet ordering, stable identity, and per-replica storage (§33), PersistentVolumeClaim lifecycle and binding (PVC coverage in Part 8), and HPA scaling behavior (§37) — three mechanisms that look similar on paper but fail very differently in practice.
+**What this exercises:** StatefulSet ordering, stable identity, and per-replica storage ([§33](../Part5/Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)), PersistentVolumeClaim lifecycle and binding (PVC coverage in Part 8), and HPA scaling behavior ([§37](../Part5/Section-37-Part5-Horizontal-Pod-Autoscaler-HPA.md)) — three mechanisms that look similar on paper but fail very differently in practice.
 
 **Common errors:** Assuming the HPA will react instantly to load — the metrics pipeline has real latency (metrics-server scrape interval plus HPA's own sync period), so expecting an immediate scale-up within seconds of generating load is a frequent, avoidable source of confusion during this lab.
 
@@ -103,7 +103,7 @@ This section assumes the entire roadmap through §137 (Part 17's exam and interv
 3. You are handed a pre-broken Deployment (image tag typo, causing `ImagePullBackOff`) and a Pod stuck `Pending` (over-sized resource request the cluster can't schedule) — using only `kubectl describe`, `kubectl get events`, and `kubectl logs`, diagnose and fix both without being told what's wrong in advance.
 4. Time yourself; stop at 45 minutes regardless of completion and review what remained undone as a gap-analysis input for further Part 17 review.
 
-**What this exercises:** RBAC Role/RoleBinding scoping and verification via `auth can-i` (§75), NetworkPolicy default-deny posture and targeted allow rules (§55), and the structured troubleshooting methodology — describe, events, logs, then act — from §97, all under the same time pressure the real exams impose.
+**What this exercises:** RBAC Role/RoleBinding scoping and verification via `auth can-i` ([§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)), NetworkPolicy default-deny posture and targeted allow rules ([§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)), and the structured troubleshooting methodology — describe, events, logs, then act — from [§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md), all under the same time pressure the real exams impose.
 
 **Common errors:** Diagnosing the `ImagePullBackOff` and `Pending` Pod by guessing at a fix before running `kubectl describe`/`kubectl get events` — both failures have an explicit, immediately visible reason in the Events output, and skipping straight to trial-and-error edits wastes exactly the time budget this lab is designed to make scarce.
 
@@ -184,6 +184,6 @@ _What the interviewer is probing for:_ Ability to extend a generic exercise into
 
 ## 14. Related Concepts & What's Next
 
-These labs are the practical, hands-on complement to Part 17's exam-domain breakdowns and scenario question banks (§130–§137) — where Part 17 built exam-day strategy and question familiarity, this section builds the muscle memory of actually executing under the same conditions. Having now practiced the roadmap's concepts end-to-end rather than section-by-section, the next section consolidates every Part's single most important takeaway into one structured checklist, serving as a final compressed review artifact for exam day or a pre-deployment production review.
+These labs are the practical, hands-on complement to Part 17's exam-domain breakdowns and scenario question banks ([§130](../Part17/Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md)) — where Part 17 built exam-day strategy and question familiarity, this section builds the muscle memory of actually executing under the same conditions. Having now practiced the roadmap's concepts end-to-end rather than section-by-section, the next section consolidates every Part's single most important takeaway into one structured checklist, serving as a final compressed review artifact for exam day or a pre-deployment production review.
 
-**Next Section:** §139 — `Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md`
+**Next Section:** [§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md) — `Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md`

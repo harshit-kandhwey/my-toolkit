@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** When a Pod is stuck `Pending` or gets repeatedly evicted on the same node, the actual problem is frequently not the Pod at all — it's the Node itself. `kubectl get nodes` reporting a Node as `NotReady` is the Node-level equivalent of the Pod failure states from §98, and applying §97's methodology one layer up the stack means learning to read Node conditions and kubelet health signals with the same precision.
+**Plain language:** When a Pod is stuck `Pending` or gets repeatedly evicted on the same node, the actual problem is frequently not the Pod at all — it's the Node itself. `kubectl get nodes` reporting a Node as `NotReady` is the Node-level equivalent of the Pod failure states from [§98](./Section-98-Part13-Pod-Failure-States-CrashLoopBackOff-ImagePullBackOff-Pending-Evicted.md), and applying [§97](./Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)'s methodology one layer up the stack means learning to read Node conditions and kubelet health signals with the same precision.
 
 **Precise definition:** A Node's `STATUS` column reflects its **`NodeStatus.conditions`** array, most importantly the **`Ready`** condition, which the kubelet itself reports to the API server via a periodic heartbeat (`node-status-update-frequency`, default 10s). `NotReady` means the API server has not received a healthy heartbeat within the configured grace period (`node-monitor-grace-period`, default 40s in the controller manager) — the Node's kubelet has either stopped running, is unable to reach the API server, or is reporting an unhealthy condition (`MemoryPressure`, `DiskPressure`, `PIDPressure`, or `NetworkUnavailable` set to `True`). This is distinct from a Pod-level failure precisely because a `NotReady` Node affects **every** Pod scheduled to it simultaneously — the node-lifecycle controller applies `NoSchedule`/`NoExecute` taints and, after a further grace period, begins evicting all Pods from the Node, which is exactly the mechanism that can make a single struggling Node look like a wave of unrelated Pod failures across several workloads.
 
 ## 2. Why This Matters
 
-- **A single `NotReady` Node can masquerade as several unrelated Pod-level incidents** — if three Deployments each have one Pod stuck `Pending` or `Terminating` at the same moment, checking `kubectl get nodes` first, before diving into three separate Pod investigations, is almost always the faster path per §97's ISOLATE step.
+- **A single `NotReady` Node can masquerade as several unrelated Pod-level incidents** — if three Deployments each have one Pod stuck `Pending` or `Terminating` at the same moment, checking `kubectl get nodes` first, before diving into three separate Pod investigations, is almost always the faster path per [§97](./Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)'s ISOLATE step.
 - **The kubelet is the single most important process on every worker node** — it's a systemd-managed unit outside the Kubernetes API entirely, so `kubectl` commands alone cannot always diagnose a kubelet crash; you have to escalate to node-level access (`journalctl`, SSH) when the API server itself has no fresher information to offer.
 - **`NotReady` triggers automatic Pod eviction after a delay, not immediately** — understanding the default `pod-eviction-timeout` behavior (and the `NoExecute` taint tolerations that delay it) is directly tested on the CKA exam and is essential for predicting when workloads on a struggling node will actually be rescheduled elsewhere.
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Applies §97's structured troubleshooting methodology one layer up from §98's Pod-level failure states, to the Node. Back-references §9 (Node Components, Part 2 — kubelet, kube-proxy, container runtime architecture) for the underlying process model being diagnosed here. Forwards into §100, which applies the same methodology one further layer up, to control plane component failures.
+Applies [§97](./Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)'s structured troubleshooting methodology one layer up from [§98](./Section-98-Part13-Pod-Failure-States-CrashLoopBackOff-ImagePullBackOff-Pending-Evicted.md)'s Pod-level failure states, to the Node. Back-references [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) (Node Components, Part 2 — kubelet, kube-proxy, container runtime architecture) for the underlying process model being diagnosed here. Forwards into [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md), which applies the same methodology one further layer up, to control plane component failures.
 
 ## 4. Architecture Diagram
 
@@ -61,7 +61,7 @@ Applies §97's structured troubleshooting methodology one layer up from §98's P
 
 ### 5.1 Reading Node Conditions from the API Server's Perspective
 
-**Purpose:** Start with what the API server already knows, per §97's cheapest-signal-first ordering, before escalating to node-level access.
+**Purpose:** Start with what the API server already knows, per [§97](./Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)'s cheapest-signal-first ordering, before escalating to node-level access.
 
 **Syntax:**
 
@@ -118,7 +118,7 @@ Jul 31 09:02:38 node-2 kubelet[2145]: F0731 09:02:38.112233 2145 server.go:203] 
 Jul 31 09:02:38 node-2 systemd[1]: kubelet.service: Main process exited, code=exited, status=1/FAILURE
 ```
 
-**Production usage example:** The exact log line points at a missing client CA file, not a generic crash — this is a materially different fix (restoring or re-provisioning the kubelet's PKI material, often after a botched certificate rotation, §14 Part 14) than the more common "kubelet can't reach the API server" case, which instead shows repeated `Failed to connect to API server` or `x509: certificate has expired` messages in the same log stream.
+**Production usage example:** The exact log line points at a missing client CA file, not a generic crash — this is a materially different fix (restoring or re-provisioning the kubelet's PKI material, often after a botched certificate rotation, [§109](../Part14/Section-109-Part14-Certificate-Rotation-Renewal.md)) than the more common "kubelet can't reach the API server" case, which instead shows repeated `Failed to connect to API server` or `x509: certificate has expired` messages in the same log stream.
 
 **Common errors:** Restarting the kubelet service blindly (`systemctl restart kubelet`) without first reading the exit reason in the journal — a missing CA file or expired certificate will simply cause the same immediate failure on restart, wasting a cycle that reading the log first would have avoided.
 
@@ -160,25 +160,25 @@ node-2$ crictl images | wc -l
 
 ## 6. Production Usage Notes
 
-- **`kubectl get nodes -o wide` combined with `kubectl top nodes`** (requires metrics-server, §92) gives a fast cluster-wide view of which Nodes are trending toward pressure before they actually flip `NotReady`, turning this into a proactive check rather than a reactive one.
+- **`kubectl get nodes -o wide` combined with `kubectl top nodes`** (requires metrics-server, [§92](../Part12/Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) gives a fast cluster-wide view of which Nodes are trending toward pressure before they actually flip `NotReady`, turning this into a proactive check rather than a reactive one.
 - **A Node flapping between `Ready` and `NotReady` repeatedly** (rather than staying down) is a distinct pattern worth its own investigation — often a marginal network link, an overloaded kubelet missing its heartbeat deadline under load, or a systemd unit set to auto-restart after each crash — and is a materially different problem from a Node that goes down once and stays down.
 - **`crictl` and `ctr` are the direct container-runtime-level tools** available once you're on the node itself, and are essential when `kubectl describe pod` output is itself unavailable because the kubelet that would normally report it is the very thing that's down.
 
 ## 7. Security Considerations
 
 - **SSH access to worker nodes should be tightly restricted and audited separately from Kubernetes RBAC** — node-level debugging bypasses the API server's authorization layer entirely, so who can reach `journalctl -u kubelet` on a production node is a distinct access-control surface from who can run `kubectl` commands.
-- **A missing or expired kubelet client certificate, as seen in 5.2, is itself a security-relevant failure mode** — certificate expiry silently taking nodes offline is exactly the kind of incident that certificate-rotation monitoring (§14, Part 14) is meant to prevent proactively.
+- **A missing or expired kubelet client certificate, as seen in 5.2, is itself a security-relevant failure mode** — certificate expiry silently taking nodes offline is exactly the kind of incident that certificate-rotation monitoring ([§109](../Part14/Section-109-Part14-Certificate-Rotation-Renewal.md)) is meant to prevent proactively.
 - **`crictl` and direct container runtime access on a node can expose the contents of any Pod's containers**, regardless of the RBAC restrictions that would normally apply via the API server — node-level access is effectively cluster-admin-equivalent for anything scheduled to that node, and should be provisioned accordingly.
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                         | Cause                                                                      | Fix                                                                                                     |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `Ready: Unknown`, all conditions frozen at the same stale time  | kubelet process stopped reporting entirely (crashed, network partition)    | SSH to the node; check `systemctl status kubelet` and `journalctl -u kubelet` for the exact exit reason |
-| `Ready: False`, `Reason: KubeletNotReady`, `DiskPressure: True` | Node's filesystem (often container image/log storage) is nearly full       | Prune unused images (`crictl rmi --prune`), clear logs, or provision more disk                          |
-| kubelet log shows `x509: certificate has expired`               | kubelet's client certificate for API server auth has expired               | Rotate the kubelet's client certificate (§14, Part 14, Certificate Rotation)                            |
-| kubelet log shows repeated `Failed to connect to API server`    | Network path between node and control plane is broken, or a wrong endpoint | Check node network connectivity, DNS resolution of the API server endpoint, and firewall rules          |
-| Node flaps between `Ready` and `NotReady` repeatedly            | Marginal network link or kubelet missing heartbeat deadline under CPU load | Investigate node resource saturation and network stability, not a one-time root cause                   |
+| Symptom                                                         | Cause                                                                      | Fix                                                                                                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Ready: Unknown`, all conditions frozen at the same stale time  | kubelet process stopped reporting entirely (crashed, network partition)    | SSH to the node; check `systemctl status kubelet` and `journalctl -u kubelet` for the exact exit reason                              |
+| `Ready: False`, `Reason: KubeletNotReady`, `DiskPressure: True` | Node's filesystem (often container image/log storage) is nearly full       | Prune unused images (`crictl rmi --prune`), clear logs, or provision more disk                                                       |
+| kubelet log shows `x509: certificate has expired`               | kubelet's client certificate for API server auth has expired               | Rotate the kubelet's client certificate ([§109](../Part14/Section-109-Part14-Certificate-Rotation-Renewal.md), Certificate Rotation) |
+| kubelet log shows repeated `Failed to connect to API server`    | Network path between node and control plane is broken, or a wrong endpoint | Check node network connectivity, DNS resolution of the API server endpoint, and firewall rules                                       |
+| Node flaps between `Ready` and `NotReady` repeatedly            | Marginal network link or kubelet missing heartbeat deadline under CPU load | Investigate node resource saturation and network stability, not a one-time root cause                                                |
 
 ## 9. Best Practices
 
@@ -207,7 +207,7 @@ _What the interviewer is probing for:_ Precise understanding that `Unknown` vers
 _What the interviewer is probing for:_ Recognizing that a TLS/auth-layer failure has a completely different fix path from a resource-pressure or process-crash failure, and connecting the incident back to a proactive monitoring gap rather than treating it as a one-off fix.
 
 **🎯 Architect:** _"How would you design monitoring and automated remediation so `NotReady` Nodes are caught and, where possible, self-heal before paging anyone?"_
-**Model answer:** I'd build detection on the same conditions this section relies on manually. Using kube-state-metrics (§92) feeding Prometheus, I'd alert on `kube_node_status_condition` for `Ready` transitioning to `False` or `Unknown`, with a short delay window to avoid paging on a single missed heartbeat that self-resolves, and separately alert on `DiskPressure`/`MemoryPressure` conditions trending toward `True` well before they actually flip, using node-exporter metrics for disk and memory headroom as a leading indicator rather than waiting for the kubelet's own condition to fire. For certificate expiry specifically, I'd monitor certificate expiration dates directly (many teams export this as its own Prometheus metric) and alert weeks in advance, since that failure mode is entirely preventable and should never reach a production `NotReady` incident. Where remediation can be safely automated, I'd consider node auto-replacement in cloud-managed node groups — if a Node fails health checks past a threshold, the underlying infrastructure (not Kubernetes itself) terminates and replaces the instance, which handles the common case of a bad instance or disk far more reliably than manual SSH-based recovery. Finally, I'd feed genuinely novel node-failure root causes back into the team's runbook (§105), keeping the manual `journalctl`/`crictl` diagnostic path from this section as the escalation tier for whatever automated detection and remediation doesn't already cover.
+**Model answer:** I'd build detection on the same conditions this section relies on manually. Using kube-state-metrics ([§92](../Part12/Section-92-Part12-Prometheus-Kubernetes-ServiceMonitors-Node-Exporter-kube-state-metrics.md)) feeding Prometheus, I'd alert on `kube_node_status_condition` for `Ready` transitioning to `False` or `Unknown`, with a short delay window to avoid paging on a single missed heartbeat that self-resolves, and separately alert on `DiskPressure`/`MemoryPressure` conditions trending toward `True` well before they actually flip, using node-exporter metrics for disk and memory headroom as a leading indicator rather than waiting for the kubelet's own condition to fire. For certificate expiry specifically, I'd monitor certificate expiration dates directly (many teams export this as its own Prometheus metric) and alert weeks in advance, since that failure mode is entirely preventable and should never reach a production `NotReady` incident. Where remediation can be safely automated, I'd consider node auto-replacement in cloud-managed node groups — if a Node fails health checks past a threshold, the underlying infrastructure (not Kubernetes itself) terminates and replaces the instance, which handles the common case of a bad instance or disk far more reliably than manual SSH-based recovery. Finally, I'd feed genuinely novel node-failure root causes back into the team's runbook ([§105](./Section-105-Part13-Incident-Case-Studies-Runbooks.md)), keeping the manual `journalctl`/`crictl` diagnostic path from this section as the escalation tier for whatever automated detection and remediation doesn't already cover.
 _What the interviewer is probing for:_ Ability to convert manual node-level diagnostic knowledge into proactive, layered monitoring plus automated remediation where safe, while still valuing the manual escalation path for genuinely novel failures.
 
 ## 12. Common Misconceptions
@@ -227,6 +227,6 @@ _What the interviewer is probing for:_ Ability to convert manual node-level diag
 
 ## 14. Related Concepts & What's Next
 
-This section moved §97's structured troubleshooting methodology one layer up from §98's Pod-level failure states to the Node, drawing on the kubelet/kube-proxy/container-runtime architecture from §9 to explain exactly how and why a Node reports `NotReady`, and how to escalate from API-server-visible signals to direct node-level tooling. §100 moves one layer further up the stack, applying the same methodology to control plane component failures — API server, etcd, and scheduler outages — which is the layer above individual Nodes entirely.
+This section moved [§97](./Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)'s structured troubleshooting methodology one layer up from [§98](./Section-98-Part13-Pod-Failure-States-CrashLoopBackOff-ImagePullBackOff-Pending-Evicted.md)'s Pod-level failure states to the Node, drawing on the kubelet/kube-proxy/container-runtime architecture from [§9](../Part2/Section-09-Part2-Node-Components-Kubelet-Kube-Proxy-Container-Runtime.md) to explain exactly how and why a Node reports `NotReady`, and how to escalate from API-server-visible signals to direct node-level tooling. [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md) moves one layer further up the stack, applying the same methodology to control plane component failures — API server, etcd, and scheduler outages — which is the layer above individual Nodes entirely.
 
-**Next Section:** §100 — `Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md`
+**Next Section:** [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md) — `Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md`

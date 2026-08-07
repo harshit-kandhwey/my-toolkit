@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **Gateway API exists specifically because Ingress's annotation-based extension model became unwieldy at scale.** Anything beyond basic host/path routing under Ingress (§53) — traffic splitting for canary releases, request header matching, cross-namespace route binding — required controller-specific annotations that locked configuration to one controller's dialect; Gateway API models these as first-class, portable API fields instead.
+- **Gateway API exists specifically because Ingress's annotation-based extension model became unwieldy at scale.** Anything beyond basic host/path routing under Ingress ([§53](./Section-53-Part7-Ingress-Ingress-Controllers.md)) — traffic splitting for canary releases, request header matching, cross-namespace route binding — required controller-specific annotations that locked configuration to one controller's dialect; Gateway API models these as first-class, portable API fields instead.
 - **The role separation (infrastructure provider / cluster operator / application developer) matches how large organizations actually operate Kubernetes**, letting a platform team own `GatewayClass`/`Gateway` objects (load balancer provisioning, TLS, listener configuration) while application teams independently own `HTTPRoute` objects for their own routing rules, without either needing access to the other's resources.
 - **Gateway API is a genuinely newer, less universally adopted standard than Ingress**, not (yet) a wholesale replacement in most production estates — understanding both is necessary for real-world clusters, since Ingress remains the dominant, most battle-tested option in the large majority of currently-running clusters today.
 
-🔑 **Key Takeaway:** Gateway API is a role-oriented, more expressive successor to Ingress, splitting infrastructure (`GatewayClass`/`Gateway`) from application-level routing (`HTTPRoute` and friends) to solve Ingress's annotation-sprawl problem with portable, native fields — but it is a newer standard still earning the breadth of production adoption Ingress (§53) already has.
+🔑 **Key Takeaway:** Gateway API is a role-oriented, more expressive successor to Ingress, splitting infrastructure (`GatewayClass`/`Gateway`) from application-level routing (`HTTPRoute` and friends) to solve Ingress's annotation-sprawl problem with portable, native fields — but it is a newer standard still earning the breadth of production adoption Ingress ([§53](./Section-53-Part7-Ingress-Ingress-Controllers.md)) already has.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §53 (Ingress), whose annotation-based limitations directly motivate Gateway API's design, and indirectly on §50 (Services, since Routes still ultimately forward to Services).
+Builds directly on [§53](./Section-53-Part7-Ingress-Ingress-Controllers.md) (Ingress), whose annotation-based limitations directly motivate Gateway API's design, and indirectly on [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services, since Routes still ultimately forward to Services).
 
 ## 4. Architecture Diagram
 
@@ -159,7 +159,7 @@ Status:
 ## 7. Security Considerations
 
 - The explicit `allowedRoutes` cross-namespace binding model is itself a security control — it lets a platform team precisely scope which namespaces may attach routes to a shared, security-sensitive Gateway (e.g., one handling TLS termination for a public-facing domain), a more granular boundary than Ingress's flatter, single-namespace-object model typically offers.
-- TLS certificate references on a `Gateway` object follow the same Secret-based, namespace-scoped access considerations as Ingress TLS (§53) — the Gateway's namespace must have access to the referenced Secret.
+- TLS certificate references on a `Gateway` object follow the same Secret-based, namespace-scoped access considerations as Ingress TLS ([§53](./Section-53-Part7-Ingress-Ingress-Controllers.md)) — the Gateway's namespace must have access to the referenced Secret.
 - Because multiple application teams' `HTTPRoute` objects can attach to one shared `Gateway`, a misconfigured or overly permissive route in one namespace has a wider blast radius (the shared, often public-facing Gateway) than a mistake in a per-team Ingress object would — route review discipline matters more, not less, with a shared Gateway model.
 
 ## 8. Common Troubleshooting Scenarios
@@ -218,6 +218,6 @@ _What the interviewer is probing for:_ Ability to make a calibrated, need-driven
 
 ## 14. Related Concepts & What's Next
 
-§53 covers Ingress in full, whose annotation-based limitations directly motivate this section's design, and §50 remains the underlying Service abstraction every Route ultimately forwards to. §55 shifts from HTTP-layer routing to network-layer security policy with NetworkPolicies, and §122 (Part 16) revisits service mesh traffic management, which Gateway API's design increasingly overlaps and integrates with.
+[§53](./Section-53-Part7-Ingress-Ingress-Controllers.md) covers Ingress in full, whose annotation-based limitations directly motivate this section's design, and [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) remains the underlying Service abstraction every Route ultimately forwards to. [§55](./Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) shifts from HTTP-layer routing to network-layer security policy with NetworkPolicies, and [§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md) revisits service mesh traffic management, which Gateway API's design increasingly overlaps and integrates with.
 
-**Next Section:** §55 — `Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md`
+**Next Section:** [§55](./Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) — `Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md`

@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** By default, everything Kubernetes stores — including Secrets — lands in etcd as ordinary, unencrypted data (base64-encoded at the API layer, but not cryptographically protected, as §42 established). Anyone who gets hold of etcd's data files, a snapshot backup, or an unencrypted disk from the etcd host can read every Secret in the cluster directly, bypassing Kubernetes' RBAC entirely. EncryptionConfiguration closes that specific gap by telling the api-server to encrypt certain resource types before writing them to etcd.
+**Plain language:** By default, everything Kubernetes stores — including Secrets — lands in etcd as ordinary, unencrypted data (base64-encoded at the API layer, but not cryptographically protected, as [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) established). Anyone who gets hold of etcd's data files, a snapshot backup, or an unencrypted disk from the etcd host can read every Secret in the cluster directly, bypassing Kubernetes' RBAC entirely. EncryptionConfiguration closes that specific gap by telling the api-server to encrypt certain resource types before writing them to etcd.
 
 **Precise definition:** **EncryptionConfiguration** is a static YAML configuration file passed to `kube-apiserver` via the `--encryption-provider-config` flag that defines an ordered list of **encryption providers** applied to specified API resources (most commonly `secrets`, optionally `configmaps` and others) before they are persisted to etcd. Supported providers range from `identity` (no encryption, the default), through software-based providers like `aescbc` and `aesgcm` using a locally-stored key, up to `kms` — the recommended production approach — which delegates the actual encryption key to an external **Key Management Service** (cloud KMS, HashiCorp Vault's transit engine, etc.), so the raw key material never has to live on the control-plane filesystem at all. Enabling this only affects objects written _after_ the configuration is applied — existing Secrets remain in their prior, unencrypted form in etcd until an explicit re-encryption pass rewrites them.
 
 ## 2. Why This Matters
 
-- **etcd stores data in plaintext by default (§10), and Secrets are the highest-value target that fact puts at risk.** Without EncryptionConfiguration, an attacker (or a mishandled backup, or an unencrypted disk snapshot) with access to etcd's raw data files reads every cluster Secret directly, completely bypassing the RBAC boundary that §42 identified as the real day-to-day defense.
-- **This is the actual fix for the base64-is-not-encryption gap called out explicitly in §42** — EncryptionConfiguration is the mechanism that turns "Secrets are technically recoverable by anyone touching etcd" into genuine ciphertext requiring the encryption key to reverse.
-- **CKS treats this as core cluster-hardening material**, and expects hands-on fluency configuring and verifying encryption at rest, not just conceptual awareness — this is directly assessed in Part 15's cluster-hardening domain (§113) and is one of the CIS Benchmark checks `kube-bench` (§113) flags when absent.
+- **etcd stores data in plaintext by default ([§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)), and Secrets are the highest-value target that fact puts at risk.** Without EncryptionConfiguration, an attacker (or a mishandled backup, or an unencrypted disk snapshot) with access to etcd's raw data files reads every cluster Secret directly, completely bypassing the RBAC boundary that [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) identified as the real day-to-day defense.
+- **This is the actual fix for the base64-is-not-encryption gap called out explicitly in [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)** — EncryptionConfiguration is the mechanism that turns "Secrets are technically recoverable by anyone touching etcd" into genuine ciphertext requiring the encryption key to reverse.
+- **CKS treats this as core cluster-hardening material**, and expects hands-on fluency configuring and verifying encryption at rest, not just conceptual awareness — this is directly assessed in Part 15's cluster-hardening domain ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)) and is one of the CIS Benchmark checks `kube-bench` ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)) flags when absent.
 
 🔑 **Key Takeaway:** EncryptionConfiguration is what actually encrypts Secrets (and optionally other resources) before they hit etcd's disk — without it, "Secrets are stored securely" is false regardless of RBAC, and enabling it retroactively still requires an explicit re-encryption pass over existing objects.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §10 (etcd's data model, where "stores data in plaintext by default" is first established) and §42 (Secrets encoding vs. encryption, whose unresolved gap this section closes). Assumes familiarity with static Pod manifests and kube-apiserver flags from §17.
+Builds directly on [§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md) (etcd's data model, where "stores data in plaintext by default" is first established) and [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) (Secrets encoding vs. encryption, whose unresolved gap this section closes). Assumes familiarity with static Pod manifests and kube-apiserver flags from [§17](../Part3/Section-17-Part3-Static-Pods-Kubelet-Configuration.md).
 
 ## 4. Architecture: Where EncryptionConfiguration Sits in the Write Path
 
@@ -27,7 +27,7 @@ Builds directly on §10 (etcd's data model, where "stores data in plaintext by d
  ┌────────────────────────┐
  │   kube-apiserver       │
  │                        │
- │  1. Admission chain    │  (§67, Part 10 — validating/mutating webhooks)
+ │  1. Admission chain    │  (§77 — validating/mutating webhooks)
  │  2. Encryption filter  │  ◄── EncryptionConfiguration applies HERE,
  │     (this section)     │      just before the write to etcd
  └──────────┬─────────────┘
@@ -90,13 +90,13 @@ NAME                            READY   STATUS    RESTARTS   AGE
 kube-apiserver-control-plane-1   1/1     Running   0          8s
 ```
 
-**Production usage example:** Since kubeadm manages the api-server as a static Pod, editing the manifest triggers the kubelet to restart it automatically — no separate `systemctl restart` is needed here (unlike the certificate renewal case in §18), because static Pod manifests are watched continuously by the kubelet.
+**Production usage example:** Since kubeadm manages the api-server as a static Pod, editing the manifest triggers the kubelet to restart it automatically — no separate `systemctl restart` is needed here (unlike the certificate renewal case in [§18](../Part3/Section-18-Part3-Certificates-PKI-Kubeadm-Certificate-Management.md)), because static Pod manifests are watched continuously by the kubelet.
 
 **Common errors:** Providing a key that isn't exactly 32 bytes before base64 encoding (`aescbc` requires a 32-byte key for AES-256) causes the api-server to crash-loop immediately on startup with a key-length error visible in `kubectl logs` or the container runtime's logs directly (since `kubectl` itself may be unreachable if the api-server won't start).
 
 ### 5.2 Verifying Encryption Actually Took Effect
 
-**Purpose:** Prove that a Secret's bytes are genuinely ciphertext in etcd, not just base64, distinguishing this from the false confidence flagged in §42.
+**Purpose:** Prove that a Secret's bytes are genuinely ciphertext in etcd, not just base64, distinguishing this from the false confidence flagged in [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md).
 
 **Syntax:**
 
@@ -156,7 +156,7 @@ secret/web-tls replaced
 
 - **Encryption at rest defends against a fundamentally different threat than RBAC** — it protects against someone with direct etcd/disk/backup access, not someone with a valid, over-permissioned Kubernetes credential; both controls are necessary, and neither substitutes for the other.
 - **A `kms` provider is materially stronger than a local-key provider** because the encryption key material never needs to be present on a control-plane node's disk at all, removing an entire class of "root on control-plane host recovers all Secrets" attack.
-- **etcd backups (§109, Part 14) taken before encryption was enabled — or before a re-encryption pass — remain unencrypted** regardless of the cluster's current configuration; backup retention policy needs to account for this when encryption is enabled partway through a cluster's life.
+- **etcd backups ([§109](../Part14/Section-109-Part14-Certificate-Rotation-Renewal.md)) taken before encryption was enabled — or before a re-encryption pass — remain unencrypted** regardless of the cluster's current configuration; backup retention policy needs to account for this when encryption is enabled partway through a cluster's life.
 
 ## 8. Common Troubleshooting Scenarios
 
@@ -181,7 +181,7 @@ secret/web-tls replaced
 ## 11. Interview Questions
 
 **🎯 Beginner:** _"What does EncryptionConfiguration actually protect against that RBAC doesn't?"_
-**Model answer:** RBAC controls who can read a Secret through the Kubernetes API — it's an authorization boundary. EncryptionConfiguration protects against someone who bypasses the API entirely and gets direct access to etcd's stored data, a disk snapshot, or an etcd backup — without it, that data is essentially plaintext (base64, per §42) regardless of how tight RBAC is. They're complementary controls addressing different attack surfaces, not alternatives to each other.
+**Model answer:** RBAC controls who can read a Secret through the Kubernetes API — it's an authorization boundary. EncryptionConfiguration protects against someone who bypasses the API entirely and gets direct access to etcd's stored data, a disk snapshot, or an etcd backup — without it, that data is essentially plaintext (base64, per [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) regardless of how tight RBAC is. They're complementary controls addressing different attack surfaces, not alternatives to each other.
 _What the interviewer is probing for:_ Clear separation between the API-level and storage-level threat models.
 
 **🎯 Intermediate:** _"You've just enabled EncryptionConfiguration with an `aescbc` provider on a cluster that already had hundreds of Secrets. Is the cluster now fully protected?"_
@@ -193,7 +193,7 @@ _What the interviewer is probing for:_ Awareness of this specific, easy-to-miss 
 _What the interviewer is probing for:_ Understanding of the actual threat-model improvement `kms` provides, not just "it's the newer option."
 
 **🎯 Architect:** _"Design the full secrets-at-rest strategy for a regulated environment (e.g., handling financial or health data) running on Kubernetes."_
-**Model answer:** I'd start with EncryptionConfiguration using a `kms` provider backed by a cloud-native KMS or an on-prem HSM-backed equivalent, covering both `secrets` and any custom resources known to carry sensitive data, with `identity` retained only as a last-resort fallback provider for compatibility during migration windows. I'd enforce this at cluster-bootstrap time (via the kubeadm ClusterConfiguration or an equivalent Infrastructure-as-Code template) so it's never an optional post-hoc step, and bake the mandatory re-encryption pass into the same automation that enables it. Beyond native encryption, I'd layer an external secret store (Vault or a managed equivalent) fronting the actual credential material via the External Secrets Operator, giving dynamic, short-lived, individually auditable secrets rather than long-lived static ones sitting in etcd at all — genuinely regulated data (cardholder data, PHI) generally shouldn't touch a native Kubernetes Secret directly if a compliant secret-management platform is available. Finally, I'd ensure etcd backups (§109) taken after encryption was enabled are themselves stored encrypted-at-rest at the storage layer too, and that key rotation for the KMS-backed provider follows the organization's existing key-rotation policy and audit cadence, treating this as part of the same governance framework as any other regulated cryptographic material.
+**Model answer:** I'd start with EncryptionConfiguration using a `kms` provider backed by a cloud-native KMS or an on-prem HSM-backed equivalent, covering both `secrets` and any custom resources known to carry sensitive data, with `identity` retained only as a last-resort fallback provider for compatibility during migration windows. I'd enforce this at cluster-bootstrap time (via the kubeadm ClusterConfiguration or an equivalent Infrastructure-as-Code template) so it's never an optional post-hoc step, and bake the mandatory re-encryption pass into the same automation that enables it. Beyond native encryption, I'd layer an external secret store (Vault or a managed equivalent) fronting the actual credential material via the External Secrets Operator, giving dynamic, short-lived, individually auditable secrets rather than long-lived static ones sitting in etcd at all — genuinely regulated data (cardholder data, PHI) generally shouldn't touch a native Kubernetes Secret directly if a compliant secret-management platform is available. Finally, I'd ensure etcd backups ([§109](../Part14/Section-109-Part14-Certificate-Rotation-Renewal.md)) taken after encryption was enabled are themselves stored encrypted-at-rest at the storage layer too, and that key rotation for the KMS-backed provider follows the organization's existing key-rotation policy and audit cadence, treating this as part of the same governance framework as any other regulated cryptographic material.
 _What the interviewer is probing for:_ Ability to compose native Kubernetes encryption with external secret management and organizational compliance requirements into one coherent strategy, not just configuring one YAML file.
 
 ## 12. Common Misconceptions
@@ -205,14 +205,14 @@ _What the interviewer is probing for:_ Ability to compose native Kubernetes encr
 
 ## 13. 🔑 Key Takeaways
 
-- etcd stores Secrets in plaintext-equivalent (base64) form by default (§10, §42); EncryptionConfiguration is the mechanism that actually encrypts them before they hit disk.
+- etcd stores Secrets in plaintext-equivalent (base64) form by default ([§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md), [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)); EncryptionConfiguration is the mechanism that actually encrypts them before they hit disk.
 - Enabling encryption only protects newly written objects — a mandatory re-encryption pass (`kubectl get secrets --all-namespaces -o json | kubectl replace -f -`) is required for pre-existing Secrets.
 - `kms`-backed providers are the recommended production approach over local `aescbc`/`aesgcm` keys, since they remove key material from the control-plane filesystem entirely.
 - Verification must inspect etcd's raw stored bytes directly (via `etcdctl`), never the Kubernetes API response, since the api-server always transparently decrypts on read.
-- For the highest-sensitivity secrets, external secret stores (Vault, External Secrets Operator) covered at CKS depth in §113 and Part 15's secrets material go beyond what native encryption at rest alone provides.
+- For the highest-sensitivity secrets, external secret stores (Vault, External Secrets Operator) covered at CKS depth in [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) and Part 15's secrets material go beyond what native encryption at rest alone provides.
 
 ## 14. Related Concepts & What's Next
 
-This section closed the gap left open in §42 (base64 is not encryption) by building on §10's fact that etcd stores data in plaintext by default. It connects forward to §113 (Part 15, CKS cluster hardening), where encryption at rest is revisited as one of several hardening checklist items alongside CIS Benchmarks and `kube-bench`, and to Part 15's broader treatment of external secret stores (Vault, External Secrets Operator) for organizations needing dynamic, short-lived credentials beyond what native Kubernetes Secrets provide — this repo's separate Ansible roadmap also covers Vault integration in operational depth for teams standardizing on it outside Kubernetes specifically. §44, next, returns to the application layer to cover environment variable injection precedence when multiple sources — ConfigMaps, Secrets, and direct values — define the same variable name.
+This section closed the gap left open in [§42](./Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md) (base64 is not encryption) by building on [§10](../Part2/Section-10-Part2-etcd-Deep-Dive-Data-Model-Raft-Consensus.md)'s fact that etcd stores data in plaintext by default. It connects forward to [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) (Part 15, CKS cluster hardening), where encryption at rest is revisited as one of several hardening checklist items alongside CIS Benchmarks and `kube-bench`, and to Part 15's broader treatment of external secret stores (Vault, External Secrets Operator) for organizations needing dynamic, short-lived credentials beyond what native Kubernetes Secrets provide — this repo's separate Ansible roadmap also covers Vault integration in operational depth for teams standardizing on it outside Kubernetes specifically. [§44](./Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md), next, returns to the application layer to cover environment variable injection precedence when multiple sources — ConfigMaps, Secrets, and direct values — define the same variable name.
 
-**Next Section:** §44 — `Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md`
+**Next Section:** [§44](./Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md) — `Section-44-Part6-Environment-Variable-Injection-Precedence-Rules.md`

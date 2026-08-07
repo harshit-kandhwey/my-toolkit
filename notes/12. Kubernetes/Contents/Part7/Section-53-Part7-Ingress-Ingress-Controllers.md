@@ -8,15 +8,15 @@
 
 ## 2. Why This Matters
 
-- **Ingress does not replace Services — it routes to them.** An Ingress object's rules always point at a backend Service (§50), typically a ClusterIP Service; the Ingress Controller terminates external HTTP/HTTPS traffic and then forwards internally using ordinary Service-based routing, meaning everything already understood about Services and DNS (§52) still applies underneath.
+- **Ingress does not replace Services — it routes to them.** An Ingress object's rules always point at a backend Service ([§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)), typically a ClusterIP Service; the Ingress Controller terminates external HTTP/HTTPS traffic and then forwards internally using ordinary Service-based routing, meaning everything already understood about Services and DNS ([§52](./Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md)) still applies underneath.
 - **"Ingress" the API object and "an Ingress Controller" the software are two different things, and conflating them is the single most common mistake with this feature.** Kubernetes ships the Ingress API by default, but ships **no default controller** — a cluster with Ingress objects applied but no controller installed will show the objects existing via `kubectl get ingress`, with no actual routing happening at all.
-- **Ingress is the direct, widely-adopted predecessor to the Gateway API (§54)**, and remains the dominant HTTP routing mechanism in production Kubernetes today — understanding it thoroughly, including its real limitations (heavy reliance on controller-specific annotations for anything beyond basic host/path routing), is what motivates the newer API's design.
+- **Ingress is the direct, widely-adopted predecessor to the Gateway API ([§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md))**, and remains the dominant HTTP routing mechanism in production Kubernetes today — understanding it thoroughly, including its real limitations (heavy reliance on controller-specific annotations for anything beyond basic host/path routing), is what motivates the newer API's design.
 
 🔑 **Key Takeaway:** Ingress is purely a declarative API for HTTP/HTTPS routing rules; it requires a separately installed Ingress Controller to do anything at all, and that controller's job is to configure a reverse proxy that ultimately still forwards traffic to ordinary Kubernetes Services underneath.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §50 (Services, since every Ingress rule ultimately routes to a Service, never directly to Pods) and §49 (CNI, which handles the actual Pod-to-Pod delivery once traffic reaches inside the cluster).
+Builds directly on [§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services, since every Ingress rule ultimately routes to a Service, never directly to Pods) and [§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) (CNI, which handles the actual Pod-to-Pod delivery once traffic reaches inside the cluster).
 
 ## 4. Architecture Diagram
 
@@ -54,7 +54,7 @@ Builds directly on §50 (Services, since every Ingress rule ultimately routes to
 
 - **The Ingress Controller's own entry point is typically a single `LoadBalancer` or `NodePort` Service** — meaning one cloud load balancer can front many Ingress objects and many Services, which is the core cost/complexity saving Ingress provides over a `LoadBalancer` Service per application.
 - **The controller reconfigures its proxy dynamically as Ingress objects change** — creating, editing, or deleting an Ingress object triggers the controller to update its reverse-proxy configuration (e.g., regenerating an NGINX config and reloading), with no manual proxy-configuration step required.
-- **TLS termination commonly happens at the Ingress Controller**, referencing a `Secret` containing a TLS certificate/key named in the Ingress object's `tls` field — traffic between the controller and backend Services is typically plain HTTP inside the cluster unless a service mesh (§122, Part 16) adds mTLS on top.
+- **TLS termination commonly happens at the Ingress Controller**, referencing a `Secret` containing a TLS certificate/key named in the Ingress object's `tls` field — traffic between the controller and backend Services is typically plain HTTP inside the cluster unless a service mesh ([§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)) adds mTLS on top.
 
 ## 5. Hands-On: Installing and Using an Ingress Controller
 
@@ -181,14 +181,14 @@ $ curl -v https://app.example.com/
 
 ## 6. Production Usage Notes
 
-- **Most non-trivial routing behavior beyond basic host/path matching is implemented via controller-specific annotations** (`nginx.ingress.kubernetes.io/*` for ingress-nginx, different prefixes for Traefik/HAProxy Ingress) — this annotation sprawl, and the fact that annotations are not portable between controllers, is the exact pain point that motivated the Gateway API's design (§54).
+- **Most non-trivial routing behavior beyond basic host/path matching is implemented via controller-specific annotations** (`nginx.ingress.kubernetes.io/*` for ingress-nginx, different prefixes for Traefik/HAProxy Ingress) — this annotation sprawl, and the fact that annotations are not portable between controllers, is the exact pain point that motivated the Gateway API's design ([§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md)).
 - **Running multiple Ingress Controllers in one cluster is common** (e.g., an internal-facing controller and an external-facing one, each with its own `IngressClass`), letting teams route internal-only traffic differently from public traffic without separate clusters.
 - **The Ingress Controller's own Pods are a single, shared point of scale and failure for all HTTP ingress traffic** — sizing its replica count, resource requests, and its fronting `LoadBalancer` Service's health appropriately is a real production capacity-planning concern, not a set-and-forget install.
 
 ## 7. Security Considerations
 
-- The Ingress Controller is, by definition, one of the most externally-exposed components in the cluster — its own security posture (running as non-root, minimal RBAC, kept patched) matters disproportionately since it terminates all inbound HTTP/HTTPS traffic (§113, Part 15).
-- TLS Secrets referenced by Ingress objects are ordinary Kubernetes Secrets and inherit all the same at-rest encryption and RBAC-access considerations as any other Secret (§42, Part 6) — anyone with read access to that Secret can extract the private key.
+- The Ingress Controller is, by definition, one of the most externally-exposed components in the cluster — its own security posture (running as non-root, minimal RBAC, kept patched) matters disproportionately since it terminates all inbound HTTP/HTTPS traffic ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
+- TLS Secrets referenced by Ingress objects are ordinary Kubernetes Secrets and inherit all the same at-rest encryption and RBAC-access considerations as any other Secret ([§42](../Part6/Section-42-Part6-Secrets-Types-Encoding-Vs-Encryption-Consumption.md)) — anyone with read access to that Secret can extract the private key.
 - Because Ingress relies heavily on annotations for advanced behavior (rate limiting, auth, IP allowlisting), a misconfigured or missing security-relevant annotation (e.g., forgetting an IP allowlist annotation meant to restrict an admin path) is an easy, annotation-based way to accidentally under-restrict access.
 
 ## 8. Common Troubleshooting Scenarios
@@ -209,7 +209,7 @@ $ curl -v https://app.example.com/
 ## 10. Common Anti-Patterns / Mistakes
 
 - **Creating Ingress objects and assuming Kubernetes provides routing "out of the box"**, not realizing a controller must be separately installed — the single most common Ingress misconception.
-- **Relying heavily on one controller's annotation dialect** (e.g., deeply ingress-nginx-specific annotations) without recognizing this creates lock-in, making a future migration to a different controller or to Gateway API (§54) far more disruptive than it needs to be.
+- **Relying heavily on one controller's annotation dialect** (e.g., deeply ingress-nginx-specific annotations) without recognizing this creates lock-in, making a future migration to a different controller or to Gateway API ([§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md)) far more disruptive than it needs to be.
 - **Manually managing TLS certificates and their rotation** instead of automating issuance, leading to preventable certificate-expiry outages.
 
 ## 11. Interview Questions
@@ -223,11 +223,11 @@ _What the interviewer is probing for:_ Correctly distinguishing the Ingress API 
 _What the interviewer is probing for:_ Clear understanding of the layering — Ingress as an additional HTTP routing layer on top of, not instead of, Services.
 
 **🎯 Senior:** _"A team has an Ingress object correctly configured with the right host and path rules, and the Ingress Controller is confirmed running, but requests to the app still fail. How would you troubleshoot?"_
-**Model answer:** I'd first confirm the controller's fronting Service (typically a LoadBalancer) actually has an external IP assigned and that DNS for the hostname points at it — a surprisingly common gap is DNS not yet propagated or pointed at the wrong IP. Next I'd check the Ingress object's `pathType` and rule ordering, since `Prefix` versus `Exact` mismatches or overlapping rules can route requests to an unintended backend even when the Ingress "looks" correct. I'd then verify the backend Service itself resolves and has healthy Endpoints (§50) — since Ingress failures are frequently actually a downstream Service/Pod health problem being surfaced as "Ingress isn't working." Only after ruling out DNS, rule matching, and backend Service health would I look at the controller's own logs for reverse-proxy-level errors (upstream timeouts, bad gateway responses).
+**Model answer:** I'd first confirm the controller's fronting Service (typically a LoadBalancer) actually has an external IP assigned and that DNS for the hostname points at it — a surprisingly common gap is DNS not yet propagated or pointed at the wrong IP. Next I'd check the Ingress object's `pathType` and rule ordering, since `Prefix` versus `Exact` mismatches or overlapping rules can route requests to an unintended backend even when the Ingress "looks" correct. I'd then verify the backend Service itself resolves and has healthy Endpoints ([§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)) — since Ingress failures are frequently actually a downstream Service/Pod health problem being surfaced as "Ingress isn't working." Only after ruling out DNS, rule matching, and backend Service health would I look at the controller's own logs for reverse-proxy-level errors (upstream timeouts, bad gateway responses).
 _What the interviewer is probing for:_ A layered troubleshooting approach that doesn't assume the problem is Ingress-specific just because Ingress is the last thing configured, correctly checking DNS, rule matching, and backend health in a sensible order.
 
 **🎯 Architect:** _"You're standardizing Ingress usage across dozens of application teams in one large cluster, some of which want very different, controller-specific routing behaviors. How do you approach this without creating unmanageable annotation sprawl?"_
-**Model answer:** I'd standardize on a single Ingress Controller for the vast majority of use cases, with a documented, curated set of approved, commonly-needed annotations (rate limiting, basic auth, TLS/cert-manager integration) rather than letting every team discover and use arbitrary controller-specific annotations ad hoc — treating the annotation surface as something the platform team curates and documents, not an unrestricted extension point. For teams with genuinely divergent requirements (e.g., needing a second, differently-configured controller for internal-only traffic), I'd use separate `IngressClass` objects rather than annotation-level hacks on a shared controller. I'd also actively track Gateway API (§54) maturity as a longer-term direction, since its role-oriented, portable design is a direct answer to exactly this annotation-sprawl problem — but I wouldn't force an early migration before the ecosystem and team tooling around it are genuinely ready, given Ingress's currently much broader production adoption and battle-testing.
+**Model answer:** I'd standardize on a single Ingress Controller for the vast majority of use cases, with a documented, curated set of approved, commonly-needed annotations (rate limiting, basic auth, TLS/cert-manager integration) rather than letting every team discover and use arbitrary controller-specific annotations ad hoc — treating the annotation surface as something the platform team curates and documents, not an unrestricted extension point. For teams with genuinely divergent requirements (e.g., needing a second, differently-configured controller for internal-only traffic), I'd use separate `IngressClass` objects rather than annotation-level hacks on a shared controller. I'd also actively track Gateway API ([§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md)) maturity as a longer-term direction, since its role-oriented, portable design is a direct answer to exactly this annotation-sprawl problem — but I wouldn't force an early migration before the ecosystem and team tooling around it are genuinely ready, given Ingress's currently much broader production adoption and battle-testing.
 _What the interviewer is probing for:_ Platform-level thinking about governance of an extension mechanism (annotations) that easily sprawls, plus calibrated, non-hype awareness of Gateway API's trajectory relative to Ingress's current maturity.
 
 ## 12. Common Misconceptions
@@ -240,13 +240,13 @@ _What the interviewer is probing for:_ Platform-level thinking about governance 
 ## 13. 🔑 Key Takeaways
 
 - Ingress is a declarative HTTP/HTTPS routing API with no built-in implementation; an Ingress Controller (ingress-nginx, Traefik, and others) must be separately installed to do anything at all.
-- Every Ingress rule routes to a backend Service, never directly to Pods — Ingress adds an HTTP-aware layer on top of, not instead of, the Service abstraction (§50).
+- Every Ingress rule routes to a backend Service, never directly to Pods — Ingress adds an HTTP-aware layer on top of, not instead of, the Service abstraction ([§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md)).
 - TLS termination typically happens at the Ingress Controller, referencing a namespace-local Secret; cert-manager automation is standard production practice over manual certificate handling.
-- Advanced routing behavior relies heavily on controller-specific annotations, which are not portable between controllers — a real source of lock-in and the direct motivation behind Gateway API (§54).
+- Advanced routing behavior relies heavily on controller-specific annotations, which are not portable between controllers — a real source of lock-in and the direct motivation behind Gateway API ([§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md)).
 - Confirming the controller is installed and healthy, and that DNS/`ingressClassName` are correctly set, should always precede deeper Ingress-specific debugging.
 
 ## 14. Related Concepts & What's Next
 
-§50 covers the Service abstraction every Ingress rule ultimately routes to, and §49 covers the CNI layer handling actual packet delivery once traffic is inside the cluster. §54 introduces the Gateway API, designed specifically to address the annotation-based extension model's limitations described in this section, and §113 (Part 15) revisits Ingress Controller hardening as part of CKS-level network security depth.
+[§50](./Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) covers the Service abstraction every Ingress rule ultimately routes to, and [§49](./Section-49-Part7-CNI-Plugins-Compared-Calico-Flannel-Cilium-Weave.md) covers the CNI layer handling actual packet delivery once traffic is inside the cluster. [§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md) introduces the Gateway API, designed specifically to address the annotation-based extension model's limitations described in this section, and [§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md) revisits Ingress Controller hardening as part of CKS-level network security depth.
 
-**Next Section:** §54 — `Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md`
+**Next Section:** [§54](./Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md) — `Section-54-Part7-Gateway-API-Modern-Successor-To-Ingress.md`

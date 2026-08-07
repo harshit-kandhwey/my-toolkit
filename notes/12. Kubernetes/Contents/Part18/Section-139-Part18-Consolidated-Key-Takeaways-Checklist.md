@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-This section assumes the entire roadmap (§1–§138) has been read at least once and the hands-on labs in §138 have been attempted; it is a review artifact, not a learning path, and each checklist item below names the Part and section range it condenses.
+This section assumes the entire roadmap ([§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)–[§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)) has been read at least once and the hands-on labs in [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md) have been attempted; it is a review artifact, not a learning path, and each checklist item below names the Part and section range it condenses.
 
 ## 4. Architecture Diagram
 
@@ -49,75 +49,75 @@ This section's "Hands-On" is the checklist itself — read each Part's entry, an
 
 ### Part 1 — Foundations, Container Orchestration, and History
 
-- Kubernetes is a **declarative reconciliation engine**: you describe desired state, controllers continuously close the gap to actual state — this single mechanical pattern underlies self-healing, scaling, and rollouts alike (§1, §4).
+- Kubernetes is a **declarative reconciliation engine**: you describe desired state, controllers continuously close the gap to actual state — this single mechanical pattern underlies self-healing, scaling, and rollouts alike ([§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md), [§4](../Part1/Section-04-Part1-Declarative-Model-Desired-State-Vs-Imperative-Commands.md)).
 
 ### Part 2 — Cluster Architecture
 
-- The **control plane decides, nodes execute** — api-server, etcd, scheduler, and controller-manager never run application code directly; kubelet and the container runtime on each node do (§8–§15).
+- The **control plane decides, nodes execute** — api-server, etcd, scheduler, and controller-manager never run application code directly; kubelet and the container runtime on each node do ([§8](../Part2/Section-08-Part2-Control-Plane-Components.md)–[§15](../Part2/Section-15-Part2-High-Availability-Control-Plane-Architectures.md)).
 
 ### Part 3 — Installation and Cluster Bootstrapping
 
-- **kubeadm, managed offerings (EKS/AKS/GKE), and lightweight distributions (k3s/kind/minikube) are different bring-up mechanisms for the same underlying API** — certificates, static pods, and bootstrap tokens are the mechanics worth understanding regardless of which path a given cluster used (§16–§23).
+- **kubeadm, managed offerings (EKS/AKS/GKE), and lightweight distributions (k3s/kind/minikube) are different bring-up mechanisms for the same underlying API** — certificates, static pods, and bootstrap tokens are the mechanics worth understanding regardless of which path a given cluster used ([§16](../Part3/Section-16-Part3-Kubeadm-Cluster-Bootstrapping-Step-By-Step.md)–[§23](../Part3/Section-23-Part3-Cluster-Networking-Prerequisites-CNI-Plugin-Selection.md)).
 
 ### Part 4 — Core Workload Objects: Pods and Controllers
 
-- **Almost nothing in production should be a bare Pod** — Deployments (via ReplicaSets) provide the self-healing and rollout machinery a bare Pod lacks entirely (§24–§32).
+- **Almost nothing in production should be a bare Pod** — Deployments (via ReplicaSets) provide the self-healing and rollout machinery a bare Pod lacks entirely ([§24](../Part4/Section-24-Part4-Pod-Smallest-Deployable-Unit-Full-Pod-Spec-Anatomy.md)–[§32](../Part4/Section-32-Part4-YAML-Manifest-Authoring-Kubectl-Apply-Workflow.md)).
 
 ### Part 5 — Advanced Workloads
 
-- **Workload type is a deliberate architectural decision, not a default choice** — StatefulSet vs. Deployment vs. DaemonSet vs. Job vs. CronJob each encode a different identity, ordering, and lifecycle guarantee that must match the actual application's needs (§33–§40).
+- **Workload type is a deliberate architectural decision, not a default choice** — StatefulSet vs. Deployment vs. DaemonSet vs. Job vs. CronJob each encode a different identity, ordering, and lifecycle guarantee that must match the actual application's needs ([§33](../Part5/Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)–[§40](../Part5/Section-40-Part5-Workload-Choice-Decision-Framework.md)).
 
 ### Part 6 — Configuration and Application Environment
 
-- **A Secret is base64-encoded, not encrypted, by default** — real confidentiality requires EncryptionConfiguration at rest and often an external secrets store; treating Secret objects as inherently secure is one of the most consequential misconceptions in the entire roadmap (§41–§47).
+- **A Secret is base64-encoded, not encrypted, by default** — real confidentiality requires EncryptionConfiguration at rest and often an external secrets store; treating Secret objects as inherently secure is one of the most consequential misconceptions in the entire roadmap ([§41](../Part6/Section-41-Part6-ConfigMaps-Creation-Consumption.md)–[§47](../Part6/Section-47-Part6-Multi-Environment-Configuration-Patterns.md)).
 
 ### Part 7 — Networking
 
-- **Services solve Pod IP churn; NetworkPolicy is default-allow until a policy says otherwise**, and not every CNI plugin even enforces NetworkPolicy — verify enforcement before trusting a policy exists (§48–§56).
+- **Services solve Pod IP churn; NetworkPolicy is default-allow until a policy says otherwise**, and not every CNI plugin even enforces NetworkPolicy — verify enforcement before trusting a policy exists ([§48](../Part7/Section-48-Part7-Kubernetes-Networking-Model-Flat-Network.md)–[§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)).
 
 ### Part 8 — Storage
 
-- **A PersistentVolumeClaim's lifecycle and reclaim policy determine whether data survives Pod, or even PVC, deletion** — StatefulSet storage in particular must be reasoned about as a data-durability decision, not just a scheduling detail (§57–§64).
+- **A PersistentVolumeClaim's lifecycle and reclaim policy determine whether data survives Pod, or even PVC, deletion** — StatefulSet storage in particular must be reasoned about as a data-durability decision, not just a scheduling detail ([§57](../Part8/Section-57-Part8-Volumes-emptyDir-hostPath-Ephemeral-Storage.md)–[§64](../Part8/Section-64-Part8-Storage-Troubleshooting-Stuck-PVCs-Mount-Failures.md)).
 
 ### Part 9 — Scheduling
 
-- **The scheduler filters (hard constraints) then scores (soft preferences)** — node/pod affinity, taints/tolerations, and topology spread constraints shape where Pods land but do not override the filtering phase's hard requirements (§65–§72).
+- **The scheduler filters (hard constraints) then scores (soft preferences)** — node/pod affinity, taints/tolerations, and topology spread constraints shape where Pods land but do not override the filtering phase's hard requirements ([§65](../Part9/Section-65-Part9-Scheduler-Deep-Dive-Filtering-Scoring-Phases.md)–[§72](../Part9/Section-72-Part9-Topology-Spread-Constraints.md)).
 
 ### Part 10 — Security and RBAC
 
-- **Least-privilege RBAC must be verified against the live API (`kubectl auth can-i`), not inferred from reading Role/RoleBinding YAML** — effective permissions are the union of every binding referencing an identity anywhere in the cluster (§73–§81).
+- **Least-privilege RBAC must be verified against the live API (`kubectl auth can-i`), not inferred from reading Role/RoleBinding YAML** — effective permissions are the union of every binding referencing an identity anywhere in the cluster ([§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§81](../Part10/Section-81-Part10-Kubernetes-Security-Best-Practices-Checklist.md)).
 
 ### Part 11 — Package Management and Application Delivery
 
-- **GitOps makes Git the actual source of truth for cluster state, with a controller (ArgoCD/Flux) continuously reconciling toward it** — this is the declarative model from Part 1 applied at the delivery-pipeline layer, not a separate paradigm (§82–§88).
+- **GitOps makes Git the actual source of truth for cluster state, with a controller (ArgoCD/Flux) continuously reconciling toward it** — this is the declarative model from Part 1 applied at the delivery-pipeline layer, not a separate paradigm ([§82](../Part11/Section-82-Part11-Helm-Fundamentals-Charts-Releases-Repositories.md)–[§88](../Part11/Section-88-Part11-GitOps-Fundamentals-ArgoCD-Flux.md)).
 
 ### Part 12 — Observability
 
-- **"Running" describes container process state; probes define application-level health** — these are not the same thing, and conflating them is the single most common early misconception carried forward from §1 (§89–§96).
+- **"Running" describes container process state; probes define application-level health** — these are not the same thing, and conflating them is the single most common early misconception carried forward from [§1](../Part1/Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) ([§89](../Part12/Section-89-Part12-Liveness-Readiness-Startup-Probes.md)–[§96](../Part12/Section-96-Part12-Events-Audit-Logs-kubectl-describe-Deep-Dive.md)).
 
 ### Part 13 — Troubleshooting
 
-- **The structured methodology — describe, then events, then logs, then act** — resolves the overwhelming majority of incidents faster than jumping straight to a fix based on a guess (§97–§105).
+- **The structured methodology — describe, then events, then logs, then act** — resolves the overwhelming majority of incidents faster than jumping straight to a fix based on a guess ([§97](../Part13/Section-97-Part13-Structured-Troubleshooting-Methodology-Kubernetes.md)–[§105](../Part13/Section-105-Part13-Incident-Case-Studies-Runbooks.md)).
 
 ### Part 14 — Cluster Maintenance and Lifecycle
 
-- **etcd backup is the cluster's real backup** — losing etcd without a recent, tested backup means losing the cluster's entire state, regardless of how resilient the workloads running on top of it are (§106–§112).
+- **etcd backup is the cluster's real backup** — losing etcd without a recent, tested backup means losing the cluster's entire state, regardless of how resilient the workloads running on top of it are ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)–[§112](../Part14/Section-112-Part14-Disaster-Recovery-Planning-Kubernetes-Clusters.md)).
 
 ### Part 15 — Advanced Security (CKS Deep Dive)
 
-- **Security shifts left**: image scanning (Trivy), signing (Cosign/Sigstore), and manifest static analysis catch problems before deployment, and are a necessary complement to, not a replacement for, runtime detection (Falco) (§113–§121).
+- **Security shifts left**: image scanning (Trivy), signing (Cosign/Sigstore), and manifest static analysis catch problems before deployment, and are a necessary complement to, not a replacement for, runtime detection (Falco) ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)–[§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md)).
 
 ### Part 16 — Service Mesh, Multi-Cluster, and Enterprise Patterns
 
-- **Enterprise landing zones codify tenancy, mesh, and resource governance once, centrally, and enforce them via admission policy** — rather than re-litigating those decisions per tenant, which is how inconsistency and drift enter at scale (§122–§129).
+- **Enterprise landing zones codify tenancy, mesh, and resource governance once, centrally, and enforce them via admission policy** — rather than re-litigating those decisions per tenant, which is how inconsistency and drift enter at scale ([§122](../Part16/Section-122-Part16-Service-Mesh-Concepts-Sidecar-Proxy-Pattern.md)–[§129](../Part16/Section-129-Part16-Enterprise-Landing-Zone-Patterns-Kubernetes-Platforms.md)).
 
 ### Part 17 — Interview and Exam Preparation (CKA/CKAD/CKS)
 
-- **All three certification exams are 100% hands-on, time-boxed, and zero multiple-choice** — exam readiness is built through timed practice against real scenarios, not through passive review (§130–§137).
+- **All three certification exams are 100% hands-on, time-boxed, and zero multiple-choice** — exam readiness is built through timed practice against real scenarios, not through passive review ([§130](../Part17/Section-130-Part17-CKA-Exam-Format-Time-Management-Environment.md)–[§137](../Part17/Section-137-Part17-Architect-Level-Behavioral-Technical-Crossover-Questions.md)).
 
 ### Part 18 — Wrap-Up (this Part)
 
-- **This Part's own arc mirrors the checklist above**: hands-on labs (§138) to build integration skill, this consolidated checklist (§139) for compressed review, common misconceptions recapped (§140) as a final error-correction pass, and related technologies and closure (§141) to point beyond this roadmap.
+- **This Part's own arc mirrors the checklist above**: hands-on labs ([§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md)) to build integration skill, this consolidated checklist ([§139](./Section-139-Part18-Consolidated-Key-Takeaways-Checklist.md)) for compressed review, common misconceptions recapped ([§140](./Section-140-Part18-Common-Misconceptions-Anti-Patterns-Recap.md)) as a final error-correction pass, and related technologies and closure ([§141](./Section-141-Part18-Related-Technologies-Recommended-Next-Topics.md)) to point beyond this roadmap.
 
 ## 6. Production Usage Notes
 
@@ -166,14 +166,14 @@ _What the interviewer is probing for:_ Whether the candidate actually internaliz
 _What the interviewer is probing for:_ Practical, structured use of a compressed reference as an investigative tool rather than treating it as trivia.
 
 **🎯 Architect:** _"You're handed this checklist by a new platform engineering hire who says they've 'basically learned Kubernetes' from it. How do you respond, and how would you actually validate their readiness?"_
-**Model answer:** I'd clarify directly that this checklist is a compressed index for people who've already done the deeper work in each Part, not a substitute for it — reading 18 one-liners does not constitute understanding the reconciliation model, RBAC verification discipline, or storage reclaim semantics well enough to operate a production cluster. To validate actual readiness, I'd have them work through the §138 hands-on labs live, particularly the exam-simulation lab combining RBAC, NetworkPolicy, and live troubleshooting, since that reveals whether the underlying skill exists or whether only the vocabulary was absorbed. A one-page checklist is a retrieval aid for people who've already built the skill, not a shortcut to building it.
+**Model answer:** I'd clarify directly that this checklist is a compressed index for people who've already done the deeper work in each Part, not a substitute for it — reading 18 one-liners does not constitute understanding the reconciliation model, RBAC verification discipline, or storage reclaim semantics well enough to operate a production cluster. To validate actual readiness, I'd have them work through the [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md) hands-on labs live, particularly the exam-simulation lab combining RBAC, NetworkPolicy, and live troubleshooting, since that reveals whether the underlying skill exists or whether only the vocabulary was absorbed. A one-page checklist is a retrieval aid for people who've already built the skill, not a shortcut to building it.
 _What the interviewer is probing for:_ Judgment about the actual purpose and limits of compressed reference material, and a concrete alternative validation method.
 
 ## 12. Common Misconceptions
 
 1. **"This checklist is a shortcut to learning Kubernetes without reading the full roadmap."** It is a compression for review after the material is already understood — used as a first-exposure teaching tool, it produces dangerously shallow, vocabulary-only knowledge.
 2. **"Every Part's most important lesson is equally weighted."** In practice, a few items — the Secret/base64 misconception (Part 6), the RBAC-verification-over-YAML discipline (Part 10), and the etcd-backup-is-the-real-backup fact (Part 14) — carry disproportionately higher real-world stakes than most others on this list.
-3. **"If I can recite this checklist, I'm ready for the exam."** The CKA/CKAD/CKS exams are 100% hands-on; reciting a summary sentence about RBAC verification is not the same skill as actually running `kubectl auth can-i` correctly under time pressure, as practiced in §138.
+3. **"If I can recite this checklist, I'm ready for the exam."** The CKA/CKAD/CKS exams are 100% hands-on; reciting a summary sentence about RBAC verification is not the same skill as actually running `kubectl auth can-i` correctly under time pressure, as practiced in [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md).
 
 ## 13. 🔑 Key Takeaways
 
@@ -181,10 +181,10 @@ _What the interviewer is probing for:_ Judgment about the actual purpose and lim
 - Any line item that doesn't immediately make sense on a cold read is a direct signal to return to that Part, not a gap this section itself will fill.
 - A small subset of these items — Secrets not being encrypted by default, RBAC needing live verification, and etcd being the cluster's real backup — carry outsized real-world consequences relative to the rest of the list.
 - This checklist is useful well beyond exam prep, including as a fast root-cause categorization tool during production postmortems.
-- It is not, and was never meant to be, a substitute for having actually worked through the full roadmap and the hands-on labs in §138.
+- It is not, and was never meant to be, a substitute for having actually worked through the full roadmap and the hands-on labs in [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md).
 
 ## 14. Related Concepts & What's Next
 
-Where §138 built integration skill through timed, multi-domain labs, this section compressed the roadmap's 17 preceding Parts into one checkable reference — the two together form the "practice, then review" pairing this capstone Part is built around. Having consolidated what to remember, the next section turns to the inverse: consolidating what to unlearn, recapping the highest-impact misconceptions and anti-patterns synthesized across the entire knowledge base, from Part 6's Secret-encoding confusion to Part 7's assumption that every CNI plugin enforces NetworkPolicy.
+Where [§138](./Section-138-Part18-Progressive-Hands-On-Labs-Beginner-Production-Style-Exam-Simulation.md) built integration skill through timed, multi-domain labs, this section compressed the roadmap's 17 preceding Parts into one checkable reference — the two together form the "practice, then review" pairing this capstone Part is built around. Having consolidated what to remember, the next section turns to the inverse: consolidating what to unlearn, recapping the highest-impact misconceptions and anti-patterns synthesized across the entire knowledge base, from Part 6's Secret-encoding confusion to Part 7's assumption that every CNI plugin enforces NetworkPolicy.
 
-**Next Section:** §140 — `Section-140-Part18-Common-Misconceptions-Anti-Patterns-Recap.md`
+**Next Section:** [§140](./Section-140-Part18-Common-Misconceptions-Anti-Patterns-Recap.md) — `Section-140-Part18-Common-Misconceptions-Anti-Patterns-Recap.md`

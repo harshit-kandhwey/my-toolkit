@@ -4,19 +4,19 @@
 
 **Plain language:** Every single thing you do in Kubernetes — creating a Deployment, reading a Secret, scaling a ReplicaSet — is really just an HTTP request to one web API, structured the same predictable way every time. Understanding that structure demystifies almost everything that feels "magic" about how `kubectl` works.
 
-**Precise definition:** The **kube-apiserver** exposes a versioned, RESTful HTTP API organized into **API groups** (e.g., the core/legacy group, `apps`, `batch`, `networking.k8s.io`), each with independently evolving **API versions** (alpha → beta → stable, e.g., `v1alpha1` → `v1beta1` → `v1`). Every request that reaches the api-server passes through a defined **request lifecycle**: authentication, authorization, and a chain of **admission controllers** (mutating, then validating) before the object is persisted to etcd — the same pipeline described conceptually in §8, now covered at the mechanical level that CKA and CKS both test directly.
+**Precise definition:** The **kube-apiserver** exposes a versioned, RESTful HTTP API organized into **API groups** (e.g., the core/legacy group, `apps`, `batch`, `networking.k8s.io`), each with independently evolving **API versions** (alpha → beta → stable, e.g., `v1alpha1` → `v1beta1` → `v1`). Every request that reaches the api-server passes through a defined **request lifecycle**: authentication, authorization, and a chain of **admission controllers** (mutating, then validating) before the object is persisted to etcd — the same pipeline described conceptually in [§8](./Section-08-Part2-Control-Plane-Components.md), now covered at the mechanical level that CKA and CKS both test directly.
 
 ## 2. Why This Matters
 
 - **Every manifest's `apiVersion` field is a direct reference to this system.** `apiVersion: apps/v1` means "the `apps` API group, version `v1`" — understanding groups and versioning turns a previously memorized string into something legible and predictable across new resource types.
-- **The admission chain is where policy gets enforced, not just validated.** Features like Pod Security Admission (§79, Part 10), resource quota enforcement, and custom policy engines (OPA Gatekeeper, Kyverno) all plug into this chain — understanding exactly where admission sits in the request lifecycle is foundational to both CKA's architecture domain and CKS's cluster-hardening domain.
+- **The admission chain is where policy gets enforced, not just validated.** Features like Pod Security Admission ([§78](../Part10/Section-78-Part10-Pod-Security-Standards-Pod-Security-Admission.md)), resource quota enforcement, and custom policy engines (OPA Gatekeeper, Kyverno) all plug into this chain — understanding exactly where admission sits in the request lifecycle is foundational to both CKA's architecture domain and CKS's cluster-hardening domain.
 - **API deprecation and version graduation directly affects upgrade planning.** A manifest using a `v1beta1` API that later gets removed will break on upgrade if not updated — this is a very concrete, exam-relevant, and real-production consequence of the versioning model covered here.
 
 🔑 **Key Takeaway:** Every Kubernetes API resource lives in a group and a version, and every request to change cluster state passes through authentication, authorization, and a mutating-then-validating admission chain before ever reaching etcd — this pipeline is where nearly all of Kubernetes' extensibility and policy enforcement actually happens.
 
 ## 3. Prerequisites and Dependencies
 
-Builds on §8 (kube-apiserver's role as the sole entry point). No new external prerequisites, though full authentication/authorization mechanics are covered in depth later (§73–§74, Part 10).
+Builds on [§8](./Section-08-Part2-Control-Plane-Components.md) (kube-apiserver's role as the sole entry point). No new external prerequisites, though full authentication/authorization mechanics are covered in depth later ([§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md)).
 
 ## 4. Architecture Diagram: The Full Request Lifecycle
 
@@ -55,14 +55,14 @@ Builds on §8 (kube-apiserver's role as the sole entry point). No new external p
 
 **Purpose:** Organize Kubernetes' API surface into logical namespaces, allowing different parts of the API to evolve independently.
 
-| Group                        | Example Resources                                  | Notes                                                     |
-| ---------------------------- | -------------------------------------------------- | --------------------------------------------------------- |
-| Core (legacy, unnamed group) | Pod, Service, ConfigMap, Secret, Namespace         | Referenced as just `v1` in `apiVersion` (no group prefix) |
-| `apps`                       | Deployment, StatefulSet, DaemonSet, ReplicaSet     | The most commonly authored resources beyond core          |
-| `batch`                      | Job, CronJob                                       |                                                           |
-| `networking.k8s.io`          | Ingress, NetworkPolicy                             |                                                           |
-| `rbac.authorization.k8s.io`  | Role, ClusterRole, RoleBinding, ClusterRoleBinding | Covered fully in Part 10 (§75)                            |
-| `storage.k8s.io`             | StorageClass, VolumeAttachment                     | Covered fully in Part 8                                   |
+| Group                        | Example Resources                                  | Notes                                                                                                           |
+| ---------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Core (legacy, unnamed group) | Pod, Service, ConfigMap, Secret, Namespace         | Referenced as just `v1` in `apiVersion` (no group prefix)                                                       |
+| `apps`                       | Deployment, StatefulSet, DaemonSet, ReplicaSet     | The most commonly authored resources beyond core                                                                |
+| `batch`                      | Job, CronJob                                       |                                                                                                                 |
+| `networking.k8s.io`          | Ingress, NetworkPolicy                             |                                                                                                                 |
+| `rbac.authorization.k8s.io`  | Role, ClusterRole, RoleBinding, ClusterRoleBinding | Covered fully in Part 10 ([§75](../Part10/Section-75-Part10-RBAC-Deep-Dive-Roles-ClusterRoles-RoleBindings.md)) |
+| `storage.k8s.io`             | StorageClass, VolumeAttachment                     | Covered fully in Part 8                                                                                         |
 
 ### 5.2 API Versioning: Alpha → Beta → Stable
 
@@ -74,7 +74,7 @@ Builds on §8 (kube-apiserver's role as the sole entry point). No new external p
 | Beta        | `v1beta1`         | Well-tested, enabled by default, but the schema can still change before stable |
 | Stable (GA) | `v1`              | Long-term supported; changes only via a new version, never breaking in place   |
 
-**Production usage example:** A team writing manifests against a `v1beta1` API should expect that field names or defaults could still change before that resource graduates to `v1` — a real, recurring source of upgrade-time breakage that careful version tracking (§106, Part 14) is meant to catch ahead of time.
+**Production usage example:** A team writing manifests against a `v1beta1` API should expect that field names or defaults could still change before that resource graduates to `v1` — a real, recurring source of upgrade-time breakage that careful version tracking ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) is meant to catch ahead of time.
 
 ## 6. Hands-On: Exploring the API Surface Directly
 
@@ -98,7 +98,7 @@ deployments   deploy       apps/v1      true         Deployment
 ingresses     ing          networking.k8s.io/v1   true   Ingress
 ```
 
-**Production usage example:** This is the fastest way to discover the exact `apiVersion` a resource requires when writing a manifest from scratch, without needing to consult external documentation — especially useful for cluster-specific or custom resources (CRDs, §84, Part 11) not covered by generic tutorials.
+**Production usage example:** This is the fastest way to discover the exact `apiVersion` a resource requires when writing a manifest from scratch, without needing to consult external documentation — especially useful for cluster-specific or custom resources (CRDs, [§86](../Part11/Section-86-Part11-Operators-Operator-Pattern-CRDs.md)) not covered by generic tutorials.
 
 ### 6.2 `kubectl api-versions` — List Every Supported Group/Version Combination
 
@@ -145,22 +145,22 @@ DESCRIPTION:
 
 ## 7. Production Usage Notes: Where Admission Control Shows Up in Practice
 
-- **Pod Security Admission** (§79, Part 10) is a built-in validating admission plugin enforcing Pod security standards per namespace — a direct, concrete instance of the validating-admission stage in this section's lifecycle diagram.
+- **Pod Security Admission** ([§78](../Part10/Section-78-Part10-Pod-Security-Standards-Pod-Security-Admission.md)) is a built-in validating admission plugin enforcing Pod security standards per namespace — a direct, concrete instance of the validating-admission stage in this section's lifecycle diagram.
 - **ResourceQuota and LimitRange enforcement** happens at admission time — a Pod exceeding a namespace's quota is rejected here, before ever being persisted, which is why quota violations appear as an immediate `kubectl apply` error rather than a delayed scheduling failure.
-- **Custom policy engines (OPA Gatekeeper, Kyverno)** register as external validating (and sometimes mutating) admission webhooks — this is the exact mechanism that lets organizations enforce custom policy ("all Pods must have a `team` label," "no `:latest` image tags") without modifying Kubernetes' own code (§76, Part 10 covers admission webhooks in full).
+- **Custom policy engines (OPA Gatekeeper, Kyverno)** register as external validating (and sometimes mutating) admission webhooks — this is the exact mechanism that lets organizations enforce custom policy ("all Pods must have a `team` label," "no `:latest` image tags") without modifying Kubernetes' own code ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md) covers admission webhooks in full).
 
 ## 8. Security Considerations
 
-- The admission chain is a primary security enforcement point — misconfigured or missing admission control (e.g., no Pod Security Admission policy applied) is a common cluster-hardening gap directly tested in CKS (§113, Part 15).
+- The admission chain is a primary security enforcement point — misconfigured or missing admission control (e.g., no Pod Security Admission policy applied) is a common cluster-hardening gap directly tested in CKS ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 - Authentication and authorization happen _before_ admission — meaning a request that fails RBAC never reaches admission-based policy checks at all; both layers matter independently and neither substitutes for the other.
 
 ## 9. Common Troubleshooting Scenarios
 
-| Symptom                                                       | Likely Cause                                                                               | Resolution Path                                                                            |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `kubectl apply` rejected with an admission-related error      | A validating admission controller (quota, Pod Security, custom policy) rejected the object | Read the specific error message; it names which admission check failed (§76, Part 10)      |
-| A manifest that worked on an old cluster fails on a newer one | The API version used has since been deprecated or removed after graduating                 | Check `kubectl api-versions` on the new cluster and update `apiVersion` accordingly (§106) |
-| `kubectl explain` shows no result for a field from a tutorial | Tutorial targets a different API version than the cluster is running                       | Re-check the resource's current `apiVersion` via `kubectl api-resources`                   |
+| Symptom                                                       | Likely Cause                                                                               | Resolution Path                                                                                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kubectl apply` rejected with an admission-related error      | A validating admission controller (quota, Pod Security, custom policy) rejected the object | Read the specific error message; it names which admission check failed ([§77](../Part10/Section-77-Part10-Admission-Controllers-Validating-Mutating-Webhooks.md))                          |
+| A manifest that worked on an old cluster fails on a newer one | The API version used has since been deprecated or removed after graduating                 | Check `kubectl api-versions` on the new cluster and update `apiVersion` accordingly ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) |
+| `kubectl explain` shows no result for a field from a tutorial | Tutorial targets a different API version than the cluster is running                       | Re-check the resource's current `apiVersion` via `kubectl api-resources`                                                                                                                   |
 
 ## 10. Best Practices
 
@@ -208,6 +208,6 @@ _What the interviewer is probing for:_ Whether the candidate understands admissi
 
 ## 15. Related Concepts & What's Next
 
-§8 introduced kube-apiserver's role at a summary level; this section delivered its internal request-lifecycle mechanics in full. §73–§74 (Part 10) cover authentication and authorization — the first two stages of this section's lifecycle diagram — in complete depth. §76–§79 (Part 10) cover admission controllers, webhooks, and Pod Security Admission fully. §84 (Part 11) covers Custom Resource Definitions, which extend this same API-group-and-versioning model to user-defined resource types.
+[§8](./Section-08-Part2-Control-Plane-Components.md) introduced kube-apiserver's role at a summary level; this section delivered its internal request-lifecycle mechanics in full. [§73](../Part10/Section-73-Part10-Authentication-Users-ServiceAccounts-X509-OIDC.md)–[§74](../Part10/Section-74-Part10-Authorization-Modes-RBAC-ABAC-Node-Webhook.md) cover authentication and authorization — the first two stages of this section's lifecycle diagram — in complete depth. [§76](../Part10/Section-76-Part10-ServiceAccounts-Tokens-Auto-Mounting-Bound-Tokens.md)–[§79](../Part10/Section-79-Part10-NetworkPolicies-Security-Boundary-Cross-Reference-Part7.md) cover admission controllers, webhooks, and Pod Security Admission fully. [§86](../Part11/Section-86-Part11-Operators-Operator-Pattern-CRDs.md) covers Custom Resource Definitions, which extend this same API-group-and-versioning model to user-defined resource types.
 
-**Next Section:** §13 — `Section-13-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md`
+**Next Section:** [§13 — Section-13-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md](./Section-13-Part2-Controller-Manager-Controller-Pattern-Reconciliation-Loops.md)

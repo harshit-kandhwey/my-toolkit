@@ -8,15 +8,15 @@
 
 ## 2. Why the History Matters
 
-- **It explains why Kubernetes felt "production-ready" unusually fast for a brand-new open-source project.** Unlike most infrastructure software that matures through years of trial and error in public, Kubernetes launched already encoding over a decade of Google's internal operational lessons about what breaks at scale (§1's reconciliation model, for instance, is a direct descendant of Borg's design).
-- **It explains the vendor-neutral governance model.** Because Kubernetes was donated to the CNCF rather than kept as a Google product, no single company controls its roadmap — Google, Microsoft, Red Hat, Amazon, and hundreds of other contributors all participate in its development under a shared governance structure, which is why AWS, Azure, and GCP all offer compatible managed Kubernetes services (EKS, AKS, GKE — §22) despite being competitors.
-- **It explains the release cadence and support window operators must plan around.** Kubernetes ships a new minor version roughly every four months, with each minor version officially supported (patched for bugs and CVEs) for about 14 months — a cadence directly relevant to upgrade planning (§106, Part 14).
+- **It explains why Kubernetes felt "production-ready" unusually fast for a brand-new open-source project.** Unlike most infrastructure software that matures through years of trial and error in public, Kubernetes launched already encoding over a decade of Google's internal operational lessons about what breaks at scale ([§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)'s reconciliation model, for instance, is a direct descendant of Borg's design).
+- **It explains the vendor-neutral governance model.** Because Kubernetes was donated to the CNCF rather than kept as a Google product, no single company controls its roadmap — Google, Microsoft, Red Hat, Amazon, and hundreds of other contributors all participate in its development under a shared governance structure, which is why AWS, Azure, and GCP all offer compatible managed Kubernetes services (EKS, AKS, GKE — [§21](../Part3/Section-21-Part3-Managed-Kubernetes-Bootstrap-Differences-EKS-AKS-GKE.md)) despite being competitors.
+- **It explains the release cadence and support window operators must plan around.** Kubernetes ships a new minor version roughly every four months, with each minor version officially supported (patched for bugs and CVEs) for about 14 months — a cadence directly relevant to upgrade planning ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)).
 
 🔑 **Key Takeaway:** Kubernetes is not a startup's experimental project — it is an open-sourced, battle-tested descendant of Google's own production infrastructure, now governed by a vendor-neutral foundation with a predictable, well-documented release cycle.
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §1's definition of Kubernetes and the reconciliation model; no new technical prerequisites.
+Builds directly on [§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md)'s definition of Kubernetes and the reconciliation model; no new technical prerequisites.
 
 ## 4. Timeline
 
@@ -27,12 +27,12 @@ Builds directly on §1's definition of Kubernetes and the reconciliation model; 
 2015     Kubernetes 1.0 released; donated to the newly formed CNCF
 2016+    CNCF governance matures: SIGs (Special Interest Groups) formed
 2017+    Major cloud providers launch managed offerings (EKS, AKS, GKE)
-2020     Dockershim deprecation announced (§10 covers the CRI transition)
+2020     Dockershim deprecation announced (§11 covers the CRI transition)
 Today    ~3 minor releases/year; ~14-month support window per minor version
 ```
 
 - **Borg (internal, never open-sourced):** Ran essentially all of Google's production workloads for over a decade before Kubernetes existed. Borg's paper (published 2015, after Kubernetes launched) confirmed publicly what many of Kubernetes' design choices were modeled on: centralized scheduling, declarative job specifications, and self-healing supervision.
-- **Omega (internal, never open-sourced):** An intermediate Google project exploring a more decentralized, shared-state scheduling architecture. Some Omega ideas influenced Kubernetes' extensible API and controller model, though Kubernetes' actual scheduler architecture is closer to Borg's centralized design (§29, Part 2 covers the scheduler in depth).
+- **Omega (internal, never open-sourced):** An intermediate Google project exploring a more decentralized, shared-state scheduling architecture. Some Omega ideas influenced Kubernetes' extensible API and controller model, though Kubernetes' actual scheduler architecture is closer to Borg's centralized design ([§14](../Part2/Section-14-Part2-Scheduler-Internals-Preview-Filtering-Scoring.md) covers the scheduler in depth).
 - **Kubernetes (open-source, 2014–present):** Built by a team at Google that included several Borg veterans, explicitly designed to bring Borg's lessons to a general audience running on any infrastructure — not just Google's own data centers.
 
 ## 5. CNCF Governance
@@ -42,26 +42,26 @@ Today    ~3 minor releases/year; ~14-month support window per minor version
 **How this affects day-to-day operators:**
 
 - **No single vendor can unilaterally change Kubernetes' direction.** Feature decisions go through a public **KEP (Kubernetes Enhancement Proposal)** process and are implemented by **SIGs** — topic-focused working groups (SIG-Network, SIG-Storage, SIG-Scheduling, SIG-Security, and dozens more) with contributors from many companies.
-- **Certification programs (CKA/CKAD/CKS — §7) are also CNCF/Linux Foundation-governed**, not tied to any one cloud vendor's certification track, which is why the same certification is equally valid whether an engineer works primarily on EKS, AKS, GKE, or on-prem kubeadm clusters.
+- **Certification programs (CKA/CKAD/CKS — [§7](./Section-07-Part1-CKA-CKAD-CKS-Certification-Landscape.md)) are also CNCF/Linux Foundation-governed**, not tied to any one cloud vendor's certification track, which is why the same certification is equally valid whether an engineer works primarily on EKS, AKS, GKE, or on-prem kubeadm clusters.
 - **The CNCF landscape extends far beyond Kubernetes itself** — Prometheus, Helm, containerd, CoreDNS, and many other tools covered later in this roadmap (Part 11, Part 12) are also CNCF projects, and were often designed specifically to integrate with Kubernetes' extensibility model.
 
 ## 6. Release Cadence and Support Policy
 
-| Aspect                   | Practical Detail                                                                                                                              |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Minor release frequency  | Roughly every 4 months (3 minor releases per year is the typical target, e.g., 1.29, 1.30, 1.31)                                              |
-| Supported version window | Each minor version receives patch releases (bug/CVE fixes) for approximately 14 months after release                                          |
-| Version skew policy      | Control plane and kubelet versions must stay within a small skew window of each other — directly relevant to upgrade ordering (§106, Part 14) |
-| Deprecation policy       | Deprecated APIs are announced at least one release ahead of removal, with a formal deprecation guide published per release                    |
+| Aspect                   | Practical Detail                                                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Minor release frequency  | Roughly every 4 months (3 minor releases per year is the typical target, e.g., 1.29, 1.30, 1.31)                                                                                                                                     |
+| Supported version window | Each minor version receives patch releases (bug/CVE fixes) for approximately 14 months after release                                                                                                                                 |
+| Version skew policy      | Control plane and kubelet versions must stay within a small skew window of each other — directly relevant to upgrade ordering ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) |
+| Deprecation policy       | Deprecated APIs are announced at least one release ahead of removal, with a formal deprecation guide published per release                                                                                                           |
 
-**Production usage example:** A platform team planning an EKS/AKS/GKE upgrade cycle needs to track this cadence deliberately — falling behind by more than roughly 3 minor versions risks landing on a version whose patches for known CVEs have already stopped, which is a compliance and security-audit finding waiting to happen (§121, Part 15 covers CVE/patch-management posture for Kubernetes in depth).
+**Production usage example:** A platform team planning an EKS/AKS/GKE upgrade cycle needs to track this cadence deliberately — falling behind by more than roughly 3 minor versions risks landing on a version whose patches for known CVEs have already stopped, which is a compliance and security-audit finding waiting to happen ([§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md) covers CVE/patch-management posture for Kubernetes in depth).
 
 ## 7. Common Troubleshooting Scenarios
 
-| Symptom                                                        | Likely Cause                                                                                                                           | Resolution Path                                                                     |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| A `kubectl` feature or API field from a tutorial doesn't exist | Tutorial targets a different Kubernetes minor version; API fields are added/removed/graduate between alpha→beta→stable across releases | Check `kubectl version` and cross-reference the exact minor version's API reference |
-| Cluster running an unsupported (too old) minor version         | Team fell behind the ~14-month patch window without a working upgrade cadence                                                          | Establish a scheduled upgrade cadence tied to the official support window (§106)    |
+| Symptom                                                        | Likely Cause                                                                                                                           | Resolution Path                                                                                                                                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A `kubectl` feature or API field from a tutorial doesn't exist | Tutorial targets a different Kubernetes minor version; API fields are added/removed/graduate between alpha→beta→stable across releases | Check `kubectl version` and cross-reference the exact minor version's API reference                                                                                              |
+| Cluster running an unsupported (too old) minor version         | Team fell behind the ~14-month patch window without a working upgrade cadence                                                          | Establish a scheduled upgrade cadence tied to the official support window ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) |
 
 ## 8. Best Practices
 
@@ -86,7 +86,7 @@ _What the interviewer is probing for:_ Basic awareness that Kubernetes has real 
 _What the interviewer is probing for:_ Understanding of why Kubernetes' governance model is a genuine technical/business advantage, not just trivia.
 
 **🎯 Senior:** _"How does Kubernetes' release cadence and support policy affect how you'd plan cluster upgrades for a production fleet?"_
-**Model answer:** With roughly three minor releases a year and about a 14-month patch-support window per minor version, a fleet needs a deliberate upgrade cadence — typically upgrading at least once or twice a year — to avoid landing on an unsupported version where known CVEs no longer receive fixes. I'd tie this into a scheduled maintenance process (§106) rather than reacting only when a managed-service provider forces the issue, and I'd track the version-skew policy between control plane and kubelets carefully during multi-step upgrades.
+**Model answer:** With roughly three minor releases a year and about a 14-month patch-support window per minor version, a fleet needs a deliberate upgrade cadence — typically upgrading at least once or twice a year — to avoid landing on an unsupported version where known CVEs no longer receive fixes. I'd tie this into a scheduled maintenance process ([§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md)) rather than reacting only when a managed-service provider forces the issue, and I'd track the version-skew policy between control plane and kubelets carefully during multi-step upgrades.
 _What the interviewer is probing for:_ Operational maturity — translating an abstract governance fact into a concrete maintenance practice.
 
 **🎯 Architect:** _"A stakeholder asks why the company should trust an open-source project's roadmap for mission-critical infrastructure instead of a vendor-backed proprietary orchestrator. How do you respond, using Kubernetes' history and governance as your argument?"_
@@ -108,6 +108,6 @@ _What the interviewer is probing for:_ Whether the candidate can make a business
 
 ## 13. Related Concepts & What's Next
 
-§1 established what Kubernetes does and the reconciliation model this section traced back to Borg's design lineage. §5 covers the managed and lightweight distributions (EKS, AKS, GKE, kubeadm, k3s, minikube) that exist because of the portability CNCF governance enables. §106 (Part 14) returns to the release cadence and support window covered here with full upgrade-execution mechanics. §121 (Part 15) covers CVE and patch-management posture in the security-hardening context this section only previewed.
+[§1](./Section-01-Part1-What-Kubernetes-Is-Container-Orchestration-Problem.md) established what Kubernetes does and the reconciliation model this section traced back to Borg's design lineage. [§5](./Section-05-Part1-Kubernetes-Distributions-Managed-Offerings.md) covers the managed and lightweight distributions (EKS, AKS, GKE, kubeadm, k3s, minikube) that exist because of the portability CNCF governance enables. [§106](../Part14/Section-106-Part14-Cluster-Upgrades-kubeadm-Control-Plane-Node-Upgrade-Ordering.md) returns to the release cadence and support window covered here with full upgrade-execution mechanics. [§121](../Part15/Section-121-Part15-Monitoring-Logging-Runtime-Threat-Detection-CKS-Exam.md) covers CVE and patch-management posture in the security-hardening context this section only previewed.
 
-**Next Section:** §3 — `Section-03-Part1-Kubernetes-Architecture-Overview.md`
+**Next Section:** [§3 — Section-03-Part1-Kubernetes-Architecture-Overview.md](./Section-03-Part1-Kubernetes-Architecture-Overview.md)

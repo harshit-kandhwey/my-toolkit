@@ -2,9 +2,9 @@
 
 ## 1. Definition
 
-**Plain language:** §56's toolkit gave you the ordered checklist for "Pod can't reach Service." This section is the next level down — a set of specific, named failure scenarios that each look similar on the surface ("connection times out," "name doesn't resolve") but have distinct root causes and distinct fixes, and that trip up even engineers who already know the ordered checklist because the symptom doesn't obviously point at the actual layer that's broken.
+**Plain language:** [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s toolkit gave you the ordered checklist for "Pod can't reach Service." This section is the next level down — a set of specific, named failure scenarios that each look similar on the surface ("connection times out," "name doesn't resolve") but have distinct root causes and distinct fixes, and that trip up even engineers who already know the ordered checklist because the symptom doesn't obviously point at the actual layer that's broken.
 
-**Precise definition:** This section catalogs **specific networking failure scenarios** that go beyond §56's general diagnostic flow — Endpoints objects that exist but never populate with the expected Pod IPs, Services that work within their own namespace but fail when accessed cross-namespace, and split-horizon DNS behavior where a name resolves differently (or not at all) depending on which Pod or node issues the query. Each scenario is walked through with the exact commands and exact output an engineer would see, following the same object-state-first, packet-capture-last discipline established in §56 and generalized in §100's structured methodology.
+**Precise definition:** This section catalogs **specific networking failure scenarios** that go beyond [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s general diagnostic flow — Endpoints objects that exist but never populate with the expected Pod IPs, Services that work within their own namespace but fail when accessed cross-namespace, and split-horizon DNS behavior where a name resolves differently (or not at all) depending on which Pod or node issues the query. Each scenario is walked through with the exact commands and exact output an engineer would see, following the same object-state-first, packet-capture-last discipline established in [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) and generalized in [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md)'s structured methodology.
 
 ## 2. Why This Matters
 
@@ -16,7 +16,7 @@
 
 ## 3. Prerequisites and Dependencies
 
-Builds directly on §56 (in-cluster network troubleshooting toolkit) and §100 (Part 13's structured troubleshooting methodology), and assumes familiarity with §50 (Services), §52 (DNS/CoreDNS), and §55 (NetworkPolicy). Forwards into §102 (storage troubleshooting scenarios), continuing Part 13's scenario-by-scenario deep dive.
+Builds directly on [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md) (in-cluster network troubleshooting toolkit) and [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md) (Part 13's structured troubleshooting methodology), and assumes familiarity with [§50](../Part7/Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services), [§52](../Part7/Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md) (DNS/CoreDNS), and [§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) (NetworkPolicy). Forwards into [§102](./Section-102-Part13-Storage-Troubleshooting-Scenarios-PVC-Pending-Mount-Errors.md) (storage troubleshooting scenarios), continuing Part 13's scenario-by-scenario deep dive.
 
 ## 4. Architecture Diagram
 
@@ -51,7 +51,7 @@ Builds directly on §56 (in-cluster network troubleshooting toolkit) and §100 (
    └───────────────────────────────────────────────────────────────┘
 ```
 
-- Scenario A is deliberately the "looks fine but isn't" case — every object-level check in §56's Step 1 passes, and the failure only becomes visible once you compare the Service's `targetPort` against the container's actual listening port.
+- Scenario A is deliberately the "looks fine but isn't" case — every object-level check in [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s Step 1 passes, and the failure only becomes visible once you compare the Service's `targetPort` against the container's actual listening port.
 - Scenario B is a pure naming-convention failure, not a connectivity failure at all — it resolves the instant the correct FQDN is used, which is the fastest possible confirmation of the root cause.
 - Scenario C is the deepest of the three, requiring you to compare answers across multiple CoreDNS replicas or client Pods rather than trusting a single query's result as representative of the whole cluster.
 
@@ -59,7 +59,7 @@ Builds directly on §56 (in-cluster network troubleshooting toolkit) and §100 (
 
 ### 5.1 Endpoints Populated but Traffic Still Fails (targetPort Mismatch)
 
-**Purpose:** Recognize the specific failure where `kubectl get endpoints` shows healthy-looking IPs, so §56's Step 1 passes, but the connection still fails because the Service is forwarding to the wrong container port.
+**Purpose:** Recognize the specific failure where `kubectl get endpoints` shows healthy-looking IPs, so [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s Step 1 passes, but the connection still fails because the Service is forwarding to the wrong container port.
 
 **Syntax:**
 
@@ -86,7 +86,7 @@ State   Local Address:Port
 LISTEN  0.0.0.0:8080
 ```
 
-**Production usage example:** The Endpoints list looked entirely healthy (a real Pod IP and a real port), which is exactly why this scenario is dangerous — §56's Step 1 alone would pass, and only checking what port the container is _actually_ listening on (via `ss` or the container's own logs, not the Service spec) reveals the `targetPort: 8000` in the Service should have been `8080` to match the application's real listener.
+**Production usage example:** The Endpoints list looked entirely healthy (a real Pod IP and a real port), which is exactly why this scenario is dangerous — [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s Step 1 alone would pass, and only checking what port the container is _actually_ listening on (via `ss` or the container's own logs, not the Service spec) reveals the `targetPort: 8000` in the Service should have been `8080` to match the application's real listener.
 
 **Common errors:** Trusting that a non-empty Endpoints entry means the port number in it is also correct — Endpoints inherit whatever `targetPort` the Service defines, they don't verify the target container is actually listening there.
 
@@ -116,7 +116,7 @@ Address:   10.96.44.12
 
 **Production usage example:** Kubernetes' default DNS search path appends the _querying Pod's own namespace_ (here, `team-a`) to a bare short name, so `billing-svc` alone can only ever resolve a Service actually living in `team-a` — this is expected, correct behavior, not a bug, and the fix is always to use the fully-qualified `<svc>.<namespace>.svc.cluster.local` form (or at minimum `<svc>.<namespace>`) for any cross-namespace reference, hardcoded into application configuration rather than relying on the short name.
 
-**Common errors:** Concluding a NetworkPolicy is blocking cross-namespace traffic and spending time auditing policies (§55) before first confirming with the fully-qualified name whether this is actually a naming issue — always test the FQDN form before touching NetworkPolicy.
+**Common errors:** Concluding a NetworkPolicy is blocking cross-namespace traffic and spending time auditing policies ([§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)) before first confirming with the fully-qualified name whether this is actually a naming issue — always test the FQDN form before touching NetworkPolicy.
 
 ### 5.3 Split-Horizon / Inconsistent DNS Answers Across the Cluster
 
@@ -152,7 +152,7 @@ $ kubectl exec -it app-pod-on-node-b -- dig backend-headless.default.svc.cluster
 10.244.3.9
 ```
 
-**Production usage example:** For a normal ClusterIP Service, every CoreDNS replica must return the identical answer since it's a single stable virtual IP — but for a **headless Service** (`clusterIP: None`, common with StatefulSets, §33), DNS returns the live set of backing Pod IPs directly, and a genuinely transient difference across replicas (as shown, one node's answer is missing a second Pod IP) usually means client-side DNS caching (`ndots`, the application's own resolver cache, or `dnsPolicy` settings) rather than CoreDNS itself being inconsistent — CoreDNS replicas all read from the same underlying API server state and don't diverge from each other under normal operation.
+**Production usage example:** For a normal ClusterIP Service, every CoreDNS replica must return the identical answer since it's a single stable virtual IP — but for a **headless Service** (`clusterIP: None`, common with StatefulSets, [§33](../Part5/Section-33-Part5-Statefulsets-Stable-Network-Identity-Ordered-Deployment.md)), DNS returns the live set of backing Pod IPs directly, and a genuinely transient difference across replicas (as shown, one node's answer is missing a second Pod IP) usually means client-side DNS caching (`ndots`, the application's own resolver cache, or `dnsPolicy` settings) rather than CoreDNS itself being inconsistent — CoreDNS replicas all read from the same underlying API server state and don't diverge from each other under normal operation.
 
 **Common errors:** Assuming any answer mismatch across Pods automatically means "CoreDNS is broken" without first checking whether the Service in question is headless (where the answer set legitimately changes as Pods come and go) versus a standard ClusterIP Service (where any mismatch would be a genuine, much rarer bug).
 
@@ -164,19 +164,19 @@ $ kubectl exec -it app-pod-on-node-b -- dig backend-headless.default.svc.cluster
 
 ## 7. Security Considerations
 
-- Cross-namespace DNS resolution succeeding by default (any Pod can resolve any Service's FQDN cluster-wide, regardless of namespace) means DNS name visibility is not a security boundary — NetworkPolicy (§55) is the actual enforcement point, and relying on "they don't know the FQDN" as an access control measure is not a real control.
+- Cross-namespace DNS resolution succeeding by default (any Pod can resolve any Service's FQDN cluster-wide, regardless of namespace) means DNS name visibility is not a security boundary — NetworkPolicy ([§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md)) is the actual enforcement point, and relying on "they don't know the FQDN" as an access control measure is not a real control.
 - A `targetPort` misconfiguration that accidentally exposes a debug or admin port instead of the intended application port is a genuine security-relevant misconfiguration, not just a functional bug — worth flagging during the same review that catches the connectivity failure.
-- CoreDNS logs and query patterns can reveal service topology information; restricting who can read `kube-system` logs is a reasonable extension of the general node/control-plane access discipline (§113, Part 15).
+- CoreDNS logs and query patterns can reveal service topology information; restricting who can read `kube-system` logs is a reasonable extension of the general node/control-plane access discipline ([§113](../Part15/Section-113-Part15-CKS-Curriculum-Overview-Cluster-Setup-Hardening-CIS-Benchmarks-kube-bench.md)).
 
 ## 8. Common Troubleshooting Scenarios
 
-| Symptom                                                                | Cause                                                                                | Fix                                                                                                |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Endpoints show a valid Pod IP, but `curl` returns "Connection refused" | `targetPort` on the Service doesn't match the port the container actually listens on | Check the container's real listening port with `ss -tlnp` inside the Pod; correct `targetPort`     |
-| `NXDOMAIN` for a bare Service name used from a different namespace     | Default DNS search path only appends the querying Pod's own namespace                | Use the fully-qualified `<svc>.<namespace>.svc.cluster.local` form                                 |
-| Different Pods get different DNS answers for the same headless Service | Expected behavior — headless Service DNS reflects the live, changing Pod set         | Confirm the Service is headless (`clusterIP: None`); ensure clients re-resolve rather than caching |
-| Different Pods get different answers for a standard ClusterIP Service  | Genuine CoreDNS inconsistency (rare) or client-side stale cache                      | Check CoreDNS Pod logs/health; check client `dnsPolicy`/`ndots` and resolver cache behavior        |
-| Cross-namespace access still fails with correct FQDN                   | NetworkPolicy blocking cross-namespace traffic                                       | Now proceed to the NetworkPolicy audit from §56's Step 4 — FQDN having ruled out naming            |
+| Symptom                                                                | Cause                                                                                | Fix                                                                                                                                                                |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Endpoints show a valid Pod IP, but `curl` returns "Connection refused" | `targetPort` on the Service doesn't match the port the container actually listens on | Check the container's real listening port with `ss -tlnp` inside the Pod; correct `targetPort`                                                                     |
+| `NXDOMAIN` for a bare Service name used from a different namespace     | Default DNS search path only appends the querying Pod's own namespace                | Use the fully-qualified `<svc>.<namespace>.svc.cluster.local` form                                                                                                 |
+| Different Pods get different DNS answers for the same headless Service | Expected behavior — headless Service DNS reflects the live, changing Pod set         | Confirm the Service is headless (`clusterIP: None`); ensure clients re-resolve rather than caching                                                                 |
+| Different Pods get different answers for a standard ClusterIP Service  | Genuine CoreDNS inconsistency (rare) or client-side stale cache                      | Check CoreDNS Pod logs/health; check client `dnsPolicy`/`ndots` and resolver cache behavior                                                                        |
+| Cross-namespace access still fails with correct FQDN                   | NetworkPolicy blocking cross-namespace traffic                                       | Now proceed to the NetworkPolicy audit from [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s Step 4 — FQDN having ruled out naming |
 
 ## 9. Best Practices
 
@@ -205,7 +205,7 @@ _What the interviewer is probing for:_ Knowing the default DNS search-path behav
 _What the interviewer is probing for:_ Distinguishing headless-Service dynamic DNS from ClusterIP-Service stable DNS, and correctly attributing most apparent inconsistency to client-side caching rather than CoreDNS itself.
 
 **🎯 Architect:** _"How would you reduce the frequency of these subtle networking scenarios (port mismatches, cross-namespace naming friction, DNS caching confusion) across many application teams?"_
-**Model answer:** I'd push these checks as far left as possible rather than relying on each team to rediscover them during an incident. A CI-time manifest validation step can catch `targetPort`/container-port mismatches automatically by comparing the Service spec against the Pod template in the same manifest set, before it ever reaches production. For cross-namespace naming, I'd establish a platform convention requiring FQDNs for any inter-namespace reference in shared configuration templates or Helm charts, so it's baked into the scaffolding new services are built from rather than left to individual developer awareness. For DNS caching confusion around headless Services, I'd document the headless-vs-ClusterIP distinction directly in the platform's StatefulSet onboarding guide, since it's a recurring, predictable point of confusion for teams new to stateful workloads. More broadly, I'd feed each of these recurring scenario types back into the team's troubleshooting runbook (§105) so the pattern-recognition becomes institutional knowledge rather than something each engineer re-learns independently during their own incident.
+**Model answer:** I'd push these checks as far left as possible rather than relying on each team to rediscover them during an incident. A CI-time manifest validation step can catch `targetPort`/container-port mismatches automatically by comparing the Service spec against the Pod template in the same manifest set, before it ever reaches production. For cross-namespace naming, I'd establish a platform convention requiring FQDNs for any inter-namespace reference in shared configuration templates or Helm charts, so it's baked into the scaffolding new services are built from rather than left to individual developer awareness. For DNS caching confusion around headless Services, I'd document the headless-vs-ClusterIP distinction directly in the platform's StatefulSet onboarding guide, since it's a recurring, predictable point of confusion for teams new to stateful workloads. More broadly, I'd feed each of these recurring scenario types back into the team's troubleshooting runbook ([§105](./Section-105-Part13-Incident-Case-Studies-Runbooks.md)) so the pattern-recognition becomes institutional knowledge rather than something each engineer re-learns independently during their own incident.
 _What the interviewer is probing for:_ Platform-level prevention (CI validation, scaffolding conventions, documentation) rather than only relying on better individual diagnostic skill, and translating recurring incident patterns into durable process improvements.
 
 ## 12. Common Misconceptions
@@ -225,6 +225,6 @@ _What the interviewer is probing for:_ Platform-level prevention (CI validation,
 
 ## 14. Related Concepts & What's Next
 
-This section extends §56's general networking troubleshooting toolkit with specific, commonly-misdiagnosed scenarios, building on §50 (Services), §52 (DNS), and §55 (NetworkPolicy), and following the structured methodology established in §100. §102 continues Part 13's scenario-driven approach into storage troubleshooting next.
+This section extends [§56](../Part7/Section-56-Part7-In-Cluster-Network-Troubleshooting-Toolkit.md)'s general networking troubleshooting toolkit with specific, commonly-misdiagnosed scenarios, building on [§50](../Part7/Section-50-Part7-Services-ClusterIP-NodePort-LoadBalancer-ExternalName.md) (Services), [§52](../Part7/Section-52-Part7-DNS-Kubernetes-CoreDNS-Service-Discovery.md) (DNS), and [§55](../Part7/Section-55-Part7-NetworkPolicies-Default-Deny-Ingress-Egress-Rules.md) (NetworkPolicy), and following the structured methodology established in [§100](./Section-100-Part13-Debugging-Control-Plane-Failures-API-Server-etcd-Scheduler-Down.md). [§102](./Section-102-Part13-Storage-Troubleshooting-Scenarios-PVC-Pending-Mount-Errors.md) continues Part 13's scenario-driven approach into storage troubleshooting next.
 
-**Next Section:** §102 — `Section-102-Part13-Storage-Troubleshooting-Scenarios-PVC-Pending-Mount-Errors.md`
+**Next Section:** [§102](./Section-102-Part13-Storage-Troubleshooting-Scenarios-PVC-Pending-Mount-Errors.md) — `Section-102-Part13-Storage-Troubleshooting-Scenarios-PVC-Pending-Mount-Errors.md`
