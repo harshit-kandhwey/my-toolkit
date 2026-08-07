@@ -1,14 +1,14 @@
 # Section 51 — Log Analytics & KQL
 
-**Part 10: Monitoring & Observability | Section 51 of 70**
-**Prerequisites:** Section 50 (Azure Monitor Fundamentals — the log data model and diagnostic settings)
-**Leads into:** Section 52 (Application Insights), Section 53 (Alerts, Action Groups, Dashboards)
+**Part 10: Monitoring & Observability | [Section 51](./Section-51-Part10-Log-Analytics-KQL.md) of 70**
+**Prerequisites:** [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md) (Azure Monitor Fundamentals — the log data model and diagnostic settings)
+**Leads into:** [Section 52](./Section-52-Part10-Application-Insights.md) (Application Insights), [Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md) (Alerts, Action Groups, Dashboards)
 
 ---
 
 ## 1. Introduction and Scope
 
-This section covers the Log Analytics workspace as a concrete, operational environment, and KQL (Kusto Query Language) — the query language used to actually extract insight from the log data Section 50 established flows into it. This section builds genuine, hands-on KQL fluency: core query structure, the most commonly needed operators, joins/aggregations, and time-series analysis, since KQL competence is one of the most directly, practically testable skills in Azure operations interviews and real production troubleshooting alike.
+This section covers the Log Analytics workspace as a concrete, operational environment, and KQL (Kusto Query Language) — the query language used to actually extract insight from the log data [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md) established flows into it. This section builds genuine, hands-on KQL fluency: core query structure, the most commonly needed operators, joins/aggregations, and time-series analysis, since KQL competence is one of the most directly, practically testable skills in Azure operations interviews and real production troubleshooting alike.
 
 🔑 **Key Takeaway:** KQL is fundamentally a **pipeline language** — a query is a sequence of operators connected by the pipe character (`|`), each one transforming the tabular result set flowing from the previous operator, read top-to-bottom exactly as data flows through it. This single mental model (data flows down through a pipe, transformed at each stage) makes almost every KQL query readable once internalized, even before knowing every individual operator.
 
@@ -18,16 +18,16 @@ This section covers the Log Analytics workspace as a concrete, operational envir
 
 ### 2.1 Definition
 
-A **Log Analytics workspace** is the storage and query container for log data within Azure Monitor (Section 50.3.2) — an Azure resource in its own right (with its own resource group, region, RBAC, and retention/pricing configuration), organized internally into **tables**, each holding a specific category of log data.
+A **Log Analytics workspace** is the storage and query container for log data within Azure Monitor ([Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).3.2) — an Azure resource in its own right (with its own resource group, region, RBAC, and retention/pricing configuration), organized internally into **tables**, each holding a specific category of log data.
 
 ### 2.2 Tables
 
-- Each log category routed via a diagnostic setting (Section 50.4) lands in its own table — e.g., AKS's `kube-audit` category lands in a table named `AKSAudit` (exact table naming conventions vary and should be verified against current documentation for the specific resource type), a VM's Syslog data lands in a `Syslog` table, and Application Insights data (Section 52) lands in a family of tables (`AppRequests`, `AppExceptions`, `AppDependencies`, and others in the modern workspace-based configuration).
+- Each log category routed via a diagnostic setting ([Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).4) lands in its own table — e.g., AKS's `kube-audit` category lands in a table named `AKSAudit` (exact table naming conventions vary and should be verified against current documentation for the specific resource type), a VM's Syslog data lands in a `Syslog` table, and Application Insights data ([Section 52](./Section-52-Part10-Application-Insights.md)) lands in a family of tables (`AppRequests`, `AppExceptions`, `AppDependencies`, and others in the modern workspace-based configuration).
 - **Schema:** every table has a defined schema (column names and types) specific to that log category — `TimeGenerated` (the event's timestamp) is a near-universal column across virtually all tables, since KQL's time-series capabilities (51.5) depend on it being present and consistently named.
 
 ### 2.3 Access Control
 
-- Log Analytics workspace RBAC can be scoped at the **workspace level** (broad access to every table) or, via **table-level RBAC**, restricted to specific tables — directly relevant to the multi-team access-control design discussed in Section 50.8's architect-level scenario, allowing a shared workspace to still enforce meaningful access boundaries between teams' respective data even without fully separate workspaces.
+- Log Analytics workspace RBAC can be scoped at the **workspace level** (broad access to every table) or, via **table-level RBAC**, restricted to specific tables — directly relevant to the multi-team access-control design discussed in [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8's architect-level scenario, allowing a shared workspace to still enforce meaningful access boundaries between teams' respective data even without fully separate workspaces.
 
 ---
 
@@ -104,7 +104,7 @@ AppRequests
 | project TimeGenerated, Name, ResultCode, ExceptionType = Type, OuterMessage
 ```
 
-- **Purpose:** correlates rows across two tables sharing a common key — here, joining failed requests (`AppRequests`) with their corresponding exception details (`AppExceptions`) via `OperationId`, a correlation identifier Application Insights (Section 52) automatically generates linking related telemetry from the same logical operation.
+- **Purpose:** correlates rows across two tables sharing a common key — here, joining failed requests (`AppRequests`) with their corresponding exception details (`AppExceptions`) via `OperationId`, a correlation identifier Application Insights ([Section 52](./Section-52-Part10-Application-Insights.md)) automatically generates linking related telemetry from the same logical operation.
 - **`kind=inner`:** specifies the join type (`inner`, `leftouter`, `rightouter`, `fullouter`), directly analogous to SQL join types — an `inner` join here means only requests that _do_ have a matching exception record are returned, appropriate when specifically investigating failures known to have associated exceptions.
 - ⚠️ **Warning:** `join` performance in KQL, similar to SQL, depends heavily on the size of both tables and the selectivity of any `where` filters applied _before_ the join — filtering both sides down to the relevant time range and condition before joining (as shown in the example) is a meaningful, commonly-tested performance practice, not merely a stylistic choice.
 
@@ -128,7 +128,7 @@ AppRequests
 | render timechart
 ```
 
-- **Purpose:** instructs the Log Analytics query UI to visualize the result set as a specific chart type (`timechart`, `barchart`, `piechart`, and others) directly in the query results pane — a lightweight, immediate visualization capability distinct from (though sometimes feeding into) the more persistent Dashboards mechanism covered in Section 53.
+- **Purpose:** instructs the Log Analytics query UI to visualize the result set as a specific chart type (`timechart`, `barchart`, `piechart`, and others) directly in the query results pane — a lightweight, immediate visualization capability distinct from (though sometimes feeding into) the more persistent Dashboards mechanism covered in [Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md).
 
 ### 4.5 `parse` and String Operations
 
@@ -168,7 +168,7 @@ AppRequests
 | extend (Anomalies, Score, Baseline) = series_decompose_anomalies(RequestCount)
 ```
 
-- **`series_decompose_anomalies()`:** a built-in KQL function performing statistical time-series decomposition (separating trend, seasonality, and residual) to flag points that deviate significantly from the expected pattern — a genuinely powerful, built-in capability for surfacing "this metric looks unusual" without hand-writing statistical logic, directly relevant to the alerting scenarios covered in Section 53.
+- **`series_decompose_anomalies()`:** a built-in KQL function performing statistical time-series decomposition (separating trend, seasonality, and residual) to flag points that deviate significantly from the expected pattern — a genuinely powerful, built-in capability for surfacing "this metric looks unusual" without hand-writing statistical logic, directly relevant to the alerting scenarios covered in [Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md).
 
 ---
 
@@ -176,7 +176,7 @@ AppRequests
 
 ### 6.1 Why This Matters
 
-Directly connecting to Section 50.8's centralized-vs-per-team workspace trade-off discussion: even with data split across multiple Log Analytics workspaces for access-control or organizational reasons, KQL supports querying **across** workspaces (and even directly against Application Insights resources) within a single query, via cross-resource query syntax:
+Directly connecting to [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8's centralized-vs-per-team workspace trade-off discussion: even with data split across multiple Log Analytics workspaces for access-control or organizational reasons, KQL supports querying **across** workspaces (and even directly against Application Insights resources) within a single query, via cross-resource query syntax:
 
 ```kql
 union
@@ -186,7 +186,7 @@ union
 | summarize count() by bin(TimeGenerated, 5m), Workspace = tostring(split(_ResourceId, '/')[-1])
 ```
 
-- This directly resolves the apparent tension in Section 50.8's architect-level answer between access-control isolation (favoring separate workspaces) and cross-cutting analysis needs (favoring a single centralized workspace) — cross-workspace queries mean a platform team can still run genuinely cross-team analytical queries (with appropriate permission to each individual workspace queried) even when the underlying data remains organized into separate, access-controlled workspaces per team.
+- This directly resolves the apparent tension in [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8's architect-level answer between access-control isolation (favoring separate workspaces) and cross-cutting analysis needs (favoring a single centralized workspace) — cross-workspace queries mean a platform team can still run genuinely cross-team analytical queries (with appropriate permission to each individual workspace queried) even when the underlying data remains organized into separate, access-controlled workspaces per team.
 
 ---
 
@@ -212,7 +212,7 @@ union
 
 ### 8.2 KQL as the Query Language Behind Alerts and Workbooks
 
-🔑 **Key Takeaway:** the KQL fluency built in this section is not siloed to ad hoc interactive investigation — the exact same query language and query bodies are used to define **log-based alert rules** (Section 53) and **Azure Monitor Workbooks** (a richer, parameterized visualization/reporting canvas beyond simple Dashboards, referenced in Section 53) — meaning KQL competence directly transfers into and underlies nearly every other Part 10 topic, not a standalone skill limited to manual troubleshooting sessions.
+🔑 **Key Takeaway:** the KQL fluency built in this section is not siloed to ad hoc interactive investigation — the exact same query language and query bodies are used to define **log-based alert rules** ([Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md)) and **Azure Monitor Workbooks** (a richer, parameterized visualization/reporting canvas beyond simple Dashboards, referenced in [Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md)) — meaning KQL competence directly transfers into and underlies nearly every other Part 10 topic, not a standalone skill limited to manual troubleshooting sessions.
 
 ---
 
@@ -269,9 +269,9 @@ _Model answer:_ Log Analytics tables are optimized around time-based data organi
 _Model answer:_ first, verify both sides of the join have an early, narrow time-range filter applied _before_ the join executes (51.4.2's warning) — a join against two large, time-unfiltered tables is a common, significant performance problem, since the join operation's cost scales with the size of the data being joined, not just the final result size. Second, verify `kind=inner` (or whichever join kind is actually appropriate) is being used deliberately rather than defaulting to a broader join type than necessary. Third, consider whether the actual investigative need could be satisfied without a row-level join at all — e.g., if only aggregate counts per exception type are needed rather than full row-level correlation, a `summarize` on each table independently (or a lighter join on a smaller, pre-aggregated intermediate result) may achieve the goal with substantially less query cost.
 _What the interviewer is probing:_ practical, specific KQL performance-tuning knowledge grounded in the mechanics actually covered (pre-filtering both join sides, join-kind selection, considering aggregation as an alternative to a full join) rather than a generic "optimize the query" non-answer.
 
-**Architect / Scenario:** "Your organization has decided to split Log Analytics data across per-team workspaces for access-control reasons (per Section 50.8's guidance), but the security team now needs to run periodic cross-team anomaly-detection queries against request volume data from every team's workspace. How do you reconcile these two requirements?"
-_Model answer:_ this is directly resolved by cross-workspace query capability (51.6) — the security team's identity (or a dedicated service identity used for their periodic automated queries) is granted read-only RBAC access to each individual team workspace's relevant table(s) specifically (not broader write/management access, following least-privilege, Section 8), and their queries use `union workspace("team-a")..., workspace("team-b")..., ...` syntax to combine data across all workspaces into a single query for the anomaly-detection analysis (potentially using `series_decompose_anomalies()`, 51.5.3, applied to the combined series). This preserves the per-team access-control isolation for each team's own day-to-day access (a team cannot query another team's workspace unless explicitly granted), while still enabling the specific, legitimate cross-cutting need via deliberately scoped, additional read access granted only to the security team's specific identity — directly reconciling access-control isolation and cross-cutting analytical need without requiring a workspace-architecture compromise in either direction.
-_What the interviewer is probing:_ the ability to resolve an apparent architectural tension (raised deliberately in Section 50.8) using the actual KQL/RBAC mechanisms available, rather than treating the tension as forcing an either/or trade-off — recognizing that cross-workspace queries plus scoped RBAC grants is the concrete technical answer.
+**Architect / Scenario:** "Your organization has decided to split Log Analytics data across per-team workspaces for access-control reasons (per [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8's guidance), but the security team now needs to run periodic cross-team anomaly-detection queries against request volume data from every team's workspace. How do you reconcile these two requirements?"
+_Model answer:_ this is directly resolved by cross-workspace query capability (51.6) — the security team's identity (or a dedicated service identity used for their periodic automated queries) is granted read-only RBAC access to each individual team workspace's relevant table(s) specifically (not broader write/management access, following least-privilege, [Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)), and their queries use `union workspace("team-a")..., workspace("team-b")..., ...` syntax to combine data across all workspaces into a single query for the anomaly-detection analysis (potentially using `series_decompose_anomalies()`, 51.5.3, applied to the combined series). This preserves the per-team access-control isolation for each team's own day-to-day access (a team cannot query another team's workspace unless explicitly granted), while still enabling the specific, legitimate cross-cutting need via deliberately scoped, additional read access granted only to the security team's specific identity — directly reconciling access-control isolation and cross-cutting analytical need without requiring a workspace-architecture compromise in either direction.
+_What the interviewer is probing:_ the ability to resolve an apparent architectural tension (raised deliberately in [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8) using the actual KQL/RBAC mechanisms available, rather than treating the tension as forcing an either/or trade-off — recognizing that cross-workspace queries plus scoped RBAC grants is the concrete technical answer.
 
 ---
 
@@ -283,19 +283,19 @@ _What the interviewer is probing:_ the ability to resolve an apparent architectu
 
 🔑 Filter ordering doesn't affect KQL query correctness but has a real, measurable performance impact — early, narrow time-range filters are the single most impactful query-performance practice.
 
-🔑 Cross-workspace queries (`union workspace(...)`) directly reconcile the access-control-isolation-vs-cross-cutting-analysis tension raised by Section 50.8's multi-workspace strategy discussion.
+🔑 Cross-workspace queries (`union workspace(...)`) directly reconcile the access-control-isolation-vs-cross-cutting-analysis tension raised by [Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md).8's multi-workspace strategy discussion.
 
-🔑 KQL competence transfers directly into alert rule definitions (Section 53) and Workbooks, not a siloed skill limited to manual interactive investigation.
+🔑 KQL competence transfers directly into alert rule definitions ([Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md)) and Workbooks, not a siloed skill limited to manual interactive investigation.
 
 ---
 
 ## 14. Related Concepts and What Comes Next
 
-- **Section 50 (prerequisite, completed):** the log data model, diagnostic settings, and table/workspace structure this section's KQL material queries directly.
-- **Section 52 — Application Insights (next):** the specific table family (`AppRequests`, `AppExceptions`, `AppDependencies`, and others) this section's examples have already been drawing on, covered in full architectural depth next.
-- **Section 53 — Alerts, Action Groups, Dashboards:** where this section's KQL queries become the actual definition of log-based alert rules, and where `render`'s lightweight visualization (51.4.4) is extended into persistent Dashboards and Workbooks.
-- **Section 8 (prerequisite, completed):** RBAC concepts underlying 51.2.3's table-level access control and 51.6's cross-workspace query permission model.
+- **[Section 50](./Section-50-Part10-Azure-Monitor-Fundamentals.md) (prerequisite, completed):** the log data model, diagnostic settings, and table/workspace structure this section's KQL material queries directly.
+- **[Section 52](./Section-52-Part10-Application-Insights.md) — Application Insights (next):** the specific table family (`AppRequests`, `AppExceptions`, `AppDependencies`, and others) this section's examples have already been drawing on, covered in full architectural depth next.
+- **[Section 53](./Section-53-Part10-Alerts-Action-Groups-Dashboards.md) — Alerts, Action Groups, Dashboards:** where this section's KQL queries become the actual definition of log-based alert rules, and where `render`'s lightweight visualization (51.4.4) is extended into persistent Dashboards and Workbooks.
+- **[Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md) (prerequisite, completed):** RBAC concepts underlying 51.2.3's table-level access control and 51.6's cross-workspace query permission model.
 
 ---
 
-_End of Section 51. Next: Section 52 — Application Insights._
+_End of [Section 51](./Section-51-Part10-Log-Analytics-KQL.md). Next: [Section 52](./Section-52-Part10-Application-Insights.md) — Application Insights._

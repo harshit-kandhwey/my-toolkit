@@ -20,7 +20,7 @@ Containers solve both problems at once:
 - **Docker:** the tool (and image format standard, now maintained under the Open Container Initiative, OCI) most commonly used to build, package, and run containers. A `Dockerfile` describes how to build an image: a base image, layered instructions (`RUN`, `COPY`, `ENV`), and a startup command (`ENTRYPOINT`/`CMD`).
 - **Container image:** a read-only, layered filesystem snapshot. Layers are cached and shared across images, so pulling a new image that shares base layers with one already on a machine only transfers the new layers.
 - **Container runtime:** the software actually responsible for running containers from images on a host (e.g., `containerd`, `runc`). Kubernetes (and GKE) use a container runtime under the hood via the Container Runtime Interface (CRI) — Docker itself is not required at runtime, only the OCI-compatible image format and a compliant runtime.
-- **Container registry:** a place to store and distribute container images by name and tag (e.g., `my-repo/my-app:1.2.0`). On GCP this is **Artifact Registry**, covered in full in Section 29.
+- **Container registry:** a place to store and distribute container images by name and tag (e.g., `my-repo/my-app:1.2.0`). On GCP this is **Artifact Registry**, covered in full in [Section 29](./Section-29-Part4-Artifact-Registry-Container-Registry.md).
 
 | Concept        | VM                                                        | Container                                                    |
 | -------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
@@ -32,7 +32,7 @@ Containers solve both problems at once:
 
 ## 4. GCP's Container History: From Borg to Kubernetes to GKE
 
-Section 1 already introduced this lineage briefly; this section expands it because it is foundational context for the rest of Part 4.
+[Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md) already introduced this lineage briefly; this section expands it because it is foundational context for the rest of Part 4.
 
 Google has run virtually all of its internal production workloads — Search, Gmail, and everything else — as containers since the early-to-mid 2000s, long before the word "container" was in common industry use. Google's internal cluster manager for this, called **Borg**, was responsible for scheduling billions of containers per week across Google's global fleet, handling bin-packing, failure recovery, and resource isolation at a scale no other organization had publicly discussed at the time.
 
@@ -46,8 +46,8 @@ In 2016, Google launched **Google Kubernetes Engine (GKE)** — a fully managed 
 
 - **Upstream proximity:** Google is a top contributor to core Kubernetes and typically offers new stable Kubernetes minor versions on GKE faster than most competitors.
 - **Operational depth:** features like node auto-repair, node auto-upgrade, release channels, and Autopilot (fully explored in Sections 30–34) reflect years of Google's own operational lessons about what breaks in large Kubernetes fleets.
-- **Networking integration:** GKE's VPC-native clusters (Section 31) integrate directly with GCP's Andromeda-based software-defined networking stack rather than bolting Kubernetes networking on as a separate overlay.
-- **Security posture:** Workload Identity, Shielded GKE Nodes, and private clusters (Section 33) are default-available hardening features, not third-party add-ons.
+- **Networking integration:** GKE's VPC-native clusters ([Section 31](./Section-31-Part4-GKE-Networking-and-Storage.md)) integrate directly with GCP's Andromeda-based software-defined networking stack rather than bolting Kubernetes networking on as a separate overlay.
+- **Security posture:** Workload Identity, Shielded GKE Nodes, and private clusters ([Section 33](./Section-33-Part4-GKE-Security-Workload-Identity.md)) are default-available hardening features, not third-party add-ons.
 
 This does not mean GKE is strictly "better" in every dimension than AWS EKS or Azure AKS — all three run genuine upstream Kubernetes and are broadly comparable at the API level (a Kubernetes manifest is largely portable across all three). The differentiation is in control-plane management model, release cadence, and the depth of native integrations, which Sections 30 and 33 compare directly.
 
@@ -83,7 +83,7 @@ kubectl  kubectl  Installed  ...
 
 ## 8. Common Misconceptions
 
-- **Misconception:** "Containers are just lightweight VMs." Containers share the host kernel and rely on kernel-level isolation (namespaces, cgroups); VMs virtualize hardware and run a fully independent guest kernel. This distinction matters for security boundaries — container isolation is generally considered weaker than VM isolation unless hardened further (e.g., gVisor, Kata Containers, or GKE Sandbox), a nuance covered further in Section 33.
+- **Misconception:** "Containers are just lightweight VMs." Containers share the host kernel and rely on kernel-level isolation (namespaces, cgroups); VMs virtualize hardware and run a fully independent guest kernel. This distinction matters for security boundaries — container isolation is generally considered weaker than VM isolation unless hardened further (e.g., gVisor, Kata Containers, or GKE Sandbox), a nuance covered further in [Section 33](./Section-33-Part4-GKE-Security-Workload-Identity.md).
 - **Misconception:** "Kubernetes and Docker are the same thing." Docker is (primarily) a tool for building and running individual containers on a single machine. Kubernetes is an orchestrator that schedules, network, and manages many containers across many machines. Kubernetes does not require Docker specifically as its runtime — modern Kubernetes (including GKE) uses `containerd` directly via the Container Runtime Interface.
 
 ## 9. Interview Questions
@@ -95,7 +95,7 @@ kubectl  kubectl  Installed  ...
 **Model answer:** Kubernetes was designed by Google engineers directly informed by over a decade of lessons from operating Borg (and its successor Omega) at massive internal scale — long before "container orchestration" was a mainstream industry concept. GKE, being Google's own managed offering of the system it originated, tends to benefit from faster access to new Kubernetes releases and deeper native integration with GCP's underlying infrastructure (networking, security, storage) than a third-party re-implementation would have, though this is an engineering-depth argument, not a guarantee that GKE strictly outperforms every competitor on every dimension.
 
 **🎯 Senior/Architect:** _A team wants to standardize their deployment format across GCP, AWS, and on-prem to avoid provider lock-in. How does choosing Kubernetes as the deployment target address this, and what remains provider-specific even after doing so?_
-**Model answer:** Standardizing on Kubernetes as the workload API means the same container images and largely the same Kubernetes manifests (Deployments, Services, ConfigMaps) run on GKE, EKS, AKS, or self-managed on-prem clusters, since Kubernetes' API is a common abstraction layer above the underlying cloud. This solves the _application deployment_ portability problem. What remains provider-specific: the underlying networking model (e.g., GKE's VPC-native alias IPs vs. AWS VPC CNI vs. Azure CNI, Section 31), the identity/authentication integration (Workload Identity vs. IAM Roles for Service Accounts vs. Azure AD Workload Identity, Section 33), storage classes tied to each cloud's block/file storage products, and load balancer implementations. A genuinely portable architecture still needs an abstraction strategy for these provider-specific integration points, commonly handled via Kubernetes-native abstractions (StorageClasses, Ingress/Gateway API resources) configured per environment rather than hardcoded provider APIs in application code.
+**Model answer:** Standardizing on Kubernetes as the workload API means the same container images and largely the same Kubernetes manifests (Deployments, Services, ConfigMaps) run on GKE, EKS, AKS, or self-managed on-prem clusters, since Kubernetes' API is a common abstraction layer above the underlying cloud. This solves the _application deployment_ portability problem. What remains provider-specific: the underlying networking model (e.g., GKE's VPC-native alias IPs vs. AWS VPC CNI vs. Azure CNI, [Section 31](./Section-31-Part4-GKE-Networking-and-Storage.md)), the identity/authentication integration (Workload Identity vs. IAM Roles for Service Accounts vs. Azure AD Workload Identity, [Section 33](./Section-33-Part4-GKE-Security-Workload-Identity.md)), storage classes tied to each cloud's block/file storage products, and load balancer implementations. A genuinely portable architecture still needs an abstraction strategy for these provider-specific integration points, commonly handled via Kubernetes-native abstractions (StorageClasses, Ingress/Gateway API resources) configured per environment rather than hardcoded provider APIs in application code.
 
 ## 10. Key Takeaways
 
@@ -106,4 +106,4 @@ kubectl  kubectl  Installed  ...
 
 ## 11. Related Concepts
 
-GCP's history and Borg lineage (Section 1), Artifact Registry for storing the images introduced here (Section 29), GKE architecture (Section 30), and the GCP vs. AWS vs. Azure comparison (Section 82) all build on the container fundamentals covered here.
+GCP's history and Borg lineage ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)), Artifact Registry for storing the images introduced here ([Section 29](./Section-29-Part4-Artifact-Registry-Container-Registry.md)), GKE architecture ([Section 30](./Section-30-Part4-GKE-Architecture-Deep-Dive.md)), and the GCP vs. AWS vs. Azure comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all build on the container fundamentals covered here.

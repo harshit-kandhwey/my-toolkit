@@ -179,6 +179,6 @@ Senior - Design hybrid connectivity for a large enterprise: on-prem to 15 VPCs a
 
 ## Related Concepts (forward links)
 
-- Route 53 DNS, including hybrid DNS resolution patterns -> §34
-- VPC Flow Logs for observing hybrid connection traffic -> §37
+- Route 53 DNS, including hybrid DNS resolution patterns -> [§34](./Section-34-Part4-Route53-DNS.md)
+- VPC Flow Logs for observing hybrid connection traffic -> [§37](./Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md)
 - Migration strategies and the 6 Rs, where hybrid connectivity is foundational -> Part 10

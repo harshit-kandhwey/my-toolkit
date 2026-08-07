@@ -4,35 +4,35 @@
 
 Part 7, Application Integration & Streaming, covered nine core services/topics across two governing paradigms — **messaging** (data moved once, consumed, and gone) and **streaming** (data retained in an ordered log, read by many independent consumers) — plus the orchestration layer that coordinates work across them:
 
-1. **SQS Fundamentals** (§1) — point-to-point queuing, visibility timeout, receipt handles, at-least-once delivery.
-2. **SQS Advanced** (§2) — DLQs/redrive policies, FIFO ordering and deduplication, heartbeat pattern for long jobs.
-3. **SNS** (§3) — publish/subscribe fan-out, filter policies, the SNS→SQS fan-out pattern.
-4. **EventBridge** (§4) — content-based event routing, native AWS service event integration, archive/replay.
-5. **Step Functions** (§5) — declarative workflow orchestration, Standard vs. Express, task tokens for human-in-the-loop.
-6. **Kinesis Data Streams** (§6) — durable, ordered, replayable, multi-consumer log; partition keys and shards.
-7. **Kinesis Data Firehose** (§7) — managed, no-code delivery of streaming data into S3/Redshift/OpenSearch, with format conversion.
-8. **Amazon MSK** (§8) — managed Apache Kafka, for genuine Kafka-ecosystem compatibility and migration scenarios.
-9. **Choosing the Right Integration Pattern** (§9) — the decision framework tying all eight services together.
+1. **SQS Fundamentals** ([§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)) — point-to-point queuing, visibility timeout, receipt handles, at-least-once delivery.
+2. **SQS Advanced** ([§2](../Part1/Section-02-Part1-AWS-Global-Infrastructure.md)) — DLQs/redrive policies, FIFO ordering and deduplication, heartbeat pattern for long jobs.
+3. **SNS** ([§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)) — publish/subscribe fan-out, filter policies, the SNS→SQS fan-out pattern.
+4. **EventBridge** ([§4](../Part1/Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md)) — content-based event routing, native AWS service event integration, archive/replay.
+5. **Step Functions** ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)) — declarative workflow orchestration, Standard vs. Express, task tokens for human-in-the-loop.
+6. **Kinesis Data Streams** ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)) — durable, ordered, replayable, multi-consumer log; partition keys and shards.
+7. **Kinesis Data Firehose** ([§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)) — managed, no-code delivery of streaming data into S3/Redshift/OpenSearch, with format conversion.
+8. **Amazon MSK** ([§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md)) — managed Apache Kafka, for genuine Kafka-ecosystem compatibility and migration scenarios.
+9. **Choosing the Right Integration Pattern** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)) — the decision framework tying all eight services together.
 
 ## 2. Progressive Hands-On Labs (Beginner → Production-Style)
 
 **Lab 1 (Beginner): Basic SQS Queue with DLQ**
-Create a standard SQS queue and a DLQ, set `maxReceiveCount` to 3, write a simple producer/consumer in Python using boto3, deliberately raise an exception in the consumer for one message and observe it move to the DLQ after 3 receive attempts. _Validates: §59-60 core mechanics._
+Create a standard SQS queue and a DLQ, set `maxReceiveCount` to 3, write a simple producer/consumer in Python using boto3, deliberately raise an exception in the consumer for one message and observe it move to the DLQ after 3 receive attempts. _Validates: [§59](./Section-59-Part7-SQS-Fundamentals.md)-[§60](./Section-60-Part7-SQS-Advanced-DLQ-FIFO-VisibilityTimeout.md) core mechanics._
 
 **Lab 2 (Beginner-Intermediate): SNS Fan-Out to Two SQS Queues**
-Create an SNS topic and two SQS queues; subscribe both queues to the topic with correct queue policies; publish one message and confirm both queues independently receive a copy; add a filter policy to one subscription and confirm selective delivery. _Validates: §61._
+Create an SNS topic and two SQS queues; subscribe both queues to the topic with correct queue policies; publish one message and confirm both queues independently receive a copy; add a filter policy to one subscription and confirm selective delivery. _Validates: [§61](./Section-61-Part7-SNS-PubSub-Messaging.md)._
 
 **Lab 3 (Intermediate): EventBridge Content-Based Routing**
-Create two EventBridge rules on a custom event bus — one matching a numeric threshold on a nested field, one matching all events of a given type — targeting different Lambda functions; publish events that satisfy each pattern combination and confirm correct routing. _Validates: §62._
+Create two EventBridge rules on a custom event bus — one matching a numeric threshold on a nested field, one matching all events of a given type — targeting different Lambda functions; publish events that satisfy each pattern combination and confirm correct routing. _Validates: [§62](./Section-62-Part7-EventBridge-Event-Driven-Architecture.md)._
 
 **Lab 4 (Intermediate): Step Functions Order-Processing Workflow**
-Build the order-processing state machine from §63 (retry, catch, parallel, choice), trigger it via `start-execution`, deliberately fail the payment validation Lambda to confirm the Catch path fires, and inspect the execution history to trace exactly what happened. _Validates: §63._
+Build the order-processing state machine from [§63](./Section-63-Part7-StepFunctions-Orchestration.md) (retry, catch, parallel, choice), trigger it via `start-execution`, deliberately fail the payment validation Lambda to confirm the Catch path fires, and inspect the execution history to trace exactly what happened. _Validates: [§63](./Section-63-Part7-StepFunctions-Orchestration.md)._
 
 **Lab 5 (Intermediate-Advanced): Kinesis Multi-Consumer Stream**
-Create a Kinesis stream with 2 shards, write records with a deliberately low-cardinality partition key and observe the resulting hot-shard throttling via CloudWatch, then redesign with a high-cardinality key and confirm even distribution; attach two independent consumers (a Lambda via event source mapping, and a Firehose delivery to S3) and confirm both receive the full stream independently. _Validates: §64-65._
+Create a Kinesis stream with 2 shards, write records with a deliberately low-cardinality partition key and observe the resulting hot-shard throttling via CloudWatch, then redesign with a high-cardinality key and confirm even distribution; attach two independent consumers (a Lambda via event source mapping, and a Firehose delivery to S3) and confirm both receive the full stream independently. _Validates: [§64](./Section-64-Part7-Kinesis-Data-Streams.md)-[§65](./Section-65-Part7-Kinesis-Data-Firehose.md)._
 
 **Lab 6 (Production-Style, Capstone): Full E-Commerce Event Architecture**
-Build the complete architecture from §67's senior-level interview scenario: order placement → SNS fan-out to inventory/email/fraud-screening SQS queues → EventBridge risk-score routing → Step Functions orchestrating the full sequence with retry/catch → full execution history reviewed for audit purposes. This lab deliberately combines every service from this Part into one coherent, defensible architecture. _Validates: §59-67 in combination._
+Build the complete architecture from [§67](./Section-67-Part7-Choosing-Integration-Pattern.md)'s senior-level interview scenario: order placement → SNS fan-out to inventory/email/fraud-screening SQS queues → EventBridge risk-score routing → Step Functions orchestrating the full sequence with retry/catch → full execution history reviewed for audit purposes. This lab deliberately combines every service from this Part into one coherent, defensible architecture. _Validates: [§59](./Section-59-Part7-SQS-Fundamentals.md)-[§67](./Section-67-Part7-Choosing-Integration-Pattern.md) in combination._
 
 ## 3. Consolidated Key-Takeaways Checklist
 
@@ -49,7 +49,7 @@ Build the complete architecture from §67's senior-level interview scenario: ord
 - [ ] I can explain why Kinesis retains data regardless of consumption, and what `IteratorAgeMilliseconds` signals.
 - [ ] I can explain what Firehose adds on top of Kinesis Data Streams (managed delivery, no consumer code) and what it gives up (no replay, no multi-consumer model).
 - [ ] I can explain when MSK is the right choice over Kinesis, and specifically why "already using Kafka" is the deciding factor, not general preference.
-- [ ] I can walk through the five-service decision tree (§67) from a cold requirement statement without prompting.
+- [ ] I can walk through the five-service decision tree ([§67](./Section-67-Part7-Choosing-Integration-Pattern.md)) from a cold requirement statement without prompting.
 - [ ] I can name at least three real production architectures that combine multiple of these services rather than using one in isolation.
 
 ## 4. Related Technologies (Beyond This Roadmap's Current Scope)
@@ -57,7 +57,7 @@ Build the complete architecture from §67's senior-level interview scenario: ord
 - **Amazon MQ** — a managed message broker service supporting ActiveMQ and RabbitMQ protocols specifically, for migrating existing applications that depend on those specific protocols rather than SQS/SNS's AWS-native APIs; a natural extension for anyone with an existing ActiveMQ/RabbitMQ investment analogous to MSK's role for Kafka.
 - **AWS AppSync** — managed GraphQL with built-in real-time subscriptions, a different (API-layer, not infrastructure-layer) approach to real-time data delivery, relevant for teams building client-facing real-time features rather than backend service integration.
 - **Amazon Managed Service for Apache Flink** — for complex stream processing (windowed aggregations, joins across streams) beyond what Lambda-based Kinesis/Firehose consumers typically handle, a natural next step after Kinesis Data Streams for teams needing genuine stream-processing (not just stream-delivery) capability.
-- **AWS Glue** — the ETL and Data Catalog service underlying Firehose's format-conversion feature (§65), worth its own dedicated exploration for teams building broader data lake pipelines.
+- **AWS Glue** — the ETL and Data Catalog service underlying Firehose's format-conversion feature ([§65](./Section-65-Part7-Kinesis-Data-Firehose.md)), worth its own dedicated exploration for teams building broader data lake pipelines.
 - **Amazon Athena / Redshift Spectrum** — the query layer typically sitting on top of Firehose-delivered S3 data, completing the "ingest → store → query" data lake picture only partially covered here.
 
 ## 5. Recommended Next Topics (Learning Path)

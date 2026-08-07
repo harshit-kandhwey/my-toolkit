@@ -55,7 +55,7 @@ aws s3control create-access-point \
 
 ### 3a.3 Multi-Region Access Points (MRAP)
 
-- A Multi-Region Access Point is a single global endpoint that routes requests to the lowest-latency replica of a dataset across multiple buckets in multiple AWS Regions, typically paired with S3 Cross-Region Replication (§42) keeping those regional buckets in sync.
+- A Multi-Region Access Point is a single global endpoint that routes requests to the lowest-latency replica of a dataset across multiple buckets in multiple AWS Regions, typically paired with S3 Cross-Region Replication ([§42](./Section-42-Part5-S3-Advanced-Versioning-Replication-Performance.md)) keeping those regional buckets in sync.
 - Why it exists: without an MRAP, a globally-distributed application has to implement its own region-selection/failover logic across several regional bucket endpoints; an MRAP gives applications one stable endpoint and lets AWS handle routing to the nearest/healthy replica, including automatic failover if a Region becomes unavailable.
 - Practical fit: a global media platform storing user-uploaded content replicated across three Regions for latency and resilience can front all three with one MRAP, so client applications never need Region-specific logic or manual failover handling.
 
@@ -205,6 +205,6 @@ Senior - Design S3 security for a multi-tenant SaaS storing sensitive documents,
 
 ## Related Concepts (forward links)
 
-- Versioning, replication, and performance optimization, including Cross-Region Replication as the usual pairing for Multi-Region Access Points (see §3a) -> §42
-- EBS encryption, following the same KMS patterns -> §43
-- AWS Config rules detecting S3 misconfigurations at scale -> §16
+- Versioning, replication, and performance optimization, including Cross-Region Replication as the usual pairing for Multi-Region Access Points (see [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)a) -> [§42](./Section-42-Part5-S3-Advanced-Versioning-Replication-Performance.md)
+- EBS encryption, following the same KMS patterns -> [§43](./Section-43-Part5-EBS-Full-Depth.md)
+- AWS Config rules detecting S3 misconfigurations at scale -> [§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md)

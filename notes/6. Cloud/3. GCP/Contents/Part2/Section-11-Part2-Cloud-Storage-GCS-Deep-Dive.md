@@ -144,7 +144,7 @@ gcloud storage sign-url gs://my-toolkit-demo-bucket/reports/report.pdf --duratio
 
 - **Static website / CDN origin:** Buckets frequently serve as the origin for Cloud CDN or third-party CDNs, fronting static assets globally.
 - **Data lake landing zone:** Raw ingestion data lands in GCS before being processed by Dataflow/Dataproc and loaded into BigQuery (Part 6).
-- **Terraform-managed lifecycle policies:** Enterprises manage bucket configuration (storage class, lifecycle, IAM bindings) as code, never via manual console changes, for auditability (Section 52).
+- **Terraform-managed lifecycle policies:** Enterprises manage bucket configuration (storage class, lifecycle, IAM bindings) as code, never via manual console changes, for auditability ([Section 52](../Part7/Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)).
 - **Retention policies and Bucket Lock:** Compliance-heavy organizations (finance, healthcare) use retention policies combined with Bucket Lock to make retention periods legally immutable, similar in spirit to WORM (write-once-read-many) storage.
 
 ## 8. Common Misconceptions
@@ -173,4 +173,4 @@ gcloud storage sign-url gs://my-toolkit-demo-bucket/reports/report.pdf --duratio
 
 ## 11. Related Concepts
 
-Persistent Disks and Filestore for block/file storage (Section 12), BigQuery loading data from GCS (Section 44), Dataflow/Dataproc pipelines reading/writing GCS (Section 45), IAM fundamentals (Section 35), and the GCP vs. AWS vs. Azure storage comparison (Section 82) all build on the object storage model introduced here.
+Persistent Disks and Filestore for block/file storage ([Section 12](./Section-12-Part2-Persistent-Disks-and-Filestore.md)), BigQuery loading data from GCS ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)), Dataflow/Dataproc pipelines reading/writing GCS ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)), IAM fundamentals ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), and the GCP vs. AWS vs. Azure storage comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all build on the object storage model introduced here.

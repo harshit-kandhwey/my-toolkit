@@ -10,15 +10,15 @@
 
 Every service covered across this entire roadmap — IAM, EC2, S3, Lambda, every Part 7 messaging service — is controlled entirely through API calls, whether made via the console, CLI, SDK, or another AWS service acting on your behalf. Without a record of those calls, answering security-critical and compliance-critical questions is nearly impossible: Who deleted this S3 bucket? Who changed this security group to allow inbound traffic from anywhere? Did an unauthorized IAM user attempt to access sensitive data? Which specific API call caused this unexpected resource change last Tuesday at 3 AM?
 
-CloudTrail solves this by acting as the **comprehensive, durable record of account activity itself** — not of what your applications are doing internally (that's CloudWatch Logs' domain, §70), but of what actions were taken _against AWS_ using your account's credentials and permissions. This is foundational for security incident investigation, regulatory compliance (many frameworks explicitly require this kind of audit trail), and operational troubleshooting of "who/what changed this resource."
+CloudTrail solves this by acting as the **comprehensive, durable record of account activity itself** — not of what your applications are doing internally (that's CloudWatch Logs' domain, [§70](./Section-70-Part8-CloudWatch-Logs.md)), but of what actions were taken _against AWS_ using your account's credentials and permissions. This is foundational for security incident investigation, regulatory compliance (many frameworks explicitly require this kind of audit trail), and operational troubleshooting of "who/what changed this resource."
 
 **What existed before it (conceptually):** no equivalent capability at all for early cloud environments — CloudTrail (and equivalents in other cloud providers) is now considered a baseline, expected security control, and its absence or misconfiguration is a common, serious finding in security audits.
 
 ## 3. Prerequisites and Dependencies
 
-- **IAM** (§9-11): CloudTrail records exactly which IAM principal (user, role, or AWS service) performed each recorded action — deep familiarity with IAM identities makes CloudTrail event data immediately meaningful.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): CloudTrail records exactly which IAM principal (user, role, or AWS service) performed each recorded action — deep familiarity with IAM identities makes CloudTrail event data immediately meaningful.
 - **S3** (Part 5): CloudTrail's default and most common delivery destination for event log files.
-- **CloudWatch Logs** (§70): CloudTrail can additionally deliver events to CloudWatch Logs for real-time querying/alarming, distinct from its primary S3 archival delivery.
+- **CloudWatch Logs** ([§70](./Section-70-Part8-CloudWatch-Logs.md)): CloudTrail can additionally deliver events to CloudWatch Logs for real-time querying/alarming, distinct from its primary S3 archival delivery.
 
 ## 4. Internal Working
 
@@ -56,7 +56,7 @@ API Call (Console, CLI, SDK, or AWS service) --> CloudTrail records event
 1. Every API call against the account (console, CLI, SDK, or AWS-service-initiated) is **automatically captured** as a management event in the account's 90-day Event History with zero configuration.
 2. To retain events beyond 90 days, or to capture data events, **create a trail**, specifying an S3 destination bucket (and optionally CloudWatch Logs/SNS).
 3. CloudTrail **delivers log files** to the configured destination(s), typically within a few minutes of the API activity occurring, batched into periodic log files (not necessarily one file per event).
-4. Engineers/security teams **query and analyze** events — via Event History for recent activity, via S3/Athena or CloudTrail Lake for historical analysis, or via CloudWatch Logs Insights (§70) if delivered there for near-real-time alarming.
+4. Engineers/security teams **query and analyze** events — via Event History for recent activity, via S3/Athena or CloudTrail Lake for historical analysis, or via CloudWatch Logs Insights ([§70](./Section-70-Part8-CloudWatch-Logs.md)) if delivered there for near-real-time alarming.
 5. Optionally, **log file integrity validation** is enabled to cryptographically prove log files weren't tampered with, and S3 bucket policies/versioning/MFA-delete are applied to the destination bucket to further protect against log tampering or deletion (including, notably, by an attacker attempting to cover their tracks).
 
 ## 7. Configuration
@@ -198,7 +198,7 @@ This is the exact investigative pattern CloudTrail exists for: starting from "wh
 ## 12. Performance Considerations
 
 - Data events at high volume (e.g., enabling S3 object-level logging account-wide) have real cost and log-volume implications — scoping data event capture to genuinely sensitive resources, rather than blanket-enabling everywhere, is both a cost and a practical-query-performance consideration.
-- CloudTrail Lake queries and Athena-over-S3 queries against very large historical event volumes benefit from the same query-scoping discipline (narrow time ranges, specific filters) discussed for CloudWatch Logs Insights (§70).
+- CloudTrail Lake queries and Athena-over-S3 queries against very large historical event volumes benefit from the same query-scoping discipline (narrow time ranges, specific filters) discussed for CloudWatch Logs Insights ([§70](./Section-70-Part8-CloudWatch-Logs.md)).
 
 ## 13. Monitoring
 
@@ -263,7 +263,7 @@ This is the exact investigative pattern CloudTrail exists for: starting from "wh
 
 ## 20. Related Concepts
 
-- **IAM** (the identity model CloudTrail events reference for every recorded action) → §9-11.
-- **CloudWatch Logs** (a common CloudTrail delivery destination for real-time querying/alarming) → §70.
+- **IAM** (the identity model CloudTrail events reference for every recorded action) → [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md).
+- **CloudWatch Logs** (a common CloudTrail delivery destination for real-time querying/alarming) → [§70](./Section-70-Part8-CloudWatch-Logs.md).
 - **S3** (CloudTrail's primary durable delivery destination) → Part 5.
-- **AWS Config** (a complementary service tracking resource _configuration state_ over time, distinct from CloudTrail's _activity_ focus) → next section, §74.
+- **AWS Config** (a complementary service tracking resource _configuration state_ over time, distinct from CloudTrail's _activity_ focus) → next section, [§74](./Section-74-Part8-AWS-Config.md).

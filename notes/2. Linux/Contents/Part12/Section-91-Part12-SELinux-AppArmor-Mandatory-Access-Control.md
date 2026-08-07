@@ -2,19 +2,19 @@
 
 ## 1. Overview: A New Layer Above the One You Already Know
 
-§89 named least privilege as this Part's load-bearing idea and previewed that mandatory access control extends it beyond §27's standard permission model. This section delivers on that preview. Everything here sits **above** the discretionary permission model built in Part 4 — it doesn't replace `rwx` permissions or `chmod`/`chown`, it adds a second, independent decision a process must clear before an action is permitted at all.
+[§89](./Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md) named least privilege as this Part's load-bearing idea and previewed that mandatory access control extends it beyond [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md)'s standard permission model. This section delivers on that preview. Everything here sits **above** the discretionary permission model built in Part 4 — it doesn't replace `rwx` permissions or `chmod`/`chown`, it adds a second, independent decision a process must clear before an action is permitted at all.
 
 ## 2. DAC vs. MAC: The Single Most Important Distinction in This Section
 
 Before naming either SELinux or AppArmor specifically, the distinction between the two access-control models they both implement has to be solid, because everything else in this section is really just "two different implementations of MAC" — the DAC/MAC line is the actual concept.
 
-**Discretionary Access Control (DAC)** is the model §27 already covers in full: standard Unix `rwx` permissions, where the **owner of a resource decides** who else can access it. If you own a file, you can `chmod 777` it and grant anyone access — the system has no opinion beyond enforcing whatever the owner decided. Even `root`, as the ultimate owner-equivalent, can generally read, write, or change permissions on anything. Access is discretionary because it's left to the discretion of whoever owns the resource.
+**Discretionary Access Control (DAC)** is the model [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md) already covers in full: standard Unix `rwx` permissions, where the **owner of a resource decides** who else can access it. If you own a file, you can `chmod 777` it and grant anyone access — the system has no opinion beyond enforcing whatever the owner decided. Even `root`, as the ultimate owner-equivalent, can generally read, write, or change permissions on anything. Access is discretionary because it's left to the discretion of whoever owns the resource.
 
 **Mandatory Access Control (MAC)** inverts that assumption entirely: a **system-wide security policy**, defined and loaded independently of any individual resource owner, decides what's permitted — and critically, **not even the resource owner, and not even `root`, can override that policy** without actually changing the policy itself. A process running as `root` on a MAC-enabled system can still be denied access to a file it technically owns, if the loaded policy doesn't grant that specific interaction. This is the property that makes MAC a genuinely different security layer rather than just "permissions, but stricter" — it removes discretion from the equation entirely and puts a centrally-administered policy in its place.
 
 > 💡 **Tip:** If you remember exactly one sentence from this section, make it this: DAC asks "does the owner of this resource permit this access?"; MAC asks "does the system-wide policy permit this access?" — and a MAC "no" wins even when the DAC answer would have been "yes," including for `root`. Nearly every confusing MAC troubleshooting scenario ("I'm root, permissions look fine, why is this still denied?") traces back to forgetting that second question exists.
 
-Concretely: a web server process might run as an unprivileged `www-data` account (a `sudo`/service-account instance of least privilege from §89) with `rwx` permissions on its content directory that look completely correct under DAC — yet still be denied from reading a specific file if the loaded MAC policy doesn't classify that file as something the web server's process type is permitted to touch. That denial is invisible to `ls -l`/`chmod` entirely; it only shows up in the MAC layer's own logs.
+Concretely: a web server process might run as an unprivileged `www-data` account (a `sudo`/service-account instance of least privilege from [§89](./Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)) with `rwx` permissions on its content directory that look completely correct under DAC — yet still be denied from reading a specific file if the loaded MAC policy doesn't classify that file as something the web server's process type is permitted to touch. That denial is invisible to `ls -l`/`chmod` entirely; it only shows up in the MAC layer's own logs.
 
 ## 3. SELinux: Label-Based Mandatory Access Control
 
@@ -65,7 +65,7 @@ setenforce 1   # switch back to enforcing
 
 ### 3.4 `audit2allow`: turning observed denials into policy
 
-When SELinux denies something, the denial is logged (typically to the audit log — full depth in §93). `audit2allow` reads those denial log entries and generates a custom policy module granting exactly the access that was denied:
+When SELinux denies something, the denial is logged (typically to the audit log — full depth in [§93](./Section-93-Part12-Auditing-Auditd-Ausearch-Aureport.md)). `audit2allow` reads those denial log entries and generates a custom policy module granting exactly the access that was denied:
 
 ```bash
 ausearch -m avc -ts recent | audit2allow -M mypolicy
@@ -121,7 +121,7 @@ aa-enforce /usr/sbin/nginx
 
 ## 7. Common Misconceptions
 
-1. **"SELinux/AppArmor are just extra permission systems, doing the same job as `chmod`."** They're a categorically different layer — DAC (§27, `chmod`) is owner-decided; MAC is policy-decided and overrides even the owner and `root`, as described above. Treating them as more of the same thing is the root cause of most "why is `root` still denied" confusion.
+1. **"SELinux/AppArmor are just extra permission systems, doing the same job as `chmod`."** They're a categorically different layer — DAC ([§27](../Part4/Section-27-Part4-Standard-Permission-Model.md), `chmod`) is owner-decided; MAC is policy-decided and overrides even the owner and `root`, as described above. Treating them as more of the same thing is the root cause of most "why is `root` still denied" confusion.
 2. **"Disabling SELinux/AppArmor is a reasonable quick fix when something's blocked."** This is the "just disable it" anti-pattern described above — it removes the entire subsystem's protection host-wide to resolve one specific, almost always narrowly-fixable denial.
 3. **"Permissive/complain mode means the MAC system is off."** It means denials are logged but not blocked — genuinely useful for policy development, as covered above, but it is not equivalent to disabling the subsystem, and it shouldn't be left in place indefinitely in production as if it were a lighter-weight "off."
 4. **"AppArmor is objectively worse than SELinux since it's less flexible."** It's a different trade-off, not a strictly worse one — AppArmor's path-based simplicity is a genuine advantage for teams that need MAC protection without the operational overhead of learning SELinux's full label/type model, as described above, and it's the appropriate default for the distribution families that ship it.
@@ -129,7 +129,7 @@ aa-enforce /usr/sbin/nginx
 ## 8. Tiered Interview Questions
 
 **🎯 Beginner:** _"What's the difference between DAC and MAC, in one sentence each?"_
-**Model answer:** DAC (standard Unix permissions, §27) lets the resource owner decide who can access it — `chmod`/`chown` are the owner exercising that discretion. MAC (SELinux/AppArmor) has a system-wide policy decide access instead, and that policy overrides even the resource owner and `root` — no amount of owner-level permission changes can grant an interaction the loaded MAC policy doesn't permit, as described above.
+**Model answer:** DAC (standard Unix permissions, [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md)) lets the resource owner decide who can access it — `chmod`/`chown` are the owner exercising that discretion. MAC (SELinux/AppArmor) has a system-wide policy decide access instead, and that policy overrides even the resource owner and `root` — no amount of owner-level permission changes can grant an interaction the loaded MAC policy doesn't permit, as described above.
 _What the interviewer is probing for:_ Clean articulation of the core distinction, especially the "overrides root" detail that trips up candidates who think of MAC as just another permission flag.
 
 **🎯 Intermediate:** _"A service running as root can still read files it 'shouldn't' be able to, under standard DAC — why might SELinux still deny it access to a specific file?"_
@@ -146,7 +146,7 @@ _What the interviewer is probing for:_ Recognizing that standardizing on outcome
 
 ## 9. Key Takeaways
 
-- DAC (§27, standard Unix permissions) is owner-decided; MAC is policy-decided and overrides even the resource owner and `root` — this is the single most important distinction in the section.
+- DAC ([§27](../Part4/Section-27-Part4-Standard-Permission-Model.md), standard Unix permissions) is owner-decided; MAC is policy-decided and overrides even the resource owner and `root` — this is the single most important distinction in the section.
 - SELinux (RHEL-family default) uses label-based type enforcement — a process's type must be explicitly permitted by policy to interact with a resource's type, independent of standard `rwx` permissions.
 - Permissive mode (SELinux) and complain mode (AppArmor) log denials without blocking them — genuinely useful for policy development, not a lesser "off" state.
 - `audit2allow` generates narrowly-scoped policy modules from observed denials — the correct remediation path, reviewed before installing, rather than a blanket policy loosening.
@@ -155,6 +155,6 @@ _What the interviewer is probing for:_ Recognizing that standardizing on outcome
 
 ## 10. Related Concepts & What's Next
 
-This section builds directly on §27's DAC/permission model (Part 4), which it explicitly contrasts against throughout, and extends §89's least-privilege framing into a genuinely mandatory, policy-enforced layer rather than a discretionary or convention-based one. Denials from either system are exactly the kind of security-relevant event §93's auditd coverage (later this Part) is built to capture and search systematically. §92, next, moves from process-level MAC policy down to kernel runtime parameters — a separate, complementary hardening layer operating below where SELinux/AppArmor make their decisions.
+This section builds directly on [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md)'s DAC/permission model (Part 4), which it explicitly contrasts against throughout, and extends [§89](./Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)'s least-privilege framing into a genuinely mandatory, policy-enforced layer rather than a discretionary or convention-based one. Denials from either system are exactly the kind of security-relevant event [§93](./Section-93-Part12-Auditing-Auditd-Ausearch-Aureport.md)'s auditd coverage (later this Part) is built to capture and search systematically. [§92](./Section-92-Part12-Kernel-Hardening-Sysctl-Security-Parameters.md), next, moves from process-level MAC policy down to kernel runtime parameters — a separate, complementary hardening layer operating below where SELinux/AppArmor make their decisions.
 
-**Next Section:** §92 — `Section-92-Part12-Kernel-Hardening-Sysctl-Security-Parameters.md`
+**Next Section:** [§92](./Section-92-Part12-Kernel-Hardening-Sysctl-Security-Parameters.md) — `Section-92-Part12-Kernel-Hardening-Sysctl-Security-Parameters.md`

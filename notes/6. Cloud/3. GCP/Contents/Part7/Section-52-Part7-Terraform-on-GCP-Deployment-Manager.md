@@ -65,9 +65,9 @@ A GCS backend provides:
 
 - **Remote, shared state** — every team member and CI pipeline reads/writes the same state, rather than each engineer holding a local, divergent copy.
 - **State locking** — GCS backend uses object generation preconditions to prevent two concurrent `apply` operations from corrupting state simultaneously.
-- **Versioning** — enabling object versioning (Section 11) on the state bucket lets a corrupted or bad state be rolled back to a prior version.
+- **Versioning** — enabling object versioning ([Section 11](../Part2/Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)) on the state bucket lets a corrupted or bad state be rolled back to a prior version.
 
-> ⚠️ **Interview-relevant nuance:** The state file contains resource attribute values in plaintext, which can include sensitive data (e.g., a generated database password set via a resource argument). State buckets should always have restrictive IAM, and sensitive values should ideally come from Secret Manager (Section 38) referenced at apply time rather than stored as literal Terraform variables.
+> ⚠️ **Interview-relevant nuance:** The state file contains resource attribute values in plaintext, which can include sensitive data (e.g., a generated database password set via a resource argument). State buckets should always have restrictive IAM, and sensitive values should ideally come from Secret Manager ([Section 38](../Part5/Section-38-Part5-Secret-Manager-Cloud-KMS.md)) referenced at apply time rather than stored as literal Terraform variables.
 
 ### 3.3 Modules and Workspaces
 
@@ -176,9 +176,9 @@ terraform import google_storage_bucket.demo my-toolkit-tf-demo-bucket
 
 ## 7. Production & Enterprise Usage
 
-- **CI/CD-driven apply, never local apply against prod:** Enterprises route all `terraform plan`/`apply` for shared environments through Cloud Build (Section 50) or another CI system, with `apply` gated behind PR approval, so no engineer's laptop ever runs `terraform apply` directly against production state.
+- **CI/CD-driven apply, never local apply against prod:** Enterprises route all `terraform plan`/`apply` for shared environments through Cloud Build ([Section 50](./Section-50-Part7-Cloud-Build-CICD.md)) or another CI system, with `apply` gated behind PR approval, so no engineer's laptop ever runs `terraform apply` directly against production state.
 - **State bucket hardening:** The GCS state bucket for production is typically its own tightly IAM-scoped bucket with versioning and, often, a retention policy, since it is one of the highest-value targets for both accidental deletion and credential exposure.
-- **Landing-zone modules:** Large organizations standardize on internal Terraform modules (often based on `terraform-google-modules`) for repeated patterns — project creation, Shared VPC attachment, standard IAM bindings — so every new project starts from an approved, consistent baseline (foreshadowing Part 9's landing zone content, Section 59).
+- **Landing-zone modules:** Large organizations standardize on internal Terraform modules (often based on `terraform-google-modules`) for repeated patterns — project creation, Shared VPC attachment, standard IAM bindings — so every new project starts from an approved, consistent baseline (foreshadowing Part 9's landing zone content, [Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)).
 - **Separate state per environment/blast-radius boundary:** Production, staging, and dev almost always use entirely separate state files (and often separate GCP projects) rather than Terraform workspaces sharing one state, so a mistake in one environment's plan cannot touch another's real resources.
 
 ## 8. Common Misconceptions
@@ -206,4 +206,4 @@ terraform import google_storage_bucket.demo my-toolkit-tf-demo-bucket
 
 ## 11. Related Concepts
 
-Cloud Build as the CI/CD execution layer for `plan`/`apply` (Section 50), Cloud Storage as the state backend (Section 11), IAM fundamentals for provider/service-account permissions (Section 35), landing zone architecture built from standardized modules (Section 59), and the GCP vs. AWS vs. Azure IaC comparison (Section 82) all connect directly to the IaC model introduced here.
+Cloud Build as the CI/CD execution layer for `plan`/`apply` ([Section 50](./Section-50-Part7-Cloud-Build-CICD.md)), Cloud Storage as the state backend ([Section 11](../Part2/Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)), IAM fundamentals for provider/service-account permissions ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), landing zone architecture built from standardized modules ([Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)), and the GCP vs. AWS vs. Azure IaC comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all connect directly to the IaC model introduced here.

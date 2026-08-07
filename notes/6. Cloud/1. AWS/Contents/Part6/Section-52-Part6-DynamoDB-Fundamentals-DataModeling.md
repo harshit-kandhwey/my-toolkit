@@ -140,6 +140,6 @@ Senior - Table has UserID as partition key for "get all orders for a user," now 
 
 ## Related Concepts (forward links)
 
-- DynamoDB secondary indexes, streams, and advanced capacity/performance tuning -> §53
-- ElastiCache as a caching layer sometimes paired with DynamoDB -> §54
-- Choosing between RDS/Aurora and DynamoDB for a given workload -> §57
+- DynamoDB secondary indexes, streams, and advanced capacity/performance tuning -> [§53](./Section-53-Part6-DynamoDB-Advanced.md)
+- ElastiCache as a caching layer sometimes paired with DynamoDB -> [§54](./Section-54-Part6-ElastiCache-Redis-Memcached.md)
+- Choosing between RDS/Aurora and DynamoDB for a given workload -> [§57](./Section-57-Part6-DMS-Choosing-Right-Database.md)

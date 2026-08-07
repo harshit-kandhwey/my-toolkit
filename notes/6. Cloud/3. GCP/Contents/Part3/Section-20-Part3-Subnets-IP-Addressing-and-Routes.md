@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** If the VPC network (Section 19) is the global container, subnets are the actual regional "neighborhoods" where IP addresses are handed out to VMs and other resources. Routes are the signposts that tell traffic where to go next, whether that destination is another subnet, the internet, or a private connection back to an on-premises network.
+**Plain language:** If the VPC network ([Section 19](./Section-19-Part3-VPC-Fundamentals.md)) is the global container, subnets are the actual regional "neighborhoods" where IP addresses are handed out to VMs and other resources. Routes are the signposts that tell traffic where to go next, whether that destination is another subnet, the internet, or a private connection back to an on-premises network.
 
 **Precise:** A **subnet** (subnetwork) is a **regional** resource within a VPC network that defines a range of private IPv4 (and optionally IPv6) addresses available for allocation to resources created in that region. A **route** is a VPC-network-scoped rule mapping a destination IP range to a next hop, used by every resource in the network to determine where to forward packets.
 
 ## 2. Why It Exists / Problem It Solves
 
-A global VPC (Section 19) needs some mechanism to actually carve out usable, non-overlapping IP address blocks per region — that's the subnet's job. Without regional subnets, there would be no way to control which IP ranges are consumed in which physical location, which matters both for capacity planning (not running out of addresses) and for connecting to other networks (on-premises VPNs, peered VPCs) without CIDR collisions.
+A global VPC ([Section 19](./Section-19-Part3-VPC-Fundamentals.md)) needs some mechanism to actually carve out usable, non-overlapping IP address blocks per region — that's the subnet's job. Without regional subnets, there would be no way to control which IP ranges are consumed in which physical location, which matters both for capacity planning (not running out of addresses) and for connecting to other networks (on-premises VPNs, peered VPCs) without CIDR collisions.
 
 Routes exist because a network is useless without a way to decide, for any given destination address, which direction to send a packet. GCP auto-generates the routes needed for basic connectivity (so a new VPC works out of the box for internal and internet-bound traffic) but also lets you define custom routes for advanced scenarios like traffic inspection appliances or Interconnect connectivity.
 
@@ -27,7 +27,7 @@ Every subnet has one **primary IP range**, the default CIDR block from which pri
 
 ### 3.3 Secondary (Alias) IP Ranges
 
-A subnet can additionally have one or more **secondary IP ranges**, used for **alias IP ranges** — additional IP addresses (or entire small CIDR blocks) assigned to a VM's network interface beyond its single primary IP. The most important production use case is **GKE**: a GKE cluster running in VPC-native mode (the default and recommended mode) uses two secondary ranges on the subnet — one for Pod IPs and one for Service (ClusterIP) IPs — so that Pods and Services get real, routable IP addresses within the VPC rather than requiring an overlay network (detailed in Section 31).
+A subnet can additionally have one or more **secondary IP ranges**, used for **alias IP ranges** — additional IP addresses (or entire small CIDR blocks) assigned to a VM's network interface beyond its single primary IP. The most important production use case is **GKE**: a GKE cluster running in VPC-native mode (the default and recommended mode) uses two secondary ranges on the subnet — one for Pod IPs and one for Service (ClusterIP) IPs — so that Pods and Services get real, routable IP addresses within the VPC rather than requiring an overlay network (detailed in [Section 31](../Part4/Section-31-Part4-GKE-Networking-and-Storage.md)).
 
 | Range type                 | Purpose                           | Typical example |
 | -------------------------- | --------------------------------- | --------------- |
@@ -39,7 +39,7 @@ A subnet can additionally have one or more **secondary IP ranges**, used for **a
 
 Every VPC network automatically has **system-generated routes**:
 
-- A **default route** (`0.0.0.0/0`) pointing at the "default internet gateway" next hop, giving instances with external IPs (and NAT-configured instances, Section 24) a path to the internet.
+- A **default route** (`0.0.0.0/0`) pointing at the "default internet gateway" next hop, giving instances with external IPs (and NAT-configured instances, [Section 24](./Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)) a path to the internet.
 - A **subnet route** for each subnet's primary and secondary ranges, automatically created when the subnet is created, enabling communication within and across subnets in the same VPC.
 
 **Custom (static) routes** are explicitly created for scenarios the system-generated routes don't cover, with a next hop of: a VM instance (e.g., a NAT/proxy appliance), an internal load balancer, a VPN tunnel, an Interconnect attachment (VLAN attachment), or Cloud Router's dynamically learned BGP routes.
@@ -119,7 +119,7 @@ _Purpose:_ Confirms a custom route (`inspect-all-egress`, priority 100) override
 **Model answer:** GCP picks the route with the lowest priority number first (default is 1000; lower numbers win). If multiple matching routes share the same priority, GCP prefers the most specific destination range (longest prefix match), and if that still ties, a deterministic hash-based selection applies.
 
 **🎯 Senior/Architect:** _Design a centralized egress-inspection pattern for an enterprise with dozens of service projects attached to a Shared VPC, where all internet-bound traffic must pass through a firewall appliance fleet._
-**Model answer:** I'd create a custom static route in the Shared VPC host project with destination `0.0.0.0/0` and a priority number lower than the default internet route (e.g., 100 vs. 1000), with a next hop pointing to an internal regional load balancer in front of an auto-scaled managed instance group running the firewall appliance. Because routes apply network-wide by default in a VPC, every attached service project's VMs would automatically have their default egress path redirected through the appliance without per-project route configuration, provided the route isn't scoped away by instance tags. I'd size the appliance fleet's internal load balancer and MIG for peak egress bandwidth, and pair this with VPC Flow Logs / Firewall Insights (Section 27) to validate no traffic is bypassing inspection.
+**Model answer:** I'd create a custom static route in the Shared VPC host project with destination `0.0.0.0/0` and a priority number lower than the default internet route (e.g., 100 vs. 1000), with a next hop pointing to an internal regional load balancer in front of an auto-scaled managed instance group running the firewall appliance. Because routes apply network-wide by default in a VPC, every attached service project's VMs would automatically have their default egress path redirected through the appliance without per-project route configuration, provided the route isn't scoped away by instance tags. I'd size the appliance fleet's internal load balancer and MIG for peak egress bandwidth, and pair this with VPC Flow Logs / Firewall Insights ([Section 27](./Section-27-Part3-Network-Intelligence-Center-Traffic-Director.md)) to validate no traffic is bypassing inspection.
 
 ## 9. Key Takeaways
 
@@ -130,4 +130,4 @@ _Purpose:_ Confirms a custom route (`inspect-all-egress`, priority 100) override
 
 ## 10. Related Concepts
 
-VPC fundamentals and global scope (Section 19), firewall rules that further restrict what these routes actually permit (Section 21), Cloud NAT and Cloud Router's dynamic route injection (Section 24), and GKE's VPC-native networking model (Section 31) all build directly on the subnet and routing concepts here.
+VPC fundamentals and global scope ([Section 19](./Section-19-Part3-VPC-Fundamentals.md)), firewall rules that further restrict what these routes actually permit ([Section 21](./Section-21-Part3-Firewall-Rules.md)), Cloud NAT and Cloud Router's dynamic route injection ([Section 24](./Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)), and GKE's VPC-native networking model ([Section 31](../Part4/Section-31-Part4-GKE-Networking-and-Storage.md)) all build directly on the subnet and routing concepts here.

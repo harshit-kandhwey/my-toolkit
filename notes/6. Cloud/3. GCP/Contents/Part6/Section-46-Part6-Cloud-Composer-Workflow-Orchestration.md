@@ -115,7 +115,7 @@ Done.
 ## 7. Production & Enterprise Usage
 
 - **Cross-service pipeline coordination:** The most common enterprise pattern is a Composer DAG that submits a Dataproc or Dataflow job, waits for completion, loads results into BigQuery, triggers a Looker Studio/Looker dashboard refresh, and sends a Slack/email alert on failure — tying together every service covered in Sections 44, 45, and 48 into one observable, auditable pipeline.
-- **Environment segregation:** Enterprises typically run separate dev/staging/production Composer environments, promoting DAG code through the same CI/CD pipeline used for application code (Section 50), rather than editing DAGs directly in a production environment.
+- **Environment segregation:** Enterprises typically run separate dev/staging/production Composer environments, promoting DAG code through the same CI/CD pipeline used for application code ([Section 50](../Part7/Section-50-Part7-Cloud-Build-CICD.md)), rather than editing DAGs directly in a production environment.
 - **SLA monitoring:** Airflow supports per-task and per-DAG SLA definitions, alerting when a task or DAG run exceeds an expected duration — used in production to catch silently degrading pipelines (e.g., a job that used to take 20 minutes now taking 3 hours) before they become full outages.
 
 ## 8. Common Misconceptions
@@ -143,4 +143,4 @@ Done.
 
 ## 11. Related Concepts
 
-Dataflow and Dataproc as the most commonly orchestrated job types (Section 45), BigQuery as a common pipeline destination (Section 44), Dataplex for cataloging orchestrated pipeline outputs (Section 47), and Cloud Build/CI-CD for promoting DAG code through dev/staging/production (Section 50).
+Dataflow and Dataproc as the most commonly orchestrated job types ([Section 45](./Section-45-Part6-Dataflow-Dataproc-PubSub.md)), BigQuery as a common pipeline destination ([Section 44](./Section-44-Part6-BigQuery-Deep-Dive.md)), Dataplex for cataloging orchestrated pipeline outputs ([Section 47](./Section-47-Part6-Dataplex-Data-Governance-Catalog.md)), and Cloud Build/CI-CD for promoting DAG code through dev/staging/production ([Section 50](../Part7/Section-50-Part7-Cloud-Build-CICD.md)).

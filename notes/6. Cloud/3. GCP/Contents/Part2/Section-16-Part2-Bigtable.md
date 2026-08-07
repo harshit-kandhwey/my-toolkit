@@ -128,4 +128,4 @@ gcloud bigtable clusters update sensor-cluster-1 --instance=sensor-data-instance
 
 ## 11. Related Concepts
 
-Firestore for client-facing, general-purpose document workloads (Section 15), Cloud Spanner for relational needs at scale (Section 14), Dataflow/Dataproc pipelines commonly writing into Bigtable for analytics ingestion (Section 45), the storage/database decision matrix (Section 18), and the AWS DynamoDB/Azure Cosmos DB comparison here and in Section 82.
+Firestore for client-facing, general-purpose document workloads ([Section 15](./Section-15-Part2-Firestore-Datastore.md)), Cloud Spanner for relational needs at scale ([Section 14](./Section-14-Part2-Cloud-Spanner.md)), Dataflow/Dataproc pipelines commonly writing into Bigtable for analytics ingestion ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)), the storage/database decision matrix ([Section 18](./Section-18-Part2-Storage-DB-Decision-Matrix.md)), and the AWS DynamoDB/Azure Cosmos DB comparison here and in [Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md).

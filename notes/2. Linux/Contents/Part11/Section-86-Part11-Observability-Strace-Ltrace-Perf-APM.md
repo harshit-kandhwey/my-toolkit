@@ -2,15 +2,15 @@
 
 ## 1. Overview: Metrics, Logs, and Traces — This Section Covers Two of Three
 
-Observability is commonly framed around three pillars: **metrics** (numeric time-series measurements — the CPU/memory/disk/network figures §81–§84 pulled from `top`, `vmstat`, `iostat`, `sar`, and friends), **logs** (event records — §85's rsyslog/journald territory, just covered), and **traces** (the path a single request or operation takes through a system, including how long each step took). §81–§85 have already covered metrics and logs in depth; this section covers OS-level **tracing tooling** — `strace`, `ltrace`, `perf` — and closes with where **APM** sits relative to everything the OS itself can observe.
+Observability is commonly framed around three pillars: **metrics** (numeric time-series measurements — the CPU/memory/disk/network figures [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md) pulled from `top`, `vmstat`, `iostat`, `sar`, and friends), **logs** (event records — [§85](./Section-85-Part11-Logging-Deep-Dive-Rsyslog-Log-Rotation.md)'s rsyslog/journald territory, just covered), and **traces** (the path a single request or operation takes through a system, including how long each step took). [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§85](./Section-85-Part11-Logging-Deep-Dive-Rsyslog-Log-Rotation.md) have already covered metrics and logs in depth; this section covers OS-level **tracing tooling** — `strace`, `ltrace`, `perf` — and closes with where **APM** sits relative to everything the OS itself can observe.
 
 The throughline across `strace`, `ltrace`, and `perf` is a shift from "what happened" (logs) or "how loaded is the system" (metrics) to **"what is this specific process actually doing, right now, at the syscall or instruction level"** — a fundamentally different and much finer-grained question, reached for when the coarser tools already covered in this Part don't explain a hang, a crash, or an unexplained CPU/latency profile.
 
-> 💡 **Tip:** Reach for these tools in the order the question demands, not habitually starting with the heaviest one. "Is the system under CPU/memory/disk/network pressure" is §81–§84's job. "What is this one process doing at the syscall level" is `strace`'s job. "Which function is burning CPU cycles" is `perf`'s job. Jumping straight to `strace` or `perf` on a problem that a `top`/`vmstat` glance would have explained is wasted effort in exactly the way §87's methodology warns against.
+> 💡 **Tip:** Reach for these tools in the order the question demands, not habitually starting with the heaviest one. "Is the system under CPU/memory/disk/network pressure" is [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md)'s job. "What is this one process doing at the syscall level" is `strace`'s job. "Which function is burning CPU cycles" is `perf`'s job. Jumping straight to `strace` or `perf` on a problem that a `top`/`vmstat` glance would have explained is wasted effort in exactly the way [§87](./Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md)'s methodology warns against.
 
 ## 2. `strace`: Syscall-Level Tracing
 
-**Purpose:** `strace` intercepts and prints every system call a process makes — the kernel-boundary crossings §11 (Part 2, system calls) introduced conceptually — along with its arguments and return value, in real time. It is the single most direct way to answer "what is this program actually doing" when normal debugging (logs, error messages, application-level tools) doesn't explain a hang, a crash, or unexpected behavior.
+**Purpose:** `strace` intercepts and prints every system call a process makes — the kernel-boundary crossings [§11](../Part2/Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md) (Part 2, system calls) introduced conceptually — along with its arguments and return value, in real time. It is the single most direct way to answer "what is this program actually doing" when normal debugging (logs, error messages, application-level tools) doesn't explain a hang, a crash, or unexpected behavior.
 
 **Syntax and key flags:**
 
@@ -53,8 +53,8 @@ The first example is the archetypal "process is stuck, why" investigation: attac
 
 **Common errors:**
 
-- Running `strace` unfiltered on a busy or high-throughput process and getting an unreadable firehose — reach for `-e trace=` or `-c` first, the same "don't start with the raw firehose" discipline §68 emphasized for `journalctl`.
-- Attaching to a process the invoking user doesn't own (or without sufficient privilege/ptrace permissions) and getting an `EPERM` — `strace -p` generally needs root or the same UID as the target, and some hardened environments restrict `ptrace` further via `kernel.yama.ptrace_scope` (§89, Part 12 covers kernel security parameters).
+- Running `strace` unfiltered on a busy or high-throughput process and getting an unreadable firehose — reach for `-e trace=` or `-c` first, the same "don't start with the raw firehose" discipline [§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md) emphasized for `journalctl`.
+- Attaching to a process the invoking user doesn't own (or without sufficient privilege/ptrace permissions) and getting an `EPERM` — `strace -p` generally needs root or the same UID as the target, and some hardened environments restrict `ptrace` further via `kernel.yama.ptrace_scope` ([§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md) covers kernel security parameters).
 
 **Troubleshooting:** If attaching briefly pauses or visibly slows the target process, that's expected, not a bug in `strace` — see the overhead caveat below.
 
@@ -99,7 +99,7 @@ $ perf record -p 4821 -- sleep 30
 $ perf report
 ```
 
-`perf report`'s output is typically a ranked list of functions by percentage of samples landed in them, often with the ability to drill into a call graph showing what called what — the tool for answering "this service is pegging a CPU core, which function in it is actually responsible" in a way that `top`'s process-level percentage (§81, prior this Part) can't, since `top` only tells you _which process_, not _which line of code inside it_.
+`perf report`'s output is typically a ranked list of functions by percentage of samples landed in them, often with the ability to drill into a call graph showing what called what — the tool for answering "this service is pegging a CPU core, which function in it is actually responsible" in a way that `top`'s process-level percentage ([§81](./Section-81-Part11-CPU-Load-Analysis.md), prior this Part) can't, since `top` only tells you _which process_, not _which line of code inside it_.
 
 **Positioning `perf` against `strace`:** these are not competing tools for the same job — a process can be spending 100% of a CPU core in pure computation with essentially no syscalls at all (a tight numeric loop, for instance), in which case `strace` would show almost nothing interesting while `perf top`/`perf record` would immediately identify the hot function. Conversely, a process that's mostly idle, blocked waiting on I/O, shows little of interest to `perf`'s CPU-cycle sampling but everything of interest to `strace`. Choosing between them is choosing which question the symptom actually points toward — CPU-bound compute versus syscall/I/O-bound waiting.
 
@@ -113,7 +113,7 @@ The practical distinction worth internalizing: OS-level tools in this section ca
 
 ## 6. Hands-On: Diagnosing an Unresponsive Process With strace and perf Together
 
-**Purpose:** Walk through the practical sequence of reaching for `strace` and `perf` in combination when a process is reported "hung" and neither the application's own logs nor §81's process-level tools (`top`, `ps`) explain why — a realistic composite of the guidance in 2 and 4.
+**Purpose:** Walk through the practical sequence of reaching for `strace` and `perf` in combination when a process is reported "hung" and neither the application's own logs nor [§81](./Section-81-Part11-CPU-Load-Analysis.md)'s process-level tools (`top`, `ps`) explain why — a realistic composite of the guidance in 2 and 4.
 
 ```bash
 # Step 1: confirm which state the process is actually in (§33/§34, Part 5)
@@ -137,7 +137,7 @@ perf report
 
 **Common errors:** Reaching for `perf` first on a process that's actually blocked on I/O — `perf top` on an idle-waiting process shows almost nothing useful, since there's no CPU activity to sample, which can waste time before falling back to `strace`.
 
-**Troubleshooting:** If `strace -p` reports permission denied, confirm the invoking user matches the target process's owner (or use `sudo`), and check `kernel.yama.ptrace_scope` (§89, Part 12) if attaching is unexpectedly restricted even with adequate privilege.
+**Troubleshooting:** If `strace -p` reports permission denied, confirm the invoking user matches the target process's owner (or use `sudo`), and check `kernel.yama.ptrace_scope` ([§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)) if attaching is unexpectedly restricted even with adequate privilege.
 
 ## 7. Common Misconceptions
 
@@ -166,7 +166,7 @@ _What the interviewer is probing for:_ Clear layered thinking about observabilit
 
 ## 9. Key Takeaways
 
-- The three observability pillars are metrics (§81–§84), logs (§85), and traces — this section covers OS-level tracing tooling, the practical instrument for the traces pillar at the host/process level.
+- The three observability pillars are metrics ([§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md)), logs ([§85](./Section-85-Part11-Logging-Deep-Dive-Rsyslog-Log-Rotation.md)), and traces — this section covers OS-level tracing tooling, the practical instrument for the traces pillar at the host/process level.
 - `strace` traces kernel syscalls a process makes (`-p` to attach, `-c` for a summary, `-e trace=` to filter) — the ultimate "what is this program actually doing" tool, but with real overhead that makes it unsuitable for continuous production use (2).
 - `ltrace` traces shared-library calls rather than syscalls — a less commonly needed, less consistently maintained cousin of `strace`, worth knowing exists rather than relying on routinely (3).
 - `perf` profiles CPU usage via hardware performance counters (`perf top` live, `perf record`/`perf report` for captured analysis) — the tool for "which function is burning CPU" as distinct from `strace`'s "which syscalls is this making" (4).
@@ -174,6 +174,6 @@ _What the interviewer is probing for:_ Clear layered thinking about observabilit
 
 ## 10. Related Concepts & What's Next
 
-This section builds on §33/§34's process fundamentals (Part 5) — `strace` reveals what a process is actually doing at the syscall level, a natural extension of understanding process states and the fork/exec lifecycle — and follows §85's logging depth as the metrics/tracing half of this Part's observability coverage. §87 (next) turns from individual tools to a structured troubleshooting methodology — the USE method and related discipline for organizing exactly the tools §81–§86 introduced into a coherent investigation process, rather than reaching for them ad hoc.
+This section builds on [§33](../Part5/Section-33-Part5-What-A-Process-Is.md)/[§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s process fundamentals (Part 5) — `strace` reveals what a process is actually doing at the syscall level, a natural extension of understanding process states and the fork/exec lifecycle — and follows [§85](./Section-85-Part11-Logging-Deep-Dive-Rsyslog-Log-Rotation.md)'s logging depth as the metrics/tracing half of this Part's observability coverage. [§87](./Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md) (next) turns from individual tools to a structured troubleshooting methodology — the USE method and related discipline for organizing exactly the tools [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§86](./Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md) introduced into a coherent investigation process, rather than reaching for them ad hoc.
 
-**Next Section:** §87 — `Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md`
+**Next Section:** [§87](./Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md) — `Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md`

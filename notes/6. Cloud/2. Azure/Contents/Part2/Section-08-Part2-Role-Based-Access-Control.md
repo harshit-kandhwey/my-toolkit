@@ -14,7 +14,7 @@ Without RBAC, the only alternatives would be granting either full access to ever
 
 ### 3.1 Security Principal (Who)
 
-A security principal is any entity that can be assigned a role: a **User** (Section 6.3.2), a **Group** (Section 6.3.3, the recommended target for most role assignments), a **Service Principal** (representing an application, Section 9), or a **Managed Identity** (a special, more secure type of service principal, Section 9).
+A security principal is any entity that can be assigned a role: a **User** ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.2), a **Group** ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.3, the recommended target for most role assignments), a **Service Principal** (representing an application, [Section 9](./Section-09-Part2-Managed-Identities-and-Service-Principals.md)), or a **Managed Identity** (a special, more secure type of service principal, [Section 9](./Section-09-Part2-Managed-Identities-and-Service-Principals.md)).
 
 ### 3.2 Role Definition (What)
 
@@ -53,7 +53,7 @@ A role definition is a named collection of permitted (and optionally, explicitly
 
 ### 3.3 Scope (Where)
 
-Scope is the boundary at which a role assignment applies, following the ARM hierarchy introduced in Section 4.3: Management Group → Subscription → Resource Group → Resource. A role assigned at a higher scope is inherited by everything beneath it (Section 4.4) — assigning "Contributor" at a subscription applies it to every resource group and resource within that subscription, unless a more specific consideration overrides it (Azure RBAC does not support true "deny at a lower level" the way some other systems do; the closest tool for genuinely blocking specific actions regardless of role is an explicit **Deny Assignment**, a more advanced and less commonly used mechanism).
+Scope is the boundary at which a role assignment applies, following the ARM hierarchy introduced in [Section 4](../Part1/Section-04-Part1-Azure-Resource-Manager.md).3: Management Group → Subscription → Resource Group → Resource. A role assigned at a higher scope is inherited by everything beneath it ([Section 4](../Part1/Section-04-Part1-Azure-Resource-Manager.md).4) — assigning "Contributor" at a subscription applies it to every resource group and resource within that subscription, unless a more specific consideration overrides it (Azure RBAC does not support true "deny at a lower level" the way some other systems do; the closest tool for genuinely blocking specific actions regardless of role is an explicit **Deny Assignment**, a more advanced and less commonly used mechanism).
 
 ## 4. Architecture Diagram — Role Assignment Evaluation
 
@@ -81,7 +81,7 @@ az role assignment create \
   --scope "/subscriptions/<sub-id>/resourceGroups/rg-myapp-prod"
 ```
 
-- **Purpose:** Grants the `sg-devops-engineers` group Contributor access, scoped only to the `rg-myapp-prod` resource group — following the best practice of assigning to a group (Section 6.3.3) at the narrowest scope that satisfies the actual need.
+- **Purpose:** Grants the `sg-devops-engineers` group Contributor access, scoped only to the `rg-myapp-prod` resource group — following the best practice of assigning to a group ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.3) at the narrowest scope that satisfies the actual need.
 - **Important arguments explained individually:**
   - `--assignee` — the security principal receiving the role; can be a user, group, or service principal, referenced by object ID, UPN, or (for some resources) display name.
   - `--role` — the role definition name, either built-in (like `Contributor`) or a custom role's name.
@@ -119,7 +119,7 @@ RBAC evaluation happens on every ARM API call and is designed to be low-latency,
 | Role assignment command fails with `PrincipalNotFound`              | Stale/incorrect object ID, often from a deleted-and-recreated identity                                                             | Re-fetch the current object ID via `az ad user show` / `az ad group show` before reattempting |
 | A user has more access than expected                                | An inherited role assignment from a higher scope (Management Group/Subscription) not visible when only checking the resource group | Check role assignments at every level of the hierarchy, not just the immediate scope          |
 
-## 10. Interview Questions — Section 8
+## 10. Interview Questions — [Section 8](./Section-08-Part2-Role-Based-Access-Control.md)
 
 ### 🎯 Beginner
 
@@ -152,4 +152,4 @@ _What the interviewer is probing:_ whether the candidate can design a scalable, 
 
 ## 13. Related Concepts (Next Up)
 
-Section 9 covers **Managed Identities and Service Principals** — the non-human security principals referenced throughout this section (Section 8.3.1) as valid RBAC assignment targets, explaining exactly how applications and automation (rather than people) authenticate and receive authorization without ever handling a stored password or secret.
+[Section 9](./Section-09-Part2-Managed-Identities-and-Service-Principals.md) covers **Managed Identities and Service Principals** — the non-human security principals referenced throughout this section ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md).3.1) as valid RBAC assignment targets, explaining exactly how applications and automation (rather than people) authenticate and receive authorization without ever handling a stored password or secret.

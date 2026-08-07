@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Object storage (Section 11) is not suitable for workloads needing a real filesystem with low-latency random reads/writes, POSIX semantics, or the ability to serve as a VM's boot disk. Persistent Disks solve this for single-VM (or narrowly shared) block-level access — databases, boot volumes, application data directories. Filestore solves the separate problem of **multiple compute nodes needing simultaneous, consistent, low-latency access to the same file tree** — a need block storage cannot meet, since a Persistent Disk is fundamentally designed around a small number of attaching VMs, not broad concurrent multi-writer access patterns.
+Object storage ([Section 11](./Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)) is not suitable for workloads needing a real filesystem with low-latency random reads/writes, POSIX semantics, or the ability to serve as a VM's boot disk. Persistent Disks solve this for single-VM (or narrowly shared) block-level access — databases, boot volumes, application data directories. Filestore solves the separate problem of **multiple compute nodes needing simultaneous, consistent, low-latency access to the same file tree** — a need block storage cannot meet, since a Persistent Disk is fundamentally designed around a small number of attaching VMs, not broad concurrent multi-writer access patterns.
 
 ## 3. Core Concepts
 
@@ -120,8 +120,8 @@ Created instance [shared-nfs].
 
 - **Database VMs:** Self-managed databases on Compute Engine typically use pd-ssd or pd-extreme for the data directory and a separate smaller pd-balanced boot disk, following the principle of separating OS and data lifecycles.
 - **Render farms / HPC / ML training:** Filestore's Zonal (High Scale SSD) tier is commonly used where hundreds of worker VMs need simultaneous, high-throughput access to the same shared dataset or scratch space.
-- **DR via snapshots:** Automated snapshot schedules combined with cross-region snapshot copies underpin many Compute Engine disaster recovery designs (Section 58), letting a disk be reconstructed in a secondary region within minutes.
-- **GKE persistent volumes:** Both Persistent Disks (via the Compute Engine persistent disk CSI driver) and Filestore (via the Filestore CSI driver) back PersistentVolumeClaims in GKE, covered in Section 31.
+- **DR via snapshots:** Automated snapshot schedules combined with cross-region snapshot copies underpin many Compute Engine disaster recovery designs ([Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), letting a disk be reconstructed in a secondary region within minutes.
+- **GKE persistent volumes:** Both Persistent Disks (via the Compute Engine persistent disk CSI driver) and Filestore (via the Filestore CSI driver) back PersistentVolumeClaims in GKE, covered in [Section 31](../Part4/Section-31-Part4-GKE-Networking-and-Storage.md).
 
 ## 8. Common Misconceptions
 
@@ -148,4 +148,4 @@ Created instance [shared-nfs].
 
 ## 11. Related Concepts
 
-Cloud Storage for object data (Section 11), Compute Engine (Section 5), GKE persistent storage via CSI drivers (Section 31), disaster recovery and multi-region architecture (Section 58), and the AWS/Azure storage comparison (Section 82) all connect directly to the block/file storage concepts here.
+Cloud Storage for object data ([Section 11](./Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)), Compute Engine ([Section 5](../Part1/Section-05-Part1-Compute-Engine-Deep-Dive.md)), GKE persistent storage via CSI drivers ([Section 31](../Part4/Section-31-Part4-GKE-Networking-and-Storage.md)), disaster recovery and multi-region architecture ([Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), and the AWS/Azure storage comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all connect directly to the block/file storage concepts here.

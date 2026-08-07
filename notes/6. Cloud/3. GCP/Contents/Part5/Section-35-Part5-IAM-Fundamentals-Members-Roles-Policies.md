@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists
 
-Without a centralized access model, every service would need to invent its own permission system, and administrators would have no consistent way to answer "does this person have access to this resource, and why?" IAM exists to provide one uniform mechanism — principals, roles, bindings — that every GCP service plugs into, so access can be reasoned about, audited, and governed consistently across VMs, storage, databases, and everything else, and so that access can be granted once at a high level in the resource hierarchy (Section 3) and inherited automatically rather than configured per-resource.
+Without a centralized access model, every service would need to invent its own permission system, and administrators would have no consistent way to answer "does this person have access to this resource, and why?" IAM exists to provide one uniform mechanism — principals, roles, bindings — that every GCP service plugs into, so access can be reasoned about, audited, and governed consistently across VMs, storage, databases, and everything else, and so that access can be granted once at a high level in the resource hierarchy ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md)) and inherited automatically rather than configured per-resource.
 
 ## 3. Core Concepts
 
@@ -17,10 +17,10 @@ Without a centralized access model, every service would need to invent its own p
 A **principal** is "who" — the identity being granted access. GCP principal types:
 
 - **Google Account** — an individual human user (`user:alice@example.com`).
-- **Service account** — a non-human identity used by workloads/applications (`serviceAccount:app@project.iam.gserviceaccount.com`; covered fully in Section 36).
+- **Service account** — a non-human identity used by workloads/applications (`serviceAccount:app@project.iam.gserviceaccount.com`; covered fully in [Section 36](./Section-36-Part5-Service-Accounts.md)).
 - **Google Group** — a collection of users/service accounts managed as one unit (`group:team-x@example.com`); the standard way to grant access to a team without binding individuals directly.
 - **Google Workspace domain / Cloud Identity domain** — every user in an entire domain (`domain:example.com`); broad and rarely used for fine-grained access.
-- **All authenticated users / allUsers** — the special, extremely broad principals meaning "anyone with a Google account" or "literally anyone on the internet," respectively. `allUsers` bindings on storage or APIs are a top security misconfiguration and are flagged by Security Command Center (Section 39).
+- **All authenticated users / allUsers** — the special, extremely broad principals meaning "anyone with a Google account" or "literally anyone on the internet," respectively. `allUsers` bindings on storage or APIs are a top security misconfiguration and are flagged by Security Command Center ([Section 39](./Section-39-Part5-Security-Command-Center.md)).
 
 ### 3.2 Roles
 
@@ -63,11 +63,11 @@ An **IAM policy** is a JSON/YAML document attached to a resource, consisting of 
 
 ### 3.5 Policy Inheritance
 
-As introduced in Section 3, IAM bindings set at the Organization or Folder level are inherited by every Project and resource beneath them, and this inheritance is strictly additive — a lower-level policy can grant additional access but can never revoke an inherited grant. The effective policy on any resource is always the union of its own bindings plus every ancestor's bindings, evaluated top-down through Organization → Folder → Project → Resource.
+As introduced in [Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md), IAM bindings set at the Organization or Folder level are inherited by every Project and resource beneath them, and this inheritance is strictly additive — a lower-level policy can grant additional access but can never revoke an inherited grant. The effective policy on any resource is always the union of its own bindings plus every ancestor's bindings, evaluated top-down through Organization → Folder → Project → Resource.
 
 ### 3.6 IAM Deny Policies
 
-Since inherited grants cannot be revoked, GCP separately offers **IAM Deny policies** — explicit deny rules that block specified permissions for specified principals regardless of any Allow binding, evaluated before Allow policies. This is the mechanism to use when a hard "never allow this, no matter what role someone is later granted" rule is needed (e.g., denying `iam.serviceAccountKeys.create` org-wide), complementing Organization Policies (Section 37), which restrict actions rather than principals.
+Since inherited grants cannot be revoked, GCP separately offers **IAM Deny policies** — explicit deny rules that block specified permissions for specified principals regardless of any Allow binding, evaluated before Allow policies. This is the mechanism to use when a hard "never allow this, no matter what role someone is later granted" rule is needed (e.g., denying `iam.serviceAccountKeys.create` org-wide), complementing Organization Policies ([Section 37](./Section-37-Part5-Organization-Policies.md)), which restrict actions rather than principals.
 
 ## 4. Architecture Diagram
 
@@ -135,8 +135,8 @@ gcloud projects get-iam-policy my-project-id --format=json
 
 ## 7. Production & Enterprise Usage
 
-- **Group-based bindings, never individual users.** Enterprises bind roles to Google Groups synced from an external identity provider (via Cloud Identity, Section 42), and manage membership in the group source of truth — this avoids IAM policy churn every time an employee joins, leaves, or changes teams.
-- **Custom roles for least privilege at scale.** Large organizations maintain a curated library of custom roles trimmed from overly broad predefined roles (e.g., a "Compute Viewer minus serial-port access" role), version-controlled and deployed via Terraform (Section 52).
+- **Group-based bindings, never individual users.** Enterprises bind roles to Google Groups synced from an external identity provider (via Cloud Identity, [Section 42](./Section-42-Part5-Cloud-Identity-BeyondCorp.md)), and manage membership in the group source of truth — this avoids IAM policy churn every time an employee joins, leaves, or changes teams.
+- **Custom roles for least privilege at scale.** Large organizations maintain a curated library of custom roles trimmed from overly broad predefined roles (e.g., a "Compute Viewer minus serial-port access" role), version-controlled and deployed via Terraform ([Section 52](../Part7/Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)).
 - **Periodic access review via Policy Analyzer and Recommender.** IAM Recommender automatically flags over-provisioned bindings (e.g., a principal with `roles/editor` who only ever used `storage.objectViewer` permissions in the last 90 days) for security teams to review and tighten.
 
 ## 8. Common Misconceptions
@@ -154,7 +154,7 @@ gcloud projects get-iam-policy my-project-id --format=json
 **Model answer:** No — IAM grants are additive and flow downward through the resource hierarchy without the ability to be revoked at a lower level. The Project administrator cannot remove access that was granted above their level. To block it, they would need an IAM Deny policy scoped to that project explicitly denying the relevant permissions for that user, or escalate to whoever controls the Organization-level binding to remove it there.
 
 **🎯 Senior/Architect:** _Design an IAM access model for a company with 500 engineers across 20 teams, needing least privilege, auditability, and minimal ongoing administrative burden._
-**Model answer:** I would federate identity through Cloud Identity (Section 42) synced from the corporate IdP, and never bind IAM roles to individual users directly — bindings target Google Groups whose membership is managed in the IdP, so joiner/mover/leaver changes require zero IAM policy edits. I'd build a small library of custom roles derived from predefined roles but trimmed to the actual permissions each team uses (informed by IAM Recommender data), granted at the team's Folder level so it flows down to every project the team owns without per-project configuration. For anything security-critical (service account key creation, IAM policy modification itself), I'd add IAM Deny policies at the Organization level as a hard backstop that no team-level grant can override. I'd review Policy Analyzer / Recommender output quarterly to catch drift and over-provisioning, and require all bindings to be applied via Terraform (Section 52) rather than console clicks, so every change is code-reviewed and auditable in version control in addition to Cloud Audit Logs (Section 40).
+**Model answer:** I would federate identity through Cloud Identity ([Section 42](./Section-42-Part5-Cloud-Identity-BeyondCorp.md)) synced from the corporate IdP, and never bind IAM roles to individual users directly — bindings target Google Groups whose membership is managed in the IdP, so joiner/mover/leaver changes require zero IAM policy edits. I'd build a small library of custom roles derived from predefined roles but trimmed to the actual permissions each team uses (informed by IAM Recommender data), granted at the team's Folder level so it flows down to every project the team owns without per-project configuration. For anything security-critical (service account key creation, IAM policy modification itself), I'd add IAM Deny policies at the Organization level as a hard backstop that no team-level grant can override. I'd review Policy Analyzer / Recommender output quarterly to catch drift and over-provisioning, and require all bindings to be applied via Terraform ([Section 52](../Part7/Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)) rather than console clicks, so every change is code-reviewed and auditable in version control in addition to Cloud Audit Logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)).
 
 ## 🔑 Key Takeaways
 
@@ -166,4 +166,4 @@ gcloud projects get-iam-policy my-project-id --format=json
 
 ## Related Concepts
 
-Resource hierarchy and policy inheritance (Section 3), Service Accounts (Section 36), Organization Policies (Section 37), Security Command Center (Section 39), Cloud Audit Logs (Section 40), and Cloud Identity / Context-Aware Access (Section 42) all build directly on the IAM model introduced here.
+Resource hierarchy and policy inheritance ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md)), Service Accounts ([Section 36](./Section-36-Part5-Service-Accounts.md)), Organization Policies ([Section 37](./Section-37-Part5-Organization-Policies.md)), Security Command Center ([Section 39](./Section-39-Part5-Security-Command-Center.md)), Cloud Audit Logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)), and Cloud Identity / Context-Aware Access ([Section 42](./Section-42-Part5-Cloud-Identity-BeyondCorp.md)) all build directly on the IAM model introduced here.

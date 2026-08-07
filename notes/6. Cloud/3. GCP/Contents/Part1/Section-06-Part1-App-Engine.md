@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-App Engine was GCP's first public product (2008, Section 1.4), built to solve the problem of deploying a web application without provisioning, patching, or scaling any servers at all — the developer supplies code, App Engine supplies everything else: load balancing, autoscaling, versioning, and traffic management. It predates both containers-as-a-service (Cloud Run, Section 7) and function-as-a-service (Cloud Functions, Section 8) on GCP, and remains relevant today for teams wanting a PaaS with more built-in application-platform features (e.g., built-in task queues, memcache, traffic splitting across full application versions) than Cloud Run natively provides for arbitrary containers.
+App Engine was GCP's first public product (2008, [Section 1](./Section-01-Part1-What-is-GCP-History-Evolution.md).4), built to solve the problem of deploying a web application without provisioning, patching, or scaling any servers at all — the developer supplies code, App Engine supplies everything else: load balancing, autoscaling, versioning, and traffic management. It predates both containers-as-a-service (Cloud Run, [Section 7](./Section-07-Part1-Cloud-Run.md)) and function-as-a-service (Cloud Functions, [Section 8](./Section-08-Part1-Cloud-Functions.md)) on GCP, and remains relevant today for teams wanting a PaaS with more built-in application-platform features (e.g., built-in task queues, memcache, traffic splitting across full application versions) than Cloud Run natively provides for arbitrary containers.
 
 ## 3. Standard vs. Flexible Environment
 
@@ -87,13 +87,13 @@ Setting traffic split for service [default]...done.
 
 ## 8. When App Engine Still Makes Sense
 
-Despite newer serverless compute options (Cloud Run, Section 7; Cloud Functions, Section 8), App Engine remains a reasonable choice when:
+Despite newer serverless compute options (Cloud Run, [Section 7](./Section-07-Part1-Cloud-Run.md); Cloud Functions, [Section 8](./Section-08-Part1-Cloud-Functions.md)), App Engine remains a reasonable choice when:
 
 - The team wants an opinionated, batteries-included PaaS with built-in versioning, traffic splitting, and task queue integration (Cloud Tasks) without assembling these from separate services.
 - The application is a traditional multi-page web app in a directly-supported language runtime, where Standard's fast scale-to-zero and simple deployment model outweighs the flexibility of managing a container image.
 - An existing App Engine application already works well and there's no compelling business reason to migrate purely for the sake of using a newer service — "if it isn't broken" is a legitimate operational stance here, not a red flag.
 
-For net-new projects needing custom system dependencies, arbitrary language runtimes, or a more container-native operational model, Cloud Run (Section 7) has become the more commonly recommended default.
+For net-new projects needing custom system dependencies, arbitrary language runtimes, or a more container-native operational model, Cloud Run ([Section 7](./Section-07-Part1-Cloud-Run.md)) has become the more commonly recommended default.
 
 ## 9. Production & Enterprise Usage
 
@@ -115,7 +115,7 @@ For net-new projects needing custom system dependencies, arbitrary language runt
 **Model answer:** Deploy the new code as a new version (not overwriting the existing one) using `gcloud app deploy --version=vNew --no-promote` so it doesn't immediately receive 100% of traffic, then use `gcloud app services set-traffic` to split a small percentage (e.g., 5%) to the new version while the rest stays on the stable version. Monitor error rates and latency on the new version via Cloud Monitoring/Logging, and gradually increase its traffic share, rolling back instantly by shifting the split back to 0% if problems appear — all without needing a separate load balancer or blue/green infrastructure, since traffic splitting is native to App Engine.
 
 **🎯 Senior/Architect:** _A team has a legacy monolith running on App Engine Flexible with a custom system dependency, and leadership wants to modernize toward serverless containers without a full rewrite. What's your approach?_
-**Model answer:** Since App Engine Flexible already runs the application as a Docker container on managed VMs, the container image itself is very likely portable to Cloud Run (Section 7) largely unchanged, since Cloud Run also runs arbitrary containers — the main differences to validate are Cloud Run's stricter startup-time and request-concurrency expectations, statelessness assumptions (Cloud Run instances can scale to zero and are not guaranteed session affinity across requests the way a Flexible instance might implicitly provide), and how any custom system dependency behaves in Cloud Run's container runtime sandbox. I'd start by deploying the existing container image as-is to Cloud Run in a non-production project, run integration tests, and specifically probe any implicit assumptions about long-lived local state or background threads that Flexible's always-on VM model tolerated but Cloud Run's scale-to-zero model would not. If that validates cleanly, I'd migrate incrementally by splitting traffic at the load balancer level between the App Engine and Cloud Run deployments, rather than a hard cutover, giving a safe rollback path throughout the migration.
+**Model answer:** Since App Engine Flexible already runs the application as a Docker container on managed VMs, the container image itself is very likely portable to Cloud Run ([Section 7](./Section-07-Part1-Cloud-Run.md)) largely unchanged, since Cloud Run also runs arbitrary containers — the main differences to validate are Cloud Run's stricter startup-time and request-concurrency expectations, statelessness assumptions (Cloud Run instances can scale to zero and are not guaranteed session affinity across requests the way a Flexible instance might implicitly provide), and how any custom system dependency behaves in Cloud Run's container runtime sandbox. I'd start by deploying the existing container image as-is to Cloud Run in a non-production project, run integration tests, and specifically probe any implicit assumptions about long-lived local state or background threads that Flexible's always-on VM model tolerated but Cloud Run's scale-to-zero model would not. If that validates cleanly, I'd migrate incrementally by splitting traffic at the load balancer level between the App Engine and Cloud Run deployments, rather than a hard cutover, giving a safe rollback path throughout the migration.
 
 ## 12. Key Takeaways
 
@@ -126,4 +126,4 @@ For net-new projects needing custom system dependencies, arbitrary language runt
 
 ## 13. Related Concepts
 
-Cloud Run as the more modern serverless-container alternative (Section 7), Cloud Functions for event-driven single-purpose code (Section 8), and the full compute decision matrix comparing all of GCP's compute options (Section 10) build directly on the PaaS model introduced here.
+Cloud Run as the more modern serverless-container alternative ([Section 7](./Section-07-Part1-Cloud-Run.md)), Cloud Functions for event-driven single-purpose code ([Section 8](./Section-08-Part1-Cloud-Functions.md)), and the full compute decision matrix comparing all of GCP's compute options ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)) build directly on the PaaS model introduced here.

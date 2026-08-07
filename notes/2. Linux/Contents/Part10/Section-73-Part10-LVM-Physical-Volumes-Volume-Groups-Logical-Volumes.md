@@ -2,7 +2,7 @@
 
 ## 1. Overview: Closing Part 9, Opening Part 10
 
-Part 9 (§65–§72) closed with §72's clock-accuracy foundation and handed off directly to Part 10 without any dependency between the two — this section is a genuine topic switch, from systemd/services administration into storage. §23 (Part 3) already covered disk partitioning with `fdisk`/`parted`/`gdisk`, and §18 (Part 3) covered filesystem types like ext4 and XFS. This section sits conceptually **between** those two: LVM is a layer that can exist on top of a partition and underneath a filesystem, and understanding why that extra layer exists — rather than just partitioning a disk and putting a filesystem directly on it — is this section's core question.
+Part 9 ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) closed with [§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)'s clock-accuracy foundation and handed off directly to Part 10 without any dependency between the two — this section is a genuine topic switch, from systemd/services administration into storage. [§23](../Part3/Section-23-Part3-Disk-Partitioning-Concepts.md) already covered disk partitioning with `fdisk`/`parted`/`gdisk`, and [§18](../Part3/Section-18-Part3-Filesystem-Types.md) covered filesystem types like ext4 and XFS. This section sits conceptually **between** those two: LVM is a layer that can exist on top of a partition and underneath a filesystem, and understanding why that extra layer exists — rather than just partitioning a disk and putting a filesystem directly on it — is this section's core question.
 
 **The problem LVM solves:** a traditional partition is a fixed-size region of a fixed physical disk. If `/var` is on `/dev/sdb1` and that partition fills up, growing it means either resizing the partition in place (risky, and bounded by whatever unallocated space happens to be adjacent to it on that exact disk) or migrating the whole filesystem to a bigger disk. Storage decisions made at provisioning time — "how big should this partition be" — are notoriously hard to get right permanently, and traditional partitioning offers little room to be wrong.
 
@@ -37,7 +37,7 @@ pvcreate /dev/sdb1 /dev/sdc1
 
 **Key points:**
 
-- A PV is typically created on a partition rather than a raw disk (§23's partitioning still matters — LVM doesn't replace the decision of whether to partition, it usually sits on top of one partition per disk, often marked with partition type `8e` on MBR or the Linux LVM GUID on GPT).
+- A PV is typically created on a partition rather than a raw disk ([§23](../Part3/Section-23-Part3-Disk-Partitioning-Concepts.md)'s partitioning still matters — LVM doesn't replace the decision of whether to partition, it usually sits on top of one partition per disk, often marked with partition type `8e` on MBR or the Linux LVM GUID on GPT).
 - Multiple PVs can be created at once and later added to the same VG, which is exactly how a VG ends up spanning multiple physical disks.
 - A PV can be removed from LVM use later with `pvremove`, but only after it's no longer part of any VG.
 
@@ -95,7 +95,7 @@ Extents matter operationally because they explain why `vgs`/`pvs` free-space num
 
 ## 5. Logical Volumes (LVs): The Consumable Layer
 
-A **Logical Volume** is what actually gets a filesystem put on it and gets mounted — from the perspective of `mkfs` and `mount` (§18, §20), an LV looks exactly like a partition or whole disk block device.
+A **Logical Volume** is what actually gets a filesystem put on it and gets mounted — from the perspective of `mkfs` and `mount` ([§18](../Part3/Section-18-Part3-Filesystem-Types.md), [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)), an LV looks exactly like a partition or whole disk block device.
 
 ```bash
 # Create a 50G LV named "app_lv" from the data_vg pool
@@ -135,7 +135,7 @@ Once created, an LV is addressable two equivalent ways:
 /dev/mapper/data_vg-app_lv ← device-mapper path (LVM is built on top of device-mapper)
 ```
 
-Both refer to the same underlying block device — the first is a friendlier symlink, the second reflects that LVM is implemented as a device-mapper target. `/etc/fstab` entries (§20) commonly reference the LV by UUID instead of either path, for the same reason UUID is generally preferred over device paths there — device paths aren't guaranteed stable across reboots or hardware changes, and this is exactly as true for LVM devices as for plain partitions.
+Both refer to the same underlying block device — the first is a friendlier symlink, the second reflects that LVM is implemented as a device-mapper target. `/etc/fstab` entries ([§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)) commonly reference the LV by UUID instead of either path, for the same reason UUID is generally preferred over device paths there — device paths aren't guaranteed stable across reboots or hardware changes, and this is exactly as true for LVM devices as for plain partitions.
 
 ## 6. Full Workflow: PV → VG → LV → Filesystem → Mount
 
@@ -157,12 +157,12 @@ mkdir -p /mnt/app_data
 mount /dev/data_vg/app_lv /mnt/app_data
 ```
 
-**Production usage example:** A common real-world pattern is provisioning a VM with several smaller virtual disks attached to one VG rather than one large disk, specifically so additional virtual disks can be attached later and folded into the same VG with `vgextend` — turning "the app ran out of disk space" from a downtime-causing migration into a same-day `vgextend` + `lvextend` (§74) operation with no data movement required.
+**Production usage example:** A common real-world pattern is provisioning a VM with several smaller virtual disks attached to one VG rather than one large disk, specifically so additional virtual disks can be attached later and folded into the same VG with `vgextend` — turning "the app ran out of disk space" from a downtime-causing migration into a same-day `vgextend` + `lvextend` ([§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md)) operation with no data movement required.
 
 ## 7. Common Misconceptions
 
-1. **"LVM is only useful for adding new physical disks."** That's one benefit, but the extent-based allocation model (4) and the PV/VG/LV separation also enable snapshots and thin provisioning (§74) — capabilities that have nothing to do with spanning multiple disks and exist purely because of the abstraction layer itself.
-2. **"An LV always corresponds to a contiguous region of one physical disk."** Not necessarily — a VG can pool PVs from multiple physical disks, and LVM's default linear allocation can (though doesn't have to) spread an LV's extents across whichever PVs have free space, which is precisely why a single physical disk failing under a VG spanning multiple disks (without RAID, §75) can corrupt every LV in that VG, not just data that was "on" the failed disk.
+1. **"LVM is only useful for adding new physical disks."** That's one benefit, but the extent-based allocation model (4) and the PV/VG/LV separation also enable snapshots and thin provisioning ([§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md)) — capabilities that have nothing to do with spanning multiple disks and exist purely because of the abstraction layer itself.
+2. **"An LV always corresponds to a contiguous region of one physical disk."** Not necessarily — a VG can pool PVs from multiple physical disks, and LVM's default linear allocation can (though doesn't have to) spread an LV's extents across whichever PVs have free space, which is precisely why a single physical disk failing under a VG spanning multiple disks (without RAID, [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md)) can corrupt every LV in that VG, not just data that was "on" the failed disk.
 3. **"`/dev/vgname/lvname` and `/dev/mapper/vgname-lvname` are different devices."** They're two paths to the identical device-mapper block device (5) — neither is more "real" than the other.
 
 ## 8. Tiered Interview Questions
@@ -176,11 +176,11 @@ _What the interviewer is probing for:_ Understanding the abstraction's purpose, 
 _What the interviewer is probing for:_ Clean layer-by-layer recall with the right command mapped to the right layer, plus knowing extents exist as the real allocation unit.
 
 **🎯 Senior:** _"What's the trade-off of putting LVM under everything by default, versus using plain partitions?"_
-**Model answer:** LVM buys real operational flexibility — online growth, snapshots, thin provisioning (§74) — at the cost of a genuinely more complex recovery story. A corrupted partition table on a plain-partitioned disk is a well-understood, heavily-documented recovery scenario; corrupted or lost LVM metadata (the PV headers, VG configuration) can make an entire VG's worth of LVs unrecoverable even if the underlying disk sectors holding actual data are fine, and recovery tooling/expertise for LVM metadata corruption is a narrower skill than generic partition-table recovery. I wouldn't avoid LVM for that reason on hosts that actually need the flexibility, but I would back up LVM metadata (`vgcfgbackup`) as routine hygiene and wouldn't reach for LVM by default on a simple single-disk host with no expected growth or snapshot need, where a plain partition is genuinely simpler and has one less thing to go wrong.
+**Model answer:** LVM buys real operational flexibility — online growth, snapshots, thin provisioning ([§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md)) — at the cost of a genuinely more complex recovery story. A corrupted partition table on a plain-partitioned disk is a well-understood, heavily-documented recovery scenario; corrupted or lost LVM metadata (the PV headers, VG configuration) can make an entire VG's worth of LVs unrecoverable even if the underlying disk sectors holding actual data are fine, and recovery tooling/expertise for LVM metadata corruption is a narrower skill than generic partition-table recovery. I wouldn't avoid LVM for that reason on hosts that actually need the flexibility, but I would back up LVM metadata (`vgcfgbackup`) as routine hygiene and wouldn't reach for LVM by default on a simple single-disk host with no expected growth or snapshot need, where a plain partition is genuinely simpler and has one less thing to go wrong.
 _What the interviewer is probing for:_ Honesty about a real trade-off rather than treating LVM as a strictly-better default, and awareness of `vgcfgbackup` as a concrete mitigation.
 
 **🎯 Architect:** _"You're designing a storage layout standard for a new fleet. When do you mandate LVM, and when do you explicitly avoid it?"_
-**Model answer:** I'd mandate LVM on any host where storage needs are expected to grow unpredictably over the host's lifetime — database hosts, application servers with growing log/data volumes, anything where a same-day non-disruptive resize (§74) matters more than minimizing moving parts. I'd also want it wherever the backup strategy (§79) benefits from LVM snapshots as a consistent point-in-time source. I'd avoid mandating it on narrowly-scoped, short-lived, or genuinely fixed-size hosts — a stateless worker node with a known, static disk footprint gains little from the extra abstraction and inherits the metadata-recovery complexity noted above for no real benefit. Either way, the standard would include `vgcfgbackup` as a mandatory scheduled task wherever LVM is used, since metadata is the single point of failure the abstraction introduces that plain partitioning doesn't have.
+**Model answer:** I'd mandate LVM on any host where storage needs are expected to grow unpredictably over the host's lifetime — database hosts, application servers with growing log/data volumes, anything where a same-day non-disruptive resize ([§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md)) matters more than minimizing moving parts. I'd also want it wherever the backup strategy ([§79](./Section-79-Part10-Backup-Strategies-Tools.md)) benefits from LVM snapshots as a consistent point-in-time source. I'd avoid mandating it on narrowly-scoped, short-lived, or genuinely fixed-size hosts — a stateless worker node with a known, static disk footprint gains little from the extra abstraction and inherits the metadata-recovery complexity noted above for no real benefit. Either way, the standard would include `vgcfgbackup` as a mandatory scheduled task wherever LVM is used, since metadata is the single point of failure the abstraction introduces that plain partitioning doesn't have.
 _What the interviewer is probing for:_ Fleet-scale, workload-driven decision-making rather than a blanket "always use LVM" or "never use LVM" answer, and connecting the decision to concrete downstream sections (snapshots, backups).
 
 ## 9. Key Takeaways
@@ -193,6 +193,6 @@ _What the interviewer is probing for:_ Fleet-scale, workload-driven decision-mak
 
 ## 10. Related Concepts & What's Next
 
-This section depends on §18 (filesystem types, Part 3 — an LV still needs a filesystem put on it) and §23 (disk partitioning, Part 3 — a PV is typically created on a partition, not a raw disk). §20's mounting/`/etc/fstab` conventions apply identically to LVM devices. §74 builds directly on this section's PV/VG/LV model to cover resizing, snapshots, and thin provisioning — capabilities that only exist because of the abstraction layer introduced here.
+This section depends on [§18](../Part3/Section-18-Part3-Filesystem-Types.md) (filesystem types, Part 3 — an LV still needs a filesystem put on it) and [§23](../Part3/Section-23-Part3-Disk-Partitioning-Concepts.md) (disk partitioning, Part 3 — a PV is typically created on a partition, not a raw disk). [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)'s mounting/`/etc/fstab` conventions apply identically to LVM devices. [§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md) builds directly on this section's PV/VG/LV model to cover resizing, snapshots, and thin provisioning — capabilities that only exist because of the abstraction layer introduced here.
 
-**Next Section:** §74 — `Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md`
+**Next Section:** [§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md) — `Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md`

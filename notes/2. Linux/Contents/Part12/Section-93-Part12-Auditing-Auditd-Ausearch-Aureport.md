@@ -2,7 +2,7 @@
 
 ## 1. What auditd Actually Is (and Isn't)
 
-Lead with the distinction that matters most, because it's the one most often glossed over: **auditd is not "more logging."** §68 covered journald as the general-purpose, integrated logging subsystem for services and the system as a whole — what a service printed to stdout, what systemd did when a unit started or failed, kernel messages. **auditd is a separate, kernel-level subsystem with a narrower and more specific job: recording security-relevant events** — syscalls, file access, authentication decisions, changes to specific files — in a way that is deliberately harder to tamper with and structured for compliance and forensic review, not general troubleshooting.
+Lead with the distinction that matters most, because it's the one most often glossed over: **auditd is not "more logging."** [§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md) covered journald as the general-purpose, integrated logging subsystem for services and the system as a whole — what a service printed to stdout, what systemd did when a unit started or failed, kernel messages. **auditd is a separate, kernel-level subsystem with a narrower and more specific job: recording security-relevant events** — syscalls, file access, authentication decisions, changes to specific files — in a way that is deliberately harder to tamper with and structured for compliance and forensic review, not general troubleshooting.
 
 The scope difference is the whole point:
 
@@ -90,7 +90,7 @@ A practical workflow: run `aureport --failed` first to get a shortlist of anomal
 
 ## 6. Practical Example: Auditing Writes to `/etc/passwd` and `/etc/shadow`
 
-Tying together 2 through 5 into the concrete hardening/compliance requirement referenced back in §25 (users and permissions): most compliance frameworks (and §96's CIS benchmarks, closing this Part) explicitly require auditing changes to the core account files.
+Tying together 2 through 5 into the concrete hardening/compliance requirement referenced back in [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md) (users and permissions): most compliance frameworks (and [§96](./Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)'s CIS benchmarks, closing this Part) explicitly require auditing changes to the core account files.
 
 ```bash
 # Persistent rule file
@@ -103,7 +103,7 @@ EOF
 sudo augenrules --load
 ```
 
-After this, any write or attribute change to those files — whether via `useradd`/`usermod` or a direct edit — is captured and retrievable with `ausearch -k passwd_changes`. This is precisely the kind of control an auditor checking against a compliance framework looks for: not just "is the file permission correct" (§25/§4 already cover that), but "is there a durable, searchable record of every change to it."
+After this, any write or attribute change to those files — whether via `useradd`/`usermod` or a direct edit — is captured and retrievable with `ausearch -k passwd_changes`. This is precisely the kind of control an auditor checking against a compliance framework looks for: not just "is the file permission correct" ([§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)/[§4](../Part1/Section-04-Part1-Linux-Philosophy-Design-Principles.md) already cover that), but "is there a durable, searchable record of every change to it."
 
 **Reading the result:** `ausearch`'s raw output is a set of dense, machine-oriented `type=...` key-value lines — readable but not friendly. The `-i` flag ("interpret") is worth using by default in practice, since it resolves numeric UIDs/GIDs to names and translates some raw fields into human-readable form:
 
@@ -127,10 +127,10 @@ The engineering judgment call is the same one that runs through this whole Part:
 
 ## 9. Common Misconceptions
 
-1. **"auditd is just another way to view logs, like journalctl."** They serve different purposes at different layers — journald is general-purpose operational logging (§68); auditd is a kernel-level, compliance/forensic-oriented subsystem for security-relevant events specifically, with different retention and tamper-resistance goals (1).
+1. **"auditd is just another way to view logs, like journalctl."** They serve different purposes at different layers — journald is general-purpose operational logging ([§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)); auditd is a kernel-level, compliance/forensic-oriented subsystem for security-relevant events specifically, with different retention and tamper-resistance goals (1).
 2. **"`auditctl` rules are permanent once set."** Rules added via `auditctl` apply to the live kernel configuration immediately but vanish on reboot unless also written to a `.rules` file under `/etc/audit/rules.d/` and loaded via `augenrules` (2).
 3. **"More audit rules is always better security."** Unscoped, maximal auditing produces volume and overhead that can itself become an operational problem — including, in some configurations, forcing the system to halt when audit storage fills — so scoping rules to genuinely security-relevant targets is part of doing this correctly, not a compromise (8).
-4. **"SELinux denials show up in journald, so auditd is optional for SELinux troubleshooting."** SELinux (§91) actually logs its denials through the audit subsystem specifically — `ausearch -m avc` is a standard way to find SELinux denial events — so auditd and SELinux are more tightly coupled operationally than the general journald/auditd distinction in 1 might suggest.
+4. **"SELinux denials show up in journald, so auditd is optional for SELinux troubleshooting."** SELinux ([§91](./Section-91-Part12-SELinux-AppArmor-Mandatory-Access-Control.md)) actually logs its denials through the audit subsystem specifically — `ausearch -m avc` is a standard way to find SELinux denial events — so auditd and SELinux are more tightly coupled operationally than the general journald/auditd distinction in 1 might suggest.
 5. **"A local audit log that's hard to tamper with is sufficient on its own."** Root-level compromise can still edit or delete a purely local audit log — pairing local rules with off-host forwarding (`audisp-remote`, 7) is what actually delivers on the tamper-resistance goal in practice (1).
 
 ## 10. Tiered Interview Questions
@@ -148,21 +148,21 @@ _What the interviewer is probing for:_ Practical command fluency and the auditct
 _What the interviewer is probing for:_ Understanding audit volume as a real operational risk, not just a theoretical caveat, and knowing to check `auditd.conf`'s failure-mode configuration before treating it purely as a storage problem.
 
 **🎯 Architect:** _"How do you decide what should and shouldn't be covered by audit rules across a fleet?"_
-**Model answer:** I'd start from what's actually required — compliance frameworks like CIS (§96) and specific regulatory obligations typically enumerate concrete targets: account files (`/etc/passwd`, `/etc/shadow`, `/etc/group`), sudoers, SSH configuration, and specific security-relevant syscall classes (privilege escalation, module loading) — rather than trying to audit everything and hoping it's sufficient. I'd scope rules to those specific, justified targets, keep the rule set version-controlled and deployed consistently via configuration management rather than ad hoc per-host, and treat rule additions as reviewed changes given the volume/overhead trade-off in 8. I'd also make sure the audit trail itself is shipped off-host to centralized, append-only storage via something like `audisp-remote` (7) — a tamper-resistant local log that an attacker with root can still delete isn't actually tamper-resistant in practice.
+**Model answer:** I'd start from what's actually required — compliance frameworks like CIS ([§96](./Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)) and specific regulatory obligations typically enumerate concrete targets: account files (`/etc/passwd`, `/etc/shadow`, `/etc/group`), sudoers, SSH configuration, and specific security-relevant syscall classes (privilege escalation, module loading) — rather than trying to audit everything and hoping it's sufficient. I'd scope rules to those specific, justified targets, keep the rule set version-controlled and deployed consistently via configuration management rather than ad hoc per-host, and treat rule additions as reviewed changes given the volume/overhead trade-off in 8. I'd also make sure the audit trail itself is shipped off-host to centralized, append-only storage via something like `audisp-remote` (7) — a tamper-resistant local log that an attacker with root can still delete isn't actually tamper-resistant in practice.
 _What the interviewer is probing for:_ Fleet-scale, compliance-driven rule design rather than host-by-host ad hoc rule addition, and awareness that local audit logs alone don't fully deliver on the tamper-resistance goal without off-host shipping.
 
 ## 11. Key Takeaways
 
-- auditd is a kernel-level subsystem for security-relevant events specifically — distinct in scope and purpose from journald/syslog's general-purpose logging (§68), not a redundant alternative to it.
+- auditd is a kernel-level subsystem for security-relevant events specifically — distinct in scope and purpose from journald/syslog's general-purpose logging ([§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)), not a redundant alternative to it.
 - Watch rules (`auditctl -w /path -p wa -k key`) tag file/directory access with a searchable key; syscall rules (`-a always,exit -S <call>`) watch a class of action system-wide; persist either in `/etc/audit/rules.d/*.rules` and load via `augenrules`, since `auditctl`-only changes don't survive reboot.
 - `ausearch -k <key> -i` (plus `-ua`/`-ui` for user-based filtering and `-ts` for time ranges) finds specific tagged events in human-readable form; `aureport --summary`/`--failed` gives aggregated overviews, better as a starting point than raw search.
-- A concrete, realistic use case is watching `/etc/passwd`/`/etc/shadow`/`/etc/group` for writes — a common compliance requirement tying directly back to §25's account-file coverage.
+- A concrete, realistic use case is watching `/etc/passwd`/`/etc/shadow`/`/etc/group` for writes — a common compliance requirement tying directly back to [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)'s account-file coverage.
 - A purely local audit log is only partially tamper-resistant — forwarding events off-host via `audisp-remote` to centralized, append-only storage is what closes the gap a root-level compromise on the audited host itself would otherwise create.
 - Comprehensive auditing is possible but generates real volume and overhead — including risk of filling audit log storage or triggering a configured failure mode — so scoping rules to genuinely security-relevant targets is a deliberate design decision, not a shortcut.
-- SELinux denials (§91) are specifically surfaced through the audit subsystem (`ausearch -m avc`), making auditd and SELinux more tightly coupled in practice than the general journald contrast might suggest.
+- SELinux denials ([§91](./Section-91-Part12-SELinux-AppArmor-Mandatory-Access-Control.md)) are specifically surfaced through the audit subsystem (`ausearch -m avc`), making auditd and SELinux more tightly coupled in practice than the general journald contrast might suggest.
 
 ## 12. Related Concepts & What's Next
 
-This section specifically contrasts with §68's journald coverage (Part 9) on scope and purpose, builds on §25's account-file permission model with a concrete auditing use case, ties into §91's SELinux denial logging (prior this Part), and complements §90's SSH hardening (prior this Part) by giving a mechanism to audit authentication events directly. §94 (next) moves to vulnerability and patch management — a different security discipline concerned with reducing exposure to known vulnerabilities rather than recording who did what.
+This section specifically contrasts with [§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)'s journald coverage (Part 9) on scope and purpose, builds on [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)'s account-file permission model with a concrete auditing use case, ties into [§91](./Section-91-Part12-SELinux-AppArmor-Mandatory-Access-Control.md)'s SELinux denial logging (prior this Part), and complements [§90](./Section-90-Part12-SSH-Hardening-Bastion-Host-Patterns.md)'s SSH hardening (prior this Part) by giving a mechanism to audit authentication events directly. [§94](./Section-94-Part12-Vulnerability-Patch-Management.md) (next) moves to vulnerability and patch management — a different security discipline concerned with reducing exposure to known vulnerabilities rather than recording who did what.
 
-**Next Section:** §94 — `Section-94-Part12-Vulnerability-Patch-Management.md`
+**Next Section:** [§94](./Section-94-Part12-Vulnerability-Patch-Management.md) — `Section-94-Part12-Vulnerability-Patch-Management.md`

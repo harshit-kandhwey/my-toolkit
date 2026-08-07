@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Every service covered so far in this Part — ADLS Gen2 (Section 75), Synapse (Section 76), Data Factory (Section 77), Databricks (Section 78) — exists to get raw data ingested, processed, and modeled into a curated, business-ready form. None of them, on their own, put that data in front of the actual business stakeholders who need to make decisions from it: a sales director doesn't want to write a T-SQL query against a Synapse dedicated SQL pool, they want an interactive chart showing regional sales trends they can filter and drill into themselves. Power BI exists to close this "last mile" gap — connecting to the curated data this Part's other services produce and turning it into self-service, interactive reporting that business users consume directly, without needing any of the underlying data-engineering skill set. This is also why Power BI's positioning in this Part is deliberately the final consumption-layer step: it's the payoff that makes all the preceding ingestion, processing, and modeling work actually visible and useful to the organization.
+Every service covered so far in this Part — ADLS Gen2 ([Section 75](./Section-75-Part15-Data-Lake-Fundamentals-ADLS-Gen2.md)), Synapse ([Section 76](./Section-76-Part15-Azure-Synapse-Analytics.md)), Data Factory ([Section 77](./Section-77-Part15-Azure-Data-Factory.md)), Databricks ([Section 78](./Section-78-Part15-Azure-Databricks.md)) — exists to get raw data ingested, processed, and modeled into a curated, business-ready form. None of them, on their own, put that data in front of the actual business stakeholders who need to make decisions from it: a sales director doesn't want to write a T-SQL query against a Synapse dedicated SQL pool, they want an interactive chart showing regional sales trends they can filter and drill into themselves. Power BI exists to close this "last mile" gap — connecting to the curated data this Part's other services produce and turning it into self-service, interactive reporting that business users consume directly, without needing any of the underlying data-engineering skill set. This is also why Power BI's positioning in this Part is deliberately the final consumption-layer step: it's the payoff that makes all the preceding ingestion, processing, and modeling work actually visible and useful to the organization.
 
 ## 3. Power BI Desktop vs. Power BI Service
 
@@ -41,7 +41,7 @@ The Power BI Service organizes published content into **workspaces** — collabo
 
 ⚠️ Power BI also supports a **Composite model**, mixing Import and DirectQuery across different tables within the same report (e.g., importing a small, slowly-changing dimension table while DirectQuery-ing a huge, frequently-updated fact table) — exact capability boundaries and performance characteristics of composite models have evolved over time and should be verified against current documentation before relying on this pattern for a production report.
 
-🎯 **Interview Tip:** a frequently tested nuance — DirectQuery's real-time-ness is not free: report interaction performance in DirectQuery mode is fundamentally bounded by the underlying source's query performance, meaning a poorly-tuned Synapse dedicated SQL pool distribution strategy (Section 76.3.2) or an under-provisioned Databricks SQL Warehouse (Section 78.3.2) will directly translate into a sluggish Power BI report experience — DirectQuery doesn't insulate report performance from the source system's own performance characteristics the way Import mode's cached, in-memory copy does.
+🎯 **Interview Tip:** a frequently tested nuance — DirectQuery's real-time-ness is not free: report interaction performance in DirectQuery mode is fundamentally bounded by the underlying source's query performance, meaning a poorly-tuned Synapse dedicated SQL pool distribution strategy ([Section 76](./Section-76-Part15-Azure-Synapse-Analytics.md).3.2) or an under-provisioned Databricks SQL Warehouse ([Section 78](./Section-78-Part15-Azure-Databricks.md).3.2) will directly translate into a sluggish Power BI report experience — DirectQuery doesn't insulate report performance from the source system's own performance characteristics the way Import mode's cached, in-memory copy does.
 
 ## 5. DAX (Data Analysis Expressions)
 
@@ -62,11 +62,11 @@ Power BI connects natively to Synapse dedicated SQL pools, Synapse serverless SQ
 
 ### 6.2 Connecting Directly to ADLS Gen2
 
-Power BI can also connect directly to files in ADLS Gen2 (Section 75) — useful for smaller datasets or scenarios where standing up a full Synapse/Databricks query layer purely to expose data to Power BI isn't justified — though for larger, more complex curated datasets, querying through Synapse serverless SQL pools (Section 76.4) as an intermediate layer is generally preferable, since it provides SQL-based transformation/filtering capability before the data reaches Power BI, rather than requiring all of that logic to live inside the Power BI data model itself.
+Power BI can also connect directly to files in ADLS Gen2 ([Section 75](./Section-75-Part15-Data-Lake-Fundamentals-ADLS-Gen2.md)) — useful for smaller datasets or scenarios where standing up a full Synapse/Databricks query layer purely to expose data to Power BI isn't justified — though for larger, more complex curated datasets, querying through Synapse serverless SQL pools ([Section 76](./Section-76-Part15-Azure-Synapse-Analytics.md).4) as an intermediate layer is generally preferable, since it provides SQL-based transformation/filtering capability before the data reaches Power BI, rather than requiring all of that logic to live inside the Power BI data model itself.
 
 ## 7. Row-Level Security (RLS)
 
-**Definition:** Row-Level Security restricts which rows of data a given user sees within the same shared report, based on rules defined in the data model (e.g., a "Regional Manager" role defined to see only rows matching their assigned region) and the identity of the user viewing the report in the Power BI Service — allowing one report to be published once and shared broadly, while each viewer sees only the subset of data their role/identity permits, directly extending the least-privilege principle established for RBAC generally (Section 8) to the level of individual data rows within a shared BI asset.
+**Definition:** Row-Level Security restricts which rows of data a given user sees within the same shared report, based on rules defined in the data model (e.g., a "Regional Manager" role defined to see only rows matching their assigned region) and the identity of the user viewing the report in the Power BI Service — allowing one report to be published once and shared broadly, while each viewer sees only the subset of data their role/identity permits, directly extending the least-privilege principle established for RBAC generally ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)) to the level of individual data rows within a shared BI asset.
 
 ## 8. Architecture Diagram
 
@@ -103,7 +103,7 @@ Add-PowerBIWorkspaceUser `
 - **Purpose:** provisions a dedicated Power BI workspace for the sales analytics reporting content described in this section, and grants a business user Viewer access — the read-only role appropriate for report consumers rather than report authors.
 - **Important arguments explained individually:**
   - `New-PowerBIWorkspace` — creates a "workspace v2" (the modern, Microsoft 365 group-backed workspace type); ⚠️ verify current cmdlet/API naming against official documentation, as Power BI's administrative surface has evolved over time.
-  - `-AccessRight Viewer` — the workspace role granting read-only report/dashboard consumption without edit or dataset-modification rights, appropriate for the "much larger consuming audience" tier described in Section 79.3.2.
+  - `-AccessRight Viewer` — the workspace role granting read-only report/dashboard consumption without edit or dataset-modification rights, appropriate for the "much larger consuming audience" tier described in [Section 79](./Section-79-Part15-Power-BI.md).3.2.
 - **Common error:** granting broad Contributor/Member access to end users who only need to consume reports, rather than the more restrictive Viewer role or, more appropriately for a large consuming audience, distributing content via a Power BI App (79.3.2) instead of direct workspace access entirely — over-provisioned workspace access is a common and avoidable governance gap.
 
 ## 10. Production & Enterprise Usage
@@ -113,12 +113,12 @@ Enterprise Power BI deployments typically license **Power BI Premium** capacity 
 ## 11. Security Considerations
 
 - Use **Row-Level Security** (79.7) whenever a single shared dataset/report legitimately needs to restrict which rows different viewers see, rather than either publishing separate reports per audience (a maintenance burden) or granting everyone full visibility regardless of appropriate need-to-know.
-- Grant the minimum necessary workspace role (Viewer for consumption, Contributor/Member only for those actually building reports) and prefer distributing finished content via **Power BI Apps** to broad audiences rather than direct workspace membership — directly applying least-privilege (Section 8.4) to BI content access.
+- Grant the minimum necessary workspace role (Viewer for consumption, Contributor/Member only for those actually building reports) and prefer distributing finished content via **Power BI Apps** to broad audiences rather than direct workspace membership — directly applying least-privilege ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md).4) to BI content access.
 - For DirectQuery connections to Synapse or Databricks, use **Entra ID single sign-on** so that the underlying source system's own row-level/column-level security and audit logging (where configured) apply consistently to the identity actually viewing the report, rather than all DirectQuery traffic appearing to originate from one shared service account.
 
 ## 12. Performance Considerations
 
-Import-mode dataset refresh performance and report interactivity both benefit from **query folding** — ensuring transformation steps defined in Power Query (the data-preparation layer within Power BI) are pushed down and executed by the source system itself (e.g., a Synapse SQL pool) rather than pulled into Power BI and processed row-by-row locally, which is dramatically slower for large datasets. DirectQuery report performance, as noted in Section 79.4.3's Interview Tip, is fundamentally bounded by the underlying source system's own query performance — meaning DirectQuery report tuning is often really Synapse distribution-strategy tuning (Section 76.3.2) or Databricks SQL Warehouse sizing (Section 78.3.2) in disguise, not a Power-BI-side optimization at all.
+Import-mode dataset refresh performance and report interactivity both benefit from **query folding** — ensuring transformation steps defined in Power Query (the data-preparation layer within Power BI) are pushed down and executed by the source system itself (e.g., a Synapse SQL pool) rather than pulled into Power BI and processed row-by-row locally, which is dramatically slower for large datasets. DirectQuery report performance, as noted in [Section 79](./Section-79-Part15-Power-BI.md).4.3's Interview Tip, is fundamentally bounded by the underlying source system's own query performance — meaning DirectQuery report tuning is often really Synapse distribution-strategy tuning ([Section 76](./Section-76-Part15-Azure-Synapse-Analytics.md).3.2) or Databricks SQL Warehouse sizing ([Section 78](./Section-78-Part15-Azure-Databricks.md).3.2) in disguise, not a Power-BI-side optimization at all.
 
 ## 13. Monitoring
 
@@ -132,7 +132,7 @@ The Power BI Service provides built-in **usage metrics** reports (views, unique 
 | A regional manager can see other regions' data in a shared report  | Row-Level Security not configured, or RLS role/filter rule incorrectly defined                                                  | Review and correctly configure RLS roles and their DAX filter expressions; test using "View As Role" in Power BI Desktop before publishing                                      |
 | Scheduled dataset refresh silently fails, and users see stale data | Source system credentials expired/rotated, gateway (for on-premises sources) offline, or refresh exceeding a time/size limit    | Review refresh history and failure details in the Service; verify gateway status and credentials; consider DirectQuery or incremental refresh for very large datasets           |
 
-## 15. Interview Questions — Section 79
+## 15. Interview Questions — [Section 79](./Section-79-Part15-Power-BI.md)
 
 ### 🎯 Intermediate
 
@@ -166,4 +166,4 @@ _What the interviewer is probing:_ the ability to design a complete, realistic B
 
 ## 18. Related Concepts (Next Up)
 
-Section 80 covers **Azure Cognitive Search (Azure AI Search)**, which complements the reporting/BI consumption pattern just covered with a different consumption shape entirely — full-text and vector search over data, rather than aggregated visual reporting — including how it indexes data from Cosmos DB, ADLS Gen2, and other sources this Part has already covered.
+[Section 80](./Section-80-Part15-Azure-Cognitive-Search.md) covers **Azure Cognitive Search (Azure AI Search)**, which complements the reporting/BI consumption pattern just covered with a different consumption shape entirely — full-text and vector search over data, rather than aggregated visual reporting — including how it indexes data from Cosmos DB, ADLS Gen2, and other sources this Part has already covered.

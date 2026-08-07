@@ -2,7 +2,7 @@
 
 ## 1. Overview: Tools Without a Method Are Just Noise
 
-§80–§86 built up a substantial toolkit — CPU, memory, disk, and network analysis commands, logging tooling, and syscall/CPU-cycle-level tracing. None of that tooling, on its own, tells an engineer what order to reach for it in, when to stop looking at one resource and check another, or when to stop diagnosing entirely and just follow a known procedure. This section is the organizing layer on top of §81–§86's tools: a structured method for approaching an unfamiliar problem, and the discipline that turns a one-off diagnosis into a reusable runbook for next time.
+[§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)–[§86](./Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md) built up a substantial toolkit — CPU, memory, disk, and network analysis commands, logging tooling, and syscall/CPU-cycle-level tracing. None of that tooling, on its own, tells an engineer what order to reach for it in, when to stop looking at one resource and check another, or when to stop diagnosing entirely and just follow a known procedure. This section is the organizing layer on top of [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§86](./Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md)'s tools: a structured method for approaching an unfamiliar problem, and the discipline that turns a one-off diagnosis into a reusable runbook for next time.
 
 ## 2. Why Structured Methodology Beats Ad-Hoc Investigation Under Pressure
 
@@ -24,14 +24,14 @@ The **USE method** — coined by Brendan Gregg — is a systematic checklist for
 
 The reason this ordering and framing matters: **utilization alone is an incomplete picture**. A CPU sitting at 60% utilization looks "fine" by a naive read, but if the run queue shows several processes waiting for a core (saturation), the system is already contending, even at moderate utilization — and utilization figures alone would miss it entirely. Conversely, near-100% utilization on a resource with an empty queue and no waiting processes might be entirely healthy if it's simply completing all demand within budget. USE forces checking saturation and errors, not just the utilization number that's easiest to glance at.
 
-**Applying USE with §81–§84's actual tools, resource by resource:**
+**Applying USE with [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md)'s actual tools, resource by resource:**
 
-| Resource | Utilization                                       | Saturation                                                                    | Errors                                                           |
-| -------- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| CPU      | `top`/`mpstat` non-idle percentage (§81)          | Load average vs. core count, run-queue column in `vmstat` (§81)               | Rare at OS level; more relevant in specialized hardware contexts |
-| Memory   | `free` used vs. total, `/proc/meminfo` (§82)      | Swap activity, OOM Killer invocations (§82)                                   | `dmesg`/journal entries for memory-related kernel errors         |
-| Disk I/O | `iostat` `%util` (§83)                            | `iostat` queue depth / await time, `iotop` for per-process contribution (§83) | `dmesg`/SMART data for actual read/write failures                |
-| Network  | `sar`/`iftop`/`nload` bandwidth utilization (§84) | Interface drop counters, `ss` retransmit stats (§84)                          | Interface error counters via `ip -s link` or `ethtool -S`        |
+| Resource | Utilization                                                                                              | Saturation                                                                                                               | Errors                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| CPU      | `top`/`mpstat` non-idle percentage ([§81](./Section-81-Part11-CPU-Load-Analysis.md))                     | Load average vs. core count, run-queue column in `vmstat` ([§81](./Section-81-Part11-CPU-Load-Analysis.md))              | Rare at OS level; more relevant in specialized hardware contexts |
+| Memory   | `free` used vs. total, `/proc/meminfo` ([§82](./Section-82-Part11-Memory-Analysis.md))                   | Swap activity, OOM Killer invocations ([§82](./Section-82-Part11-Memory-Analysis.md))                                    | `dmesg`/journal entries for memory-related kernel errors         |
+| Disk I/O | `iostat` `%util` ([§83](./Section-83-Part11-Disk-IO-Analysis.md))                                        | `iostat` queue depth / await time, `iotop` for per-process contribution ([§83](./Section-83-Part11-Disk-IO-Analysis.md)) | `dmesg`/SMART data for actual read/write failures                |
+| Network  | `sar`/`iftop`/`nload` bandwidth utilization ([§84](./Section-84-Part11-Network-Performance-Analysis.md)) | Interface drop counters, `ss` retransmit stats ([§84](./Section-84-Part11-Network-Performance-Analysis.md))              | Interface error counters via `ip -s link` or `ethtool -S`        |
 
 Walking every resource through all three questions, rather than fixating on the first metric that looks elevated, is what makes USE a genuine method rather than just a list of commands to run.
 
@@ -85,7 +85,7 @@ That last field matters as much as the procedure itself, for exactly the reason 
 
 ## 7. Hands-On: Running a USE Sweep Against an Unfamiliar Host
 
-**Purpose:** Apply the USE method (3) as a concrete, repeatable checklist against a host with an unknown or unreported problem — the bottom-up entry point from 4 — using nothing but §81–§84's tools in one deliberate pass rather than jumping between them at random.
+**Purpose:** Apply the USE method (3) as a concrete, repeatable checklist against a host with an unknown or unreported problem — the bottom-up entry point from 4 — using nothing but [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md)'s tools in one deliberate pass rather than jumping between them at random.
 
 ```bash
 # CPU: utilization, saturation, errors
@@ -113,7 +113,7 @@ ip -s link      # drop/error counters per interface
 
 **Common errors:** Stopping at the first tool that shows an elevated number without checking the other three resources — a CPU-bound-looking symptom can coexist with (or actually be caused by) disk saturation forcing processes into uninterruptible sleep, which raises load average without raising CPU utilization in the way it first appears to.
 
-**Troubleshooting:** If no resource shows a clear USE signal despite a real reported symptom, the bottleneck may be at the application layer (a slow downstream dependency, a lock, a connection pool) rather than a host-level resource at all — that's the point at which §86's `strace`/`perf` tracing tools, or an APM view if available, become the right next step rather than continuing to re-run the same USE sweep.
+**Troubleshooting:** If no resource shows a clear USE signal despite a real reported symptom, the bottleneck may be at the application layer (a slow downstream dependency, a lock, a connection pool) rather than a host-level resource at all — that's the point at which [§86](./Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md)'s `strace`/`perf` tracing tools, or an APM view if available, become the right next step rather than continuing to re-run the same USE sweep.
 
 ## 8. Common Misconceptions
 
@@ -143,13 +143,13 @@ _What the interviewer is probing for:_ Judgment about when documentation investm
 ## 10. Key Takeaways
 
 - Structured troubleshooting methodology outperforms ad-hoc investigation under pressure precisely because it avoids re-checking the same things and jumping to conclusions from partial evidence (2).
-- The USE method (Utilization, Saturation, Errors) applied to every resource — CPU, memory, disk, network, using §81–§84's tools as the concrete instruments — avoids the trap of trusting utilization alone (3).
+- The USE method (Utilization, Saturation, Errors) applied to every resource — CPU, memory, disk, network, using [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§84](./Section-84-Part11-Network-Performance-Analysis.md)'s tools as the concrete instruments — avoids the trap of trusting utilization alone (3).
 - Top-down (symptom-first) and bottom-up (resource-first) are complementary entry points, not competing approaches — real investigations often use both within a single incident (4).
 - Hypothesis-driven testing — one change at a time, verified before moving on — preserves attribution and is what makes a diagnosis reliable enough to eventually become a runbook (5).
 - A runbook documents a repeatable procedure for a known, recurring problem — distinct from this section's methodology, which is for diagnosing something new — and needs ongoing review to avoid becoming a stale, falsely trusted liability (6).
 
 ## 11. Related Concepts & What's Next
 
-This section provides the full depth behind the USE method §80 first introduced at the start of this Part, and it's the organizing framework for every tool §81–§86 covered — CPU/memory/disk/network analysis, logging, and tracing are the concrete instruments this methodology directs toward a specific investigation. §88 (next, the final section of this Part) applies this exact methodology to five concrete, worked incident case studies — disk full, memory leak, fork bomb, network saturation, and a zombie-process pileup — turning the abstract method into applied practice.
+This section provides the full depth behind the USE method [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md) first introduced at the start of this Part, and it's the organizing framework for every tool [§81](./Section-81-Part11-CPU-Load-Analysis.md)–[§86](./Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md) covered — CPU/memory/disk/network analysis, logging, and tracing are the concrete instruments this methodology directs toward a specific investigation. [§88](./Section-88-Part11-Incident-Case-Studies.md) (next, the final section of this Part) applies this exact methodology to five concrete, worked incident case studies — disk full, memory leak, fork bomb, network saturation, and a zombie-process pileup — turning the abstract method into applied practice.
 
-**Next Section:** §88 — `Section-88-Part11-Incident-Case-Studies.md`
+**Next Section:** [§88](./Section-88-Part11-Incident-Case-Studies.md) — `Section-88-Part11-Incident-Case-Studies.md`

@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Even with zone-level redundancy (Section 2) within a single region, an entire region can become unavailable — a large-scale natural disaster, a cascading regional network issue, or (rarely) an extended provider-side outage. Without an explicit DR plan:
+Even with zone-level redundancy ([Section 2](../Part1/Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md)) within a single region, an entire region can become unavailable — a large-scale natural disaster, a cascading regional network issue, or (rarely) an extended provider-side outage. Without an explicit DR plan:
 
 - Organizations discover their actual recovery time only _during_ a real incident, when the cost of surprise is highest — untested assumptions ("we can just restore from backup") often turn out to take far longer than expected under real pressure.
 - Data loss tolerance is never made explicit, so different stakeholders assume different things — engineering may assume "we lose at most a few minutes of data," while the business may assume zero data loss, and the gap is only discovered after data is actually lost.
@@ -63,7 +63,7 @@ Spanner can be deployed in a **multi-region configuration**, synchronously repli
 
 ### 5.1 Backup and Restore
 
-The lowest-cost, highest-RTO/RPO pattern: regularly back up data (Cloud SQL automated backups, GCS object versioning/backups, persistent disk snapshots) to a separate region, with **no standing compute infrastructure** in the DR region at all. On disaster, infrastructure is provisioned from Infrastructure-as-Code (Section 52) and data restored from the latest backup.
+The lowest-cost, highest-RTO/RPO pattern: regularly back up data (Cloud SQL automated backups, GCS object versioning/backups, persistent disk snapshots) to a separate region, with **no standing compute infrastructure** in the DR region at all. On disaster, infrastructure is provisioned from Infrastructure-as-Code ([Section 52](../Part7/Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)) and data restored from the latest backup.
 
 - **RPO:** Bounded by backup frequency (often hours).
 - **RTO:** Bounded by how long it takes to provision infrastructure and restore data from scratch (often hours).
@@ -79,7 +79,7 @@ A minimal version of the core infrastructure (e.g., just the database, kept cont
 
 ### 5.3 Warm Standby
 
-A scaled-down but fully functional copy of the entire stack runs continuously in the DR region — smaller Managed Instance Group/GKE node pool sizes than production, but the full n-tier architecture (Section 56) is live and can be scaled up quickly on failover, rather than provisioned from scratch.
+A scaled-down but fully functional copy of the entire stack runs continuously in the DR region — smaller Managed Instance Group/GKE node pool sizes than production, but the full n-tier architecture ([Section 56](./Section-56-Part8-Enterprise-Architecture-Patterns.md)) is live and can be scaled up quickly on failover, rather than provisioned from scratch.
 
 - **RPO:** Low.
 - **RTO:** Low (minutes — scaling up existing running infrastructure is much faster than provisioning it from zero).
@@ -87,7 +87,7 @@ A scaled-down but fully functional copy of the entire stack runs continuously in
 
 ### 5.4 Multi-Site Active-Active
 
-Both regions run at full production capacity and serve live traffic simultaneously (as introduced in Section 56.3.2) — the strongest DR posture, since a regional failure simply removes a fraction of already-serving capacity rather than requiring any failover action at all.
+Both regions run at full production capacity and serve live traffic simultaneously (as introduced in [Section 56](./Section-56-Part8-Enterprise-Architecture-Patterns.md).3.2) — the strongest DR posture, since a regional failure simply removes a fraction of already-serving capacity rather than requiring any failover action at all.
 
 - **RPO:** Near-zero (requires a multi-region-write-capable data layer like Spanner).
 - **RTO:** Near-zero (no cutover step — the load balancer simply stops routing to the unhealthy region).
@@ -116,8 +116,8 @@ Both regions run at full production capacity and serve live traffic simultaneous
 ## 7. Production & Enterprise Usage
 
 - Regulated industries typically classify systems by business-impact tier (e.g., Tier 1/2/3), assigning explicit RPO/RTO targets and required DR pattern per tier, rather than applying a single organization-wide DR standard — this keeps DR spend proportional to actual business risk.
-- DR plans are only as good as their last successful test — mature organizations run scheduled failover drills (sometimes called game days, covered further in Section 80) to validate that documented RTO/RPO targets are actually achievable, not just theoretically designed.
-- Cross-region replication choices (Section 58.4) are typically decided jointly with the architecture pattern from Section 56 — a system already built active-active for performance reasons effectively gets near-zero-RPO/RTO DR "for free," while a single-region system needs an explicit, separate DR investment layered on top.
+- DR plans are only as good as their last successful test — mature organizations run scheduled failover drills (sometimes called game days, covered further in [Section 80](../Part12/Section-80-Part12-Continuous-DR-Validation-Game-Days.md)) to validate that documented RTO/RPO targets are actually achievable, not just theoretically designed.
+- Cross-region replication choices ([Section 58](./Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md).4) are typically decided jointly with the architecture pattern from [Section 56](./Section-56-Part8-Enterprise-Architecture-Patterns.md) — a system already built active-active for performance reasons effectively gets near-zero-RPO/RTO DR "for free," while a single-region system needs an explicit, separate DR investment layered on top.
 
 ## 8. Common Misconceptions
 

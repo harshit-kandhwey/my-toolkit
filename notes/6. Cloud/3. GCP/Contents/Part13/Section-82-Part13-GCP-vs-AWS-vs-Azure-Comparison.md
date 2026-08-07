@@ -38,7 +38,7 @@
 | Memorystore (17)                 | ElastiCache                                                                            | Azure Cache for Redis                                      |
 | Storage/DB Decision Matrix (18)  | (decision framework)                                                                   | (decision framework)                                       |
 
-> 💡 **Tip:** Cloud Spanner is the one row on this table with the weakest true equivalent — it is Google's genuinely distinctive offering (globally distributed, strongly consistent, horizontally scalable relational SQL with TrueTime-based external consistency), and neither AWS nor Azure has shipped a fully equivalent product as of this writing; this is a legitimate, frequently-cited GCP differentiator, covered in depth in Section 14.
+> 💡 **Tip:** Cloud Spanner is the one row on this table with the weakest true equivalent — it is Google's genuinely distinctive offering (globally distributed, strongly consistent, horizontally scalable relational SQL with TrueTime-based external consistency), and neither AWS nor Azure has shipped a fully equivalent product as of this writing; this is a legitimate, frequently-cited GCP differentiator, covered in depth in [Section 14](../Part2/Section-14-Part2-Cloud-Spanner.md).
 
 ## 5. Networking
 
@@ -54,7 +54,7 @@
 | Hybrid & Multi-Cloud Networking (26)                | Transit Gateway / Direct Connect Gateway                           | Virtual WAN                                                                          |
 | Network Intelligence Center & Traffic Director (27) | VPC Reachability Analyzer / CloudWatch Network Insights / App Mesh | Network Watcher / (no direct Traffic Director service-mesh-control-plane equivalent) |
 
-> ⚠️ **Interview-relevant nuance:** GCP's VPC is a **global** resource with **regional** subnets (Section 19–20); both AWS's VPC and Azure's VNet are inherently **regional** resources with zonal/regional subnets. This is the single most frequently probed cross-provider networking distinction in interviews.
+> ⚠️ **Interview-relevant nuance:** GCP's VPC is a **global** resource with **regional** subnets ([Section 19](../Part3/Section-19-Part3-VPC-Fundamentals.md)–[Section 20](../Part3/Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)); both AWS's VPC and Azure's VNet are inherently **regional** resources with zonal/regional subnets. This is the single most frequently probed cross-provider networking distinction in interviews.
 
 ## 6. Containers and Kubernetes
 
@@ -68,7 +68,7 @@
 | GKE Security & Workload Identity (33) | EKS IRSA (IAM Roles for Service Accounts)               | AKS Workload Identity               |
 | GKE Operations (34)                   | EKS managed node groups / Karpenter                     | AKS node pools / cluster autoscaler |
 
-> 🔑 **Note:** GKE is widely regarded as the most mature of the three managed Kubernetes offerings, a direct reflection of Google's Borg heritage (Section 1) — this is one of GCP's clearest genuine differentiators, not just marketing.
+> 🔑 **Note:** GKE is widely regarded as the most mature of the three managed Kubernetes offerings, a direct reflection of Google's Borg heritage ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)) — this is one of GCP's clearest genuine differentiators, not just marketing.
 
 ## 7. Identity, Governance, and Security
 
@@ -84,7 +84,7 @@
 | Cloud Identity & BeyondCorp (42)                   | IAM Identity Center + Verified Access                                               | Microsoft Entra ID + Entra Private Access                        |
 | Binary Authorization & Confidential Computing (43) | ECR image scanning + signing / AWS Nitro Enclaves                                   | Azure confidential computing (confidential VMs)                  |
 
-> ⚠️ **Gap worth naming honestly:** VPC Service Controls (Section 41) — a perimeter-based data-exfiltration control around managed services — has no clean one-to-one AWS or Azure equivalent; this is a genuine GCP differentiator in the security direction, not a gap, and is worth highlighting distinctly from the gaps noted in Section 82.10.
+> ⚠️ **Gap worth naming honestly:** VPC Service Controls ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)) — a perimeter-based data-exfiltration control around managed services — has no clean one-to-one AWS or Azure equivalent; this is a genuine GCP differentiator in the security direction, not a gap, and is worth highlighting distinctly from the gaps noted in [Section 82](./Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md).10.
 
 ## 8. Data, Analytics, and AI/ML
 
@@ -118,16 +118,16 @@
 
 ## 10. GCP's Genuine Differentiators
 
-- **BigQuery's serverless analytics model:** no cluster to provision or manage at all — query pricing is purely on bytes scanned or flat-rate slots, a genuinely distinct operational model versus Redshift's or Synapse's provisioned-cluster foundations (Section 44).
-- **Global VPC model:** GCP's VPC-as-a-global-resource design (Section 19–20) is architecturally distinct from both AWS's and Azure's regional-VPC models, simplifying multi-region network design in ways the other two providers require Transit Gateway/Virtual WAN overlays to approximate.
-- **Kubernetes/GKE heritage:** GKE's direct lineage from Google's internal Borg system (Section 1) gives it a maturity and operational polish — Autopilot's fully-managed node layer, first-class Workload Identity — that both EKS and AKS have converged toward but arrived at later.
-- **TPUs (Tensor Processing Units):** custom AI/ML accelerator silicon unique to GCP (Section 65–66), offering a genuinely different price/performance profile for large-scale training workloads than GPU-only offerings from AWS and Azure.
+- **BigQuery's serverless analytics model:** no cluster to provision or manage at all — query pricing is purely on bytes scanned or flat-rate slots, a genuinely distinct operational model versus Redshift's or Synapse's provisioned-cluster foundations ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)).
+- **Global VPC model:** GCP's VPC-as-a-global-resource design ([Section 19](../Part3/Section-19-Part3-VPC-Fundamentals.md)–[Section 20](../Part3/Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)) is architecturally distinct from both AWS's and Azure's regional-VPC models, simplifying multi-region network design in ways the other two providers require Transit Gateway/Virtual WAN overlays to approximate.
+- **Kubernetes/GKE heritage:** GKE's direct lineage from Google's internal Borg system ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)) gives it a maturity and operational polish — Autopilot's fully-managed node layer, first-class Workload Identity — that both EKS and AKS have converged toward but arrived at later.
+- **TPUs (Tensor Processing Units):** custom AI/ML accelerator silicon unique to GCP ([Section 65](../Part10/Section-65-Part10-Vertex-AI-Fundamentals.md)–[Section 66](../Part10/Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)), offering a genuinely different price/performance profile for large-scale training workloads than GPU-only offerings from AWS and Azure.
 
 ## 11. GCP's Genuine Gaps
 
 - **Smaller marketplace and region footprint:** GCP has fewer regions and a smaller third-party marketplace ecosystem than AWS, meaning some workloads with strict low-latency-to-every-market requirements or deep marketplace-integration needs are easier to satisfy on AWS today.
 - **No native chaos-engineering product:** as covered in Sections 78–79, GCP has no first-party equivalent to AWS Fault Injection Simulator or Azure Chaos Studio — chaos engineering on GCP requires open-source tooling (Chaos Mesh, Gremlin) rather than a fully-managed native service.
-- **Smaller enterprise landing-zone tooling ecosystem:** as covered in Section 59, GCP has no single managed product equivalent to AWS Control Tower or Azure Landing Zone accelerators — the Enterprise Foundations Blueprint is a Terraform reference architecture you deploy and own yourself, not a console-driven managed service, meaning more up-front assembly work for enterprise governance.
+- **Smaller enterprise landing-zone tooling ecosystem:** as covered in [Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md), GCP has no single managed product equivalent to AWS Control Tower or Azure Landing Zone accelerators — the Enterprise Foundations Blueprint is a Terraform reference architecture you deploy and own yourself, not a console-driven managed service, meaning more up-front assembly work for enterprise governance.
 
 ## 12. Interview Questions
 
@@ -138,7 +138,7 @@
 **Model answer:** Spanner combines properties that no single AWS or Azure product offers together: horizontal scalability across regions, strong (external) consistency guarantees backed by Google's TrueTime API, and a familiar relational SQL interface. Aurora offers relational SQL with strong regional consistency but not Spanner's global external-consistency guarantees at scale; Cosmos DB offers global distribution but with a different consistency-model menu and a non-relational-first API surface. This gap is a genuine architectural differentiator, not just a naming difference.
 
 **🎯 Senior/Architect:** _A team is deciding between GCP and AWS for a new global, latency-sensitive multi-region application. What's the most architecturally significant infrastructure difference they should factor into that decision?_
-**Model answer:** GCP's global VPC model (Section 19) versus AWS's regional VPC model is the most architecturally significant difference for this use case — on GCP, a single VPC spans every region with regional subnets, meaning cross-region private connectivity requires no VPC peering or Transit Gateway at all; on AWS, achieving equivalent cross-region private connectivity requires explicitly provisioning Transit Gateway or peering between regional VPCs. This doesn't make one provider strictly better, but it meaningfully changes the network architecture's complexity and operational surface for a genuinely global, multi-region design, and should be weighed alongside region count, service availability per region, and team familiarity rather than decided on service-name parity alone.
+**Model answer:** GCP's global VPC model ([Section 19](../Part3/Section-19-Part3-VPC-Fundamentals.md)) versus AWS's regional VPC model is the most architecturally significant difference for this use case — on GCP, a single VPC spans every region with regional subnets, meaning cross-region private connectivity requires no VPC peering or Transit Gateway at all; on AWS, achieving equivalent cross-region private connectivity requires explicitly provisioning Transit Gateway or peering between regional VPCs. This doesn't make one provider strictly better, but it meaningfully changes the network architecture's complexity and operational surface for a genuinely global, multi-region design, and should be weighed alongside region count, service availability per region, and team familiarity rather than decided on service-name parity alone.
 
 ## 13. Key Takeaways
 
@@ -149,4 +149,4 @@
 
 ## 14. Related Concepts
 
-This comparison table draws on every prior Part of this knowledge base; it feeds directly into the consolidated interview preparation in Section 83 and the capstone labs in Section 84, both of which assume fluency with these cross-provider mappings.
+This comparison table draws on every prior Part of this knowledge base; it feeds directly into the consolidated interview preparation in [Section 83](./Section-83-Part13-Interview-Preparation-Consolidated.md) and the capstone labs in [Section 84](./Section-84-Part13-Hands-On-Labs-Capstone-Projects.md), both of which assume fluency with these cross-provider mappings.

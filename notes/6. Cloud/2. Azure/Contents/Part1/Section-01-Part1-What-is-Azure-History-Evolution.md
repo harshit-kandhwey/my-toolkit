@@ -34,7 +34,7 @@ Azure (and public cloud generally) solves this by converting **CapEx into OpEx**
 - **2012 — IaaS capabilities added**, including Azure Virtual Machines and Virtual Networks, allowing customers to run arbitrary VMs (Windows or Linux) with full OS-level control, directly matching AWS EC2's model and broadening Azure's addressable market beyond pure PaaS developers.
 - **2014 — Renamed "Microsoft Azure"** from "Windows Azure," a deliberate signal that the platform was no longer Windows-only — Linux workloads, open-source tooling, and non-Microsoft technologies became first-class citizens on the platform.
 - **2014 onward — Rapid service expansion**: Azure SQL Database, Azure Storage maturation, Azure Active Directory (identity), and a steadily growing catalog of managed services.
-- **2015 — Azure Resource Manager (ARM)** became the standard deployment and management model, replacing the older "Azure Service Management" (ASM/"classic") model. ARM introduced resource groups, declarative templates, and unified role-based access control — this is covered in depth in Section 4.
+- **2015 — Azure Resource Manager (ARM)** became the standard deployment and management model, replacing the older "Azure Service Management" (ASM/"classic") model. ARM introduced resource groups, declarative templates, and unified role-based access control — this is covered in depth in [Section 4](./Section-04-Part1-Azure-Resource-Manager.md).
 - **2018–2020 — Kubernetes & cloud-native investment**: Azure Kubernetes Service (AKS) reached general availability (2018), and Azure invested heavily in containers, DevOps tooling (Azure DevOps, formerly Visual Studio Team Services), and hybrid cloud (Azure Arc, announced 2019).
 - **2023 — Microsoft Entra**: Azure Active Directory was rebranded as part of the broader "Microsoft Entra" identity product family, reflecting an expanded identity and access portfolio beyond just directory services.
   > ⚠️ **Verify against current docs** — Microsoft continues to evolve Entra branding and sub-product names; treat any specific Entra sub-product names in later sections as subject to change and confirm current naming before using in production documentation.
@@ -51,7 +51,7 @@ Azure (and public cloud generally) solves this by converting **CapEx into OpEx**
 | **CapEx (Capital Expenditure)**        | Upfront spending on physical assets (like servers) that are owned and depreciated over time.                                                                                                                                                                                  |
 | **OpEx (Operational Expenditure)**     | Ongoing, recurring spending for services consumed (like a cloud subscription bill), rather than owned assets.                                                                                                                                                                 |
 | **Hyperscale cloud provider**          | A cloud provider operating at massive global scale across many regions and data centers, typically referring to AWS, Azure, and GCP.                                                                                                                                          |
-| **ARM (Azure Resource Manager)**       | Azure's deployment and management layer that processes requests to create, update, and delete resources; covered fully in Section 4.                                                                                                                                          |
+| **ARM (Azure Resource Manager)**       | Azure's deployment and management layer that processes requests to create, update, and delete resources; covered fully in [Section 4](./Section-04-Part1-Azure-Resource-Manager.md).                                                                                          |
 
 ## 6. Modern Use Cases
 
@@ -71,9 +71,9 @@ Azure is widely adopted particularly among **enterprises already invested in the
 - Basic networking concepts (IP addressing, DNS, TCP/UDP, HTTP/HTTPS) — briefly reintroduced in Part 5 where relevant.
 - Basic Linux/Windows OS familiarity — needed for VM and container sections; not re-taught in depth here.
 - Basic understanding of virtualization (VMs, hypervisors) — a hypervisor allows one physical machine to run multiple isolated virtual machines, each with its own OS — this concept underlies all of Azure's compute IaaS offerings.
-- Familiarity with command-line usage — helpful for CLI sections in Section 5.
+- Familiarity with command-line usage — helpful for CLI sections in [Section 5](./Section-05-Part1-Azure-Tooling-Overview.md).
 
-## 9. Interview Questions — Section 1
+## 9. Interview Questions — [Section 1](./Section-01-Part1-What-is-Azure-History-Evolution.md)
 
 ### 🎯 Junior level
 
@@ -113,4 +113,4 @@ _What the interviewer is probing:_ whether the candidate can reason about busine
 
 ## 12. Related Concepts (Next Up)
 
-Section 2 will build directly on this foundation by formalizing the **cloud service models (IaaS/PaaS/SaaS)** and **deployment models (public/private/hybrid/multi-cloud)** introduced briefly here, followed by Section 3 covering Azure's **physical global infrastructure** (Regions, Availability Zones) that everything in later Parts is physically deployed onto.
+[Section 2](./Section-02-Part1-Cloud-Service-and-Deployment-Models.md) will build directly on this foundation by formalizing the **cloud service models (IaaS/PaaS/SaaS)** and **deployment models (public/private/hybrid/multi-cloud)** introduced briefly here, followed by [Section 3](./Section-03-Part1-Azure-Global-Infrastructure.md) covering Azure's **physical global infrastructure** (Regions, Availability Zones) that everything in later Parts is physically deployed onto.

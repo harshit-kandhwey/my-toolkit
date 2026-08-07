@@ -1,8 +1,8 @@
 # Section 50 (Part 6): Regular Expressions for Linux Administration
 
-## 1. Why This Section Exists Separately From §48
+## 1. Why This Section Exists Separately From [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)
 
-§48 introduced `grep`, `sed`, and `awk` and used regular expressions freely along the way — matching patterns, capturing groups, anchoring lines — without stopping to explain the regex syntax itself in depth, on the promise that full regex coverage was coming later. This section is that deferred depth. Every pattern shown here plugs directly back into the three tools §48 covered; nothing here is a new tool, only a deeper treatment of the pattern language all three (plus `find -regex`, §49) consume.
+[§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) introduced `grep`, `sed`, and `awk` and used regular expressions freely along the way — matching patterns, capturing groups, anchoring lines — without stopping to explain the regex syntax itself in depth, on the promise that full regex coverage was coming later. This section is that deferred depth. Every pattern shown here plugs directly back into the three tools [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) covered; nothing here is a new tool, only a deeper treatment of the pattern language all three (plus `find -regex`, [§49](./Section-49-Part6-Essential-Utilities-Cut-Sort-Uniq-Tr-Wc-Xargs-Find.md)) consume.
 
 Regular expressions (regex) are a pattern-matching language for describing sets of strings — "any line containing an IP-address-shaped sequence," "any line starting with a timestamp," "any word that looks like an email address" — rather than a single literal string. Nearly every Linux text-processing tool accepts them, which makes regex one of the highest-leverage skills in the entire administration toolkit: the same mental model transfers across `grep`, `sed`, `awk`, `find -regex`, log-shipping filters, and application-level validation logic written in any language.
 
@@ -26,7 +26,7 @@ The dialects differ in exactly one confusing way: **which characters are "specia
 
 `.`, `*`, `^`, `$`, and `[...]` behave identically in both dialects — the inversion is scoped specifically to `+`, `?`, `|`, `()`, and `{n,m}`. In practice, most administrators default to `grep -E` for anything beyond the simplest literal or `.*`-style match, precisely to avoid tracking which dialect a given invocation is using.
 
-> 💡 **Tip:** `awk` uses ERE syntax natively for its `match()`, `~`, `!~`, and `gsub()`/`sub()` pattern arguments — no `-E` flag needed or available, because ERE is simply how `awk` always interprets patterns. This is one more reason `grep -E` is the more transferable habit: it keeps the mental model consistent with `awk`, which §48 covered as the third leg of the text-processing toolkit.
+> 💡 **Tip:** `awk` uses ERE syntax natively for its `match()`, `~`, `!~`, and `gsub()`/`sub()` pattern arguments — no `-E` flag needed or available, because ERE is simply how `awk` always interprets patterns. This is one more reason `grep -E` is the more transferable habit: it keeps the mental model consistent with `awk`, which [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) covered as the third leg of the text-processing toolkit.
 
 ## 3. Core Metacharacters
 
@@ -90,7 +90,7 @@ $ echo "Kandhwey, Harshit" | sed -E 's/([A-Za-z]+), ([A-Za-z]+)/\2 \1/'
 Harshit Kandhwey
 ```
 
-Here `([A-Za-z]+)` captures the surname into `\1`, `([A-Za-z]+)` captures the first name into `\2`, and the replacement `\2 \1` swaps their order. This is the mechanism behind §48's `sed` "search and rearrange" examples — capture groups are what make `sed` a substitution tool rather than just a find-and-delete one.
+Here `([A-Za-z]+)` captures the surname into `\1`, `([A-Za-z]+)` captures the first name into `\2`, and the replacement `\2 \1` swaps their order. This is the mechanism behind [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)'s `sed` "search and rearrange" examples — capture groups are what make `sed` a substitution tool rather than just a find-and-delete one.
 
 A **backreference within the search pattern itself** (as opposed to the replacement) matches whatever the corresponding group already matched earlier in the same line — useful for finding repeated words or duplicated tokens:
 
@@ -115,7 +115,7 @@ This extracts the value following `user=` without including `user=` itself in th
 
 ## 8. Worked Examples: Regex Applied to Real Admin Tasks
 
-Each of these ties directly back to §48's `grep`/`sed`/`awk` coverage, now with the underlying pattern explained rather than taken on faith.
+Each of these ties directly back to [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)'s `grep`/`sed`/`awk` coverage, now with the underlying pattern explained rather than taken on faith.
 
 **8.1 Matching an IPv4 address in a log file**
 
@@ -131,7 +131,7 @@ grep -E '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' /var/log/auth.log
 awk 'match($0, /^[A-Za-z]{3} +[0-9]{1,2} [0-9]{2}:[0-9]{2}:[0-9]{2}/) { print substr($0, RSTART, RLENGTH) }' /var/log/syslog
 ```
 
-The pattern matches the traditional syslog timestamp shape — a three-letter month abbreviation, variable-width day-of-month padding (` +` handles both single- and double-digit days), then `HH:MM:SS`. `awk`'s `match()` sets `RSTART`/`RLENGTH`, and `substr()` extracts exactly the matched span — the standard `awk` idiom (§48) for pulling out a substring rather than just testing whether a pattern matched.
+The pattern matches the traditional syslog timestamp shape — a three-letter month abbreviation, variable-width day-of-month padding (` +` handles both single- and double-digit days), then `HH:MM:SS`. `awk`'s `match()` sets `RSTART`/`RLENGTH`, and `substr()` extracts exactly the matched span — the standard `awk` idiom ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)) for pulling out a substring rather than just testing whether a pattern matched.
 
 **8.3 Validating a hostname format**
 
@@ -195,8 +195,8 @@ _What the interviewer is probing for:_ A systematic, fleet-scale review checklis
 
 ## 12. Related Concepts & What's Next
 
-This section is the deferred full depth §48 promised when it introduced `grep`, `sed`, and `awk` — every pattern shown here plugs directly into those three tools, and §49's `find -regex` flag consumes the same BRE/ERE dialects covered in 2. Together, §41–§50 form Part 6's complete shell, scripting, and text-processing toolkit — shells and configuration, redirection and pipes, control operators, bash scripting fundamentals, control structures, functions/arrays/string manipulation, `grep`/`sed`/`awk`, `cut`/`sort`/`uniq`/`tr`/`wc`/`xargs`/`find`, and now regex itself as the pattern language underlying most of them.
+This section is the deferred full depth [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) promised when it introduced `grep`, `sed`, and `awk` — every pattern shown here plugs directly into those three tools, and [§49](./Section-49-Part6-Essential-Utilities-Cut-Sort-Uniq-Tr-Wc-Xargs-Find.md)'s `find -regex` flag consumes the same BRE/ERE dialects covered in 2. Together, [§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md)–[§50](./Section-50-Part6-Regular-Expressions-For-Linux-Administration.md) form Part 6's complete shell, scripting, and text-processing toolkit — shells and configuration, redirection and pipes, control operators, bash scripting fundamentals, control structures, functions/arrays/string manipulation, `grep`/`sed`/`awk`, `cut`/`sort`/`uniq`/`tr`/`wc`/`xargs`/`find`, and now regex itself as the pattern language underlying most of them.
 
-Part 7 (§51–§58), next, moves to **Networking** — and regex resurfaces there in a practical way almost immediately, since parsing `ss`, `dig`, and log output for connection state, DNS answers, and traffic patterns leans on exactly the same grep/awk/regex habits built in this Part, just pointed at network-facing text instead of general log files.
+Part 7 ([§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)–[§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)), next, moves to **Networking** — and regex resurfaces there in a practical way almost immediately, since parsing `ss`, `dig`, and log output for connection state, DNS answers, and traffic patterns leans on exactly the same grep/awk/regex habits built in this Part, just pointed at network-facing text instead of general log files.
 
-**Next Section:** §51 — `Section-51-Part7-Networking-Fundamentals-Recap.md`
+**Next Section:** [§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md) — `Section-51-Part7-Networking-Fundamentals-Recap.md`

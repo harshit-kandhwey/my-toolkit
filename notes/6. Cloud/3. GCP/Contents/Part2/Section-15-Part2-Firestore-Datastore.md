@@ -137,4 +137,4 @@ gcloud firestore export gs://my-toolkit-demo-bucket/firestore-backups/2026-07-25
 
 ## 11. Related Concepts
 
-Bigtable for massive-scale wide-column workloads beyond Firestore's client-facing sweet spot (Section 16), BigQuery for analytics on exported Firestore data (Section 44), IAM and Firestore Security Rules for access control (Section 35), the storage/database decision matrix (Section 18), and the AWS DynamoDB/Azure Cosmos DB comparison here and in Section 82.
+Bigtable for massive-scale wide-column workloads beyond Firestore's client-facing sweet spot ([Section 16](./Section-16-Part2-Bigtable.md)), BigQuery for analytics on exported Firestore data ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)), IAM and Firestore Security Rules for access control ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), the storage/database decision matrix ([Section 18](./Section-18-Part2-Storage-DB-Decision-Matrix.md)), and the AWS DynamoDB/Azure Cosmos DB comparison here and in [Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md).

@@ -15,7 +15,7 @@
 ## 2. Why AMIs Exist
 
 - Without templating, every new instance starts from a bare OS install — slow, error-prone, inconsistent.
-- AMIs let you capture a known-good state once, launch identical instances repeatedly — enabling horizontal scaling (Auto Scaling, §5) and IaC consistency.
+- AMIs let you capture a known-good state once, launch identical instances repeatedly — enabling horizontal scaling (Auto Scaling, [§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)) and IaC consistency.
 - **Region-specific, deliberately:** an AMI is tied to its creation Region — you cannot launch from it in another Region without explicitly copying it first.
 
 ---
@@ -59,12 +59,12 @@
 ### 5.1 AMI Permissions
 
 - **Private (default)** — only your account.
-- **Shared with specific accounts** — explicit account ID grants, a simpler mechanism than a full IAM resource policy but the same cross-account spirit as §13.2.
+- **Shared with specific accounts** — explicit account ID grants, a simpler mechanism than a full IAM resource policy but the same cross-account spirit as [§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)3.2.
 - **Public** — anyone (how Marketplace/Community AMIs distribute).
 
 ### 5.2 Encrypted AMI Sharing
 
-- If the underlying snapshot is KMS-encrypted with a CMK, cross-account sharing **also requires** sharing key-usage permission via the KMS key policy — direct application of "key policy is the primary gate" (§14) — a common real-world gotcha.
+- If the underlying snapshot is KMS-encrypted with a CMK, cross-account sharing **also requires** sharing key-usage permission via the KMS key policy — direct application of "key policy is the primary gate" ([§14](../Part2/Section-14-Part2-KMS-and-Encryption.md)) — a common real-world gotcha.
 
 ### 5.3 Copying AMIs Across Regions
 
@@ -82,7 +82,7 @@ m6i.2xlarge
 └────── Family (M = general purpose)
 ```
 
-- **Family letter(s)** — workload category (§7).
+- **Family letter(s)** — workload category ([§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)).
 - **Feature variant letters:** `i` = Intel, `a` = AMD, `g` = Graviton (ARM), `n` = enhanced networking, `d` = local instance store (NVMe SSD).
 - **Generation number** — later = better price-performance generally.
 - **Size** — scales vCPU/memory/network roughly proportionally within a family.
@@ -113,7 +113,7 @@ m6i.2xlarge
 ## 8. Graviton — AWS's Custom ARM Processor
 
 - **Graviton** = AWS's own custom ARM-architecture chips (not licensed Intel/AMD x86). `g` in the instance type name (`m7g`, `c7g`, `r7g`).
-- **Benefit:** meaningfully better price-performance for many workloads vs comparable x86 (§6 cost optimization).
+- **Benefit:** meaningfully better price-performance for many workloads vs comparable x86 ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md) cost optimization).
 - **Trade-off:** software must be compiled for ARM (or be architecture-agnostic) — may require rebuilding container images/verifying dependency compatibility.
 
 ---
@@ -130,14 +130,14 @@ m6i.2xlarge
 ## 10. Production & Enterprise Usage
 
 - **EC2 Image Builder** — automates the golden-image pipeline (build, test, distribute updated AMIs on schedule/trigger).
-- **Standardized golden images across an Organization** — centrally-approved hardened images shared via AMI-sharing across accounts (mapped to §13's OU structure), enforcing a consistent baseline.
+- **Standardized golden images across an Organization** — centrally-approved hardened images shared via AMI-sharing across accounts (mapped to [§13](../Part2/Section-13-Part2-AWS-Organizations-and-SCPs.md)'s OU structure), enforcing a consistent baseline.
 - **Graviton migration** as an active cost-optimization initiative — a common real-world project.
 
 ---
 
 ## 11. Security Considerations
 
-- **Strip secrets/credentials before AMI creation** — a baked-in credential exists in every future instance launched from it, a much larger blast radius than a single leak (§15 principle, applied to image-baking).
+- **Strip secrets/credentials before AMI creation** — a baked-in credential exists in every future instance launched from it, a much larger blast radius than a single leak ([§15](../Part2/Section-15-Part2-Secrets-Manager-and-Parameter-Store.md) principle, applied to image-baking).
 - **Vet Community/Marketplace AMIs** with the same scrutiny as any external dependency; prefer AWS-provided or custom AMIs for security-sensitive workloads.
 - **Encrypted cross-account AMI sharing requires KMS key policy alignment** (§5.2) — a common practical gotcha.
 
@@ -204,6 +204,6 @@ m6i.2xlarge
 
 ## 🌐 Related Concepts (forward links)
 
-- EC2 purchasing options (On-Demand, Reserved, Spot, Savings Plans) → §21
+- EC2 purchasing options (On-Demand, Reserved, Spot, Savings Plans) → [§21](./Section-21-Part3-EC2-Purchasing-Options.md)
 - EBS volumes underlying AMI snapshots, in full depth → Part 5
-- Auto Scaling launch templates referencing AMIs → §23
+- Auto Scaling launch templates referencing AMIs → [§23](./Section-23-Part3-Auto-Scaling-Groups.md)

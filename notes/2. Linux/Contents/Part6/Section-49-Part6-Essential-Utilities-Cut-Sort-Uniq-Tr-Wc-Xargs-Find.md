@@ -2,7 +2,7 @@
 
 ## 1. Where These Fit Relative to grep/sed/awk
 
-§48 covered `grep`, `sed`, and `awk` as the heavyweight text-processing tools — pattern matching, stream editing, and field-based programmable processing. This section covers seven smaller, single-purpose utilities that are used constantly _alongside_ those three, usually chained together in the same pipeline (§43 covered the pipe mechanics these all depend on). None of these tools is individually as powerful as `awk`, and that's deliberate — each does one narrow thing well, which is exactly the small-composable-tools philosophy that shows up repeatedly across this knowledge base. Real production one-liners rarely use just one of these; they chain two, three, or four together, and recognizing the idiomatic combinations (`sort | uniq -c`, `find | xargs`) is more valuable than memorizing any single tool's full flag list.
+[§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) covered `grep`, `sed`, and `awk` as the heavyweight text-processing tools — pattern matching, stream editing, and field-based programmable processing. This section covers seven smaller, single-purpose utilities that are used constantly _alongside_ those three, usually chained together in the same pipeline ([§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md) covered the pipe mechanics these all depend on). None of these tools is individually as powerful as `awk`, and that's deliberate — each does one narrow thing well, which is exactly the small-composable-tools philosophy that shows up repeatedly across this knowledge base. Real production one-liners rarely use just one of these; they chain two, three, or four together, and recognizing the idiomatic combinations (`sort | uniq -c`, `find | xargs`) is more valuable than memorizing any single tool's full flag list.
 
 ## 2. `cut`: Extracting Fixed Fields or Character Ranges
 
@@ -37,7 +37,7 @@ $ echo "hello world" | cut -c1-5
 hello
 ```
 
-**The key limitation vs. `awk`:** `cut -d` accepts exactly **one delimiter character**, and it treats fields as separated by exactly that character with no collapsing of repeats — a line with multiple consecutive spaces (common in `ps` or `ls -l` output) produces empty fields between them, because `cut` doesn't understand "one or more spaces" as a single separator the way `awk`'s default field-splitting does. `ps aux | cut -d' ' -f2` on real `ps` output is a classic beginner mistake that silently returns garbage, because the columns aren't separated by exactly one space. `awk '{print $2}'` (§48) handles that correctly by treating any run of whitespace as one delimiter. Reach for `cut` when the input has a single, consistent, single-character delimiter (`:`, `,`, `\t`) — reach for `awk` the moment delimiters are irregular or multi-character.
+**The key limitation vs. `awk`:** `cut -d` accepts exactly **one delimiter character**, and it treats fields as separated by exactly that character with no collapsing of repeats — a line with multiple consecutive spaces (common in `ps` or `ls -l` output) produces empty fields between them, because `cut` doesn't understand "one or more spaces" as a single separator the way `awk`'s default field-splitting does. `ps aux | cut -d' ' -f2` on real `ps` output is a classic beginner mistake that silently returns garbage, because the columns aren't separated by exactly one space. `awk '{print $2}'` ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)) handles that correctly by treating any run of whitespace as one delimiter. Reach for `cut` when the input has a single, consistent, single-character delimiter (`:`, `,`, `\t`) — reach for `awk` the moment delimiters are irregular or multi-character.
 
 > 💡 **Tip:** `cut` is meaningfully faster and more readable than `awk` for the simple case it's built for — don't reach for `awk '{print $1}'` out of habit when `cut -d, -f1` says exactly the same thing more directly for well-formed, single-delimiter input like CSV.
 
@@ -202,7 +202,7 @@ $ find . -name '*.conf' | xargs -I{} cp {} {}.bak
 
 ## 8. `find`: Locating Files by Attribute
 
-**Purpose:** Search a directory tree for files/directories matching name, type, modification time, size, and other attributes — §21 (Part 3) covered basic filesystem navigation; `find` is the tool for locating files by _criteria_ rather than by known path.
+**Purpose:** Search a directory tree for files/directories matching name, type, modification time, size, and other attributes — [§21](../Part3/Section-21-Part3-File-Directory-Operations.md) covered basic filesystem navigation; `find` is the tool for locating files by _criteria_ rather than by known path.
 
 **Syntax:**
 
@@ -245,7 +245,7 @@ $ find /tmp -type f -mtime +7 -delete
 $ find /var/log/app -name '*.log' -mtime +30 -print0 | xargs -0 rm -v
 ```
 
-Null-delimited throughout (7's Warning), scoped to a specific name pattern and age threshold rather than a blanket delete — the kind of pipeline that's safe to run unattended in a cron job (§40 covers scheduling).
+Null-delimited throughout (7's Warning), scoped to a specific name pattern and age threshold rather than a blanket delete — the kind of pipeline that's safe to run unattended in a cron job ([§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) covers scheduling).
 
 **Top 10 largest directories under the current path:**
 
@@ -261,7 +261,7 @@ $ du -sh */ 2>/dev/null | sort -rh | head -10
 $ awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -20
 ```
 
-`awk` extracts the first whitespace-delimited field (the client IP, in standard combined log format — §48), `sort` makes identical IPs adjacent so `uniq -c` (4) can count them correctly, and the final `sort -rn` ranks by request volume descending. This exact shape — extract, sort, uniq -c, sort again — is worth memorizing as a template; it answers "what are the most common values of column X" for almost any structured log file.
+`awk` extracts the first whitespace-delimited field (the client IP, in standard combined log format — [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)), `sort` makes identical IPs adjacent so `uniq -c` (4) can count them correctly, and the final `sort -rn` ranks by request volume descending. This exact shape — extract, sort, uniq -c, sort again — is worth memorizing as a template; it answers "what are the most common values of column X" for almost any structured log file.
 
 ## 10. Common Misconceptions
 
@@ -286,12 +286,12 @@ _What the interviewer is probing for:_ Recognizing `cut`'s single-character-deli
 _What the interviewer is probing for:_ Correctly identifying the filename-splitting bug as the primary issue, knowing the concrete fix (`-print0`/`-0` or `-delete`), and connecting "runs unattended via cron" to why silent failure modes matter more here than in an interactive session.
 
 **🎯 Architect:** _"You need a nightly job that reports the top 20 most active client IPs from a multi-gigabyte access log, without loading the whole file into memory in a custom script. How would you build it, and what would you watch for at scale?"_
-**Model answer:** I'd build it as a streaming pipeline rather than a script that reads the whole file in: `awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -20` — each stage processes a stream and hands output to the next via a pipe (§43), so nothing needs the full file resident in memory except `sort`, which spills to disk temp files automatically once its buffer is exceeded rather than failing outright, which is exactly why this scales to multi-gigabyte input where a naive in-memory approach in a custom script wouldn't without deliberate care. At real scale I'd watch a few things: `sort`'s temp-file I/O can become the bottleneck on a disk-constrained host, so I'd consider `sort --parallel` or ensuring `/tmp` has headroom and reasonable I/O; if the log rotates, I'd make sure the job targets the correct file (or globs across a rotation window) rather than assuming one static path; and if this needs to run frequently against a live, actively-appended log, I'd consider whether a proper log-analysis pipeline (structured logging into something queryable) is a better long-term answer than re-deriving this awk/sort/uniq chain by hand every night — the shell pipeline is the right tool for an ad hoc or lightweight recurring check, not necessarily for a system that needs this data queryable on demand.
+**Model answer:** I'd build it as a streaming pipeline rather than a script that reads the whole file in: `awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -20` — each stage processes a stream and hands output to the next via a pipe ([§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md)), so nothing needs the full file resident in memory except `sort`, which spills to disk temp files automatically once its buffer is exceeded rather than failing outright, which is exactly why this scales to multi-gigabyte input where a naive in-memory approach in a custom script wouldn't without deliberate care. At real scale I'd watch a few things: `sort`'s temp-file I/O can become the bottleneck on a disk-constrained host, so I'd consider `sort --parallel` or ensuring `/tmp` has headroom and reasonable I/O; if the log rotates, I'd make sure the job targets the correct file (or globs across a rotation window) rather than assuming one static path; and if this needs to run frequently against a live, actively-appended log, I'd consider whether a proper log-analysis pipeline (structured logging into something queryable) is a better long-term answer than re-deriving this awk/sort/uniq chain by hand every night — the shell pipeline is the right tool for an ad hoc or lightweight recurring check, not necessarily for a system that needs this data queryable on demand.
 _What the interviewer is probing for:_ Recognizing that Unix pipelines are inherently streaming and don't require the whole file in memory, awareness of `sort`'s disk-spill behavior as the actual scaling mechanism, and the judgment to flag when a shell one-liner is the wrong long-term tool despite working correctly today.
 
 ## 12. Key Takeaways
 
-- `cut` extracts fields/characters fast but only handles a single-character delimiter with no whitespace-collapsing — `awk` (§48) is the fallback the moment delimiters are irregular.
+- `cut` extracts fields/characters fast but only handles a single-character delimiter with no whitespace-collapsing — `awk` ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)) is the fallback the moment delimiters are irregular.
 - `sort` defaults to lexical ordering — `-n` for numbers and `-h` for human-readable sizes are required for correct numeric ordering, and `-k`/`-t` target a specific column rather than the whole line.
 - `uniq` only catches **adjacent** duplicates — `sort | uniq -c` (sort first, then count) is the standard, necessary pattern, not `uniq` used alone on unsorted input.
 - `tr` operates on individual characters, not lines or fields, and only reads stdin — `-d` deletes, `-s` squeezes repeats, and POSIX classes like `[:upper:]` are more portable than explicit ranges.
@@ -302,6 +302,6 @@ _What the interviewer is probing for:_ Recognizing that Unix pipelines are inher
 
 ## 13. Related Concepts & What's Next
 
-This section builds directly on §48's `grep`/`sed`/`awk` coverage — these seven utilities are the smaller tools most frequently chained alongside those three in real pipelines — and depends on §43's redirection/pipe mechanics for how data actually flows between each stage. `find`'s file-matching criteria overlap conceptually with the filesystem-navigation groundwork in §21 (Part 3), applied here to search-by-attribute rather than known-path access. §50 (next) closes out Part 6 with regular expressions in depth — the pattern-matching syntax `grep`, `sed`, and (implicitly) several of this section's `-name`/glob-style matches have been using informally throughout.
+This section builds directly on [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)'s `grep`/`sed`/`awk` coverage — these seven utilities are the smaller tools most frequently chained alongside those three in real pipelines — and depends on [§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md)'s redirection/pipe mechanics for how data actually flows between each stage. `find`'s file-matching criteria overlap conceptually with the filesystem-navigation groundwork in [§21](../Part3/Section-21-Part3-File-Directory-Operations.md), applied here to search-by-attribute rather than known-path access. [§50](./Section-50-Part6-Regular-Expressions-For-Linux-Administration.md) (next) closes out Part 6 with regular expressions in depth — the pattern-matching syntax `grep`, `sed`, and (implicitly) several of this section's `-name`/glob-style matches have been using informally throughout.
 
-**Next Section:** §50 — `Section-50-Part6-Regular-Expressions.md`
+**Next Section:** [§50](./Section-50-Part6-Regular-Expressions-For-Linux-Administration.md) — `Section-50-Part6-Regular-Expressions.md`

@@ -2,7 +2,7 @@
 
 ## 1. Overview: Backup as a Discipline, Not Just a Command
 
-§75 established, in the context of RAID, that **RAID is not backup** — RAID protects against a disk failing, not against a fat-fingered `rm -rf`, a ransomware event, a bad deployment corrupting data, or an entire site becoming unavailable. This section is where that distinction gets its full, positive treatment: what an actual backup strategy looks like, and the Linux-native tools (`tar`, `rsync`, `dd`) most backup workflows are built from, even when the real production answer is a dedicated backup platform layered on top of them.
+[§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) established, in the context of RAID, that **RAID is not backup** — RAID protects against a disk failing, not against a fat-fingered `rm -rf`, a ransomware event, a bad deployment corrupting data, or an entire site becoming unavailable. This section is where that distinction gets its full, positive treatment: what an actual backup strategy looks like, and the Linux-native tools (`tar`, `rsync`, `dd`) most backup workflows are built from, even when the real production answer is a dedicated backup platform layered on top of them.
 
 ## 2. The 3-2-1 Rule
 
@@ -69,7 +69,7 @@ tar --create --listed-incremental=/var/backups/snap.file -czvf incr-2026-07-15.t
 
 ## 4. `rsync` as a Backup Mechanism
 
-§57 (Part 7) already covered `rsync`'s full syntax in depth as a file-transfer tool — this section doesn't re-teach that syntax, and instead focuses on `rsync` specifically **in a backup role**, which is a genuinely different use case from a one-off transfer even though the command looks similar.
+[§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md) already covered `rsync`'s full syntax in depth as a file-transfer tool — this section doesn't re-teach that syntax, and instead focuses on `rsync` specifically **in a backup role**, which is a genuinely different use case from a one-off transfer even though the command looks similar.
 
 **Why `rsync` suits repeated backup jobs specifically:** its delta-transfer algorithm compares source and destination and transfers only the differences, rather than re-copying everything every run. For a backup job that runs nightly (or more often) against a large, mostly-unchanged dataset, this is the difference between a job that takes minutes and one that takes hours — only the changed blocks move over the network or disk, not the entire dataset each time.
 
@@ -81,7 +81,7 @@ rsync -avz --delete /srv/data/ backup-host:/backups/srv-data/
 
 The `--delete` flag here is worth calling out specifically in a backup context: it makes the destination mirror the source exactly, removing files on the backup destination that no longer exist on the source. This is usually desired for a mirror-style backup, but it's also exactly why `rsync`-as-backup is not, by itself, protection against accidental deletion — if a file is deleted from the source and the next `rsync --delete` run happens before anyone notices, the "backup" faithfully deletes it too. Meaningful protection against that specific failure mode requires either point-in-time snapshots (retaining previous states rather than only ever mirroring the latest one) or a versioned/incremental approach layered on top of plain mirroring.
 
-> 💡 **Tip:** `rsync -avz --delete` run repeatedly is a mirror, not a point-in-time backup history. If the goal is "be able to restore to how things looked three days ago," plain mirroring doesn't provide that on its own — combine it with periodic full snapshots (e.g., via LVM snapshots from §74, or destination-side versioning) if recoverability to a specific past point matters.
+> 💡 **Tip:** `rsync -avz --delete` run repeatedly is a mirror, not a point-in-time backup history. If the goal is "be able to restore to how things looked three days ago," plain mirroring doesn't provide that on its own — combine it with periodic full snapshots (e.g., via LVM snapshots from [§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md), or destination-side versioning) if recoverability to a specific past point matters.
 
 ## 5. `dd` for Block-Level Imaging
 
@@ -143,7 +143,7 @@ The honest takeaway: `tar`, `rsync`, and `dd` are the underlying Linux-native pr
 
 ## 8. Common Misconceptions
 
-1. **"RAID is a backup."** Already established in §75 and worth repeating here in the positive framing: RAID protects against a disk failure, not against deletion, corruption, ransomware, or site loss — this entire section is what an actual backup strategy looks like in response.
+1. **"RAID is a backup."** Already established in [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) and worth repeating here in the positive framing: RAID protects against a disk failure, not against deletion, corruption, ransomware, or site loss — this entire section is what an actual backup strategy looks like in response.
 2. **"`rsync --delete` run nightly is a complete backup strategy."** It's a mirror, not a point-in-time history — a deletion or corruption on the source propagates to the "backup" on the next run unless it's paired with snapshots or versioning (4).
 3. **"Incremental backups are strictly better than differential because they're faster."** They're faster to _create_, but restoring an incremental chain requires every incremental since the last full backup to be intact and applied in order — differential backups trade some of that speed for a meaningfully simpler, lower-risk restore (6).
 4. **"`dd` shows progress by default."** It doesn't — `status=progress` must be explicitly added, and its absence is a common source of "is this even running" confusion during long imaging jobs (5).
@@ -160,7 +160,7 @@ _What the interviewer is probing for:_ Understanding the reasoning behind the nu
 _What the interviewer is probing for:_ Clear articulation of the actual trade-off (create-speed vs. restore-complexity/risk) rather than a vague "incremental is smaller, differential is bigger."
 
 **🎯 Senior:** _"A junior engineer wants to use `dd` to back up a live production database's disk nightly. What's your concern?"_
-**Model answer:** Two separate concerns. First, `dd` operates at the block level with no awareness of filesystem or application state — imaging a disk that's being actively written to by a running database risks capturing an inconsistent point-in-time state, since different blocks are captured at slightly different moments while writes are still happening; the resulting image may not be reliably restorable to a consistent state without the database having been quiesced, stopped, or snapshotted (a filesystem-level or LVM snapshot, §74, taken atomically) first. Second, `dd` is one of the most dangerous commands available if it's part of a routine automated job — a device-naming change after a reboot, or a script bug, pointing `of=` at the wrong device would silently and irreversibly destroy data, with no confirmation prompt to catch the mistake. I'd steer this toward either an application-aware backup approach (database-native dump/backup tooling, or a coordinated snapshot-then-image approach) rather than raw `dd` against a live, actively-written disk, and if `dd`-style imaging is genuinely needed I'd insist on stable device identifiers and thorough testing of the restore path, not just the backup path.
+**Model answer:** Two separate concerns. First, `dd` operates at the block level with no awareness of filesystem or application state — imaging a disk that's being actively written to by a running database risks capturing an inconsistent point-in-time state, since different blocks are captured at slightly different moments while writes are still happening; the resulting image may not be reliably restorable to a consistent state without the database having been quiesced, stopped, or snapshotted (a filesystem-level or LVM snapshot, [§74](./Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md), taken atomically) first. Second, `dd` is one of the most dangerous commands available if it's part of a routine automated job — a device-naming change after a reboot, or a script bug, pointing `of=` at the wrong device would silently and irreversibly destroy data, with no confirmation prompt to catch the mistake. I'd steer this toward either an application-aware backup approach (database-native dump/backup tooling, or a coordinated snapshot-then-image approach) rather than raw `dd` against a live, actively-written disk, and if `dd`-style imaging is genuinely needed I'd insist on stable device identifiers and thorough testing of the restore path, not just the backup path.
 _What the interviewer is probing for:_ Recognizing that `dd`'s block-level nature is a poor fit for live, consistency-sensitive data without additional coordination, plus genuine respect for `dd`'s destructive-mistake risk in an automated/repeated context.
 
 **🎯 Architect:** _"How would you design a backup strategy for a fleet of applications servers with a mix of stateless web frontends and a handful of critical stateful databases?"_
@@ -169,15 +169,15 @@ _What the interviewer is probing for:_ Differentiated strategy by data criticali
 
 ## 10. Key Takeaways
 
-- The 3-2-1 rule — 3 copies, 2 media types, 1 offsite — is the baseline mental model for backup strategy, directly answering the "RAID is not backup" gap §75 raised (2).
+- The 3-2-1 rule — 3 copies, 2 media types, 1 offsite — is the baseline mental model for backup strategy, directly answering the "RAID is not backup" gap [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) raised (2).
 - `tar` handles file-level archival with optional gzip/bzip2/xz compression and supports incremental archiving via `--listed-incremental` (3).
-- `rsync` in a backup role leverages the same delta-transfer efficiency §57 covered syntactically, but `--delete`-based mirroring alone is not point-in-time recoverability — it needs snapshots or versioning layered on top for that (4).
+- `rsync` in a backup role leverages the same delta-transfer efficiency [§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md) covered syntactically, but `--delete`-based mirroring alone is not point-in-time recoverability — it needs snapshots or versioning layered on top for that (4).
 - `dd` performs block-level imaging below the filesystem layer — powerful for full disk/partition images, but dangerous (no confirmation, no undo) and a poor fit for live, actively-written data without additional consistency coordination (5).
 - Full, incremental, and differential backups trade backup speed against restore complexity — incremental is fastest to create but requires an intact full chain to restore; differential is a middle ground needing only the last full plus the latest differential (6).
 - At real enterprise scale, dedicated backup platforms add catalog, retention, deduplication, and application-consistency on top of these same underlying Linux-native primitives — understanding `tar`/`rsync`/`dd` well is what makes those platforms tractable to evaluate and troubleshoot, not a reason to skip them once scale justifies it (7).
 
 ## 11. Related Concepts & What's Next
 
-This section closes Part 10 (§73–§79) by completing the "RAID is not backup" thought §75 opened, and reuses `rsync` from §57 (Part 7) in a distinct backup-strategy role rather than re-teaching its syntax. Part 11 (§80, Performance Fundamentals) is next, shifting from storage administration into performance analysis and troubleshooting — CPU, memory, disk I/O, and network as a unified diagnostic model — a new phase of operational skills with no direct dependency on this section's material.
+This section closes Part 10 ([§73](./Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)–[§79](./Section-79-Part10-Backup-Strategies-Tools.md)) by completing the "RAID is not backup" thought [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) opened, and reuses `rsync` from [§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md) in a distinct backup-strategy role rather than re-teaching its syntax. Part 11 ([§80](../Part11/Section-80-Part11-Performance-Fundamentals-Unified-Model.md), Performance Fundamentals) is next, shifting from storage administration into performance analysis and troubleshooting — CPU, memory, disk I/O, and network as a unified diagnostic model — a new phase of operational skills with no direct dependency on this section's material.
 
-**Next Section:** §80 — `Section-80-Part11-Performance-Fundamentals-Unified-Model.md`
+**Next Section:** [§80](../Part11/Section-80-Part11-Performance-Fundamentals-Unified-Model.md) — `Section-80-Part11-Performance-Fundamentals-Unified-Model.md`

@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Running SQL Server on an IaaS VM (Section 11) still requires the customer to handle OS patching, SQL Server engine patching, backup configuration and execution, and high-availability configuration (like Always On Availability Groups) manually — substantial, specialized database-administration overhead for a workload pattern (relational database hosting) common enough to warrant a fully managed PaaS alternative. Azure SQL Database and Managed Instance exist to remove this operational burden, with Microsoft handling patching, backups, and built-in high availability automatically — but they exist as two distinct offerings specifically because migration compatibility and fully-optimized-for-cloud database design pull in somewhat different directions: an existing, complex on-premises SQL Server deployment with cross-database dependencies and SQL Agent jobs needs different compatibility guarantees than a newly-designed, cloud-native application that can be built around Azure SQL Database's more streamlined, single-database-scoped model from the start.
+Running SQL Server on an IaaS VM ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md)) still requires the customer to handle OS patching, SQL Server engine patching, backup configuration and execution, and high-availability configuration (like Always On Availability Groups) manually — substantial, specialized database-administration overhead for a workload pattern (relational database hosting) common enough to warrant a fully managed PaaS alternative. Azure SQL Database and Managed Instance exist to remove this operational burden, with Microsoft handling patching, backups, and built-in high availability automatically — but they exist as two distinct offerings specifically because migration compatibility and fully-optimized-for-cloud database design pull in somewhat different directions: an existing, complex on-premises SQL Server deployment with cross-database dependencies and SQL Agent jobs needs different compatibility guarantees than a newly-designed, cloud-native application that can be built around Azure SQL Database's more streamlined, single-database-scoped model from the start.
 
 ## 3. Azure SQL Database — Core Concepts
 
@@ -97,8 +97,8 @@ az sql db create \
 - **Purpose:** Creates a logical SQL Server (the connectivity/management endpoint, not a VM) and a General Purpose-tier database with 2 vCores, following the Single Database deployment model.
 - **Important arguments explained individually:**
   - `--edition` — the service tier (General Purpose in this example); `--family` and `--capacity` further specify the hardware generation and vCore count within the vCore purchasing model.
-  - The admin password should never be hardcoded in scripts committed to source control; production automation should retrieve this from Azure Key Vault (Section 56) instead.
-- **Security note:** By default, newly created SQL Servers deny all inbound connections; a firewall rule (or Private Endpoint, Section 23.5, for full network isolation) must be explicitly configured to allow the intended client connectivity — a deliberate secure-by-default posture.
+  - The admin password should never be hardcoded in scripts committed to source control; production automation should retrieve this from Azure Key Vault ([Section 56](../Part11/Section-56-Part11-Key-Vault.md)) instead.
+- **Security note:** By default, newly created SQL Servers deny all inbound connections; a firewall rule (or Private Endpoint, [Section 23](../Part5/Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5, for full network isolation) must be explicitly configured to allow the intended client connectivity — a deliberate secure-by-default posture.
 
 **Configuring a firewall rule to allow a specific client IP range:**
 
@@ -111,11 +111,11 @@ az sql server firewall-rule create \
   --end-ip-address 20.185.xx.xx
 ```
 
-- **Purpose:** Explicitly allows a specific IP (or range) to connect, following least-privilege network access principles rather than allowing all IPs; for production, Private Endpoint-based connectivity (Section 23.5) is generally preferred over IP-based firewall rules for stronger network isolation, particularly for connections originating from within Azure itself.
+- **Purpose:** Explicitly allows a specific IP (or range) to connect, following least-privilege network access principles rather than allowing all IPs; for production, Private Endpoint-based connectivity ([Section 23](../Part5/Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5) is generally preferred over IP-based firewall rules for stronger network isolation, particularly for connections originating from within Azure itself.
 
 ## 7. Production & Enterprise Usage
 
-Enterprises building new, cloud-native applications generally default to Azure SQL Database (Single Database or Elastic Pool, depending on the multi-tenancy pattern), favoring its more streamlined operational model and its natural fit with modern application architecture patterns. Enterprises migrating substantial existing SQL Server estates — particularly those with complex, interdependent multi-database applications relying on instance-level features — favor Managed Instance specifically to minimize required application changes during migration, planning a potential future re-architecture toward Azure SQL Database's model only if and when it becomes worthwhile, rather than as a migration prerequisite. Both offerings integrate with Azure Active Directory/Entra ID authentication (Section 6-9) as an alternative to SQL-native authentication, and both support Transparent Data Encryption (encryption at rest) by default, connecting to the broader security/compliance discussion in Part 11.
+Enterprises building new, cloud-native applications generally default to Azure SQL Database (Single Database or Elastic Pool, depending on the multi-tenancy pattern), favoring its more streamlined operational model and its natural fit with modern application architecture patterns. Enterprises migrating substantial existing SQL Server estates — particularly those with complex, interdependent multi-database applications relying on instance-level features — favor Managed Instance specifically to minimize required application changes during migration, planning a potential future re-architecture toward Azure SQL Database's model only if and when it becomes worthwhile, rather than as a migration prerequisite. Both offerings integrate with Azure Active Directory/Entra ID authentication ([Section 6](../Part2/Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md)-[Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) as an alternative to SQL-native authentication, and both support Transparent Data Encryption (encryption at rest) by default, connecting to the broader security/compliance discussion in Part 11.
 
 ## 8. Security Considerations
 
@@ -125,7 +125,7 @@ Enterprises building new, cloud-native applications generally default to Azure S
 
 ## 9. Performance Considerations
 
-Service tier and vCore/DTU allocation directly determine available compute, memory, and I/O throughput — performance troubleshooting should start with Azure SQL's built-in query performance insights and DTU/vCore utilization metrics (Section 29.10) before assuming a tier upgrade is necessary, similar in principle to the disk-performance troubleshooting discipline established in Section 18.11 (verify the actual bottleneck via metrics before scaling).
+Service tier and vCore/DTU allocation directly determine available compute, memory, and I/O throughput — performance troubleshooting should start with Azure SQL's built-in query performance insights and DTU/vCore utilization metrics ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).10) before assuming a tier upgrade is necessary, similar in principle to the disk-performance troubleshooting discipline established in [Section 18](../Part4/Section-18-Part4-Azure-Managed-Disks.md).11 (verify the actual bottleneck via metrics before scaling).
 
 ## 10. Monitoring
 
@@ -139,7 +139,7 @@ Azure SQL Database and Managed Instance both provide built-in **Query Performanc
 | Existing on-premises SQL Server application fails after migrating to Azure SQL Database | Application relies on instance-level features (cross-database queries, SQL Agent, CLR) not supported in the Azure SQL Database model | Consider migrating to Managed Instance instead, which supports these instance-level features                |
 | Database performance degrades under load despite adequate-seeming tier                  | Actual bottleneck may be query-level (missing indexes, inefficient query plans) rather than raw compute/storage capacity             | Review Query Performance Insight and Intelligent Insights before assuming a tier upgrade is the correct fix |
 
-## 12. Interview Questions — Section 29
+## 12. Interview Questions — [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md)
 
 ### 🎯 Intermediate
 
@@ -173,7 +173,7 @@ _What the interviewer is probing:_ whether the candidate recognizes Elastic Pool
 
 ### 15.1 Why This Extends Beyond the Built-In HA Already Covered
 
-Section 29.3.4 covered Azure SQL Database's built-in high availability — automatic failover within a region against infrastructure failure. This subsection covers the distinct, complementary concerns of recovering from _data-level_ mistakes (accidental deletes, bad deployments) and surviving a _full regional_ outage, mirroring the same three-layer resilience model (HA / Backup / DR) established for VMs in Section 11.15 — the same principle applies here: infrastructure-level HA does not substitute for data-recovery or cross-region DR capability.
+[Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).3.4 covered Azure SQL Database's built-in high availability — automatic failover within a region against infrastructure failure. This subsection covers the distinct, complementary concerns of recovering from _data-level_ mistakes (accidental deletes, bad deployments) and surviving a _full regional_ outage, mirroring the same three-layer resilience model (HA / Backup / DR) established for VMs in [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15 — the same principle applies here: infrastructure-level HA does not substitute for data-recovery or cross-region DR capability.
 
 ### 15.2 Automated Backups and Point-in-Time Restore (PITR)
 
@@ -191,26 +191,26 @@ Section 29.3.4 covered Azure SQL Database's built-in high availability — autom
 
 ### 15.4 Geo-Replication and Failover Groups
 
-**Active Geo-Replication:** Creates up to four readable secondary replicas of a database in different regions, asynchronously replicated from the primary, allowing manual failover to a secondary region if the primary becomes unavailable, and allowing the secondary replicas to serve read-only query traffic in the meantime (conceptually similar to RA-GRS's readable secondary for Storage Accounts, Section 20.3.4, and Cosmos DB's read regions, Section 30.3.5, applied here at the SQL database level).
+**Active Geo-Replication:** Creates up to four readable secondary replicas of a database in different regions, asynchronously replicated from the primary, allowing manual failover to a secondary region if the primary becomes unavailable, and allowing the secondary replicas to serve read-only query traffic in the meantime (conceptually similar to RA-GRS's readable secondary for Storage Accounts, [Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).3.4, and Cosmos DB's read regions, [Section 30](./Section-30-Part6-Cosmos-DB.md).3.5, applied here at the SQL database level).
 
 **Auto-Failover Groups:** Builds on Active Geo-Replication by adding **automatic failover** (rather than requiring a manual failover trigger) and providing a **stable, abstracted connection endpoint** that automatically redirects to whichever region is currently primary — meaning the application's connection string doesn't need to change during a failover event, since it always points at the failover group's endpoint rather than a specific region's server directly.
 
-⚠️ Like GRS (Section 20.3.3), geo-replication here is **asynchronous** — a true regional disaster can result in loss of the most recent, not-yet-replicated transactions, the same fundamental Recovery Point Objective limitation established for Storage Account redundancy. This should be explicitly communicated to stakeholders rather than assumed away, exactly as emphasized in Section 20.10's senior interview answer.
+⚠️ Like GRS ([Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).3.3), geo-replication here is **asynchronous** — a true regional disaster can result in loss of the most recent, not-yet-replicated transactions, the same fundamental Recovery Point Objective limitation established for Storage Account redundancy. This should be explicitly communicated to stakeholders rather than assumed away, exactly as emphasized in [Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).10's senior interview answer.
 
-**Managed Instance note:** Managed Instance supports its own equivalent failover group mechanism for instance-level (rather than single-database-level) geo-replication and failover, consistent with its broader instance-scoped model (Section 29.4.1).
+**Managed Instance note:** Managed Instance supports its own equivalent failover group mechanism for instance-level (rather than single-database-level) geo-replication and failover, consistent with its broader instance-scoped model ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).4.1).
 
 ### 15.5 The Three-Layer SQL Resilience Model
 
-1. **Built-in HA (Section 29.3.4)** — automatic, intra-region protection against infrastructure failure; always active as part of the base service.
+1. **Built-in HA ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).3.4)** — automatic, intra-region protection against infrastructure failure; always active as part of the base service.
 2. **Backups: PITR + Long-Term Retention (this subsection)** — recover from data-level mistakes, at either short-term fine-grained (PITR) or long-term compliance-driven (LTR) recovery horizons.
 3. **Geo-Replication / Auto-Failover Groups (this subsection)** — survive a full regional outage, with an explicit, asynchronous-replication-driven Recovery Point Objective trade-off.
 
-### 15.6 Migration Approaches (Consolidating and Extending Section 33)
+### 15.6 Migration Approaches (Consolidating and Extending [Section 33](./Section-33-Part6-Data-Migration-and-DMS.md))
 
-For SQL Server-to-Azure-SQL migrations specifically, Azure Database Migration Service (Section 33) is the primary purpose-built tool, but several SQL-specific approaches and tools exist depending on scenario:
+For SQL Server-to-Azure-SQL migrations specifically, Azure Database Migration Service ([Section 33](./Section-33-Part6-Data-Migration-and-DMS.md)) is the primary purpose-built tool, but several SQL-specific approaches and tools exist depending on scenario:
 
-- **Azure Data Migration Assistant (DMA)** — a free, standalone assessment tool (distinct from DMS itself) specifically for SQL Server, identifying compatibility issues and recommending performance/reliability improvements before migration — commonly used as the assessment step (Section 33.3.2) feeding into a subsequent DMS-driven migration.
-- **Native backup/restore** — for simpler, offline (Section 33.3.1) SQL Server-to-Managed-Instance migrations, a native SQL Server backup (`.bak` file) can sometimes be directly restored to a Managed Instance, a lighter-weight alternative to a full DMS project for straightforward, downtime-tolerant scenarios.
+- **Azure Data Migration Assistant (DMA)** — a free, standalone assessment tool (distinct from DMS itself) specifically for SQL Server, identifying compatibility issues and recommending performance/reliability improvements before migration — commonly used as the assessment step ([Section 33](./Section-33-Part6-Data-Migration-and-DMS.md).3.2) feeding into a subsequent DMS-driven migration.
+- **Native backup/restore** — for simpler, offline ([Section 33](./Section-33-Part6-Data-Migration-and-DMS.md).3.1) SQL Server-to-Managed-Instance migrations, a native SQL Server backup (`.bak` file) can sometimes be directly restored to a Managed Instance, a lighter-weight alternative to a full DMS project for straightforward, downtime-tolerant scenarios.
 - **Transactional replication** — for specific scenarios needing continuous, ongoing synchronization beyond a one-time migration cutover (e.g., a genuinely long-running hybrid state, not just a migration transition window), SQL Server transactional replication can target Azure SQL Database directly, distinct from DMS's migration-focused (finite-duration, cutover-oriented) online synchronization.
 
 ⚠️ Tool availability and specific compatibility (particularly `.bak` restore support, which has specific version and configuration prerequisites) should be verified against current official documentation before committing to a specific migration approach.
@@ -231,12 +231,12 @@ az sql failover-group create \
   --grace-period 1
 ```
 
-- **Purpose:** Creates a failover group between the primary server (from Section 29.6's example) and a secondary server in a different region, adding the `db-orders` database, with automatic failover enabled after a 1-hour grace period (avoiding failover on a very brief, transient outage).
+- **Purpose:** Creates a failover group between the primary server (from [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).6's example) and a secondary server in a different region, adding the `db-orders` database, with automatic failover enabled after a 1-hour grace period (avoiding failover on a very brief, transient outage).
 - **Important arguments explained individually:**
   - `--grace-period` — the number of hours the primary must be unavailable before automatic failover triggers; this deliberately avoids failing over (with its associated RPO/RTO implications) in response to a short-lived blip that would resolve on its own.
   - `--failover-policy Automatic` — as opposed to `Manual`, which would require an administrator to explicitly trigger failover rather than having it occur automatically after the grace period.
 
-### 15.8 Interview Questions — Section 29.15
+### 15.8 Interview Questions — [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15
 
 **🎯 Intermediate**
 **Q: What's the difference between Point-in-Time Restore and Long-Term Retention backups?**
@@ -248,18 +248,18 @@ _What the interviewer is probing:_ whether the candidate understands these as tw
 **🎯 Senior/Architect**
 **Q: Design the business-continuity strategy for a mission-critical Azure SQL Database, addressing infrastructure failure, accidental data loss, regional disaster, and a 7-year regulatory retention requirement.**
 
-_Model answer:_ Built-in HA (Section 29.3.4) is active by default and handles intra-region infrastructure failure automatically, requiring no additional configuration beyond appropriate service-tier selection. For accidental data loss, I'd rely on the default PITR backup chain, configuring an appropriate retention window based on the business's realistic detection-and-response time for data-corruption incidents. For the 7-year regulatory retention requirement, I'd configure Long-Term Retention with a schedule matching the specific regulatory requirement (for example, retaining one backup per year for 7 years, or whatever cadence the actual regulation specifies), explicitly separate from the PITR configuration since they serve different purposes. For regional disaster resilience, I'd configure an Auto-Failover Group to a secondary region, with automatic failover and an appropriate grace period tuned to avoid triggering on brief transient issues, and would explicitly document and communicate to stakeholders that the asynchronous replication underlying this means a true regional disaster could still result in loss of the very most recent transactions — if the business has a genuine zero-data-loss requirement, I'd flag that storage/database-level geo-replication alone doesn't satisfy that and would need to be paired with an application-level synchronous write strategy or a revised RPO expectation agreed with the business. I'd test failover (both for the failover group and for PITR restore) periodically rather than assuming untested configuration will work correctly during an actual incident.
+_Model answer:_ Built-in HA ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).3.4) is active by default and handles intra-region infrastructure failure automatically, requiring no additional configuration beyond appropriate service-tier selection. For accidental data loss, I'd rely on the default PITR backup chain, configuring an appropriate retention window based on the business's realistic detection-and-response time for data-corruption incidents. For the 7-year regulatory retention requirement, I'd configure Long-Term Retention with a schedule matching the specific regulatory requirement (for example, retaining one backup per year for 7 years, or whatever cadence the actual regulation specifies), explicitly separate from the PITR configuration since they serve different purposes. For regional disaster resilience, I'd configure an Auto-Failover Group to a secondary region, with automatic failover and an appropriate grace period tuned to avoid triggering on brief transient issues, and would explicitly document and communicate to stakeholders that the asynchronous replication underlying this means a true regional disaster could still result in loss of the very most recent transactions — if the business has a genuine zero-data-loss requirement, I'd flag that storage/database-level geo-replication alone doesn't satisfy that and would need to be paired with an application-level synchronous write strategy or a revised RPO expectation agreed with the business. I'd test failover (both for the failover group and for PITR restore) periodically rather than assuming untested configuration will work correctly during an actual incident.
 
 _What the interviewer is probing:_ whether the candidate can address all four distinct requirements (infrastructure HA, data-loss recovery, regional DR, long-term compliance retention) with the four correspondingly distinct mechanisms, while being honest about the asynchronous-replication RPO limitation rather than presenting geo-replication as a complete, zero-data-loss solution — genuinely comprehensive, honest architectural reasoning.
 
-### 15.9 Key Takeaways — Section 29.15
+### 15.9 Key Takeaways — [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15
 
 - 🔑 Automated PITR backups (default, days-to-weeks retention) and Long-Term Retention (up to 10 years, independently scheduled) serve different recovery time horizons and are configured separately.
 - 🔑 PITR restores create a new database rather than restoring in place — this operational detail should be reflected in incident-response runbooks.
-- 🔑 Auto-Failover Groups add automatic failover and a stable connection endpoint on top of Active Geo-Replication, but replication remains asynchronous, carrying the same non-zero data-loss-window limitation as Storage Account GRS (Section 20).
-- 🔑 SQL-specific migration tooling (Data Migration Assistant for assessment, native backup/restore, transactional replication) complements the general-purpose DMS covered in Section 33, each suited to different migration scenarios and downtime tolerances.
-- 🔑 A complete Azure SQL resilience strategy layers built-in HA, backups (PITR + LTR), and geo-replication/failover groups — the same three-layer model (HA / Backup / DR) established for VMs in Section 11.15, applied here at the managed-database level.
+- 🔑 Auto-Failover Groups add automatic failover and a stable connection endpoint on top of Active Geo-Replication, but replication remains asynchronous, carrying the same non-zero data-loss-window limitation as Storage Account GRS ([Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md)).
+- 🔑 SQL-specific migration tooling (Data Migration Assistant for assessment, native backup/restore, transactional replication) complements the general-purpose DMS covered in [Section 33](./Section-33-Part6-Data-Migration-and-DMS.md), each suited to different migration scenarios and downtime tolerances.
+- 🔑 A complete Azure SQL resilience strategy layers built-in HA, backups (PITR + LTR), and geo-replication/failover groups — the same three-layer model (HA / Backup / DR) established for VMs in [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15, applied here at the managed-database level.
 
 ## 16. Related Concepts (Next Up)
 
-Section 30 covers **Cosmos DB** — Azure's globally-distributed, multi-model NoSQL database service, offering a fundamentally different data model and consistency/distribution approach than the relational SQL Database/Managed Instance offerings just covered, directly relevant to the global multi-region architecture patterns introduced in Section 25's Front Door discussion.
+[Section 30](./Section-30-Part6-Cosmos-DB.md) covers **Cosmos DB** — Azure's globally-distributed, multi-model NoSQL database service, offering a fundamentally different data model and consistency/distribution approach than the relational SQL Database/Managed Instance offerings just covered, directly relevant to the global multi-region architecture patterns introduced in [Section 25](../Part5/Section-25-Part5-Azure-Front-Door-and-CDN.md)'s Front Door discussion.

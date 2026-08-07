@@ -36,7 +36,7 @@ AWS's own proprietary container orchestration service — simpler and more tight
 
 ### 4.2 Core Concepts
 
-- **Task Definition** — JSON blueprint (analogous to a Launch Template, Section 4 §6) specifying image(s), CPU/memory, networking mode, IAM roles, config.
+- **Task Definition** — JSON blueprint (analogous to a Launch Template, Section 4 [§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)) specifying image(s), CPU/memory, networking mode, IAM roles, config.
 - **Task** — a running instance of a Task Definition (can contain multiple tightly-coupled containers).
 - **Service** — maintains N running tasks, replaces failures, integrates with a load balancer — analogous to an ASG (Section 5) but for tasks.
 - **Cluster** — logical grouping of infrastructure (EC2 or Fargate) tasks run on.
@@ -77,7 +77,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ### 6.2 Why It Exists
 
 - Extends Section 7's "not managing servers" value to containers — a middle ground between Lambda's function-level abstraction and EC2-based ECS/EKS's instance-level control.
-- **Trade-off (parallel to Provisioned Concurrency, Section 7 §3.3):** Fargate typically costs more per unit of compute than equivalent EC2 capacity, in exchange for eliminated instance management — the recurring "pay more for less operational burden" pattern from §5.
+- **Trade-off (parallel to Provisioned Concurrency, Section 7 §3.3):** Fargate typically costs more per unit of compute than equivalent EC2 capacity, in exchange for eliminated instance management — the recurring "pay more for less operational burden" pattern from [§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md).
 
 ### 6.3 Fargate vs EC2-Based Containers
 
@@ -89,7 +89,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ## 7. Container Registries — Amazon ECR
 
 - **ECR** — AWS's managed container image registry, storing/versioning images pulled at task/pod launch — analogous to AMIs (Section 2) but for container images.
-- **Image scanning** — integrates with vulnerability scanning (§16 Inspector), extending supply-chain-security to the container image layer.
+- **Image scanning** — integrates with vulnerability scanning ([§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md) Inspector), extending supply-chain-security to the container image layer.
 - **Private by default**, IAM-based access control; a repository resource-based policy can grant cross-account pull access — same pattern as S3/KMS/Secrets Manager sharing (Part 2).
 
 ---
@@ -98,7 +98,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 
 - **Task-level IAM roles (ECS)** — each task can have its own role, distinct from the EC2 instance's role, meaning multiple tasks on one instance can have different scoped permissions — finer-grained than a single instance-wide role.
 - **IRSA (EKS)** — Kubernetes service accounts mapped to IAM roles, giving individual pods scoped AWS permissions rather than sharing the node's role.
-- **`awsvpc` networking mode (ECS)** — each task gets its own ENI (Section 4 §3), own private IP and security group — security groups scoped per task, not just per instance.
+- **`awsvpc` networking mode (ECS)** — each task gets its own ENI (Section 4 [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)), own private IP and security group — security groups scoped per task, not just per instance.
 
 ---
 
@@ -113,8 +113,8 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 
 ## 10. Security Considerations
 
-- **Task/pod-level least privilege** (§8) is meaningfully more granular than instance-level IAM — default for multi-tenant clusters with varied permission needs.
-- **ECR scanning should gate deployment** — block deployment of images with unresolved critical/high vulnerabilities, connecting §16's Inspector theme to the deployment pipeline.
+- **Task/pod-level least privilege** ([§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md)) is meaningfully more granular than instance-level IAM — default for multi-tenant clusters with varied permission needs.
+- **ECR scanning should gate deployment** — block deployment of images with unresolved critical/high vulnerabilities, connecting [§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md)'s Inspector theme to the deployment pipeline.
 - **Fargate's shared-nothing-per-task isolation** generally offers stronger isolation than co-locating many containers on one self-managed instance's shared kernel — a security consideration alongside the cost/control trade-off.
 
 ---
@@ -122,7 +122,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 ## 11. Performance Considerations
 
 - **Container startup (seconds)** is meaningfully faster than EC2 instance boot, though slower than a warm Lambda invocation — a real middle ground on the cold-start-latency spectrum.
-- **EC2-based density** — packing containers onto fewer larger instances can achieve better utilization/lower cost than Fargate's per-task billing for steady workloads — connects to Section 2 §9's right-sizing, now at "containers per instance" granularity.
+- **EC2-based density** — packing containers onto fewer larger instances can achieve better utilization/lower cost than Fargate's per-task billing for steady workloads — connects to Section 2 [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)'s right-sizing, now at "containers per instance" granularity.
 
 ---
 
@@ -180,7 +180,7 @@ Serverless compute engine for containers (ECS or EKS) — removes provisioning/p
 
 ## 🌐 Related Concepts (forward links)
 
-- Elastic Beanstalk, Batch, Lightsail — higher-abstraction/specialized compute → §27 (next)
+- Elastic Beanstalk, Batch, Lightsail — higher-abstraction/specialized compute → [§27](./Section-27-Part3-Elastic-Beanstalk-Batch-Lightsail.md) (next)
 - CI/CD pipelines building/deploying container images → Part 9
 - VPC networking for ECS/EKS (awsvpc mode, private subnets) → Part 4
 - Step Functions and event-driven patterns triggering ECS tasks → Part 7

@@ -165,6 +165,6 @@ Senior - Design EBS strategy for an I/O-intensive self-managed relational DB nee
 
 ## Related Concepts (forward links)
 
-- Amazon EFS - shared, POSIX-compliant file storage, the third storage paradigm -> §44
-- AWS Backup unifying EBS/EFS/RDS backup management -> §47
+- Amazon EFS - shared, POSIX-compliant file storage, the third storage paradigm -> [§44](./Section-44-Part5-EFS-Elastic-File-System.md)
+- AWS Backup unifying EBS/EFS/RDS backup management -> [§47](./Section-47-Part5-Backup-Strategies-DR-Patterns.md)
 - RDS's own storage/backup mechanics building on EBS underneath -> Part 6

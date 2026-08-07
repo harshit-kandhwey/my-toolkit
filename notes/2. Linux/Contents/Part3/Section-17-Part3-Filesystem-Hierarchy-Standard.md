@@ -4,7 +4,7 @@
 
 The **Filesystem Hierarchy Standard (FHS)** is a specification, maintained by the Linux Foundation, that defines the directory structure and directory contents on Linux (and Unix-like) systems. It answers a question that sounds trivial but has real operational consequences: _if I need to find configuration files, executables, log files, or a user's home directory, where should they be — on any distribution?_
 
-Before a shared standard, every Unix vendor and every Linux distribution could plausibly have invented its own layout. The FHS exists so that they mostly didn't: a system administrator who knows `/etc/nginx/nginx.conf` holds configuration, `/var/log/nginx/access.log` holds logs, and `/usr/bin/nginx` holds the binary can walk onto an unfamiliar Ubuntu, Debian, RHEL, or SUSE box and immediately be productive, without relearning the filesystem layout from scratch. Package managers (§59–§64), configuration management tools (Ansible, Puppet — Part 13), monitoring agents, and backup tooling all depend on this predictability to work correctly across a heterogeneous fleet.
+Before a shared standard, every Unix vendor and every Linux distribution could plausibly have invented its own layout. The FHS exists so that they mostly didn't: a system administrator who knows `/etc/nginx/nginx.conf` holds configuration, `/var/log/nginx/access.log` holds logs, and `/usr/bin/nginx` holds the binary can walk onto an unfamiliar Ubuntu, Debian, RHEL, or SUSE box and immediately be productive, without relearning the filesystem layout from scratch. Package managers ([§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)), configuration management tools (Ansible, Puppet — Part 13), monitoring agents, and backup tooling all depend on this predictability to work correctly across a heterogeneous fleet.
 
 The FHS is not perfectly, universally followed — distributions deviate in small ways, and some historical directories exist mostly for backward compatibility (3) — but it is followed closely enough that "where does X live" has a mostly-consistent answer across the entire mainstream Linux ecosystem, which is the whole point.
 
@@ -12,28 +12,28 @@ The FHS is not perfectly, universally followed — distributions deviate in smal
 
 ## 2. The Root Filesystem (`/`) and Top-Level Layout
 
-Everything on a Linux system hangs off a single root directory, `/` — there is no concept of separate drive letters the way Windows has `C:\`, `D:\`. Additional physical or logical devices are **mounted** onto directories within this single tree (§20 covers mounting and `/etc/fstab` in depth), so a `df -h` output showing `/dev/sda1` mounted at `/` and `/dev/sdb1` mounted at `/var` still presents to every application as one continuous, unified filesystem tree.
+Everything on a Linux system hangs off a single root directory, `/` — there is no concept of separate drive letters the way Windows has `C:\`, `D:\`. Additional physical or logical devices are **mounted** onto directories within this single tree ([§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) covers mounting and `/etc/fstab` in depth), so a `df -h` output showing `/dev/sda1` mounted at `/` and `/dev/sdb1` mounted at `/var` still presents to every application as one continuous, unified filesystem tree.
 
 The standard top-level directories under `/`:
 
-| Directory        | Purpose                                                                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/bin`           | Essential user command binaries needed in single-user mode and by all users (historically separate from `/usr/bin`; now usually a symlink — see 4)  |
-| `/sbin`          | Essential system administration binaries (`fsck`, `reboot`, `iptables`) — historically root-only tools needed for boot/repair                       |
-| `/etc`           | Host-specific system-wide configuration files (2)                                                                                                   |
-| `/usr`           | The bulk of installed software: binaries, libraries, documentation, shared data (4)                                                                 |
-| `/var`           | Variable data that changes during normal operation: logs, spool files, caches, databases (5)                                                        |
-| `/home`          | Per-user home directories (6)                                                                                                                       |
-| `/root`          | The root user's home directory — deliberately kept outside `/home` so it's accessible even if `/home` is a separate, unmounted filesystem           |
-| `/tmp`           | World-writable temporary storage, typically cleared on reboot (7)                                                                                   |
-| `/opt`           | Optional, self-contained third-party software packages (e.g., vendor-supplied applications that don't follow the distro's package layout)           |
-| `/boot`          | Kernel image, initramfs, and bootloader (GRUB) configuration — everything needed to boot before the root filesystem is fully usable (§12)           |
-| `/dev`           | Device files representing hardware and virtual devices (10)                                                                                         |
-| `/proc`          | Virtual filesystem exposing kernel and process information (8)                                                                                      |
-| `/sys`           | Virtual filesystem exposing kernel objects and device/driver state (9)                                                                              |
-| `/mnt`, `/media` | Conventional mount points — `/mnt` for temporary manual mounts (administrator use), `/media` for removable media auto-mounted by the desktop/system |
-| `/srv`           | Data for services hosted by this system (e.g., web server content, FTP data) — less consistently used in practice than the spec intends             |
-| `/lib`, `/lib64` | Essential shared libraries needed by binaries in `/bin` and `/sbin` (also usually merged into `/usr/lib` today — see 4)                             |
+| Directory        | Purpose                                                                                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/bin`           | Essential user command binaries needed in single-user mode and by all users (historically separate from `/usr/bin`; now usually a symlink — see 4)                                     |
+| `/sbin`          | Essential system administration binaries (`fsck`, `reboot`, `iptables`) — historically root-only tools needed for boot/repair                                                          |
+| `/etc`           | Host-specific system-wide configuration files (2)                                                                                                                                      |
+| `/usr`           | The bulk of installed software: binaries, libraries, documentation, shared data (4)                                                                                                    |
+| `/var`           | Variable data that changes during normal operation: logs, spool files, caches, databases (5)                                                                                           |
+| `/home`          | Per-user home directories (6)                                                                                                                                                          |
+| `/root`          | The root user's home directory — deliberately kept outside `/home` so it's accessible even if `/home` is a separate, unmounted filesystem                                              |
+| `/tmp`           | World-writable temporary storage, typically cleared on reboot (7)                                                                                                                      |
+| `/opt`           | Optional, self-contained third-party software packages (e.g., vendor-supplied applications that don't follow the distro's package layout)                                              |
+| `/boot`          | Kernel image, initramfs, and bootloader (GRUB) configuration — everything needed to boot before the root filesystem is fully usable ([§12](../Part2/Section-12-Part2-Boot-Process.md)) |
+| `/dev`           | Device files representing hardware and virtual devices (10)                                                                                                                            |
+| `/proc`          | Virtual filesystem exposing kernel and process information (8)                                                                                                                         |
+| `/sys`           | Virtual filesystem exposing kernel objects and device/driver state (9)                                                                                                                 |
+| `/mnt`, `/media` | Conventional mount points — `/mnt` for temporary manual mounts (administrator use), `/media` for removable media auto-mounted by the desktop/system                                    |
+| `/srv`           | Data for services hosted by this system (e.g., web server content, FTP data) — less consistently used in practice than the spec intends                                                |
+| `/lib`, `/lib64` | Essential shared libraries needed by binaries in `/bin` and `/sbin` (also usually merged into `/usr/lib` today — see 4)                                                                |
 
 > ⚠️ **Warning:** `/tmp` and `/var/tmp` are not interchangeable despite both being writable temp locations. `/tmp` is commonly backed by `tmpfs` (RAM-backed, wiped on reboot) or cleared aggressively by `systemd-tmpfiles`; `/var/tmp` is meant for temporary files that should **survive a reboot** and persist longer. Writing large, long-lived temp files to `/tmp` on a `tmpfs`-backed system can silently consume RAM and cause memory pressure — a surprisingly common production incident (11).
 
@@ -43,11 +43,11 @@ The standard top-level directories under `/`:
 
 Key contents relevant to later Parts of this roadmap:
 
-- `/etc/passwd`, `/etc/shadow`, `/etc/group` — user and group account definitions (§25, Part 4, covers these files field-by-field)
-- `/etc/fstab` — persistent filesystem mount definitions (§20)
-- `/etc/sudoers` — privilege escalation policy (§31, Part 4)
-- `/etc/hosts`, `/etc/resolv.conf`, `/etc/nsswitch.conf` — name resolution configuration (§53, Part 7)
-- `/etc/systemd/` — systemd unit files and configuration overrides (§65–§72, Part 9)
+- `/etc/passwd`, `/etc/shadow`, `/etc/group` — user and group account definitions ([§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md), covers these files field-by-field)
+- `/etc/fstab` — persistent filesystem mount definitions ([§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md))
+- `/etc/sudoers` — privilege escalation policy ([§31](../Part4/Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md))
+- `/etc/hosts`, `/etc/resolv.conf`, `/etc/nsswitch.conf` — name resolution configuration ([§53](../Part7/Section-53-Part7-DNS-Resolution-Resolv-Conf-Hosts-Nsswitch.md))
+- `/etc/systemd/` — systemd unit files and configuration overrides ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md))
 - Per-application subdirectories like `/etc/nginx/`, `/etc/ssh/`, `/etc/cron.d/` — the near-universal convention of one subdirectory per installed service
 
 Nothing in `/etc` is a compiled binary or a variable runtime artifact — that distinction is precisely what separates it from `/usr` (static program files) and `/var` (data that changes constantly). A useful mental test: if a file answers "how should this service behave," it belongs in `/etc`; if it answers "what did this service produce or record," it belongs in `/var`.
@@ -59,7 +59,7 @@ Classic Unix and early Linux drew a hard line between two categories of binaries
 - **`/bin` and `/sbin`** — binaries considered essential enough to be available even if `/usr` wasn't yet mounted (relevant in eras when `/usr` might live on a separate, larger disk or network mount that wasn't available during early boot or single-user recovery).
 - **`/usr/bin` and `/usr/sbin`** — the much larger body of "everything else": most installed software, whether from the distro's package manager or built from source.
 
-This split made sense when storage was scarce and `/usr` might genuinely be a separate, sometimes-unavailable mount. It has become largely vestigial on modern systems, because initramfs-based boot (§12) and larger, cheaper local storage removed most of the original justification. As a result, essentially all mainstream distributions today implement the **usr-merge**: `/bin`, `/sbin`, and `/lib` are symlinks pointing into `/usr/bin`, `/usr/sbin`, and `/usr/lib` respectively, so there is functionally one location for system binaries, not two.
+This split made sense when storage was scarce and `/usr` might genuinely be a separate, sometimes-unavailable mount. It has become largely vestigial on modern systems, because initramfs-based boot ([§12](../Part2/Section-12-Part2-Boot-Process.md)) and larger, cheaper local storage removed most of the original justification. As a result, essentially all mainstream distributions today implement the **usr-merge**: `/bin`, `/sbin`, and `/lib` are symlinks pointing into `/usr/bin`, `/usr/sbin`, and `/usr/lib` respectively, so there is functionally one location for system binaries, not two.
 
 ```bash
 $ ls -ld /bin /sbin /lib
@@ -78,7 +78,7 @@ lrwxrwxrwx 1 root root 8 Mar  1 09:12 /lib -> usr/lib
 
 | Subdirectory | Contents                                                                                                                                                       |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/var/log`   | System and application log files (§84, Part 11, covers log analysis in depth)                                                                                  |
+| `/var/log`   | System and application log files ([§84](../Part11/Section-84-Part11-Network-Performance-Analysis.md), covers log analysis in depth)                            |
 | `/var/spool` | Queued data awaiting processing — mail queues, print jobs, cron job definitions                                                                                |
 | `/var/cache` | Application-generated cache data that can be regenerated if deleted (e.g., package manager download caches)                                                    |
 | `/var/lib`   | Persistent state data applications need between runs — package manager databases (`/var/lib/dpkg`, `/var/lib/rpm`), application data directories               |
@@ -89,7 +89,7 @@ lrwxrwxrwx 1 root root 8 Mar  1 09:12 /lib -> usr/lib
 
 ## 6. `/home` — User Data
 
-`/home` contains one subdirectory per non-root user account, conventionally `/home/<username>`, holding that user's personal files, shell configuration (`.bashrc`, `.profile` — §41, Part 6), and application-specific state (`.ssh/`, `.config/`, `.cache/`).
+`/home` contains one subdirectory per non-root user account, conventionally `/home/<username>`, holding that user's personal files, shell configuration (`.bashrc`, `.profile` — [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)), and application-specific state (`.ssh/`, `.config/`, `.cache/`).
 
 Two operational points worth internalizing:
 
@@ -98,20 +98,20 @@ Two operational points worth internalizing:
 
 ## 7. `/tmp` — Temporary Storage
 
-`/tmp` is world-writable (mode `1777` — the sticky bit prevents one user from deleting another user's files even though everyone can write into the directory; §29, Part 4, covers the sticky bit in full) and intended for short-lived files that any process or user might need to create.
+`/tmp` is world-writable (mode `1777` — the sticky bit prevents one user from deleting another user's files even though everyone can write into the directory; [§29](../Part4/Section-29-Part4-Umask-Default-Permissions.md), covers the sticky bit in full) and intended for short-lived files that any process or user might need to create.
 
 On most modern distributions, `/tmp` is either:
 
-- Backed by **`tmpfs`**, a RAM-backed virtual filesystem (§18 covers filesystem types including `tmpfs` in depth) — extremely fast, but its contents vanish on reboot and consume RAM, not disk, while populated, or
-- A regular on-disk directory that gets cleared periodically by `systemd-tmpfiles` (§72, Part 9) rather than only at reboot.
+- Backed by **`tmpfs`**, a RAM-backed virtual filesystem ([§18](./Section-18-Part3-Filesystem-Types.md) covers filesystem types including `tmpfs` in depth) — extremely fast, but its contents vanish on reboot and consume RAM, not disk, while populated, or
+- A regular on-disk directory that gets cleared periodically by `systemd-tmpfiles` ([§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) rather than only at reboot.
 
-**Production usage example:** A common real-world incident pattern is an application (or a poorly written deployment script) writing large temporary files — build artifacts, uploaded file staging, database dump scratch space — into `/tmp` on a host where `/tmp` is `tmpfs`-backed. Under enough concurrent load this quietly consumes system RAM rather than disk space, and the failure mode looks like memory pressure or OOM-killer activity (§86, Part 11) rather than an obviously-full disk, which makes it a genuinely confusing incident to diagnose the first time you encounter it.
+**Production usage example:** A common real-world incident pattern is an application (or a poorly written deployment script) writing large temporary files — build artifacts, uploaded file staging, database dump scratch space — into `/tmp` on a host where `/tmp` is `tmpfs`-backed. Under enough concurrent load this quietly consumes system RAM rather than disk space, and the failure mode looks like memory pressure or OOM-killer activity ([§86](../Part11/Section-86-Part11-Observability-Strace-Ltrace-Perf-APM.md)) rather than an obviously-full disk, which makes it a genuinely confusing incident to diagnose the first time you encounter it.
 
 ## 8. `/proc` — The Process and Kernel Virtual Filesystem (Introduction)
 
 `/proc` is a **virtual filesystem** — it has no backing storage on disk at all. Its contents are generated on demand by the kernel, in memory, the moment something reads them. Every running process gets a numbered subdirectory, `/proc/<pid>/`, exposing that process's command line (`/proc/<pid>/cmdline`), open file descriptors (`/proc/<pid>/fd/`), memory maps, and current status directly from kernel data structures.
 
-`/proc` also exposes system-wide kernel information outside any specific process: `/proc/cpuinfo`, `/proc/meminfo`, `/proc/version` (used in §1's hands-on section), and `/proc/sys/`, a tunable subtree that overlaps with the `sysctl` interface for adjusting live kernel parameters.
+`/proc` also exposes system-wide kernel information outside any specific process: `/proc/cpuinfo`, `/proc/meminfo`, `/proc/version` (used in [§1](../Part1/Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s hands-on section), and `/proc/sys/`, a tunable subtree that overlaps with the `sysctl` interface for adjusting live kernel parameters.
 
 ```bash
 $ cat /proc/1/comm
@@ -120,7 +120,7 @@ $ ls /proc/1/fd | wc -l
 34
 ```
 
-This section introduces `/proc` only at the "what it is and why it's a virtual filesystem, not a real one" level needed to place it correctly in the FHS layout. §24, later in this same Part, is the full deep dive into `/proc` and `/sys` for system introspection, and Part 2's kernel coverage (§8–§16) is the architectural background on the kernel-space/user-space boundary that `/proc` exposes a controlled window into.
+This section introduces `/proc` only at the "what it is and why it's a virtual filesystem, not a real one" level needed to place it correctly in the FHS layout. [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md), later in this same Part, is the full deep dive into `/proc` and `/sys` for system introspection, and Part 2's kernel coverage ([§8](../Part2/Section-08-Part2-System-Architecture-Overview.md)–[§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md)) is the architectural background on the kernel-space/user-space boundary that `/proc` exposes a controlled window into.
 
 ## 9. `/sys` — The Kernel Object Virtual Filesystem (Introduction)
 
@@ -135,11 +135,11 @@ $ cat /sys/block/sda/size
 20971520
 ```
 
-As with `/proc`, this is intentionally a light introduction — full depth, including practical introspection workflows and the relationship between `/sys` and `udev`, is §24.
+As with `/proc`, this is intentionally a light introduction — full depth, including practical introspection workflows and the relationship between `/sys` and `udev`, is [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md).
 
 ## 10. `/dev` — Device Files
 
-`/dev` holds **device files** — special files that represent hardware devices and certain virtual devices, letting userspace programs interact with hardware through the same open/read/write file-based interface used for regular files, which is a core piece of the "everything is a file" Unix philosophy referenced back in §4 (Part 1).
+`/dev` holds **device files** — special files that represent hardware devices and certain virtual devices, letting userspace programs interact with hardware through the same open/read/write file-based interface used for regular files, which is a core piece of the "everything is a file" Unix philosophy referenced back in [§4](../Part1/Section-04-Part1-Linux-Philosophy-Design-Principles.md).
 
 Common examples:
 
@@ -198,13 +198,13 @@ Block size: 4096       Fundamental block size: 4096
 
 The FHS is followed closely by both major families, but a few practical differences are worth knowing for cross-distro fleet work:
 
-| Aspect                           | Debian/Ubuntu                                                            | RHEL/CentOS/Rocky/Alma                                                |
-| -------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| Network config location          | `/etc/netplan/` (modern) or `/etc/network/interfaces` (legacy)           | `/etc/sysconfig/network-scripts/` (legacy) or NetworkManager keyfiles |
-| Service unit overrides           | `/etc/systemd/system/` (same convention — systemd is common ground, §65) | `/etc/systemd/system/`                                                |
-| Package manager state            | `/var/lib/dpkg/`                                                         | `/var/lib/rpm/`                                                       |
-| Default web root (if applicable) | `/var/www/html`                                                          | `/var/www/html` (largely converged)                                   |
-| SELinux/AppArmor config          | `/etc/apparmor.d/` (AppArmor, Ubuntu default)                            | `/etc/selinux/` (SELinux, RHEL default) — §91, Part 12                |
+| Aspect                           | Debian/Ubuntu                                                                                                                                            | RHEL/CentOS/Rocky/Alma                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Network config location          | `/etc/netplan/` (modern) or `/etc/network/interfaces` (legacy)                                                                                           | `/etc/sysconfig/network-scripts/` (legacy) or NetworkManager keyfiles                                                     |
+| Service unit overrides           | `/etc/systemd/system/` (same convention — systemd is common ground, [§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)) | `/etc/systemd/system/`                                                                                                    |
+| Package manager state            | `/var/lib/dpkg/`                                                                                                                                         | `/var/lib/rpm/`                                                                                                           |
+| Default web root (if applicable) | `/var/www/html`                                                                                                                                          | `/var/www/html` (largely converged)                                                                                       |
+| SELinux/AppArmor config          | `/etc/apparmor.d/` (AppArmor, Ubuntu default)                                                                                                            | `/etc/selinux/` (SELinux, RHEL default) — [§91](../Part12/Section-91-Part12-SELinux-AppArmor-Mandatory-Access-Control.md) |
 
 The core top-level FHS directories (`/etc`, `/var`, `/usr`, `/home`, `/proc`, `/sys`, `/dev`) are effectively identical across both families — the differences live one or two levels deeper, in per-subsystem convention, not in the top-level hierarchy itself.
 
@@ -212,7 +212,7 @@ The core top-level FHS directories (`/etc`, `/var`, `/usr`, `/home`, `/proc`, `/
 
 1. **"`/bin` and `/usr/bin` are meaningfully different locations today."** On essentially every modern mainstream distribution, `/bin` is a symlink into `/usr/bin` (4) — the historical split is preserved for path compatibility, not because the two are independently mountable or divergent in practice anymore.
 2. **"`/tmp` and `/var/tmp` are interchangeable."** They differ specifically in expected lifetime and storage backing — `/tmp` is commonly `tmpfs`-backed and cleared on reboot or aggressively by `systemd-tmpfiles`; `/var/tmp` is meant to survive reboots (2).
-3. **"`/proc` and `/sys` are regular directories that happen to hold system info."** Both are virtual, in-memory filesystems generated on demand by the kernel with no on-disk backing at all — conceptually closer to a live API than to a directory of files (8, 9; full depth in §24).
+3. **"`/proc` and `/sys` are regular directories that happen to hold system info."** Both are virtual, in-memory filesystems generated on demand by the kernel with no on-disk backing at all — conceptually closer to a live API than to a directory of files (8, 9; full depth in [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md)).
 4. **"FHS compliance means every distribution's layout is identical."** The top-level structure is highly consistent, but per-subsystem conventions (network config paths, MAC framework config) genuinely diverge between Debian and RHEL families (12) — "FHS-compliant" doesn't mean "byte-for-byte identical layout."
 
 ## 14. Tiered Interview Questions
@@ -230,7 +230,7 @@ _What the interviewer is probing for:_ Operational reasoning connecting the FHS'
 _What the interviewer is probing for:_ Understanding that FHS conventions have historical reasons that can become obsolete, and that the candidate tracks how the ecosystem evolves rather than treating the standard as frozen.
 
 **🎯 Architect:** _"You're designing a base image / partitioning scheme for a fleet of stateless application servers. How do you apply FHS knowledge to decide what gets its own mount point, what's read-only, and what's ephemeral?"_
-**Model answer:** I'd separate the tree along the same lines the FHS itself implies: `/`, `/usr`, and `/etc` hold mostly static content defined by the image build, so I'd bias toward making the base OS portion read-only where the distribution supports it, reducing the blast radius of runtime tampering or accidental modification. `/var` gets its own mount (or is backed by a separate volume/overlay) specifically because it's the directory expected to grow and change continuously — logs in particular should probably ship off-host via centralized logging (§84, Part 11) rather than accumulate indefinitely on ephemeral instances. `/tmp` I'd leave `tmpfs`-backed for speed but size it deliberately, since on a stateless, frequently-recycled fleet I don't need `/tmp` to survive anything, and I'd rather it fail fast on hitting its RAM-backed size limit than silently pressure system memory. `/home` is mostly irrelevant on stateless application servers — no interactive users are expected to accumulate meaningful data there. I'd keep `/proc` and `/sys` as the kernel provides them by default; they're not something you design around, just something automation and monitoring tooling reads from. The overall goal is to align "what changes at runtime" with "what's mounted separately or shipped elsewhere," so a host can be destroyed and replaced without losing anything that matters and without a filling directory taking down the whole instance.
+**Model answer:** I'd separate the tree along the same lines the FHS itself implies: `/`, `/usr`, and `/etc` hold mostly static content defined by the image build, so I'd bias toward making the base OS portion read-only where the distribution supports it, reducing the blast radius of runtime tampering or accidental modification. `/var` gets its own mount (or is backed by a separate volume/overlay) specifically because it's the directory expected to grow and change continuously — logs in particular should probably ship off-host via centralized logging ([§84](../Part11/Section-84-Part11-Network-Performance-Analysis.md)) rather than accumulate indefinitely on ephemeral instances. `/tmp` I'd leave `tmpfs`-backed for speed but size it deliberately, since on a stateless, frequently-recycled fleet I don't need `/tmp` to survive anything, and I'd rather it fail fast on hitting its RAM-backed size limit than silently pressure system memory. `/home` is mostly irrelevant on stateless application servers — no interactive users are expected to accumulate meaningful data there. I'd keep `/proc` and `/sys` as the kernel provides them by default; they're not something you design around, just something automation and monitoring tooling reads from. The overall goal is to align "what changes at runtime" with "what's mounted separately or shipped elsewhere," so a host can be destroyed and replaced without losing anything that matters and without a filling directory taking down the whole instance.
 _What the interviewer is probing for:_ Ability to translate FHS structure into concrete infrastructure decisions — read-only root design, log shipping, ephemeral vs. persistent storage boundaries — at a fleet-architecture level, not just single-host administration.
 
 ## 15. Key Takeaways
@@ -239,12 +239,12 @@ _What the interviewer is probing for:_ Ability to translate FHS structure into c
 - `/etc` (static config), `/usr` (static programs/libraries), and `/var` (variable runtime data) are the three top-level directories whose distinct purposes explain most of the rest of the hierarchy's logic.
 - The historical `/bin`-vs-`/usr/bin` split is now largely vestigial on modern distributions due to the usr-merge — `/bin`, `/sbin`, and `/lib` are typically symlinks into their `/usr` equivalents.
 - `/tmp` and `/var/tmp` differ in expected lifetime and storage backing — conflating them is a real source of production incidents, especially when `/tmp` is `tmpfs`-backed.
-- `/proc` and `/sys` are virtual, in-memory filesystems generated on demand by the kernel, not real on-disk directories — this section introduces them conceptually; §24 is the full introspection deep dive.
+- `/proc` and `/sys` are virtual, in-memory filesystems generated on demand by the kernel, not real on-disk directories — this section introduces them conceptually; [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md) is the full introspection deep dive.
 - `/var` is the top-level directory most likely to fill unpredictably in production, which is why it's a common candidate for its own dedicated mount point or volume.
 - Debian/Ubuntu and RHEL/CentOS families agree closely on the top-level FHS structure; their real differences live one or two levels deeper, in per-subsystem convention (12).
 
 ## 16. Related Concepts & What's Next
 
-This section builds on Part 2's kernel/userland layering (§8–§16) — `/proc` and `/sys` are direct, filesystem-shaped windows into the kernel-space concepts introduced there — and lightly extends §3 (Part 1)'s brief mention of where Linux runs. `/etc`'s account files (`/etc/passwd`, `/etc/shadow`, `/etc/group`) are covered field-by-field in §25 (Part 4), and `/etc/systemd/` ties directly into the full systemd architecture in §65–§72 (Part 9). §18, immediately next, covers the filesystem **types** (ext4, XFS, Btrfs, tmpfs, overlayfs) that actually back these directories on disk or in memory. §24, later in this Part, returns to `/proc` and `/sys` for full introspection depth — treat this section's coverage of both as intentionally introductory.
+This section builds on Part 2's kernel/userland layering ([§8](../Part2/Section-08-Part2-System-Architecture-Overview.md)–[§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md)) — `/proc` and `/sys` are direct, filesystem-shaped windows into the kernel-space concepts introduced there — and lightly extends [§3](../Part1/Section-03-Part1-Open-Source-Licensing-GPL-Governance.md)'s brief mention of where Linux runs. `/etc`'s account files (`/etc/passwd`, `/etc/shadow`, `/etc/group`) are covered field-by-field in [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md), and `/etc/systemd/` ties directly into the full systemd architecture in [§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md). [§18](./Section-18-Part3-Filesystem-Types.md), immediately next, covers the filesystem **types** (ext4, XFS, Btrfs, tmpfs, overlayfs) that actually back these directories on disk or in memory. [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md), later in this Part, returns to `/proc` and `/sys` for full introspection depth — treat this section's coverage of both as intentionally introductory.
 
-**Next Section:** §18 — `Section-18-Part3-Filesystem-Types.md`
+**Next Section:** [§18](./Section-18-Part3-Filesystem-Types.md) — `Section-18-Part3-Filesystem-Types.md`

@@ -4,7 +4,7 @@
 
 **Plain language:** Beyond the day-to-day commands covered so far, Git ships (or the ecosystem provides) a set of specialized tools for less frequent but genuinely important jobs: working on two branches at once without switching, never resolving the same conflict twice, attaching notes to commits without touching their hashes, shipping an entire repository as one file, and rewriting history safely at scale.
 
-**Precise:** This section covers five largely independent tools — `git worktree`, `git rerere`, `git notes`, `git bundle`, and `git filter-repo` — that sit above the object model (§5) and refs (§6) already established, and below the everyday porcelain commands (branching §12, merging §13, rebasing §14) used constantly. Each solves a specific operational problem that a working engineer eventually hits, even if not daily.
+**Precise:** This section covers five largely independent tools — `git worktree`, `git rerere`, `git notes`, `git bundle`, and `git filter-repo` — that sit above the object model ([§5](../Part2/Section-05-Part2-Object-Model.md)) and refs ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) already established, and below the everyday porcelain commands (branching [§12](../Part4/Section-12-Part4-Branching-In-Depth.md), merging [§13](../Part4/Section-13-Part4-Merging.md), rebasing [§14](../Part4/Section-14-Part4-Rebasing.md)) used constantly. Each solves a specific operational problem that a working engineer eventually hits, even if not daily.
 
 ## 2. Why This Tooling Exists
 
@@ -20,7 +20,7 @@ Ordinary Git usage assumes: one working directory per repository, conflicts reso
 
 ### 3.1 The problem it solves
 
-Without worktrees, working on two branches "at once" means either two full clones (duplicated object database, manual syncing, disk cost) or repeatedly stashing (§16) and switching branches (§12) in a single working directory — disruptive if you have an in-progress build, running dev server, or uncommitted experiment you don't want to touch.
+Without worktrees, working on two branches "at once" means either two full clones (duplicated object database, manual syncing, disk cost) or repeatedly stashing ([§16](../Part4/Section-16-Part4-Stashing.md)) and switching branches ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) in a single working directory — disruptive if you have an in-progress build, running dev server, or uncommitted experiment you don't want to touch.
 
 ### 3.2 The model
 
@@ -41,11 +41,11 @@ A **worktree** is a separate working directory, with its own checked-out branch 
      └────────────────┘   └────────────────┘    └────────────────┘
 ```
 
-> ⚠️ **Critical clarification:** worktrees are **not** clones. A clone (§9) creates an entirely new `.git` directory with its own copy of the object database — a second, independent repository that happens to share history at clone time and then diverges in storage. A worktree has no separate object database at all; new commits made in any worktree are immediately visible (as reachable objects) to every other worktree of the same repository, because there is only one `.git/objects`.
+> ⚠️ **Critical clarification:** worktrees are **not** clones. A clone ([§9](../Part3/Section-09-Part3-Creating-Cloning-Repositories.md)) creates an entirely new `.git` directory with its own copy of the object database — a second, independent repository that happens to share history at clone time and then diverges in storage. A worktree has no separate object database at all; new commits made in any worktree are immediately visible (as reachable objects) to every other worktree of the same repository, because there is only one `.git/objects`.
 
 ### 3.3 Core rule: one branch, one worktree
 
-Git refuses to check the same branch out in two worktrees simultaneously — this prevents two working directories from silently diverging on what "the tip of `main`" means. Use a detached checkout (§6) or a distinct branch if you need two views of similar content.
+Git refuses to check the same branch out in two worktrees simultaneously — this prevents two working directories from silently diverging on what "the tip of `main`" means. Use a detached checkout ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) or a distinct branch if you need two views of similar content.
 
 ```bash
 # Purpose: create a new worktree for a hotfix branch without touching the current working directory
@@ -81,7 +81,7 @@ $ git worktree remove ../repo-hotfix
 
 ### 4.1 The problem it solves
 
-A long-lived feature branch, repeatedly rebased (§14) against a fast-moving `main`, frequently produces the **same textual conflict** on every rebase — the same two lines in the same file collide each time, because the underlying divergence hasn't been resolved at the source, only patched around commit by commit. Resolving it by hand every single rebase is repetitive and error-prone.
+A long-lived feature branch, repeatedly rebased ([§14](../Part4/Section-14-Part4-Rebasing.md)) against a fast-moving `main`, frequently produces the **same textual conflict** on every rebase — the same two lines in the same file collide each time, because the underlying divergence hasn't been resolved at the source, only patched around commit by commit. Resolving it by hand every single rebase is repetitive and error-prone.
 
 ### 4.2 The mechanism
 
@@ -117,19 +117,19 @@ $ git rebase main
 
 - Long-lived branches under active, repeated rebasing (a common pattern with `git pull --rebase` on a feature branch tracked over weeks).
 - Large-scale refactors landing on `main` in stages while several other branches keep rebasing through them, hitting the same collision repeatedly.
-- Cherry-picking (§17) the same patch across multiple release branches, where the same conflict recurs on each target.
+- Cherry-picking ([§17](../Part4/Section-17-Part4-Cherry-Pick-Patches.md)) the same patch across multiple release branches, where the same conflict recurs on each target.
 
 ## 5. `git notes` — Metadata Without Rewriting History
 
 ### 5.1 The problem it solves
 
-Sometimes you want to attach information to a commit **after** it already exists — a code review verdict, a CI build ID, a link to an incident ticket, a "verified by QA" stamp — without amending the commit (which would change its hash, per §5's object-hashing rules, and break every reference, branch, tag, and downstream fork pointing at it).
+Sometimes you want to attach information to a commit **after** it already exists — a code review verdict, a CI build ID, a link to an incident ticket, a "verified by QA" stamp — without amending the commit (which would change its hash, per [§5](../Part2/Section-05-Part2-Object-Model.md)'s object-hashing rules, and break every reference, branch, tag, and downstream fork pointing at it).
 
 ### 5.2 The mechanism
 
 A **note** is a separate object, stored under a special ref namespace (`refs/notes/commits` by default), that maps a commit hash to a piece of text. Crucially, **notes are not part of the commit object** — attaching, editing, or removing a note never changes the commit's hash.
 
-> ⚠️ **Critical clarification / contrast with §5:** §5 established that everything Git hashes is part of the object's permanent identity. Notes are the deliberate exception to that pattern at the _user-visible_ layer — they live alongside a commit, referenced by its hash, rather than inside it. This is precisely why they can be added, edited, or deleted freely without any of §5's cascading-hash consequences for a changed object.
+> ⚠️ **Critical clarification / contrast with [§5](../Part2/Section-05-Part2-Object-Model.md):** [§5](../Part2/Section-05-Part2-Object-Model.md) established that everything Git hashes is part of the object's permanent identity. Notes are the deliberate exception to that pattern at the _user-visible_ layer — they live alongside a commit, referenced by its hash, rather than inside it. This is precisely why they can be added, edited, or deleted freely without any of [§5](../Part2/Section-05-Part2-Object-Model.md)'s cascading-hash consequences for a changed object.
 
 ```bash
 # Purpose: attach a note to the current commit
@@ -182,7 +182,7 @@ You need to move a complete repository, or a specific range of history, somewher
 
 ### 6.2 The mechanism
 
-A bundle is a single file containing packed objects (§7) plus enough ref information to reconstruct branches and tags on the receiving end. It can hold an entire repository's history or a specific range (e.g., "everything since the last bundle, for an incremental transfer").
+A bundle is a single file containing packed objects ([§7](../Part2/Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md)) plus enough ref information to reconstruct branches and tags on the receiving end. It can hold an entire repository's history or a specific range (e.g., "everything since the last bundle, for an incremental transfer").
 
 ```bash
 # Purpose: bundle the entire repository (all branches) into one file
@@ -216,7 +216,7 @@ $ git fetch repo-full-backup.bundle main:refs/heads/recovered-main
 ### 6.3 Real use cases
 
 - **Offline transfer:** handing a contractor or an air-gapped secure environment a full repository without any network path between the two machines.
-- **Cold backup:** a periodic `git bundle create --all` written to durable, offline storage as a restore-from-scratch guarantee independent of the hosting platform (complements, but does not replace, platform-side backups — a point relevant to disaster recovery, §30).
+- **Cold backup:** a periodic `git bundle create --all` written to durable, offline storage as a restore-from-scratch guarantee independent of the hosting platform (complements, but does not replace, platform-side backups — a point relevant to disaster recovery, [§30](../Part7/Section-30-Part7-Disaster-Recovery.md)).
 - **Incremental sneakernet sync:** repeated `<last-known-ref>..HEAD` bundles to keep a disconnected mirror current without re-transferring the whole history each time.
 
 ## 7. `git filter-repo` — General-Purpose History Rewriting
@@ -255,7 +255,7 @@ $ git filter-repo --path billing-service/ --path-rename billing-service/:
 $ git filter-repo --mailmap mailmap.txt
 ```
 
-> ⚠️ **Critical clarification:** exactly like every other history-rewrite tool, `filter-repo` produces **new commit hashes for every rewritten commit** (per §5's hash-chaining mechanism) — this is a repository-wide history rewrite, subject to the full weight of §14's Golden Rule of rebasing. Every existing clone, fork, and open PR based on the old history becomes incompatible and must be re-cloned or reset onto the new history; this is not something to do to a shared branch without full team coordination and advance notice.
+> ⚠️ **Critical clarification:** exactly like every other history-rewrite tool, `filter-repo` produces **new commit hashes for every rewritten commit** (per [§5](../Part2/Section-05-Part2-Object-Model.md)'s hash-chaining mechanism) — this is a repository-wide history rewrite, subject to the full weight of [§14](../Part4/Section-14-Part4-Rebasing.md)'s Golden Rule of rebasing. Every existing clone, fork, and open PR based on the old history becomes incompatible and must be re-cloned or reset onto the new history; this is not something to do to a shared branch without full team coordination and advance notice.
 
 ### 7.3 Relationship to secret remediation
 
@@ -286,7 +286,7 @@ Removing a secret from history with `filter-repo` (or its equivalents) is a **ne
 **Model answer:** `filter-branch` is officially discouraged because it's slow at any real scale — it effectively replays history commit by commit through many subprocesses — and it has known correctness edge cases around merge commits and empty commits that can produce subtly wrong results. `filter-repo` is a purpose-built, actively maintained replacement: much faster, safer by default (it refuses to run against anything but a fresh clone, to avoid an unrecoverable mistake on someone's only copy), and more capable — removing paths, extracting subdirectories into new repositories, and bulk-rewriting author identities are all first-class operations. Critically, removing a secret from history with `filter-repo` only fixes the repository's history going forward; it doesn't undo the exposure that already happened. The secret must be treated as compromised and rotated regardless, because anyone who fetched the repository before the rewrite already has the old objects, and copies can persist in forks, CI logs, or caches the rewrite never touched. And because every rewritten commit gets a new hash, this is a full history rewrite subject to the Golden Rule — every collaborator's existing clone becomes incompatible and needs to be re-cloned or hard-reset onto the new history, which requires explicit team-wide coordination.
 
 **[Architect] Q5. A team wants to split one directory out of a 10-year-old monorepo into its own repository, preserving that directory's commit history. Walk through the approach and the trade-offs.**
-**Model answer:** The tool for this is `git filter-repo` with path-filtering and path-renaming: clone the monorepo fresh, run `filter-repo --path <subdirectory>/ --path-rename <subdirectory>/:` to keep only commits touching that subtree and rebase their paths to the new repository's root, then push the result to a brand-new remote. Trade-offs to communicate up front: every retained commit gets a new hash (it's a full history rewrite of the extracted content), so the new repository's history, while faithful to what happened in that subdirectory, is not byte-identical in hash terms to the corresponding commits in the old monorepo — anyone needing to trace a commit back to the original monorepo needs a mapping, not an assumption of identical hashes. Merge commits that touched both the extracted directory and unrelated parts of the monorepo need care, since filter-repo's simplification of such commits can change what the graph looks like structurally even though the file-level content is correctly preserved. Finally, this is a one-time, coordinated cutover: once the new repository is the source of truth, the old monorepo's copy of that directory should be removed (in a separate, clearly communicated commit) to avoid two diverging sources of truth for the same code, and CI/CD, hooks, and any submodule/subtree references (§27) pointing at the old path need to be updated in the same change window.
+**Model answer:** The tool for this is `git filter-repo` with path-filtering and path-renaming: clone the monorepo fresh, run `filter-repo --path <subdirectory>/ --path-rename <subdirectory>/:` to keep only commits touching that subtree and rebase their paths to the new repository's root, then push the result to a brand-new remote. Trade-offs to communicate up front: every retained commit gets a new hash (it's a full history rewrite of the extracted content), so the new repository's history, while faithful to what happened in that subdirectory, is not byte-identical in hash terms to the corresponding commits in the old monorepo — anyone needing to trace a commit back to the original monorepo needs a mapping, not an assumption of identical hashes. Merge commits that touched both the extracted directory and unrelated parts of the monorepo need care, since filter-repo's simplification of such commits can change what the graph looks like structurally even though the file-level content is correctly preserved. Finally, this is a one-time, coordinated cutover: once the new repository is the source of truth, the old monorepo's copy of that directory should be removed (in a separate, clearly communicated commit) to avoid two diverging sources of truth for the same code, and CI/CD, hooks, and any submodule/subtree references ([§27](../Part6/Section-27-Part6-Submodules-Subtrees.md)) pointing at the old path need to be updated in the same change window.
 
 ## 10. Common Misconceptions
 
@@ -306,4 +306,4 @@ Removing a secret from history with `filter-repo` (or its equivalents) is a **ne
 
 ## 12. Related Concepts & What's Next
 
-This section covered the specialized tools sitting above the object model and refs. §32 turns to Git's own evolution over time — the `master`→`main` rename, the `checkout`-splitting story completed, default merge-strategy changes, the ongoing SHA-1-to-SHA-256 transition previewed in §5, and how Git compares today against SVN, Mercurial, and Perforce. §33 then consolidates best practices and anti-patterns from across this entire series into one reference.
+This section covered the specialized tools sitting above the object model and refs. [§32](./Section-32-Part8-Gits-Evolution.md) turns to Git's own evolution over time — the `master`→`main` rename, the `checkout`-splitting story completed, default merge-strategy changes, the ongoing SHA-1-to-SHA-256 transition previewed in [§5](../Part2/Section-05-Part2-Object-Model.md), and how Git compares today against SVN, Mercurial, and Perforce. [§33](./Section-33-Part8-Best-Practices-Anti-Patterns.md) then consolidates best practices and anti-patterns from across this entire series into one reference.

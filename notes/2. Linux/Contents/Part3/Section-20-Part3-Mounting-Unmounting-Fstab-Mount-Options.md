@@ -2,9 +2,9 @@
 
 ## 1. What Mounting Actually Means
 
-A filesystem sitting on a block device — a disk partition, an LVM logical volume (§73–§79), a network share, an ISO image — is inert data until it is **mounted**: attached at a specific point in the single, unified directory tree §17 described. Linux has no concept of separate drive letters; every accessible filesystem, however many physical or virtual devices back it, is grafted onto some directory under `/`. That directory is the **mount point**, and until something is mounted there, it's just an ordinary (usually empty) directory.
+A filesystem sitting on a block device — a disk partition, an LVM logical volume ([§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)–[§79](../Part10/Section-79-Part10-Backup-Strategies-Tools.md)), a network share, an ISO image — is inert data until it is **mounted**: attached at a specific point in the single, unified directory tree [§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md) described. Linux has no concept of separate drive letters; every accessible filesystem, however many physical or virtual devices back it, is grafted onto some directory under `/`. That directory is the **mount point**, and until something is mounted there, it's just an ordinary (usually empty) directory.
 
-Mounting does three things at once: it tells the kernel which **filesystem driver** to use to interpret the device's contents (ext4, XFS, Btrfs, vfat, nfs — §18 covered the filesystem types themselves), it makes that filesystem's directory tree visible at the mount point, and it can attach a set of **mount options** that govern how the kernel treats that filesystem for as long as it stays mounted (read-only, no `atime` updates, no `setuid` honored, and so on — covered in depth in 4).
+Mounting does three things at once: it tells the kernel which **filesystem driver** to use to interpret the device's contents (ext4, XFS, Btrfs, vfat, nfs — [§18](./Section-18-Part3-Filesystem-Types.md) covered the filesystem types themselves), it makes that filesystem's directory tree visible at the mount point, and it can attach a set of **mount options** that govern how the kernel treats that filesystem for as long as it stays mounted (read-only, no `atime` updates, no `setuid` honored, and so on — covered in depth in 4).
 
 > 💡 **Tip:** Whatever was in the mount point directory before mounting is not deleted — it's just hidden. Unmount the filesystem and the original contents reappear untouched. This is a common source of "where did my files go" confusion when someone mounts a new filesystem on top of a non-empty directory.
 
@@ -22,14 +22,14 @@ mount -a                  # mount everything listed in /etc/fstab that isn't alr
 
 **Key flags:**
 
-| Flag                 | Meaning                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------ |
-| `-t <fstype>`        | Filesystem type (`ext4`, `xfs`, `nfs`, `vfat`, ...) — often auto-detected if omitted             |
+| Flag                 | Meaning                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `-t <fstype>`        | Filesystem type (`ext4`, `xfs`, `nfs`, `vfat`, ...) — often auto-detected if omitted                     |
 | `-o <options>`       | Comma-separated mount options, detailed in the common mount options section below — e.g. `-o ro,noatime` |
-| `-a`                 | Mount all filesystems in `/etc/fstab` (except those marked `noauto`) that aren't already mounted |
-| `-r` / `--read-only` | Shortcut for `-o ro`                                                                             |
-| `-v`                 | Verbose — show each step taken                                                                   |
-| `-n`                 | Mount without writing to `/etc/mtab` (used when `/` is still read-only, e.g. during early boot)  |
+| `-a`                 | Mount all filesystems in `/etc/fstab` (except those marked `noauto`) that aren't already mounted         |
+| `-r` / `--read-only` | Shortcut for `-o ro`                                                                                     |
+| `-v`                 | Verbose — show each step taken                                                                           |
+| `-n`                 | Mount without writing to `/etc/mtab` (used when `/` is still read-only, e.g. during early boot)          |
 
 **Example usage and expected output:**
 
@@ -43,7 +43,7 @@ $ sudo mount -a
 
 Running `mount` with no arguments at all lists every currently mounted filesystem, device, mount point, type, and active options — the fastest way to answer "what's mounted where, with what options, right now."
 
-**Production usage example:** After running `parted`/`fdisk` and `mkfs` to create a new partition and filesystem (§18, §77), the mount step is what actually makes it usable — a common runbook is: partition → `mkfs` → add an `/etc/fstab` entry → `mount -a` to test the entry works exactly as it will on next boot, rather than mounting manually and forgetting to persist it.
+**Production usage example:** After running `parted`/`fdisk` and `mkfs` to create a new partition and filesystem ([§18](./Section-18-Part3-Filesystem-Types.md), [§77](../Part10/Section-77-Part10-Swap-Management.md)), the mount step is what actually makes it usable — a common runbook is: partition → `mkfs` → add an `/etc/fstab` entry → `mount -a` to test the entry works exactly as it will on next boot, rather than mounting manually and forgetting to persist it.
 
 **Common errors:**
 
@@ -70,8 +70,8 @@ UUID=1a2b3c4d-...      /data           ext4       defaults,noatime   0        2
 2. **Mount point** — the absolute directory the filesystem attaches to. Must already exist as a directory before `mount -a` can succeed against it. `swap` is a special-case placeholder for swap space, which has no directory mount point.
 3. **Filesystem type** — `ext4`, `xfs`, `nfs`, `vfat`, `swap`, or `auto` to let the kernel detect it.
 4. **Options** — comma-separated, no spaces (the common mount options section below covers these in depth). `defaults` expands to a standard baseline (`rw,suid,dev,exec,auto,nouser,async`).
-5. **Dump** — legacy field for the `dump` backup utility; `0` means "don't back up with `dump`," `1` means "do." In practice almost every modern system sets this to `0` — `dump` itself is rarely used today (§79 covers modern backup tooling).
-6. **Pass** — controls `fsck` order at boot. `0` means never `fsck` this filesystem (correct for swap, network filesystems, and anything that shouldn't be checked at boot). `1` is reserved for the root filesystem specifically. `2` means check it, but after root, and filesystems with the same pass number can be checked in parallel. XFS ignores this field in practice (it doesn't use traditional `fsck` the way ext4 does — §77 covers filesystem-specific check/repair tools).
+5. **Dump** — legacy field for the `dump` backup utility; `0` means "don't back up with `dump`," `1` means "do." In practice almost every modern system sets this to `0` — `dump` itself is rarely used today ([§79](../Part10/Section-79-Part10-Backup-Strategies-Tools.md) covers modern backup tooling).
+6. **Pass** — controls `fsck` order at boot. `0` means never `fsck` this filesystem (correct for swap, network filesystems, and anything that shouldn't be checked at boot). `1` is reserved for the root filesystem specifically. `2` means check it, but after root, and filesystems with the same pass number can be checked in parallel. XFS ignores this field in practice (it doesn't use traditional `fsck` the way ext4 does — [§77](../Part10/Section-77-Part10-Swap-Management.md) covers filesystem-specific check/repair tools).
 
 ### 3.1 UUID vs. Device Name: Why UUID Wins
 
@@ -92,19 +92,19 @@ $ lsblk -f
 
 ## 4. Common Mount Options
 
-| Option            | Effect                                                                                                                                                                                                                              |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `defaults`        | Baseline set: `rw,suid,dev,exec,auto,nouser,async` — the sane default for most local filesystems                                                                                                                                    |
-| `ro`              | Mount read-only — no writes permitted, useful for recovery media, compliance-locked data, or protecting a source volume                                                                                                             |
-| `rw`              | Mount read-write (default, but sometimes stated explicitly)                                                                                                                                                                         |
-| `noatime`         | Don't update file **access time** on every read — meaningfully reduces write I/O on read-heavy workloads (databases, high-traffic web roots) since a plain read no longer triggers a metadata write                                 |
-| `relatime`        | A middle ground (and the modern kernel default even without specifying it): update access time only when it's older than the modify or change time — most of `noatime`'s I/O benefit with slightly more POSIX-conventional behavior |
-| `nofail`          | Don't block boot if this filesystem fails to mount (log the failure and continue) — critical for removable media, optional network shares, or any mount that shouldn't be able to strand the boot process                           |
-| `noauto`          | Don't mount automatically at boot or on `mount -a` — only mount when explicitly named (`mount /mnt/data`)                                                                                                                           |
-| `nosuid`          | Ignore SUID/SGID bits on this filesystem — a hardening option for untrusted or removable media (§27, §89 cover SUID/SGID and kernel-hardening context)                                                                              |
-| `noexec`          | Prevent execution of binaries from this filesystem — common on `/tmp` or upload directories as a defense-in-depth measure                                                                                                           |
-| `user` / `nouser` | Whether non-root users are permitted to mount this filesystem themselves (`nouser` is the safer default)                                                                                                                            |
-| `sync` / `async`  | Whether writes are flushed to the device immediately (`sync`, slower, safer) or buffered (`async`, faster, default for most filesystems)                                                                                            |
+| Option            | Effect                                                                                                                                                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaults`        | Baseline set: `rw,suid,dev,exec,auto,nouser,async` — the sane default for most local filesystems                                                                                                                                                                                               |
+| `ro`              | Mount read-only — no writes permitted, useful for recovery media, compliance-locked data, or protecting a source volume                                                                                                                                                                        |
+| `rw`              | Mount read-write (default, but sometimes stated explicitly)                                                                                                                                                                                                                                    |
+| `noatime`         | Don't update file **access time** on every read — meaningfully reduces write I/O on read-heavy workloads (databases, high-traffic web roots) since a plain read no longer triggers a metadata write                                                                                            |
+| `relatime`        | A middle ground (and the modern kernel default even without specifying it): update access time only when it's older than the modify or change time — most of `noatime`'s I/O benefit with slightly more POSIX-conventional behavior                                                            |
+| `nofail`          | Don't block boot if this filesystem fails to mount (log the failure and continue) — critical for removable media, optional network shares, or any mount that shouldn't be able to strand the boot process                                                                                      |
+| `noauto`          | Don't mount automatically at boot or on `mount -a` — only mount when explicitly named (`mount /mnt/data`)                                                                                                                                                                                      |
+| `nosuid`          | Ignore SUID/SGID bits on this filesystem — a hardening option for untrusted or removable media ([§27](../Part4/Section-27-Part4-Standard-Permission-Model.md), [§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md) cover SUID/SGID and kernel-hardening context) |
+| `noexec`          | Prevent execution of binaries from this filesystem — common on `/tmp` or upload directories as a defense-in-depth measure                                                                                                                                                                      |
+| `user` / `nouser` | Whether non-root users are permitted to mount this filesystem themselves (`nouser` is the safer default)                                                                                                                                                                                       |
+| `sync` / `async`  | Whether writes are flushed to the device immediately (`sync`, slower, safer) or buffered (`async`, faster, default for most filesystems)                                                                                                                                                       |
 
 > 💡 **Tip:** `nofail` is worth defaulting to for anything that isn't the root filesystem or otherwise mission-critical to have mounted before the system is considered "up" — an NFS share that's briefly unreachable at boot, or a secondary disk that's occasionally removed for maintenance, shouldn't be able to hang the entire boot sequence or drop the box into an emergency shell.
 
@@ -188,6 +188,6 @@ _What the interviewer is probing for:_ Fleet-scale judgment — recognizing that
 
 ## 9. Related Concepts & What's Next
 
-This section builds directly on the Filesystem Hierarchy Standard from §17 (mount points are FHS directories) and the filesystem types introduced in §18 (what's actually being mounted). §19's inode/hard-link/symlink coverage is a useful companion concept: a mount point is itself a directory entry, but crossing a mount boundary is one of the few cases where a hard link cannot be created (hard links can't span filesystems — a detail §19 flags). §21 (next) moves to everyday file and directory operations — navigation, creation, copying, moving, deletion — now that filesystems are assumed to be mounted and available. LVM and other advanced storage layers that commonly sit underneath what gets mounted here (physical/volume groups, logical volumes, RAID) are covered in full in Part 10, §73–§79.
+This section builds directly on the Filesystem Hierarchy Standard from [§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md) (mount points are FHS directories) and the filesystem types introduced in [§18](./Section-18-Part3-Filesystem-Types.md) (what's actually being mounted). [§19](./Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md)'s inode/hard-link/symlink coverage is a useful companion concept: a mount point is itself a directory entry, but crossing a mount boundary is one of the few cases where a hard link cannot be created (hard links can't span filesystems — a detail [§19](./Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md) flags). [§21](./Section-21-Part3-File-Directory-Operations.md) (next) moves to everyday file and directory operations — navigation, creation, copying, moving, deletion — now that filesystems are assumed to be mounted and available. LVM and other advanced storage layers that commonly sit underneath what gets mounted here (physical/volume groups, logical volumes, RAID) are covered in full in Part 10, [§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)–[§79](../Part10/Section-79-Part10-Backup-Strategies-Tools.md).
 
-**Next Section:** §21 — `Section-21-Part3-File-Directory-Operations.md`
+**Next Section:** [§21](./Section-21-Part3-File-Directory-Operations.md) — `Section-21-Part3-File-Directory-Operations.md`

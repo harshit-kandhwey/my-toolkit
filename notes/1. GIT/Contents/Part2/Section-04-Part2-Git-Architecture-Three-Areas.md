@@ -10,10 +10,10 @@
 
 A naive VCS could commit directly from the working directory: "commit whatever's different right now." Git deliberately inserts the index as a **buffer** between "what's on disk" and "what goes into history" for concrete reasons:
 
-1. **Partial commits.** You've fixed a bug and, unrelated, made an unfinished experimental edit in the same file or same working tree. The index lets you stage and commit _only_ the bug fix (even only certain lines, via `git add -p`, §10) while leaving the experimental edit uncommitted.
+1. **Partial commits.** You've fixed a bug and, unrelated, made an unfinished experimental edit in the same file or same working tree. The index lets you stage and commit _only_ the bug fix (even only certain lines, via `git add -p`, [§10](../Part3/Section-10-Part3-Core-Workflow.md)) while leaving the experimental edit uncommitted.
 2. **Reviewability before permanence.** `git diff` (working dir vs index) and `git diff --staged` (index vs last commit) let you inspect exactly what you're about to make permanent, before you make it permanent.
-3. **Building commits programmatically.** Tools, hooks, and scripts (§24) can manipulate the index directly (`git update-index`, low-level plumbing) without touching your working files at all — this is how features like "commit a specific historical blob" or automated formatting-on-commit work.
-4. **Merge machinery.** During a merge conflict, the index temporarily holds _multiple_ versions of a conflicted path (base, ours, theirs) simultaneously — a capability that wouldn't be possible without an intermediate structured area between disk and history. Detailed in §13.
+3. **Building commits programmatically.** Tools, hooks, and scripts ([§24](../Part6/Section-24-Part6-Git-Hooks-Automation.md)) can manipulate the index directly (`git update-index`, low-level plumbing) without touching your working files at all — this is how features like "commit a specific historical blob" or automated formatting-on-commit work.
+4. **Merge machinery.** During a merge conflict, the index temporarily holds _multiple_ versions of a conflicted path (base, ours, theirs) simultaneously — a capability that wouldn't be possible without an intermediate structured area between disk and history. Detailed in [§13](../Part4/Section-13-Part4-Merging.md).
 
 ## 3. Physical Anatomy of `.git`
 
@@ -52,7 +52,7 @@ your-project/
 
 - **What:** the checked-out files you edit with your editor/IDE.
 - **State relative to history:** reflects one commit's content, _plus_ any uncommitted edits you've made on top.
-- **Git's view of it:** Git compares working-directory file content against the index to classify files as unmodified/modified (as introduced in §3's file-state vocabulary), using file modification-time and size as a fast pre-check before falling back to full content hashing — this is why `git status` is fast even on large repos (it usually avoids re-hashing unchanged files).
+- **Git's view of it:** Git compares working-directory file content against the index to classify files as unmodified/modified (as introduced in [§3](../Part1/Section-03-Part1-Git-Terminology-Core-Mental-Model.md)'s file-state vocabulary), using file modification-time and size as a fast pre-check before falling back to full content hashing — this is why `git status` is fast even on large repos (it usually avoids re-hashing unchanged files).
 
 ### 4.2 The Index (Staging Area)
 
@@ -64,8 +64,8 @@ your-project/
 ### 4.3 The Repository (Object Database + Refs)
 
 - **Physical form:** `.git/objects` (content) + `.git/refs` (names pointing at content) + `.git/HEAD` (what's currently checked out).
-- **Content:** every snapshot ever committed, stored as immutable objects (§5), plus movable pointers (branches) and fixed pointers (tags) into that object graph.
-- **Key property:** nothing in here is ever edited in place. "Changing history" always means creating _new_ objects and moving a ref to point at the new one — the old objects remain in the database, unreferenced, until garbage-collected (§7, §29).
+- **Content:** every snapshot ever committed, stored as immutable objects ([§5](./Section-05-Part2-Object-Model.md)), plus movable pointers (branches) and fixed pointers (tags) into that object graph.
+- **Key property:** nothing in here is ever edited in place. "Changing history" always means creating _new_ objects and moving a ref to point at the new one — the old objects remain in the database, unreferenced, until garbage-collected ([§7](./Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md), [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)).
 
 ## 5. Data Flow — The Complete Picture
 
@@ -90,7 +90,7 @@ Walking this concretely with a single file, `notes.txt`:
 
 ## 6. Configuration Touchpoint (Preview)
 
-The `.git/config` file (repo-local) and its two siblings — the global `~/.gitconfig` and the system-wide config — determine defaults like your identity and editor. Full depth, every relevant setting, is §8; noted here only because `.git/config` physically lives in the anatomy just diagrammed.
+The `.git/config` file (repo-local) and its two siblings — the global `~/.gitconfig` and the system-wide config — determine defaults like your identity and editor. Full depth, every relevant setting, is [§8](../Part3/Section-08-Part3-Installation-Configuration.md); noted here only because `.git/config` physically lives in the anatomy just diagrammed.
 
 ## 7. Commands That Directly Manipulate These Areas
 
@@ -105,7 +105,7 @@ The `.git/config` file (repo-local) and its two siblings — the global `~/.gitc
 | `git diff`                 | reads                   | reads (compares working dir ↔ index)   | —                                                   |
 | `git diff --staged`        | —                       | reads                                  | reads (compares index ↔ HEAD's tree)                |
 
-Full command-by-command documentation (syntax, flags, output, errors, security/performance notes) begins in §10 following the §9 template — this table exists purely to cement _which area_ each command touches, before you learn its full syntax.
+Full command-by-command documentation (syntax, flags, output, errors, security/performance notes) begins in [§10](../Part3/Section-10-Part3-Core-Workflow.md) following the [§9](../Part3/Section-09-Part3-Creating-Cloning-Repositories.md) template — this table exists purely to cement _which area_ each command touches, before you learn its full syntax.
 
 ## 8. Hands-On Example — Watching the Three Areas Change
 
@@ -150,20 +150,20 @@ At this exact point: working directory has _two_ lines, the index and the last c
 
 ## 9. Production & Enterprise Usage Notes
 
-- **Bare repositories** (defined in §3, detailed in §20) exist _only_ as an object database plus refs — no working directory, no index in the normal sense. This is the correct shape for any repo that lives purely as a shared hub (a self-hosted Git server, or the backing store behind GitHub/GitLab) since nobody edits files directly there.
-- **CI runners** typically perform a shallow or full checkout (materializing working directory from objects) fresh per job — understanding that checkout is "reconstruct working dir from the object DB via a tree walk" explains why large repos with deep history make shallow clones (`--depth`, §26) a meaningful CI speed optimization.
-- **Pre-commit hooks** (§24) operate on the **index**, not the working directory — a hook that lints "what's staged" must read from the index, not just re-scan working-directory files, or it will incorrectly flag/pass content that isn't actually about to be committed (a common real bug in home-grown hook scripts).
+- **Bare repositories** (defined in [§3](../Part1/Section-03-Part1-Git-Terminology-Core-Mental-Model.md), detailed in [§20](../Part5/Section-20-Part5-Remotes-In-Depth.md)) exist _only_ as an object database plus refs — no working directory, no index in the normal sense. This is the correct shape for any repo that lives purely as a shared hub (a self-hosted Git server, or the backing store behind GitHub/GitLab) since nobody edits files directly there.
+- **CI runners** typically perform a shallow or full checkout (materializing working directory from objects) fresh per job — understanding that checkout is "reconstruct working dir from the object DB via a tree walk" explains why large repos with deep history make shallow clones (`--depth`, [§26](../Part6/Section-26-Part6-Scaling-Git.md)) a meaningful CI speed optimization.
+- **Pre-commit hooks** ([§24](../Part6/Section-24-Part6-Git-Hooks-Automation.md)) operate on the **index**, not the working directory — a hook that lints "what's staged" must read from the index, not just re-scan working-directory files, or it will incorrectly flag/pass content that isn't actually about to be committed (a common real bug in home-grown hook scripts).
 
 ## 10. Performance Considerations
 
-- `git status` performance on very large repositories is dominated by **stat-ing every tracked file** to detect modifications; this is why huge monorepos benefit from filesystem watchers (`git config core.fsmonitor true`, using Watchman or Git's built-in FSMonitor) that cache "nothing changed here since last check" instead of re-stat-ing millions of files — covered fully in §26 and §29.
+- `git status` performance on very large repositories is dominated by **stat-ing every tracked file** to detect modifications; this is why huge monorepos benefit from filesystem watchers (`git config core.fsmonitor true`, using Watchman or Git's built-in FSMonitor) that cache "nothing changed here since last check" instead of re-stat-ing millions of files — covered fully in [§26](../Part6/Section-26-Part6-Scaling-Git.md) and [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md).
 - The index being a **single file** (not one file per tracked path) is itself a performance decision: one sequential read/write beats filesystem overhead of touching thousands of tiny per-file records.
 
 ## 11. Troubleshooting
 
 | Symptom                                        | Likely cause                                                                              | Fix                                                                                                                                          |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `git status` painfully slow on a huge repo     | Full working-tree stat scan, no fsmonitor                                                 | Enable `core.fsmonitor`; consider sparse-checkout (§26)                                                                                      |
+| `git status` painfully slow on a huge repo     | Full working-tree stat scan, no fsmonitor                                                 | Enable `core.fsmonitor`; consider sparse-checkout ([§26](../Part6/Section-26-Part6-Scaling-Git.md))                                          |
 | "Changes not staged" persists after `git add`  | You edited the file _again_ after staging (working dir now ahead of the index you staged) | `git add` again to re-stage the latest content                                                                                               |
 | Index corruption (`fatal: index file corrupt`) | Rare disk/interrupt issue                                                                 | `rm .git/index && git reset` (rebuilds index from HEAD; **any staged-but-uncommitted state is lost**, working directory files are untouched) |
 
@@ -203,4 +203,4 @@ At this exact point: working directory has _two_ lines, the index and the last c
 
 ## 17. Related Concepts & What's Next
 
-Every object type mentioned here in passing — blob, tree, commit — gets its exact byte-level structure, hashing method, and relationships in Section 5, which is where "content-addressable storage" and "Merkle DAG" (both mentioned in §2) become concrete rather than conceptual.
+Every object type mentioned here in passing — blob, tree, commit — gets its exact byte-level structure, hashing method, and relationships in Section 5, which is where "content-addressable storage" and "Merkle DAG" (both mentioned in [§2](../Part1/Section-02-Part1-Birth-of-Git.md)) become concrete rather than conceptual.

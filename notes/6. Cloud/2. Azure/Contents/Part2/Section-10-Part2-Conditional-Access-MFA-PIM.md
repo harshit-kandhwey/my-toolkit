@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Even after Entra ID confirms who someone is (authentication, Section 7) and RBAC decides what they're theoretically allowed to do (authorization, Section 8), a mature security posture adds one more layer: dynamically deciding _whether this specific sign-in, right now, from this device and location, should be allowed at all_, and ensuring that powerful, standing access isn't just sitting around waiting to be misused or stolen.
+**Plain language:** Even after Entra ID confirms who someone is (authentication, [Section 7](./Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md)) and RBAC decides what they're theoretically allowed to do (authorization, [Section 8](./Section-08-Part2-Role-Based-Access-Control.md)), a mature security posture adds one more layer: dynamically deciding _whether this specific sign-in, right now, from this device and location, should be allowed at all_, and ensuring that powerful, standing access isn't just sitting around waiting to be misused or stolen.
 
 **Precise definition:** Conditional Access is a policy engine within Entra ID that evaluates signals (user, device, location, application, risk level) at sign-in time and enforces controls (block, require MFA, require compliant device) before granting a session. Multi-Factor Authentication (MFA) is the requirement that a user prove their identity using more than one independent factor. Privileged Identity Management (PIM) is a service that enables **just-in-time**, time-bound activation of privileged roles instead of granting them as permanent, standing access.
 
@@ -90,7 +90,7 @@ Access Controls:
   Grant: Require multi-factor authentication
 ```
 
-⚠️ Conditional Access is primarily configured through the Entra ID Portal blade or the Microsoft Graph API rather than the standard `az` CLI command set used for ARM resources — this reflects that Conditional Access is an Entra ID (identity) feature, not an ARM resource, another instance of the AuthN-system/AuthZ-system separation introduced in Section 7.2. Verify current configuration methods and any newer CLI/Graph module support against official documentation before scripting Conditional Access changes.
+⚠️ Conditional Access is primarily configured through the Entra ID Portal blade or the Microsoft Graph API rather than the standard `az` CLI command set used for ARM resources — this reflects that Conditional Access is an Entra ID (identity) feature, not an ARM resource, another instance of the AuthN-system/AuthZ-system separation introduced in [Section 7](./Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md).2. Verify current configuration methods and any newer CLI/Graph module support against official documentation before scripting Conditional Access changes.
 
 **PIM role activation concept (Portal-driven workflow, illustrative sequence):**
 
@@ -119,7 +119,7 @@ Mature enterprise Azure environments treat MFA as a non-negotiable baseline for 
 | User has a role assigned in PIM but API calls still fail with "Forbidden"        | The role is "eligible" but not currently "active" — PIM roles grant no access until explicitly activated      | Activate the role through PIM before attempting the action                                                                 |
 | Administrators locked out of the tenant after a Conditional Access policy change | No break-glass account was exempted, and the new policy's conditions unintentionally blocked all admin access | Use the documented break-glass account (which should bypass Conditional Access) to sign in and correct the policy          |
 
-## 10. Interview Questions — Section 10
+## 10. Interview Questions — [Section 10](./Section-10-Part2-Conditional-Access-MFA-PIM.md)
 
 ### 🎯 Intermediate
 
@@ -151,4 +151,4 @@ _What the interviewer is probing:_ whether the candidate can articulate both the
 
 ## 13. Related Concepts / Part 2 Wrap-Up
 
-This completes **Part 2 — Identity & Access Management**, covering Entra ID fundamentals, authentication protocols, RBAC, non-human identities, and advanced identity security controls. **Part 3 — Core Compute** begins next with Section 11, covering Azure Virtual Machines — the first concrete infrastructure resource type this roadmap addresses in depth, and one to which every identity and access concept covered in Part 2 directly applies (every VM created, started, or accessed is subject to the authentication, RBAC, and Conditional Access mechanisms just covered).
+This completes **Part 2 — Identity & Access Management**, covering Entra ID fundamentals, authentication protocols, RBAC, non-human identities, and advanced identity security controls. **Part 3 — Core Compute** begins next with [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md), covering Azure Virtual Machines — the first concrete infrastructure resource type this roadmap addresses in depth, and one to which every identity and access concept covered in Part 2 directly applies (every VM created, started, or accessed is subject to the authentication, RBAC, and Conditional Access mechanisms just covered).

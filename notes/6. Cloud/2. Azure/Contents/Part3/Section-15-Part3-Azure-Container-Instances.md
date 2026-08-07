@@ -4,7 +4,7 @@
 
 **Plain language:** Azure Container Instances lets you run a single container (or a small group of containers) directly on Azure, with a single command, without needing a VM to host it or a full Kubernetes cluster to orchestrate it — the fastest, simplest way to just "run this container image right now."
 
-**Precise definition:** Azure Container Instances (ACI) is a Containers-as-a-Service (CaaS, introduced conceptually in Section 2.7) offering that provisions and runs container groups on-demand, billed per-second based on allocated vCPU and memory, without requiring the customer to provision, patch, or manage any underlying VM or orchestrator.
+**Precise definition:** Azure Container Instances (ACI) is a Containers-as-a-Service (CaaS, introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).7) offering that provisions and runs container groups on-demand, billed per-second based on allocated vCPU and memory, without requiring the customer to provision, patch, or manage any underlying VM or orchestrator.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -14,7 +14,7 @@ Running a container traditionally required either a VM with a container runtime 
 
 ### 3.1 Container Groups
 
-**Definition:** ACI's fundamental deployment unit is a **Container Group** — one or more containers that are scheduled together onto the same underlying host, sharing a lifecycle, local network namespace (allowing containers within the group to communicate via `localhost`), and optionally, storage volumes. This is conceptually similar to a Kubernetes Pod (a concept revisited directly in Section 36), though ACI's container groups are a simpler, standalone construct without the broader orchestration machinery Kubernetes provides.
+**Definition:** ACI's fundamental deployment unit is a **Container Group** — one or more containers that are scheduled together onto the same underlying host, sharing a lifecycle, local network namespace (allowing containers within the group to communicate via `localhost`), and optionally, storage volumes. This is conceptually similar to a Kubernetes Pod (a concept revisited directly in [Section 36](../Part7/Section-36-Part7-AKS-Architecture.md)), though ACI's container groups are a simpler, standalone construct without the broader orchestration machinery Kubernetes provides.
 
 **When multi-container groups are used:** A common pattern is a primary application container paired with a "sidecar" container providing a supporting function — such as a logging agent, a monitoring agent, or a network proxy — that needs to run alongside the main container and share its local network and lifecycle.
 
@@ -34,7 +34,7 @@ ACI supports configurable restart policies determining what happens when a conta
 
 ### 3.4 Networking
 
-ACI containers can be deployed with a public IP address (directly internet-reachable) or, for private/internal scenarios, deployed into a specific subnet of a Virtual Network (Section 21), allowing them to communicate with other private resources (like a database) without public exposure — this VNet deployment option is what allows ACI to participate in the broader private networking architectures covered in Part 5, rather than being limited to purely public-facing use cases.
+ACI containers can be deployed with a public IP address (directly internet-reachable) or, for private/internal scenarios, deployed into a specific subnet of a Virtual Network ([Section 21](../Part5/Section-21-Part5-Virtual-Network-Fundamentals.md)), allowing them to communicate with other private resources (like a database) without public exposure — this VNet deployment option is what allows ACI to participate in the broader private networking architectures covered in Part 5, rather than being limited to purely public-facing use cases.
 
 ## 4. Architecture Diagram
 
@@ -69,9 +69,9 @@ az container create \
   --registry-password <acr-password>
 ```
 
-- **Purpose:** Runs a single container from a private Azure Container Registry (Section 35) image, allocating 1 vCPU and 1.5 GB memory, restarting only on failure — appropriate for a one-shot batch-style job.
+- **Purpose:** Runs a single container from a private Azure Container Registry ([Section 35](../Part7/Section-35-Part7-Azure-Container-Registry.md)) image, allocating 1 vCPU and 1.5 GB memory, restarting only on failure — appropriate for a one-shot batch-style job.
 - **Important arguments explained individually:**
-  - `--cpu` / `--memory` — explicit resource allocation; ACI bills based on these requested values, so right-sizing this allocation (similar to VM right-sizing, Section 11.4) directly affects cost.
+  - `--cpu` / `--memory` — explicit resource allocation; ACI bills based on these requested values, so right-sizing this allocation (similar to VM right-sizing, [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md).4) directly affects cost.
   - `--restart-policy` — set to `OnFailure`, meaning a clean successful exit leaves the container stopped (appropriate for a batch job that shouldn't loop indefinitely), but a failure triggers an automatic retry.
   - `--registry-login-server` / `--registry-username` / `--registry-password` — credentials for pulling from a private registry; in production, Managed Identity-based registry authentication (rather than passing a username/password directly) is the more secure pattern, avoiding stored registry credentials entirely.
 - **Common error:** `ImagePullFailure` if registry credentials are incorrect or the image tag doesn't exist — verify the image reference and registry authentication before troubleshooting further.
@@ -92,7 +92,7 @@ Enterprises use ACI primarily for genuinely short-lived, on-demand workloads: CI
 
 - Container images pulled from public registries should be vetted for known vulnerabilities before use; Microsoft Defender for Cloud (Part 11) can scan container images for known vulnerabilities as part of a broader security posture.
 - Managed Identity-based authentication to Azure Container Registry (rather than embedded registry username/password credentials) is the recommended pattern to avoid stored registry credentials.
-- For containers handling sensitive data or requiring network isolation, VNet deployment (Section 15.3.4) rather than a public IP is the appropriate choice, keeping the container reachable only from within the private network.
+- For containers handling sensitive data or requiring network isolation, VNet deployment ([Section 15](./Section-15-Part3-Azure-Container-Instances.md).3.4) rather than a public IP is the appropriate choice, keeping the container reachable only from within the private network.
 
 ## 8. Performance Considerations
 
@@ -110,7 +110,7 @@ Basic container metrics (CPU, memory usage) and logs are available through the P
 | Container exits immediately after starting                                          | Application error inside the container, or incorrect container entrypoint/command configuration | Check `az container logs` for the container's actual stdout/stderr output to diagnose the application-level failure                        |
 | Container group deployed into a VNet subnet can't reach expected internal resources | Subnet delegation not configured correctly, or NSG rules (Part 5) blocking required traffic     | Verify the subnet is properly delegated for ACI use and that NSG rules permit the required traffic paths                                   |
 
-## 11. Interview Questions — Section 15
+## 11. Interview Questions — [Section 15](./Section-15-Part3-Azure-Container-Instances.md)
 
 ### 🎯 Beginner
 
@@ -142,4 +142,4 @@ _What the interviewer is probing:_ whether the candidate can reason quantitative
 
 ## 14. Related Concepts / Part 3 Wrap-Up
 
-This completes **Part 3 — Core Compute**, covering the full spectrum of Azure compute options from full IaaS control (VMs, Section 11; VM Scale Sets, Section 12) through PaaS (App Service, Section 13) to serverless/FaaS (Functions, Section 14) and CaaS (ACI, this section) — directly building out the service-model spectrum first introduced conceptually in Section 2. **Part 4 — Storage** begins next with Section 16, covering Azure Storage Account fundamentals, the foundational data-persistence layer that virtually every compute option covered in this Part depends on in some form (VM disks, Function app storage requirements, container image registries, and application data all ultimately rely on Azure Storage primitives).
+This completes **Part 3 — Core Compute**, covering the full spectrum of Azure compute options from full IaaS control (VMs, [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md); VM Scale Sets, [Section 12](./Section-12-Part3-VM-Scale-Sets.md)) through PaaS (App Service, [Section 13](./Section-13-Part3-Azure-App-Service.md)) to serverless/FaaS (Functions, [Section 14](./Section-14-Part3-Azure-Functions.md)) and CaaS (ACI, this section) — directly building out the service-model spectrum first introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md). **Part 4 — Storage** begins next with [Section 16](../Part4/Section-16-Part4-Azure-Storage-Account-Fundamentals.md), covering Azure Storage Account fundamentals, the foundational data-persistence layer that virtually every compute option covered in this Part depends on in some form (VM disks, Function app storage requirements, container image registries, and application data all ultimately rely on Azure Storage primitives).

@@ -20,7 +20,7 @@ BigQuery solves this by decoupling storage from compute entirely: storage in Col
 
 ### 3.1 Architecture: Storage/Compute Separation and the Dremel/Colossus Lineage
 
-BigQuery's architecture traces directly back to internal Google infrastructure discussed in Section 1: **Dremel**, an internal Google tool for interactive, large-scale ad hoc query analysis, was opened to the public in 2013 as BigQuery. Two key internal systems underpin it today:
+BigQuery's architecture traces directly back to internal Google infrastructure discussed in [Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md): **Dremel**, an internal Google tool for interactive, large-scale ad hoc query analysis, was opened to the public in 2013 as BigQuery. Two key internal systems underpin it today:
 
 - **Colossus:** Google's distributed file system, storing table data in a columnar format (a descendant of the **Capacitor** columnar storage format), physically separate from any compute node.
 - **Dremel execution engine:** A distributed query engine using a multi-level tree ("query tree") architecture to parallelize aggregation across thousands of machines, returning results for queries over petabyte-scale tables in seconds rather than the hours a traditional row-oriented, single-machine-bottlenecked engine would take.
@@ -142,11 +142,11 @@ running this query will process 42 MB of data.
 
 ## 10. Key Takeaways 🔑
 
-- 🔑 BigQuery's storage/compute separation traces directly to Google's internal Dremel (query engine) and Colossus (storage) systems, first opened to the public in 2013 (Section 1).
+- 🔑 BigQuery's storage/compute separation traces directly to Google's internal Dremel (query engine) and Colossus (storage) systems, first opened to the public in 2013 ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)).
 - 🔑 On-demand pricing bills per byte scanned, making partitioning and clustering direct cost levers, not just performance levers.
 - 🔑 Capacity-based reservations trade on-demand's simplicity for predictable, guaranteed slot capacity — the right choice depends on sustained query volume.
 - 🔑 BigQuery ML lets SQL users train and run models without exporting data, differentiating it from warehouses that require a separate ML pipeline.
 
 ## 11. Related Concepts
 
-Cloud Storage and the lakehouse pattern via BigLake (Section 49), Dataflow/Dataproc for pre-warehouse processing (Section 45), Dataplex for cataloging BigQuery datasets (Section 47), Looker/Looker Studio consuming BigQuery as a source (Section 48), and Vertex AI for advanced ML beyond BigQuery ML's scope (Part 10).
+Cloud Storage and the lakehouse pattern via BigLake ([Section 49](./Section-49-Part6-Data-Pipeline-Architecture-Patterns.md)), Dataflow/Dataproc for pre-warehouse processing ([Section 45](./Section-45-Part6-Dataflow-Dataproc-PubSub.md)), Dataplex for cataloging BigQuery datasets ([Section 47](./Section-47-Part6-Dataplex-Data-Governance-Catalog.md)), Looker/Looker Studio consuming BigQuery as a source ([Section 48](./Section-48-Part6-Looker-Looker-Studio.md)), and Vertex AI for advanced ML beyond BigQuery ML's scope (Part 10).

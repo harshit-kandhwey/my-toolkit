@@ -2,17 +2,17 @@
 
 ## 1. Definition
 
-**Plain language:** Git gives you several distinct "undo" commands, and picking the wrong one is one of the most common ways people either lose work they wanted to keep or fail to undo what they meant to. Each operates on a different one of the three areas from §4, and each has a different safety profile.
+**Plain language:** Git gives you several distinct "undo" commands, and picking the wrong one is one of the most common ways people either lose work they wanted to keep or fail to undo what they meant to. Each operates on a different one of the three areas from [§4](../Part2/Section-04-Part2-Git-Architecture-Three-Areas.md), and each has a different safety profile.
 
 **Precise:** Undoing in Git is not one operation but a family of them, differentiated by (1) which area they touch — working directory, index, or committed history — and (2) whether they rewrite existing refs/objects in place (destructive to history, safe only locally) or add new history that cancels out old history (non-destructive, safe on shared branches). `git restore`, `git reset`, and `git revert` are the three modern, purpose-built tools; `git clean` handles untracked files, a separate concern none of the other three touch.
 
 ## 2. Why It Exists / Problem It Solves
 
-Mistakes are constant and varied in kind: a bad edit not yet staged, a bad edit already staged, a bad commit not yet pushed, a bad commit already pushed and fetched by others, stray generated files cluttering `git status`. A single "undo" command cannot safely handle all of these — undoing a local, unpushed commit can safely rewrite history, while undoing a commit already on a shared branch cannot (§14's Golden Rule applies here too). Git deliberately provides distinct tools scoped to distinct situations rather than one dangerously overloaded command.
+Mistakes are constant and varied in kind: a bad edit not yet staged, a bad edit already staged, a bad commit not yet pushed, a bad commit already pushed and fetched by others, stray generated files cluttering `git status`. A single "undo" command cannot safely handle all of these — undoing a local, unpushed commit can safely rewrite history, while undoing a commit already on a shared branch cannot ([§14](./Section-14-Part4-Rebasing.md)'s Golden Rule applies here too). Git deliberately provides distinct tools scoped to distinct situations rather than one dangerously overloaded command.
 
 ## 3. `git restore` — Working Directory & Index Undo
 
-Introduced in Git 2.23 alongside `git switch` (§12's create-and-switch coverage) specifically to give "undo my local edits" a dedicated, narrowly scoped command, splitting this responsibility out of the historically overloaded `git checkout`.
+Introduced in Git 2.23 alongside `git switch` ([§12](./Section-12-Part4-Branching-In-Depth.md)'s create-and-switch coverage) specifically to give "undo my local edits" a dedicated, narrowly scoped command, splitting this responsibility out of the historically overloaded `git checkout`.
 
 ```bash
 # Purpose: discard UNSTAGED changes in the working directory, reverting the
@@ -70,7 +70,7 @@ $ git reset --mixed HEAD~1     # or simply: git reset HEAD~1
 $ git reset --hard HEAD~1
 ```
 
-> ⚠️ **Critical clarification / Common confusion to preempt:** `--hard` is the only one of the three that can destroy working-directory content that was never committed at all — `--soft` and `--mixed` never touch the working directory, so anything sitting there uncommitted survives either of them untouched. The commit(s) `reset` moves you away from are **not** deleted from the object database by any mode — they remain, unreferenced, recoverable via the reflog (§6) until garbage collection — but files that only ever existed in the working directory and were never staged or committed have no such safety net, per the same caveat noted in the `git restore` section above.
+> ⚠️ **Critical clarification / Common confusion to preempt:** `--hard` is the only one of the three that can destroy working-directory content that was never committed at all — `--soft` and `--mixed` never touch the working directory, so anything sitting there uncommitted survives either of them untouched. The commit(s) `reset` moves you away from are **not** deleted from the object database by any mode — they remain, unreferenced, recoverable via the reflog ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) until garbage collection — but files that only ever existed in the working directory and were never staged or committed have no such safety net, per the same caveat noted in the `git restore` section above.
 
 `git reset` also works on individual files (not just `HEAD~N`), where it behaves like a plumbing-level partial unstage:
 
@@ -95,7 +95,7 @@ Expected output (pauses for a commit message, pre-filled):
  1 file changed, 3 deletions(-)
 ```
 
-`git revert` computes the diff a commit introduced and applies its exact opposite as a **new** commit on top of current history — the original commit is untouched, still fully present, still reachable in `git log`; a brand-new commit sits after it canceling its effect. This is the single largest practical distinction from `reset`: revert **adds** to history rather than rewriting it, making it the only one of these tools that is unconditionally safe to use on a commit that's already been pushed and fetched by others — exactly the situation where `reset` (which moves a branch pointer backward, requiring a force-push to share) runs straight into the Golden Rule (§14).
+`git revert` computes the diff a commit introduced and applies its exact opposite as a **new** commit on top of current history — the original commit is untouched, still fully present, still reachable in `git log`; a brand-new commit sits after it canceling its effect. This is the single largest practical distinction from `reset`: revert **adds** to history rather than rewriting it, making it the only one of these tools that is unconditionally safe to use on a commit that's already been pushed and fetched by others — exactly the situation where `reset` (which moves a branch pointer backward, requiring a force-push to share) runs straight into the Golden Rule ([§14](./Section-14-Part4-Rebasing.md)).
 
 ```bash
 # Purpose: revert a range of commits, oldest to newest
@@ -109,13 +109,13 @@ $ git revert -n a1b2c3d
 
 ## 6. `reset` vs `revert` — Direct Contrast
 
-|                                                     | `git reset`                                                       | `git revert`                                                                      |
-| --------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Rewrites existing history/refs                      | Yes — branch pointer moves backward                               | No — adds a new commit; nothing existing changes                                  |
-| Original commit still in `git log`                  | No (unreferenced, off the branch's line)                          | **Yes**, unchanged, plus a new commit undoing its effect                          |
-| Safe on a commit already pushed/shared              | **No** — requires a force-push others must reconcile with (§14's Golden Rule) | **Yes** — the standard, safe way to undo shared history                           |
-| Local-only quick cleanup                            | Excellent fit                                                     | Overkill/unnecessary ceremony for something no one else has seen                  |
-| Effect on working directory/index (depends on mode) | Can rewrite both (`--hard`)                                       | Never touches anything but committing a new change; behaves like any other commit |
+|                                                     | `git reset`                                                                                                     | `git revert`                                                                      |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Rewrites existing history/refs                      | Yes — branch pointer moves backward                                                                             | No — adds a new commit; nothing existing changes                                  |
+| Original commit still in `git log`                  | No (unreferenced, off the branch's line)                                                                        | **Yes**, unchanged, plus a new commit undoing its effect                          |
+| Safe on a commit already pushed/shared              | **No** — requires a force-push others must reconcile with ([§14](./Section-14-Part4-Rebasing.md)'s Golden Rule) | **Yes** — the standard, safe way to undo shared history                           |
+| Local-only quick cleanup                            | Excellent fit                                                                                                   | Overkill/unnecessary ceremony for something no one else has seen                  |
+| Effect on working directory/index (depends on mode) | Can rewrite both (`--hard`)                                                                                     | Never touches anything but committing a new change; behaves like any other commit |
 
 > 💡 **Tip:** A blunt rule of thumb that resolves nearly every "which one do I use" question: **if it's already pushed and someone else might have it, `revert`; if it's purely local and unpushed, `reset` is fine and often simpler.**
 
@@ -138,41 +138,41 @@ $ git clean -fd
 $ git clean -fdx
 ```
 
-| Flag               | Effect                                                                                                          |
-| ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `-n` / `--dry-run` | Preview only — always run this first                                                                            |
-| `-f`               | Actually force deletion (Git refuses to run destructively without it, or `clean.requireForce=false`)            |
-| `-d`               | Include untracked directories, not just files                                                                   |
-| `-x`               | Also remove files ignored by `.gitignore` (§11) — dangerous if it includes things like local environment config |
-| `-i`               | Interactive mode — confirm per file/pattern before deleting                                                     |
+| Flag               | Effect                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-n` / `--dry-run` | Preview only — always run this first                                                                                                                                       |
+| `-f`               | Actually force deletion (Git refuses to run destructively without it, or `clean.requireForce=false`)                                                                       |
+| `-d`               | Include untracked directories, not just files                                                                                                                              |
+| `-x`               | Also remove files ignored by `.gitignore` ([§11](../Part3/Section-11-Part3-Ignoring-Controlling-Files.md)) — dangerous if it includes things like local environment config |
+| `-i`               | Interactive mode — confirm per file/pattern before deleting                                                                                                                |
 
 > ⚠️ **Critical clarification:** `git clean -f` (and especially `-fdx`) is genuinely, permanently destructive with **no reflog safety net whatsoever** — untracked files were never Git objects to begin with, so there is nothing in `.git/objects` to recover from. Always run `-n` first, without exception, on anything beyond a scratch repo.
 
 ## 8. Legacy: `git checkout -- <file>`
 
-Pre-2.23, discarding working-directory changes to a file was `git checkout -- <file>` — the same command, `git checkout`, also used for switching branches (§12's create-and-switch coverage), disambiguated only by the `--` separator marking everything after it as a pathspec, not a branch name.
+Pre-2.23, discarding working-directory changes to a file was `git checkout -- <file>` — the same command, `git checkout`, also used for switching branches ([§12](./Section-12-Part4-Branching-In-Depth.md)'s create-and-switch coverage), disambiguated only by the `--` separator marking everything after it as a pathspec, not a branch name.
 
 ```bash
 # Legacy form — still fully functional, equivalent to `git restore file.txt`
 $ git checkout -- file.txt
 ```
 
-This is exactly the ambiguity §12 described as motivating `switch`/`restore`'s creation — a missing `--`, or a filename that happens to match a branch name, could make Git interpret the command entirely differently. It remains extremely common in existing scripts, tutorials, and muscle memory; recognizing it is essential even though `git restore` is the modern recommendation for new work.
+This is exactly the ambiguity [§12](./Section-12-Part4-Branching-In-Depth.md) described as motivating `switch`/`restore`'s creation — a missing `--`, or a filename that happens to match a branch name, could make Git interpret the command entirely differently. It remains extremely common in existing scripts, tutorials, and muscle memory; recognizing it is essential even though `git restore` is the modern recommendation for new work.
 
 ## 9. Decision Table — "I Want to Undo X, in Situation Y"
 
-| Situation                                               | Command                                                       |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| Discard uncommitted edits to a file, not yet staged     | `git restore <file>`                                          |
-| Unstage a file, keep the edits in the working directory | `git restore --staged <file>`                                 |
-| Undo the last commit, keep its changes staged           | `git reset --soft HEAD~1`                                     |
-| Undo the last commit, keep its changes but unstaged     | `git reset HEAD~1` (or `--mixed`)                             |
-| Undo the last commit and discard its changes entirely   | `git reset --hard HEAD~1`                                     |
-| Undo a commit that's **already been pushed/shared**     | `git revert <commit>`                                         |
-| Undo a bad merge that's already been pushed             | `git revert -m 1 <merge-commit>`                              |
-| Remove stray untracked scratch files                    | `git clean -n` then `git clean -f` (add `-d` for directories) |
-| Wipe untracked files **and** ignored build artifacts    | `git clean -n` then `git clean -fdx`                          |
-| "I think I lost a commit entirely"                      | `git reflog`, then `git switch -c <name> <hash>` (§6)       |
+| Situation                                               | Command                                                                                                                    |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Discard uncommitted edits to a file, not yet staged     | `git restore <file>`                                                                                                       |
+| Unstage a file, keep the edits in the working directory | `git restore --staged <file>`                                                                                              |
+| Undo the last commit, keep its changes staged           | `git reset --soft HEAD~1`                                                                                                  |
+| Undo the last commit, keep its changes but unstaged     | `git reset HEAD~1` (or `--mixed`)                                                                                          |
+| Undo the last commit and discard its changes entirely   | `git reset --hard HEAD~1`                                                                                                  |
+| Undo a commit that's **already been pushed/shared**     | `git revert <commit>`                                                                                                      |
+| Undo a bad merge that's already been pushed             | `git revert -m 1 <merge-commit>`                                                                                           |
+| Remove stray untracked scratch files                    | `git clean -n` then `git clean -f` (add `-d` for directories)                                                              |
+| Wipe untracked files **and** ignored build artifacts    | `git clean -n` then `git clean -fdx`                                                                                       |
+| "I think I lost a commit entirely"                      | `git reflog`, then `git switch -c <name> <hash>` ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) |
 
 ## 10. Hands-On — Comparing All Three Modern Tools on the Same Mistake
 
@@ -200,12 +200,12 @@ a1b2c3d v1
 
 ## 11. Troubleshooting
 
-| Symptom                                                                                   | Likely cause                                                                                         | Fix                                                                                                       |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `error: Your local changes ... would be overwritten` during `restore`/`switch`/`checkout` | Uncommitted changes conflict with the target state                                                   | Commit, stash (§16), or deliberately `git restore` to discard first                                       |
-| Ran `git reset --hard` and immediately regret it                                          | Working directory changes since the last commit are gone; the commit itself may still be recoverable | `git reflog` to find the pre-reset commit hash; working-directory-only losses have no recovery path       |
-| `git clean -f` deleted something important                                                | No `.gitignore` entry protected it, and it wasn't tracked/committed                                  | No recovery via Git; check editor local history, OS backups, or version-aware cloud sync as a last resort |
-| `git revert` produces a conflict                                                          | The commit being reverted overlaps with later changes to the same lines                              | Resolve exactly like a merge conflict (§13's conflict-resolution walkthrough): edit markers, `git add`, `git revert --continue`           |
+| Symptom                                                                                   | Likely cause                                                                                         | Fix                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error: Your local changes ... would be overwritten` during `restore`/`switch`/`checkout` | Uncommitted changes conflict with the target state                                                   | Commit, stash ([§16](./Section-16-Part4-Stashing.md)), or deliberately `git restore` to discard first                                                            |
+| Ran `git reset --hard` and immediately regret it                                          | Working directory changes since the last commit are gone; the commit itself may still be recoverable | `git reflog` to find the pre-reset commit hash; working-directory-only losses have no recovery path                                                              |
+| `git clean -f` deleted something important                                                | No `.gitignore` entry protected it, and it wasn't tracked/committed                                  | No recovery via Git; check editor local history, OS backups, or version-aware cloud sync as a last resort                                                        |
+| `git revert` produces a conflict                                                          | The commit being reverted overlaps with later changes to the same lines                              | Resolve exactly like a merge conflict ([§13](./Section-13-Part4-Merging.md)'s conflict-resolution walkthrough): edit markers, `git add`, `git revert --continue` |
 
 ## 12. Interview Questions
 
@@ -216,7 +216,7 @@ a1b2c3d v1
 **Model answer:** `--soft` moves only the branch pointer, leaving the index and working directory untouched, so the undone commit's changes end up staged and ready to recommit. `--mixed`, the default, moves the branch pointer and resets the index but leaves the working directory alone, so the changes end up unstaged but still present on disk. `--hard` moves the branch pointer and resets both the index and the working directory, so any changes from the undone commit, and any other uncommitted changes, are gone from disk entirely — the only one of the three that can destroy work with no object-database backing.
 
 **[Intermediate] Q3. Why is `git revert` considered safe for shared/pushed commits while `git reset` is not?**
-**Model answer:** `git revert` never modifies or removes any existing commit — it computes the inverse of a commit's changes and applies that as a brand-new commit on top of current history, so the original commit remains fully present and reachable, and nothing anyone else already has becomes invalid. `git reset` moves the branch pointer backward, which, if pushed, requires a force-push to share, and anyone who already fetched the "undone" commits now has local history that diverges unrecognizably from the rewritten remote — precisely the Golden Rule failure mode from §14. Revert is additive; reset is subtractive/destructive to the shared ref's history.
+**Model answer:** `git revert` never modifies or removes any existing commit — it computes the inverse of a commit's changes and applies that as a brand-new commit on top of current history, so the original commit remains fully present and reachable, and nothing anyone else already has becomes invalid. `git reset` moves the branch pointer backward, which, if pushed, requires a force-push to share, and anyone who already fetched the "undone" commits now has local history that diverges unrecognizably from the rewritten remote — precisely the Golden Rule failure mode from [§14](./Section-14-Part4-Rebasing.md). Revert is additive; reset is subtractive/destructive to the shared ref's history.
 
 **[Senior] Q4. A teammate ran `git reset --hard HEAD~3` and lost work they wanted to keep. Walk through recovery.**
 **Model answer:** First determine what exactly was lost. If those three commits were genuinely committed before the reset, they still physically exist in the object database, unreferenced by any branch — `git reflog` will show the pre-reset HEAD position (something like `HEAD@{1}: reset: moving to HEAD~3`), and `git reset --hard HEAD@{1}` (or more safely, `git switch -c recovery-branch HEAD@{1}` to avoid another destructive reset) restores exactly that state. If instead the "lost work" includes uncommitted edits that existed only in the working directory at the time of the `--hard` reset, there is no recovery path through Git at all — those changes were never written as objects, so nothing in `.git` can bring them back; the only remaining options are editor-level local history, OS-level file recovery, or backups outside Git entirely. The key diagnostic question is always "was it committed," because that single fact determines whether Git's reflog-based recovery applies.
@@ -235,11 +235,11 @@ a1b2c3d v1
 ## 14. 🔑 Key Takeaways
 
 - `git restore` undoes uncommitted working-directory/index changes; `git reset` moves the branch pointer through committed history with three modes of increasing destructiveness (`--soft`/`--mixed`/`--hard`); `git revert` adds a new commit that cancels an old one without touching existing history.
-- The single most load-bearing distinction: `reset` rewrites/removes refs to existing history (unsafe once shared, per §14's Golden Rule), while `revert` only ever adds new commits (always safe, even on shared branches).
+- The single most load-bearing distinction: `reset` rewrites/removes refs to existing history (unsafe once shared, per [§14](./Section-14-Part4-Rebasing.md)'s Golden Rule), while `revert` only ever adds new commits (always safe, even on shared branches).
 - `git clean` is the separate tool for untracked files, with **no reflog safety net** — always dry-run (`-n`) before forcing.
-- Commit objects removed from a branch's line by `reset` are not deleted; they remain recoverable via the reflog (§6) until garbage collection. Working-directory-only content has no such backing and, once discarded, is unrecoverable through Git.
+- Commit objects removed from a branch's line by `reset` are not deleted; they remain recoverable via the reflog ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) until garbage collection. Working-directory-only content has no such backing and, once discarded, is unrecoverable through Git.
 - `git checkout -- <file>` is the legacy equivalent of `git restore <file>`, still fully functional, superseded in recommendation but not removed.
 
 ## 15. Related Concepts & What's Next
 
-Undoing committed or staged work is one thing; §16 covers the adjacent, distinct need to temporarily set aside **uncommitted** work-in-progress without committing it at all — stashing — which is often the right tool reached for just before you'd otherwise be tempted to use one of this section's more destructive options.
+Undoing committed or staged work is one thing; [§16](./Section-16-Part4-Stashing.md) covers the adjacent, distinct need to temporarily set aside **uncommitted** work-in-progress without committing it at all — stashing — which is often the right tool reached for just before you'd otherwise be tempted to use one of this section's more destructive options.

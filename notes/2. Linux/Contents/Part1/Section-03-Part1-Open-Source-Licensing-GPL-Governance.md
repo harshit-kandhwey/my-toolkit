@@ -44,7 +44,7 @@ Linux has no single corporate owner, and its governance is a deliberately layere
 - **Maintainer hierarchy.** Development is organized as a tree of trust, documented in the kernel's `MAINTAINERS` file:
   - **Subsystem maintainers** own a specific area (networking, a filesystem, a driver family, memory management, etc.) and are the ones who actually review and merge patches touching their area, into their own subsystem-specific git tree.
   - A smaller set of trusted lieutenants pull work from subsystem maintainers upward.
-  - **Linus Torvalds** pulls from those lieutenants into **mainline** (`torvalds/linux` on kernel.org / GitHub mirror). This "pull-based," hierarchical web-of-trust model is exactly the multi-tier tree topology mentioned as a DVCS pattern in the Git knowledge base (§1) — the kernel is, historically, the reason Git was built to support it at all (§2).
+  - **Linus Torvalds** pulls from those lieutenants into **mainline** (`torvalds/linux` on kernel.org / GitHub mirror). This "pull-based," hierarchical web-of-trust model is exactly the multi-tier tree topology mentioned as a DVCS pattern in the Git knowledge base ([§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)) — the kernel is, historically, the reason Git was built to support it at all ([§2](./Section-02-Part1-History-and-Evolution.md)).
 - **Patch submission workflow.** Kernel development still runs primarily over **email**, not pull requests on a hosting platform — a deliberate, historically-rooted choice that surprises many engineers used to GitHub-centric workflows:
   1. A contributor writes a patch and formats it as a properly structured commit (subject line, body explaining _why_, not just _what_).
   2. The patch is sent to the relevant subsystem's **mailing list** (hosted via infrastructure like `lore.kernel.org`) using `git send-email`, which sends the patch as plain-text email rather than requiring reviewers to visit a web UI.
@@ -102,7 +102,7 @@ Distributions record the license of every installed package, letting you audit a
 
 ## 4. Practical Impact for Engineers
 
-🔑 **Key Takeaway:** Because Linux is community-governed rather than single-vendor-controlled, no single company can unilaterally deprecate a feature the whole ecosystem depends on overnight — but it also means that some changes (e.g., replacing `iptables` with `nftables`, discussed in §115) roll out unevenly across distributions and versions, which is why version-awareness (Part 15) is a core professional skill, not a nicety.
+🔑 **Key Takeaway:** Because Linux is community-governed rather than single-vendor-controlled, no single company can unilaterally deprecate a feature the whole ecosystem depends on overnight — but it also means that some changes (e.g., replacing `iptables` with `nftables`, discussed in [§115](../Part15/Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md)) roll out unevenly across distributions and versions, which is why version-awareness (Part 15) is a core professional skill, not a nicety.
 
 Beyond that structural point, licensing has concrete day-to-day engineering consequences:
 
@@ -154,14 +154,14 @@ _What the interviewer is probing for:_ whether you can operationalize compliance
 
 ## Related Concepts & What's Next
 
-- §1 established the kernel-vs-OS-vs-distribution distinction this section builds on — licensing questions differ for the kernel itself versus userland components a distribution bundles, which may carry different licenses entirely.
-- §2 covered the historical arc (Unix → GNU → Linux) that explains _why_ the GPL exists at all — Richard Stallman's GNU Project and the Free Software Foundation predate Linux and supplied both the GPL itself and much of the userland the kernel needed to become a usable OS.
-- §4 (next) covers Linux philosophy and design principles — the technical counterpart to this section's legal/governance framing.
-- Part 8 (§59–§64) returns to package management, where per-package license metadata (introduced here) is what tooling like `dpkg`/`rpm`/repository signing actually operates on.
-- Part 12 (§89–§96) covers security hardening and compliance frameworks in depth, where SBOM generation and license-compliance auditing (introduced practically here) become formal, recurring processes.
-- Part 14 (§103–§110) covers enterprise support models (RHEL subscriptions, Ubuntu LTS) — the commercial answer to the governance trade-off (distributed roadmap, no single vendor) discussed in 4's architect-level material.
-- Part 15 (§111–§115) covers version and distribution differences that matter in practice, including the uneven rollout of ecosystem-wide changes referenced in the Key Takeaway above (e.g., `iptables` → `nftables`).
+- [§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md) established the kernel-vs-OS-vs-distribution distinction this section builds on — licensing questions differ for the kernel itself versus userland components a distribution bundles, which may carry different licenses entirely.
+- [§2](./Section-02-Part1-History-and-Evolution.md) covered the historical arc (Unix → GNU → Linux) that explains _why_ the GPL exists at all — Richard Stallman's GNU Project and the Free Software Foundation predate Linux and supplied both the GPL itself and much of the userland the kernel needed to become a usable OS.
+- [§4](./Section-04-Part1-Linux-Philosophy-Design-Principles.md) (next) covers Linux philosophy and design principles — the technical counterpart to this section's legal/governance framing.
+- Part 8 ([§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)) returns to package management, where per-package license metadata (introduced here) is what tooling like `dpkg`/`rpm`/repository signing actually operates on.
+- Part 12 ([§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)–[§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)) covers security hardening and compliance frameworks in depth, where SBOM generation and license-compliance auditing (introduced practically here) become formal, recurring processes.
+- Part 14 ([§103](../Part14/Section-103-Part14-Enterprise-Linux-Distributions-Support-Models.md)–[§110](../Part14/Section-110-Part14-Compliance-Governance-Regulated-Environments.md)) covers enterprise support models (RHEL subscriptions, Ubuntu LTS) — the commercial answer to the governance trade-off (distributed roadmap, no single vendor) discussed in 4's architect-level material.
+- Part 15 ([§111](../Part15/Section-111-Part15-Linux-Administration-Best-Practices-Checklist.md)–[§115](../Part15/Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md)) covers version and distribution differences that matter in practice, including the uneven rollout of ecosystem-wide changes referenced in the Key Takeaway above (e.g., `iptables` → `nftables`).
 
 ---
 
-**Next Section:** §4 — `Section-04-Part1-Linux-Philosophy-Design-Principles.md`
+**Next Section:** [§4](./Section-04-Part1-Linux-Philosophy-Design-Principles.md) — `Section-04-Part1-Linux-Philosophy-Design-Principles.md`

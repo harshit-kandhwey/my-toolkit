@@ -25,7 +25,7 @@ Two genuinely separate problems, addressed by two genuinely separate tools:
 - Service Limit checks specifically monitor your account's usage against AWS's default service quotas (e.g., "you're at 85% of your VPC limit for this region"), giving advance warning before you actually hit a limit that could block a needed deployment — directly relevant given how many services throughout this roadmap have specific soft limits mentioned in passing (SQS in-flight messages, Lambda concurrency, EventBridge target counts, and others).
 - The **public AWS Service Health Dashboard** shows the current and historical operational status of every AWS service, per region, visible to anyone without needing to be an AWS customer at all — this is AWS's own self-reported status, not derived from your account.
 - The **AWS Personal Health Dashboard** (accessible within your account) goes further: it correlates active AWS events (both issues and _planned_ changes, like a scheduled maintenance window for a specific RDS instance) against your account's actual resource inventory, surfacing only the events genuinely relevant to resources you actually have — turning a generic "S3 in us-east-1 has an issue" into a specific "your bucket `my-production-bucket` may be affected."
-- Personal Health Dashboard events can be configured to **trigger EventBridge rules** (§62) — directly enabling automated response (a notification, a failover trigger, a ticket creation) the moment AWS itself reports an event affecting your specific resources, rather than requiring someone to notice it in the console.
+- Personal Health Dashboard events can be configured to **trigger EventBridge rules** ([§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md)) — directly enabling automated response (a notification, a failover trigger, a ticket creation) the moment AWS itself reports an event affecting your specific resources, rather than requiring someone to notice it in the console.
 
 ```
 Trusted Advisor: inspects YOUR account's configuration
@@ -114,8 +114,8 @@ AWS Health Dashboard:
     }
   }
   ```
-- **Production usage:** commonly integrated into a scheduled Lambda (§25) that pulls check results periodically and publishes findings to a Slack channel or ticketing system, turning Trusted Advisor into an actively-pushed signal rather than something someone has to remember to check in the console.
-- **Common errors:** requesting a check ID not actually available at your support plan tier returns an error rather than a result — a direct symptom of the §7 warning above.
+- **Production usage:** commonly integrated into a scheduled Lambda ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)) that pulls check results periodically and publishes findings to a Slack channel or ticketing system, turning Trusted Advisor into an actively-pushed signal rather than something someone has to remember to check in the console.
+- **Common errors:** requesting a check ID not actually available at your support plan tier returns an error rather than a result — a direct symptom of the [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md) warning above.
 
 ### `aws health describe-events`
 
@@ -174,18 +174,18 @@ aws events put-targets --rule AwsHealthEventAlert --targets '[
 ]'
 ```
 
-This directly reuses §62's EventBridge pattern-matching to turn a passive dashboard into an active alerting pipeline — the moment AWS reports an event affecting your specific resources, the team is notified through the exact same SNS/alerting infrastructure used for every other operational signal in this roadmap, rather than requiring someone to remember to check a separate dashboard.
+This directly reuses [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md)'s EventBridge pattern-matching to turn a passive dashboard into an active alerting pipeline — the moment AWS reports an event affecting your specific resources, the team is notified through the exact same SNS/alerting infrastructure used for every other operational signal in this roadmap, rather than requiring someone to remember to check a separate dashboard.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** commonly check Trusted Advisor manually and infrequently, often discovering its value first through a specific cost-optimization finding (an idle load balancer, an underutilized instance) rather than as part of a systematic review practice.
 - **Enterprises** integrate Trusted Advisor findings into regular (often weekly or monthly) operational review cadences, frequently aggregated across an entire AWS Organization for centralized visibility, and wire Personal Health Dashboard events directly into incident-response tooling so an AWS-side issue is detected and communicated exactly as fast as an internally-detected one.
 - Trusted Advisor's Service Limit checks are commonly integrated into capacity-planning processes, providing advance warning before a limit becomes a genuine deployment blocker — directly relevant given how many services in this roadmap (SQS, Lambda, EventBridge, and others) have specific account-level soft limits.
-- Health Dashboard events feeding EventBridge are a common input to **automated failover** decisions in multi-region architectures — an AWS-reported regional degradation event can directly trigger a Step Functions workflow (§63) initiating failover to a secondary region, rather than waiting for internal monitoring to independently detect the same underlying issue.
+- Health Dashboard events feeding EventBridge are a common input to **automated failover** decisions in multi-region architectures — an AWS-reported regional degradation event can directly trigger a Step Functions workflow ([§63](../Part7/Section-63-Part7-StepFunctions-Orchestration.md)) initiating failover to a secondary region, rather than waiting for internal monitoring to independently detect the same underlying issue.
 
 ## 11. Security Considerations
 
-- Trusted Advisor's Security category findings (open security groups, exposed access keys, S3 bucket permission issues) are directly actionable security signals — treating a red/yellow Security finding with the same urgency as a CloudWatch security alarm (§71) is appropriate, not optional.
+- Trusted Advisor's Security category findings (open security groups, exposed access keys, S3 bucket permission issues) are directly actionable security signals — treating a red/yellow Security finding with the same urgency as a CloudWatch security alarm ([§71](./Section-71-Part8-CloudWatch-Alarms-Dashboards.md)) is appropriate, not optional.
 - Trusted Advisor and Health API access should be scoped via IAM like any other read capability — while low-risk individually, the aggregated findings (a list of exactly which security groups/resources are misconfigured) constitute a meaningful information-disclosure risk if broadly accessible.
 
 ## 12. Performance Considerations
@@ -237,11 +237,11 @@ This directly reuses §62's EventBridge pattern-matching to turn a passive dashb
 **Model answer:** I'd configure an EventBridge rule matching AWS Health events, routed to the same alerting pipeline used for internally-detected incidents — an SNS topic feeding the on-call notification system — so that the moment AWS reports an event affecting our specific resources, it reaches the team through the identical channel and urgency as any other production alert, rather than requiring someone to separately remember to check a dashboard. This is particularly valuable for the "is this us or is this AWS" diagnostic question that comes up early in almost every incident — having the Personal Health Dashboard's resource-correlated event arrive automatically, in parallel with our own CloudWatch alarms, immediately tells the responding engineer whether to focus investigation on our own systems or to expect the root cause to be external and outside our direct control, which meaningfully changes the shape of the investigation from the very first minute.
 
 **🎯 Architect:** _"Design an operational-health program for a large enterprise with 200 AWS accounts, ensuring both Trusted Advisor findings and AWS Health events are visible centrally, without requiring each account team to individually monitor their own account."_
-**Model answer:** I'd use AWS Organizations' aggregation capabilities to consolidate both Trusted Advisor findings and Health events into a centrally-owned account, so a security/platform team gets one unified view across all 200 accounts rather than needing to check each individually — directly mirroring the same organization-wide aggregation pattern already established for CloudTrail (§73) and Config (§74) in this roadmap. I'd ensure the organization is on a support plan tier (Business or Enterprise) that unlocks the full Trusted Advisor check catalog across every member account, since a partial-coverage program provides a false sense of comprehensive review. For Health events specifically, I'd configure EventBridge rules in each account forwarding relevant events to that same central account's event bus, feeding both automated alerting and a centralized incident-response dashboard — giving the central team real-time, resource-correlated AWS-side incident awareness across the full 200-account estate, while individual account teams retain their own local Trusted Advisor/Health visibility for their specific resources without needing to build or maintain any of that centralized tooling themselves.
+**Model answer:** I'd use AWS Organizations' aggregation capabilities to consolidate both Trusted Advisor findings and Health events into a centrally-owned account, so a security/platform team gets one unified view across all 200 accounts rather than needing to check each individually — directly mirroring the same organization-wide aggregation pattern already established for CloudTrail ([§73](./Section-73-Part8-CloudTrail-Audit-Governance.md)) and Config ([§74](./Section-74-Part8-AWS-Config.md)) in this roadmap. I'd ensure the organization is on a support plan tier (Business or Enterprise) that unlocks the full Trusted Advisor check catalog across every member account, since a partial-coverage program provides a false sense of comprehensive review. For Health events specifically, I'd configure EventBridge rules in each account forwarding relevant events to that same central account's event bus, feeding both automated alerting and a centralized incident-response dashboard — giving the central team real-time, resource-correlated AWS-side incident awareness across the full 200-account estate, while individual account teams retain their own local Trusted Advisor/Health visibility for their specific resources without needing to build or maintain any of that centralized tooling themselves.
 
 ## 18. Common Misconceptions
 
-- "Trusted Advisor automatically fixes the issues it finds." False — Trusted Advisor is purely a detective/recommendation tool; remediation is a separate, manual (or separately-automated, e.g., via Config remediation actions or Systems Manager Automation, §74-75) action.
+- "Trusted Advisor automatically fixes the issues it finds." False — Trusted Advisor is purely a detective/recommendation tool; remediation is a separate, manual (or separately-automated, e.g., via Config remediation actions or Systems Manager Automation, [§74](./Section-74-Part8-AWS-Config.md)-[§75](./Section-75-Part8-Systems-Manager.md)) action.
 - "The public Service Health Dashboard tells you if your resources are affected." False — the public dashboard reports AWS's own aggregate service status; only the Personal Health Dashboard correlates events against your specific account's actual resources.
 
 ## 19. Key Takeaways
@@ -255,6 +255,6 @@ This directly reuses §62's EventBridge pattern-matching to turn a passive dashb
 ## 20. Related Concepts
 
 - **AWS Support Plans** (a Part 1 topic determining Trusted Advisor's check coverage) — cross-referenced here as a dependency.
-- **EventBridge** (the mechanism for real-time Health event alerting) → §62.
-- **CloudTrail, AWS Config** (the other centrally-aggregated, organization-wide governance tools this Part covered) → §73-74.
-- **Observability Architecture — Putting It All Together** (incorporating Trusted Advisor/Health awareness into the broader incident-investigation flow) → next section, §77.
+- **EventBridge** (the mechanism for real-time Health event alerting) → [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md).
+- **CloudTrail, AWS Config** (the other centrally-aggregated, organization-wide governance tools this Part covered) → [§73](./Section-73-Part8-CloudTrail-Audit-Governance.md)-[§74](./Section-74-Part8-AWS-Config.md).
+- **Observability Architecture — Putting It All Together** (incorporating Trusted Advisor/Health awareness into the broader incident-investigation flow) → next section, [§77](./Section-77-Part8-Observability-Architecture-Together.md).

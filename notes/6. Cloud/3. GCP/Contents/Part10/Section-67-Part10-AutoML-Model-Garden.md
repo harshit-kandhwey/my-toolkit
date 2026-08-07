@@ -4,7 +4,7 @@
 
 **Plain language:** Not every team has (or needs) a data scientist writing custom training code. AutoML lets someone with a labeled dataset and no ML expertise get a production-quality model by clicking through a UI or making a few API calls. Model Garden is the opposite end of the spectrum for teams that don't want to train a model from scratch at all — it's a browsable catalog of ready-to-use foundation models (Google's own Gemini family plus third-party and open models) that can be deployed or called directly.
 
-**Precise:** **Vertex AI AutoML** automates feature engineering, model architecture search, and hyperparameter tuning to produce a trained model from a labeled Vertex AI Dataset (Section 65) across tabular, image, text, and video modalities, without the user writing training code. **Vertex AI Model Garden** is a curated catalog of first-party (Gemini), Google-partner, and open-source (e.g., Llama, Gemma, Mistral) foundation and task-specific models that can be deployed to an endpoint, fine-tuned, or called via API directly from the catalog page.
+**Precise:** **Vertex AI AutoML** automates feature engineering, model architecture search, and hyperparameter tuning to produce a trained model from a labeled Vertex AI Dataset ([Section 65](./Section-65-Part10-Vertex-AI-Fundamentals.md)) across tabular, image, text, and video modalities, without the user writing training code. **Vertex AI Model Garden** is a curated catalog of first-party (Gemini), Google-partner, and open-source (e.g., Llama, Gemma, Mistral) foundation and task-specific models that can be deployed to an endpoint, fine-tuned, or called via API directly from the catalog page.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -24,23 +24,23 @@
 | Text     | AutoML Text    | Support-ticket classification, sentiment analysis, entity extraction              |
 | Video    | AutoML Video   | Video content classification, object tracking/action recognition                  |
 
-All AutoML modalities share the same workflow: import a labeled Vertex AI Dataset (Section 65) → AutoML runs automated architecture search and hyperparameter tuning internally (you never see or edit the underlying model code) → the result is a registered model in Model Registry (Section 66), deployable to an Online or Batch endpoint exactly like a custom-trained model.
+All AutoML modalities share the same workflow: import a labeled Vertex AI Dataset ([Section 65](./Section-65-Part10-Vertex-AI-Fundamentals.md)) → AutoML runs automated architecture search and hyperparameter tuning internally (you never see or edit the underlying model code) → the result is a registered model in Model Registry ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)), deployable to an Online or Batch endpoint exactly like a custom-trained model.
 
 ### 3.2 AutoML Trade-offs vs. Custom Training
 
-| Aspect               | AutoML                                           | Custom Training (Section 66)                              |
-| -------------------- | ------------------------------------------------ | --------------------------------------------------------- |
-| Code required        | None (dataset + config only)                     | Training script (Python/framework of choice)              |
-| Architecture control | None — Google selects and tunes the architecture | Full control over model architecture                      |
-| Time to first model  | Fast (minutes to a few hours)                    | Slower (write, debug, and iterate on training code)       |
-| Best for             | Standard, well-understood problem types          | Novel architectures, research, highly specialized domains |
-| Cost model           | Pay for AutoML training compute (node-hours)     | Pay for custom training compute (node-hours)              |
+| Aspect               | AutoML                                           | Custom Training ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)) |
+| -------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Code required        | None (dataset + config only)                     | Training script (Python/framework of choice)                                                            |
+| Architecture control | None — Google selects and tunes the architecture | Full control over model architecture                                                                    |
+| Time to first model  | Fast (minutes to a few hours)                    | Slower (write, debug, and iterate on training code)                                                     |
+| Best for             | Standard, well-understood problem types          | Novel architectures, research, highly specialized domains                                               |
+| Cost model           | Pay for AutoML training compute (node-hours)     | Pay for custom training compute (node-hours)                                                            |
 
 ### 3.3 Model Garden
 
 **Model Garden** organizes available models into three broad categories:
 
-- **Google first-party models**: the Gemini family (Section 68) and task-specific Google models (e.g., embedding models, specialized vision models).
+- **Google first-party models**: the Gemini family ([Section 68](./Section-68-Part10-Generative-AI-Gemini-PaLM.md)) and task-specific Google models (e.g., embedding models, specialized vision models).
 - **Partner models**: models from Google's model partners (e.g., Anthropic's Claude, available via Vertex AI Model Garden as a fully managed API), offered with the same billing/IAM integration as first-party models.
 - **Open models**: openly licensed models (e.g., Llama, Gemma, Mistral) that can be deployed to a self-managed Vertex AI Endpoint, giving control over weights and hosting while still using Vertex AI's managed infrastructure.
 
@@ -51,7 +51,7 @@ For each model, Model Garden shows benchmark data, a "deploy" or "fine-tune" act
 A model selected in Model Garden is deployed one of two ways:
 
 1. **Managed API call** (for Gemini and most partner models) — no infrastructure to manage; you call the model's API endpoint directly and pay per token/request.
-2. **Self-managed endpoint deployment** (typical for open models) — the model weights are deployed onto Vertex AI-managed compute (with GPU/TPU as needed) as a dedicated Online Endpoint (Section 66) that you configure, scale, and pay for by node-uptime, similar to deploying a custom-trained model.
+2. **Self-managed endpoint deployment** (typical for open models) — the model weights are deployed onto Vertex AI-managed compute (with GPU/TPU as needed) as a dedicated Online Endpoint ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)) that you configure, scale, and pay for by node-uptime, similar to deploying a custom-trained model.
 
 ## 4. Architecture Diagram: Two Paths to a Deployed Model
 
@@ -175,7 +175,7 @@ publishers/google/... gemini-2.0-pro
 - Enterprises default to **AutoML** for standard, well-understood problem types (churn, fraud scoring, defect detection) to reduce time-to-first-model and free ML engineers to focus on higher-value custom work rather than reinventing well-solved problem types.
 - **Model Garden's managed API models** (Gemini, partner models like Claude) are the default choice for generative AI features where teams want zero infrastructure management and per-token billing; **self-managed open-model endpoints** are chosen when data residency, model customization, or predictable fixed-cost hosting requirements rule out a managed API.
 - Enterprises use Model Garden's centralized catalog (with benchmarks and licensing terms visible in one place) as part of formal model-selection governance — comparing cost, latency, and accuracy trade-offs across models before committing a production workload to one.
-- AutoML models still flow through the same **Model Registry** and **Online/Batch Endpoints** (Section 66) as custom-trained models, so production MLOps tooling (monitoring, rollback) is identical regardless of how the model was trained.
+- AutoML models still flow through the same **Model Registry** and **Online/Batch Endpoints** ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)) as custom-trained models, so production MLOps tooling (monitoring, rollback) is identical regardless of how the model was trained.
 
 ## 8. Common Misconceptions
 
@@ -192,7 +192,7 @@ publishers/google/... gemini-2.0-pro
 **Model answer:** A managed API call (e.g., calling Gemini directly) requires no infrastructure management and bills per-request/token, which is simplest when it meets your requirements. You'd choose a self-managed endpoint deployment instead when you need an open model not offered as a managed API, when you need to fine-tune and host a customized version of a model, when data residency or network isolation requirements mean the model must run inside your own VPC Service Controls perimeter, or when your traffic volume is high and predictable enough that fixed node-hour billing is cheaper than per-token billing.
 
 **🎯 Senior/Architect:** _A retail company wants to add a product-defect image classifier and a customer-support chatbot. How would you decide which parts of this use AutoML, Model Garden, or custom training, and how do the pieces fit into the same production MLOps pipeline?_
-**Model answer:** For the defect classifier, I'd start with AutoML Image against a labeled Vertex AI Dataset of product images — image defect detection is a well-understood classification problem where AutoML's automated architecture search typically performs competitively, and it gets a production model far faster than custom training. I'd only move to custom training (Section 66) if AutoML's accuracy ceiling proves insufficient for a highly specialized defect type, which would justify the added engineering cost. For the chatbot, there's no reason to train a language model from scratch — I'd start in Model Garden with a managed Gemini API call, using Vertex AI Studio (Section 68) for prompt design and grounding against the company's product/support documentation via Vertex AI Search for RAG (Section 68), avoiding hallucinated answers about specific products. Both pieces converge on the same production pipeline regardless of origin: the AutoML-trained defect model registers into Model Registry and deploys to an Online Endpoint exactly like a custom model would, and both the defect endpoint and the chatbot's Gemini calls sit behind the same IAM and VPC Service Controls perimeter (Section 41) and are monitored through the same MLOps tooling (Section 69) — the choice of AutoML vs. Model Garden vs. custom training only affects how a model is produced, not how it's governed or operated afterward.
+**Model answer:** For the defect classifier, I'd start with AutoML Image against a labeled Vertex AI Dataset of product images — image defect detection is a well-understood classification problem where AutoML's automated architecture search typically performs competitively, and it gets a production model far faster than custom training. I'd only move to custom training ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)) if AutoML's accuracy ceiling proves insufficient for a highly specialized defect type, which would justify the added engineering cost. For the chatbot, there's no reason to train a language model from scratch — I'd start in Model Garden with a managed Gemini API call, using Vertex AI Studio ([Section 68](./Section-68-Part10-Generative-AI-Gemini-PaLM.md)) for prompt design and grounding against the company's product/support documentation via Vertex AI Search for RAG ([Section 68](./Section-68-Part10-Generative-AI-Gemini-PaLM.md)), avoiding hallucinated answers about specific products. Both pieces converge on the same production pipeline regardless of origin: the AutoML-trained defect model registers into Model Registry and deploys to an Online Endpoint exactly like a custom model would, and both the defect endpoint and the chatbot's Gemini calls sit behind the same IAM and VPC Service Controls perimeter ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)) and are monitored through the same MLOps tooling ([Section 69](./Section-69-Part10-MLOps-on-GCP.md)) — the choice of AutoML vs. Model Garden vs. custom training only affects how a model is produced, not how it's governed or operated afterward.
 
 ## 10. Key Takeaways
 
@@ -200,8 +200,8 @@ publishers/google/... gemini-2.0-pro
 - 🔑 AutoML often matches or beats hand-tuned custom models for well-understood problem types, making "AutoML is only for beginners" a myth.
 - 🔑 Model Garden is a multi-vendor catalog (Google first-party, partner, and open models) — not a Gemini-only showcase — for consuming already-trained foundation models rather than training new ones.
 - 🔑 Managed API models require no deployment and bill per-token/request; open models typically require explicit endpoint deployment and bill by node-uptime — choosing correctly matters for both cost and latency.
-- 🔑 AutoML-trained and custom-trained models converge on the same Model Registry and Endpoint infrastructure (Section 66), so production MLOps tooling doesn't care how a model was produced.
+- 🔑 AutoML-trained and custom-trained models converge on the same Model Registry and Endpoint infrastructure ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)), so production MLOps tooling doesn't care how a model was produced.
 
 ## 11. Related Concepts
 
-Vertex AI Fundamentals and Datasets (Section 65) as the data source AutoML consumes, Vertex AI Deep Dive Training/Pipelines/Endpoints (Section 66) for the shared Model Registry and serving infrastructure, Generative AI on GCP (Section 68) for deeper coverage of Gemini/Vertex AI Studio consumption patterns, MLOps on GCP (Section 69) for monitoring models regardless of training origin, and VPC Service Controls (Section 41) for securing Model Garden endpoint access.
+Vertex AI Fundamentals and Datasets ([Section 65](./Section-65-Part10-Vertex-AI-Fundamentals.md)) as the data source AutoML consumes, Vertex AI Deep Dive Training/Pipelines/Endpoints ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)) for the shared Model Registry and serving infrastructure, Generative AI on GCP ([Section 68](./Section-68-Part10-Generative-AI-Gemini-PaLM.md)) for deeper coverage of Gemini/Vertex AI Studio consumption patterns, MLOps on GCP ([Section 69](./Section-69-Part10-MLOps-on-GCP.md)) for monitoring models regardless of training origin, and VPC Service Controls ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)) for securing Model Garden endpoint access.

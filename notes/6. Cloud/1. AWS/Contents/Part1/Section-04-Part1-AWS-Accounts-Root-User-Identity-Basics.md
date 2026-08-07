@@ -29,8 +29,8 @@
 Sign-up requires email, password, account name, payment info, identity verification. Creates:
 
 1. **12-digit Account ID** (e.g., `123456789012`) — permanent unique identifier used in ARNs and cross-account trust.
-2. **The Root User** — tied to sign-up email (see §4).
-3. **Free Tier eligibility window** for new accounts (§6).
+2. **The Root User** — tied to sign-up email (see [§4](./Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md)).
+3. **Free Tier eligibility window** for new accounts ([§6](./Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)).
 
 > ⚠️ Free Tier specifics change over time — verify on the AWS pricing page.
 

@@ -2,14 +2,14 @@
 
 ## 1. Overview: From Architecture to Operation
 
-§65 covered systemd's architecture — units, targets, and how the dependency graph between them drives parallel startup. This section is where that architecture becomes something you actually operate: `systemctl` is the single command-line tool for querying and controlling every unit systemd manages, and it's the tool a working engineer reaches for dozens of times a day on any systemd host. Everything here assumes the vocabulary §65 built — "unit," "target," "dependency" — and turns it into concrete commands: starting and stopping services, controlling whether they survive a reboot, reading their status output correctly, and the two commands (`mask`/`daemon-reload`) that trip up even experienced administrators when used carelessly.
+[§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) covered systemd's architecture — units, targets, and how the dependency graph between them drives parallel startup. This section is where that architecture becomes something you actually operate: `systemctl` is the single command-line tool for querying and controlling every unit systemd manages, and it's the tool a working engineer reaches for dozens of times a day on any systemd host. Everything here assumes the vocabulary [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) built — "unit," "target," "dependency" — and turns it into concrete commands: starting and stopping services, controlling whether they survive a reboot, reading their status output correctly, and the two commands (`mask`/`daemon-reload`) that trip up even experienced administrators when used carelessly.
 
 ## 2. The Core Distinction: Runtime State vs. Boot-Time State
 
 This is the single most important thing to internalize in this entire section, and it's worth stating before any individual command: `systemctl` separates **two completely independent questions** about a service, and conflating them is the most common systemd operational mistake.
 
 - **`start` / `stop` / `restart`** control whether a service is running **right now**, in the current boot session. They have no effect on what happens at the next boot.
-- **`enable` / `disable`** control whether a service **starts automatically at boot**, by creating or removing a symlink from the unit into the appropriate target's `.wants/` directory (§65 covered targets and the `.wants/` mechanism). They have **no effect on whether the service is currently running**.
+- **`enable` / `disable`** control whether a service **starts automatically at boot**, by creating or removing a symlink from the unit into the appropriate target's `.wants/` directory ([§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) covered targets and the `.wants/` mechanism). They have **no effect on whether the service is currently running**.
 
 These two axes are **orthogonal** — every combination of the two is a valid, meaningful state a service can be in, and assuming one implies the other is the mistake that produces "but I disabled it, why is it still running" and "I started it, why didn't it come back after the reboot" incidents.
 
@@ -34,7 +34,7 @@ sudo systemctl stop nginx
 sudo systemctl restart nginx
 ```
 
-**`start`** launches the unit if it isn't already running; **`stop`** terminates it (systemd sends the signal(s) declared in the unit file, defaulting to `SIGTERM` then `SIGKILL` after a timeout — §67 covers unit-file-level control of this); **`restart`** is a stop followed immediately by a start, unconditionally — it runs even if the service was already stopped, which then just performs a start.
+**`start`** launches the unit if it isn't already running; **`stop`** terminates it (systemd sends the signal(s) declared in the unit file, defaulting to `SIGTERM` then `SIGKILL` after a timeout — [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) covers unit-file-level control of this); **`restart`** is a stop followed immediately by a start, unconditionally — it runs even if the service was already stopped, which then just performs a start.
 
 **`reload`** is a distinct, narrower operation:
 
@@ -91,9 +91,9 @@ Jul 27 09:14:02 web01 systemd[1]: Started A high performance web server.
 
 Three lines carry most of the operationally relevant information:
 
-- **`Loaded:`** — confirms the unit file was parsed successfully, shows its **absolute path** (useful for confirming which of several possible unit-file locations is actually in effect — §65 covers unit-file precedence), and reports **`enabled`/`disabled`/`static`/`masked`** — answering the boot-time half of 2's distinction directly in the status output.
+- **`Loaded:`** — confirms the unit file was parsed successfully, shows its **absolute path** (useful for confirming which of several possible unit-file locations is actually in effect — [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) covers unit-file precedence), and reports **`enabled`/`disabled`/`static`/`masked`** — answering the boot-time half of 2's distinction directly in the status output.
 - **`Active:`** — the runtime half of 2's distinction: `active (running)` for a normal running service, `inactive (dead)` for a stopped one, `failed` when the service exited unexpectedly or its start command errored, plus a human-readable **since-when** timestamp showing exactly when it entered that state — invaluable for correlating a service's uptime against a deploy, an incident window, or an unexpected restart.
-- **The trailing log lines** — `status` inlines the **most recent journal entries** for this specific unit (sourced from journald, §68) directly in its output, which makes it the fastest first-look during an incident: a failed service's `status` output frequently shows the actual error in the last line or two without needing a separate `journalctl` invocation, though §68 covers going deeper when the truncated inline view isn't enough.
+- **The trailing log lines** — `status` inlines the **most recent journal entries** for this specific unit (sourced from journald, [§68](./Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)) directly in its output, which makes it the fastest first-look during an incident: a failed service's `status` output frequently shows the actual error in the last line or two without needing a separate `journalctl` invocation, though [§68](./Section-68-Part9-Journald-Centralized-Logging-Journalctl.md) covers going deeper when the truncated inline view isn't enough.
 
 **Common errors:** Reading only the `Active:` line and skipping `Loaded:` — a service can be `active (running)` right now while being `disabled`, which is exactly the "started but disabled" cell from 2's table, and easy to miss if you only glance at whether it's currently up.
 
@@ -104,7 +104,7 @@ sudo systemctl mask nginx
 sudo systemctl unmask nginx
 ```
 
-`disable` (4) removes a unit from its target's boot sequence, but it doesn't prevent the unit from being started by **other means** — another unit that declares a dependency on it (`Requires=`/`Wants=`, §65), or a plain manual `systemctl start nginx`, will still start it successfully even while disabled. `mask` closes that gap entirely: it symlinks the unit file to `/dev/null`, making the unit **completely unstartable by any mechanism** — manual `start`, dependency-driven pulls from other units, everything — until it's explicitly `unmask`ed.
+`disable` (4) removes a unit from its target's boot sequence, but it doesn't prevent the unit from being started by **other means** — another unit that declares a dependency on it (`Requires=`/`Wants=`, [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)), or a plain manual `systemctl start nginx`, will still start it successfully even while disabled. `mask` closes that gap entirely: it symlinks the unit file to `/dev/null`, making the unit **completely unstartable by any mechanism** — manual `start`, dependency-driven pulls from other units, everything — until it's explicitly `unmask`ed.
 
 > 💡 **Tip:** Reach for `mask`, not `disable`, when the goal is genuinely "this must never run, even by accident" rather than just "don't start this automatically at boot." A concrete case: two services conflict if both bind the same port, and disabling the one you don't want still leaves it startable if some other unit's dependency chain pulls it in — masking removes that failure mode entirely, because systemd refuses to start a masked unit under any circumstance, dependency-driven or manual.
 
@@ -148,7 +148,7 @@ These answer two different discovery questions, and the distinction matters:
 sudo systemctl daemon-reload
 ```
 
-systemd parses unit files once and keeps that parsed representation in memory — it does **not** watch unit files on disk for changes and reload automatically. Editing a unit file (adding an `ExecStart=` argument, changing a `Restart=` policy, adjusting dependencies — all covered in full in §67) leaves systemd operating against the **old, cached** definition until something explicitly tells it to reread the file.
+systemd parses unit files once and keeps that parsed representation in memory — it does **not** watch unit files on disk for changes and reload automatically. Editing a unit file (adding an `ExecStart=` argument, changing a `Restart=` policy, adjusting dependencies — all covered in full in [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md)) leaves systemd operating against the **old, cached** definition until something explicitly tells it to reread the file.
 
 > ⚠️ **Warning:** This is one of the most common systemd operational mistakes, and it's a genuinely deceptive one because the symptom looks like the edit "didn't take" rather than "wasn't loaded": after editing a unit file, running `systemctl restart servicename` **without** first running `daemon-reload` restarts the process using the **old unit definition** — none of the edits apply, and there's no error or warning telling you this happened. The fix is always: edit the unit file, run `sudo systemctl daemon-reload`, **then** `restart` (or `start`) the affected unit. `daemon-reload` itself does not start, stop, or restart anything — it only makes systemd reparse unit files from disk so that the _next_ start/restart uses the current version.
 
@@ -191,6 +191,6 @@ _What the interviewer is probing for:_ Fleet-scale scripting discipline using th
 
 ## 13. Related Concepts & What's Next
 
-This section operates directly on the units and targets §65 introduced architecturally — every `systemctl` command here acts on the unit types and dependency relationships that section established. §67 (next) goes one level deeper, into actually **writing** the unit files whose lifecycle this section manages — `ExecStart=`, `Restart=` policy, `ExecReload=`, and dependency directives like `Requires=`/`After=` all get full syntax treatment there, directly extending the `reload` and `daemon-reload` mechanics introduced here. §68's `journalctl` deep dive is the natural next stop for diagnosing _why_ a service is `failed` beyond what `status`'s inline log tail (5) shows — the two tools are typically used back-to-back during any real incident: `systemctl status` for the fast first look, `journalctl -u servicename` for the full history.
+This section operates directly on the units and targets [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) introduced architecturally — every `systemctl` command here acts on the unit types and dependency relationships that section established. [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) (next) goes one level deeper, into actually **writing** the unit files whose lifecycle this section manages — `ExecStart=`, `Restart=` policy, `ExecReload=`, and dependency directives like `Requires=`/`After=` all get full syntax treatment there, directly extending the `reload` and `daemon-reload` mechanics introduced here. [§68](./Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)'s `journalctl` deep dive is the natural next stop for diagnosing _why_ a service is `failed` beyond what `status`'s inline log tail (5) shows — the two tools are typically used back-to-back during any real incident: `systemctl status` for the fast first look, `journalctl -u servicename` for the full history.
 
-**Next Section:** §67 — `Section-67-Part9-Writing-Custom-Unit-Files.md`
+**Next Section:** [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) — `Section-67-Part9-Writing-Custom-Unit-Files.md`

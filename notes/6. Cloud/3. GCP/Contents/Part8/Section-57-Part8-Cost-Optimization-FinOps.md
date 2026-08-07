@@ -45,7 +45,7 @@ A **Committed Use Discount** is a contractual commitment to use a minimum amount
 
 **Spot VMs** (the evolution of what GCP previously called "Preemptible VMs") are spare Compute Engine capacity offered at a steep discount (up to ~60–91% off on-demand, depending on machine type and region), with the trade-off that Google can reclaim the VM at any time with short notice (a termination notice, typically giving the workload a brief window to gracefully shut down).
 
-- **Best suited for:** fault-tolerant, stateless, interruptible batch workloads — CI/CD build agents, batch data processing (Section 9's Cloud Batch is a natural fit), rendering jobs, or GKE node pools running workloads that tolerate pod eviction and rescheduling.
+- **Best suited for:** fault-tolerant, stateless, interruptible batch workloads — CI/CD build agents, batch data processing ([Section 9](../Part1/Section-09-Part1-Cloud-Batch.md)'s Cloud Batch is a natural fit), rendering jobs, or GKE node pools running workloads that tolerate pod eviction and rescheduling.
 - **Not suited for:** stateful databases, long-running interactive services, or anything without a checkpoint/retry mechanism to resume after preemption.
 - No commitment or term required — pay only for what runs, at the discounted spot rate, for as long as capacity is available.
 
@@ -154,4 +154,4 @@ A core FinOps principle is that cost accountability is shared — engineers make
 
 ## 14. Related Concepts
 
-Compute Engine and machine types (Section 5), Cloud Batch for interruptible batch workloads (Section 9), BigQuery for billing data analysis (Section 44), the cost optimization pillar of the Architecture Framework (Section 56), and disaster recovery cost trade-offs across standby strategies (Section 58) all connect directly to the cost mechanisms covered here.
+Compute Engine and machine types ([Section 5](../Part1/Section-05-Part1-Compute-Engine-Deep-Dive.md)), Cloud Batch for interruptible batch workloads ([Section 9](../Part1/Section-09-Part1-Cloud-Batch.md)), BigQuery for billing data analysis ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)), the cost optimization pillar of the Architecture Framework ([Section 56](./Section-56-Part8-Enterprise-Architecture-Patterns.md)), and disaster recovery cost trade-offs across standby strategies ([Section 58](./Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)) all connect directly to the cost mechanisms covered here.

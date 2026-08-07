@@ -2,7 +2,7 @@
 
 ## 1. The Question This Section Answers
 
-"Where do I set an environment variable so that _X_ picks it up?" sounds like it should have one answer. On Linux it doesn't — it has at least four, and they apply in genuinely different, non-overlapping contexts. §41 already walked through the shell-level load order (`/etc/profile`, `~/.bash_profile`, `~/.bashrc`, and friends) for interactive and login shells specifically. This section covers the layer §41 deliberately deferred: the **system-wide, non-shell-specific** environment mechanisms — `/etc/environment`, `/etc/profile.d/`, and systemd's own, entirely separate environment machinery — and, most importantly, the boundary between them that trips up more production deployments than almost any other environment-configuration detail.
+"Where do I set an environment variable so that _X_ picks it up?" sounds like it should have one answer. On Linux it doesn't — it has at least four, and they apply in genuinely different, non-overlapping contexts. [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md) already walked through the shell-level load order (`/etc/profile`, `~/.bash_profile`, `~/.bashrc`, and friends) for interactive and login shells specifically. This section covers the layer [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md) deliberately deferred: the **system-wide, non-shell-specific** environment mechanisms — `/etc/environment`, `/etc/profile.d/`, and systemd's own, entirely separate environment machinery — and, most importantly, the boundary between them that trips up more production deployments than almost any other environment-configuration detail.
 
 The organizing insight for this whole section is that these are **layers that don't all apply in the same context**. Picking the wrong one doesn't usually produce an error — it produces a variable that's silently missing exactly where you needed it, discovered hours later when a service that "obviously" should see it doesn't.
 
@@ -28,7 +28,7 @@ This makes `/etc/environment` the right tool for exactly one job: a small number
 
 ## 3. `/etc/profile.d/*.sh`: Login-Shell Scripts With Real Logic
 
-Where `/etc/environment` is a flat data file, `/etc/profile.d/` is a directory of genuine shell scripts, with real conditionals, command substitution, and arbitrary logic available. The connection back to §41's load order is direct: `/etc/profile` — the first file bash reads on login (§41) — conventionally contains a loop that sources every `*.sh` file under `/etc/profile.d/` as part of its own execution:
+Where `/etc/environment` is a flat data file, `/etc/profile.d/` is a directory of genuine shell scripts, with real conditionals, command substitution, and arbitrary logic available. The connection back to [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)'s load order is direct: `/etc/profile` — the first file bash reads on login ([§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)) — conventionally contains a loop that sources every `*.sh` file under `/etc/profile.d/` as part of its own execution:
 
 ```bash
 # excerpt of the sourcing pattern inside /etc/profile
@@ -41,7 +41,7 @@ if [ -d /etc/profile.d ]; then
 fi
 ```
 
-Because these are sourced as part of `/etc/profile`, they inherit exactly `/etc/profile`'s applicability from §41's table: **login shells only** — an SSH session or a fresh TTY login, not a new terminal tab opened inside an already-running desktop session (that case reads only `~/.bashrc`, per §41, and never touches `/etc/profile.d/` at all).
+Because these are sourced as part of `/etc/profile`, they inherit exactly `/etc/profile`'s applicability from [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)'s table: **login shells only** — an SSH session or a fresh TTY login, not a new terminal tab opened inside an already-running desktop session (that case reads only `~/.bashrc`, per [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md), and never touches `/etc/profile.d/` at all).
 
 What `profile.d` buys over `/etc/environment` is real shell capability:
 
@@ -60,13 +60,13 @@ Package maintainers use this pattern constantly — installing a package that ne
 
 ## 4. The Boundary That Actually Matters: Neither of These Applies to systemd Services
 
-This is the single most consequential fact in the whole section, and it's the reason this topic earns its own place in Part 9 rather than being folded into §41: **a systemd-managed service does not go through a login shell, and it does not go through PAM's login-time environment setup, at all.**
+This is the single most consequential fact in the whole section, and it's the reason this topic earns its own place in Part 9 rather than being folded into [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md): **a systemd-managed service does not go through a login shell, and it does not go through PAM's login-time environment setup, at all.**
 
 Walk through why. `/etc/environment` is read by PAM during an interactive login. `/etc/profile.d/` is sourced by `/etc/profile`, which is itself only read by a bash **login shell**. A systemd unit started by `systemctl start myservice` is launched directly by the systemd manager (PID 1 or a user-session instance) via `fork()`/`exec()` of the configured `ExecStart=` binary — there is no login, no PAM session setup for that exec, and no shell in the picture at all unless the unit's `ExecStart=` explicitly invokes one. A daemon started this way inherits none of the `/etc/environment` section's PAM-injected variables above and none of the `profile.d` section's exports above, no matter how carefully either was configured.
 
 > ⚠️ **Warning:** "It works when I run it manually but fails as a systemd service" is one of the most common environment-related production bugs, and it is almost always this exact mismatch. An administrator SSHes in (a login shell — `/etc/environment` and `/etc/profile.d/` both apply), runs the application binary by hand, and it works because `JAVA_HOME`, a proxy variable, or an API key happens to be set in their interactive session. The same binary, launched by systemd as a service, starts with none of that — because systemd services never pass through the login path those variables were injected at. The fix is never "make the login environment more thorough"; it's supplying the variable through one of the systemd-native mechanisms covered below, which are the only things a service process actually inherits from.
 
-This is a direct, more severe cousin of the cron gotcha §39 flagged in its own Warning — cron jobs run non-login, non-interactive shells and so skip shell config files; systemd services skip an even larger set of mechanisms, because they skip the login/PAM path those shell config files depend on in the first place.
+This is a direct, more severe cousin of the cron gotcha [§39](../Part5/Section-39-Part5-Scheduling-Tasks-Cron-At-Systemd-Timers.md) flagged in its own Warning — cron jobs run non-login, non-interactive shells and so skip shell config files; systemd services skip an even larger set of mechanisms, because they skip the login/PAM path those shell config files depend on in the first place.
 
 ## 5. systemd's Own Environment Mechanisms
 
@@ -74,7 +74,7 @@ Because services need environment configuration too, systemd provides its own se
 
 ### 5.1 `Environment=` — Inline, Per-Unit
 
-Covered in operational depth in §67; recapped here for completeness of the layering picture:
+Covered in operational depth in [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md); recapped here for completeness of the layering picture:
 
 ```ini
 [Service]
@@ -82,7 +82,7 @@ Environment=NODE_ENV=production
 Environment=LOG_LEVEL=info
 ```
 
-Sets one or more variables directly inside the unit file. Fine for a small number of fixed, non-sensitive values — but every line is plainly visible to anyone who can read the unit file or run `systemctl show`, so it's the wrong place for secrets (§67 covers that caveat in full).
+Sets one or more variables directly inside the unit file. Fine for a small number of fixed, non-sensitive values — but every line is plainly visible to anyone who can read the unit file or run `systemctl show`, so it's the wrong place for secrets ([§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) covers that caveat in full).
 
 ### 5.2 `EnvironmentFile=` — Loaded From a Separate File
 
@@ -92,7 +92,7 @@ EnvironmentFile=/etc/myapp/myapp.env
 EnvironmentFile=-/etc/myapp/myapp.local.env
 ```
 
-Points the unit at a flat `KEY=value` file (`/etc/myapp/myapp.env`), similar in format to `/etc/environment` — loaded at service start, not baked into the unit file itself. This is the natural place for values that change per-environment (dev/staging/prod) without editing the unit, or for values kept outside version control. The leading `-` on the second line marks the file optional — systemd won't fail the unit if it's missing, a pattern §67 also covers for layering a base file with an optional local override.
+Points the unit at a flat `KEY=value` file (`/etc/myapp/myapp.env`), similar in format to `/etc/environment` — loaded at service start, not baked into the unit file itself. This is the natural place for values that change per-environment (dev/staging/prod) without editing the unit, or for values kept outside version control. The leading `-` on the second line marks the file optional — systemd won't fail the unit if it's missing, a pattern [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) also covers for layering a base file with an optional local override.
 
 ### 5.3 `/etc/systemd/system.conf` and `DefaultEnvironment=`
 
@@ -117,13 +117,13 @@ Sets a manager-wide variable at runtime, without editing any file — it affects
 
 ## 6. Decision Guide
 
-| Need                                                                                | Mechanism                                                                                                                              |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| A static value for **every interactive login**, regardless of shell                 | `/etc/environment`, above                                                                                                              |
-| A value needing **shell logic** (conditionals, `PATH` appends) for **login shells** | `/etc/profile.d/*.sh`, above                                                                                                            |
-| A value for **one specific systemd service**                                        | Unit file `Environment=` (small, non-secret) or `EnvironmentFile=` (larger, per-environment, or file-based secrets handling), above     |
-| A value for **all systemd-managed services**, persistently                          | `/etc/systemd/system.conf`'s `DefaultEnvironment=`, above                                                                              |
-| A value for **all systemd-managed services**, at runtime, non-persistent            | `systemctl set-environment`, above                                                                                                      |
+| Need                                                                                | Mechanism                                                                                                                           |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| A static value for **every interactive login**, regardless of shell                 | `/etc/environment`, above                                                                                                           |
+| A value needing **shell logic** (conditionals, `PATH` appends) for **login shells** | `/etc/profile.d/*.sh`, above                                                                                                        |
+| A value for **one specific systemd service**                                        | Unit file `Environment=` (small, non-secret) or `EnvironmentFile=` (larger, per-environment, or file-based secrets handling), above |
+| A value for **all systemd-managed services**, persistently                          | `/etc/systemd/system.conf`'s `DefaultEnvironment=`, above                                                                           |
+| A value for **all systemd-managed services**, at runtime, non-persistent            | `systemctl set-environment`, above                                                                                                  |
 
 The recurring failure mode this table exists to prevent: reaching for a login/shell-layer mechanism because that's the tool that's habitually reached for, when the actual consumer is a systemd service that will never see it, as the systemd-boundary section above explains.
 
@@ -145,7 +145,7 @@ _What the interviewer is probing for:_ Whether the candidate knows the format di
 _What the interviewer is probing for:_ Understanding that this is a structural consequence of how processes are started (login/PAM path vs. systemd-manager fork/exec), not an arbitrary systemd limitation to be worked around with a workaround like "just add PAM environment reading to the unit."
 
 **🎯 Senior:** _"A colleague says a Python service 'works fine when I run it by hand but fails to find its API key when it's a systemd service.' Walk through your diagnosis and fix."_
-**Model answer:** This is the canonical login-shell-vs-systemd-service environment mismatch. Running it "by hand" means an interactive login shell — PAM has already applied `/etc/environment`, and `/etc/profile.d/` (or the colleague's own `~/.bashrc`/`~/.bash_profile`, per §41) has likely exported the API key at some point in their setup. The systemd service, launched by the systemd manager directly, went through none of that — no PAM session, no shell config files — so the variable simply isn't in its environment. I wouldn't chase this by trying to make the service "log in" somehow; I'd confirm the diagnosis quickly with `systemctl show myservice.service -p Environment` and by checking `/proc/<pid>/environ` for the running service versus the manually-run process, then fix it at the correct layer: put the key in an `EnvironmentFile=` referenced by the unit (readable only by the service's user, permissions locked down, since it's a secret) rather than `Environment=` inline, which would leave it visible via `systemctl show`. I'd also flag this as a class of bug worth catching before production — anything that "just works" when run manually needs to be explicitly verified running as the actual systemd service, in a clean environment, before being trusted.
+**Model answer:** This is the canonical login-shell-vs-systemd-service environment mismatch. Running it "by hand" means an interactive login shell — PAM has already applied `/etc/environment`, and `/etc/profile.d/` (or the colleague's own `~/.bashrc`/`~/.bash_profile`, per [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)) has likely exported the API key at some point in their setup. The systemd service, launched by the systemd manager directly, went through none of that — no PAM session, no shell config files — so the variable simply isn't in its environment. I wouldn't chase this by trying to make the service "log in" somehow; I'd confirm the diagnosis quickly with `systemctl show myservice.service -p Environment` and by checking `/proc/<pid>/environ` for the running service versus the manually-run process, then fix it at the correct layer: put the key in an `EnvironmentFile=` referenced by the unit (readable only by the service's user, permissions locked down, since it's a secret) rather than `Environment=` inline, which would leave it visible via `systemctl show`. I'd also flag this as a class of bug worth catching before production — anything that "just works" when run manually needs to be explicitly verified running as the actual systemd service, in a clean environment, before being trusted.
 _What the interviewer is probing for:_ Correct root-cause diagnosis of the login-path-vs-manager-fork distinction, a concrete verification method rather than guesswork, and choosing `EnvironmentFile=` over inline `Environment=` for a secret specifically because of the visibility difference.
 
 **🎯 Architect:** _"You're standardizing environment configuration across a fleet of mixed workloads — some interactive admin tooling, dozens of systemd services, and a shared corporate HTTP proxy that everything needs. How do you lay out which mechanism owns what?"_
@@ -155,14 +155,14 @@ _What the interviewer is probing for:_ Fleet-scale judgment that treats the logi
 ## 9. Key Takeaways
 
 - `/etc/environment` is a flat `KEY=value` file (not a shell script — no expansion, no `export`), read by PAM at login for every user regardless of shell — the one true "set this everywhere" mechanism, but limited to static values with no logic.
-- `/etc/profile.d/*.sh` files are real shell scripts, sourced by `/etc/profile` as part of §41's login-shell load order — they apply to login shells specifically and support genuine conditionals and command substitution, unlike `/etc/environment`'s flat format.
+- `/etc/profile.d/*.sh` files are real shell scripts, sourced by `/etc/profile` as part of [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)'s login-shell load order — they apply to login shells specifically and support genuine conditionals and command substitution, unlike `/etc/environment`'s flat format.
 - Neither `/etc/environment` nor `/etc/profile.d/` applies to systemd services — a service launched by the systemd manager never goes through a login shell or PAM's login-time environment setup, which is the direct cause of the extremely common "works manually, fails as a service" class of bug.
-- systemd's own mechanisms — `Environment=` and `EnvironmentFile=` in a unit file (full syntax in §67), plus `/etc/systemd/system.conf`'s `DefaultEnvironment=` and runtime `systemctl set-environment` for manager-wide defaults — are the only things a systemd-launched process actually inherits from.
+- systemd's own mechanisms — `Environment=` and `EnvironmentFile=` in a unit file (full syntax in [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md)), plus `/etc/systemd/system.conf`'s `DefaultEnvironment=` and runtime `systemctl set-environment` for manager-wide defaults — are the only things a systemd-launched process actually inherits from.
 - The decision guide above collapses to one question: who's the consumer — every interactive login (`/etc/environment`), login shells needing logic (`profile.d`), one systemd service (unit file), or all systemd services (manager-wide)?
 - Diagnosing a suspected environment mismatch is fast and concrete: `systemctl show <unit> -p Environment` and `/proc/<pid>/environ` show exactly what a running service process actually has, rather than guessing from what an interactive shell happens to see.
 
 ## 10. Related Concepts & What's Next
 
-This section is the system-wide, non-shell-specific counterpart to §41's login/non-login shell configuration load order (Part 6) — read together, they cover the full picture of "where does an environment variable actually come from" across both human sessions and systemd services. It builds on §42's variable/`export` fundamentals (Part 6) and goes deeper than §67's brief `Environment=`/`EnvironmentFile=` mention, covered above, into the full layering picture, including the manager-wide mechanisms §67 didn't cover. §72 (next) moves to time synchronization — `chrony`/`ntpd` and `timedatectl` — a different, more self-contained corner of system administration than this section's cross-cutting environment layering.
+This section is the system-wide, non-shell-specific counterpart to [§41](../Part6/Section-41-Part6-Shells-Overview-Configuration-Files.md)'s login/non-login shell configuration load order (Part 6) — read together, they cover the full picture of "where does an environment variable actually come from" across both human sessions and systemd services. It builds on [§42](../Part6/Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion-Command-Substitution.md)'s variable/`export` fundamentals (Part 6) and goes deeper than [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md)'s brief `Environment=`/`EnvironmentFile=` mention, covered above, into the full layering picture, including the manager-wide mechanisms [§67](./Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) didn't cover. [§72](./Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md) (next) moves to time synchronization — `chrony`/`ntpd` and `timedatectl` — a different, more self-contained corner of system administration than this section's cross-cutting environment layering.
 
-**Next Section:** §72 — `Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md`
+**Next Section:** [§72](./Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md) — `Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md`

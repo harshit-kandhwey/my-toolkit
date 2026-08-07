@@ -2,9 +2,9 @@
 
 ## 1. Overview: Persistent Network Storage vs. One-Off Transfer
 
-§57 (Part 7) covered `scp`, `rsync`, and `sftp` — tools for moving files between hosts as discrete, one-off (or repeatable-but-manual) transfer operations. This section covers a different pattern entirely: **mounting remote storage so it behaves like local storage**, persistently, at the filesystem level, rather than copying files back and forth on demand. Once an NFS export or Samba share is mounted, applications on the client read and write to it using ordinary file I/O, with no awareness that the data is physically sitting on another host.
+[§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md) covered `scp`, `rsync`, and `sftp` — tools for moving files between hosts as discrete, one-off (or repeatable-but-manual) transfer operations. This section covers a different pattern entirely: **mounting remote storage so it behaves like local storage**, persistently, at the filesystem level, rather than copying files back and forth on demand. Once an NFS export or Samba share is mounted, applications on the client read and write to it using ordinary file I/O, with no awareness that the data is physically sitting on another host.
 
-This builds directly on §51's networking fundamentals (Part 7) and §20's mounting concepts (Part 3) — a network filesystem mounts using the same `mount` command and `/etc/fstab` persistence mechanism as a local disk, just with a different filesystem type and additional network-specific options.
+This builds directly on [§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)'s networking fundamentals (Part 7) and [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)'s mounting concepts (Part 3) — a network filesystem mounts using the same `mount` command and `/etc/fstab` persistence mechanism as a local disk, just with a different filesystem type and additional network-specific options.
 
 The two protocols covered here solve the same general problem — shared network-accessible storage — for different ecosystems: **NFS** is the native Unix/Linux approach, and **Samba** implements the Windows-native **SMB/CIFS** protocol for interoperability wherever Windows clients or SMB-expecting infrastructure are involved.
 
@@ -43,7 +43,7 @@ showmount -e nfs-server.internal.example.com
 mount -t nfs nfs-server.internal.example.com:/srv/shared-data /mnt/shared-data
 ```
 
-This follows exactly the `mount -t <type> <source> <mountpoint>` pattern §20 introduced for local filesystems — the network-specific part is entirely in the `<source>` syntax (`host:/path`) and the filesystem type (`nfs`).
+This follows exactly the `mount -t <type> <source> <mountpoint>` pattern [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) introduced for local filesystems — the network-specific part is entirely in the `<source>` syntax (`host:/path`) and the filesystem type (`nfs`).
 
 ## 3. NFS Versions Briefly
 
@@ -105,7 +105,7 @@ Neither is universally "better" — the deciding factor is almost always which e
 
 ## 6. Persisting Network Mounts and Handling Server Unavailability
 
-Like local mounts and swap (§77), a manual `mount` command doesn't survive a reboot — persistence goes through `/etc/fstab`, the same mechanism §20 established, but network mounts carry extra options worth knowing specifically because a network filesystem can become unreachable in ways a local disk generally can't.
+Like local mounts and swap ([§77](./Section-77-Part10-Swap-Management.md)), a manual `mount` command doesn't survive a reboot — persistence goes through `/etc/fstab`, the same mechanism [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) established, but network mounts carry extra options worth knowing specifically because a network filesystem can become unreachable in ways a local disk generally can't.
 
 **Example `/etc/fstab` entries:**
 
@@ -125,7 +125,7 @@ nfs-server.internal.example.com:/srv/shared-data   /mnt/shared-data   nfs    def
 
 **The `hard` vs. `soft` trade-off is worth understanding rather than picking blindly:** `hard` (the NFS default) is generally the safer choice for data-integrity-sensitive workloads, since an application never sees a partial-failure I/O error it might not handle correctly — it just waits, and resumes once the server returns. `soft` avoids the "application hangs indefinitely" problem when a server is genuinely gone, but at the cost of applications needing to handle I/O errors from what looks like an otherwise-healthy filesystem, which not all applications do gracefully. Neither is a universal default — the right choice depends on whether the calling application handles a failed I/O operation better or worse than an indefinite hang.
 
-**Troubleshooting an unreachable NFS mount:** a client hung on an unresponsive `hard`-mounted NFS share often shows processes in uninterruptible sleep (D-state, §33) waiting on the stuck I/O call — this is a direct, practical instance of the D-state-means-I/O-wait connection §33 introduced, now specifically caused by an unreachable network filesystem rather than a slow local disk.
+**Troubleshooting an unreachable NFS mount:** a client hung on an unresponsive `hard`-mounted NFS share often shows processes in uninterruptible sleep (D-state, [§33](../Part5/Section-33-Part5-What-A-Process-Is.md)) waiting on the stuck I/O call — this is a direct, practical instance of the D-state-means-I/O-wait connection [§33](../Part5/Section-33-Part5-What-A-Process-Is.md) introduced, now specifically caused by an unreachable network filesystem rather than a slow local disk.
 
 ## 7. Hands-On: Basic Diagnostics for Both Protocols
 
@@ -151,12 +151,12 @@ smbclient -L //fileserver.example.com -U alice
 smbclient //fileserver.example.com/shared-data -U alice
 ```
 
-**Common errors:** `showmount -e` timing out or being refused usually means either a firewall blocking the relevant ports (NFSv3's multiple auxiliary ports, 3, are a common culprit) or the NFS service simply isn't running on the target host — check the service status (§65's `systemctl`, Part 9) before assuming it's a network-layer problem. `smbclient -L` prompting successfully but then denying access to a specific share points at the share's own `valid users`/permission configuration (4) rather than a connectivity issue.
+**Common errors:** `showmount -e` timing out or being refused usually means either a firewall blocking the relevant ports (NFSv3's multiple auxiliary ports, 3, are a common culprit) or the NFS service simply isn't running on the target host — check the service status ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)'s `systemctl`, Part 9) before assuming it's a network-layer problem. `smbclient -L` prompting successfully but then denying access to a specific share points at the share's own `valid users`/permission configuration (4) rather than a connectivity issue.
 
 ## 8. Common Misconceptions
 
 1. **"NFS and Samba are interchangeable — pick whichever."** They target different ecosystems by design — NFS is Unix/Linux-native, Samba/SMB is Windows-native. The right choice is driven by what the other end of the connection needs to speak, not by a generic feature comparison (5).
-2. **"A network mount is fundamentally different to use than a local mount, once it's set up."** Mechanically, both use the same `mount -t <type>` and `/etc/fstab` persistence pattern from §20 — the difference is entirely in the source syntax and network-specific options, not in how applications subsequently interact with the mounted path.
+2. **"A network mount is fundamentally different to use than a local mount, once it's set up."** Mechanically, both use the same `mount -t <type>` and `/etc/fstab` persistence pattern from [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) — the difference is entirely in the source syntax and network-specific options, not in how applications subsequently interact with the mounted path.
 3. **"NFS is inherently insecure and shouldn't be used on any network."** NFSv3's default UID/GID trust model is a real consideration on untrusted networks (5, Warning), but NFSv4 supports proper Kerberized authentication, and even NFSv3 is entirely reasonable on a tightly controlled internal network with appropriate export restrictions — the risk is about default configuration on the wrong network, not the protocol being categorically unsafe.
 4. **"CIFS and SMB are different protocols."** CIFS is an older SMB dialect name that persists in Linux tooling (`mount -t cifs`) for historical/compatibility reasons — modern Samba deployments typically negotiate a more current SMB protocol version even though the mount command still says `cifs`.
 5. **"`soft` NFS mounts are strictly safer than `hard` mounts because they don't hang."** `soft` avoids indefinite hangs when a server is unreachable, but at the cost of applications receiving I/O errors from what looks like a normal, healthy filesystem — not every application handles that gracefully. `hard` (the NFS default) is often the safer choice specifically for data-integrity-sensitive workloads, because it never surfaces a partial-failure error the application might mishandle (6) — the trade-off depends on the calling application, not a universal rule.
@@ -164,7 +164,7 @@ smbclient //fileserver.example.com/shared-data -U alice
 ## 9. Tiered Interview Questions
 
 **🎯 Beginner:** _"What's the difference between using `rsync` to copy files to a remote host and mounting that host's storage over NFS?"_
-**Model answer:** `rsync` (§57) performs a discrete transfer — it copies files from one place to another at a point in time, and the two copies then exist independently until the next sync. Mounting over NFS makes the remote directory behave like a local path continuously — applications read and write directly to it over the network in real time, with no separate "copy" step and no two independent copies to keep in sync. They solve different problems: `rsync` for moving or synchronizing data between two independent storage locations, NFS for making one piece of storage transparently accessible from multiple hosts as if it were local.
+**Model answer:** `rsync` ([§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md)) performs a discrete transfer — it copies files from one place to another at a point in time, and the two copies then exist independently until the next sync. Mounting over NFS makes the remote directory behave like a local path continuously — applications read and write directly to it over the network in real time, with no separate "copy" step and no two independent copies to keep in sync. They solve different problems: `rsync` for moving or synchronizing data between two independent storage locations, NFS for making one piece of storage transparently accessible from multiple hosts as if it were local.
 _What the interviewer is probing for:_ Understanding the transfer-vs-persistent-mount distinction conceptually, not just knowing both are "ways to move files over a network."
 
 **🎯 Intermediate:** _"When would you choose Samba over NFS for a new network storage setup?"_
@@ -181,8 +181,8 @@ _What the interviewer is probing for:_ Recognizing that mixed-ecosystem requirem
 
 ## 10. Key Takeaways
 
-- NFS and network mounts generally provide _persistent, transparent_ remote storage access — a fundamentally different pattern from §57's one-off `scp`/`rsync`/`sftp` transfers, even though `rsync` specifically is later reused as a backup mechanism in §79.
-- NFS exports a directory via `/etc/exports` on the server and mounts it with `mount -t nfs host:/path /mountpoint` on the client, using the same `mount`/`/etc/fstab` pattern §20 established for local filesystems (2).
+- NFS and network mounts generally provide _persistent, transparent_ remote storage access — a fundamentally different pattern from [§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md)'s one-off `scp`/`rsync`/`sftp` transfers, even though `rsync` specifically is later reused as a backup mechanism in [§79](./Section-79-Part10-Backup-Strategies-Tools.md).
+- NFS exports a directory via `/etc/exports` on the server and mounts it with `mount -t nfs host:/path /mountpoint` on the client, using the same `mount`/`/etc/fstab` pattern [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) established for local filesystems (2).
 - NFSv4 consolidates onto a single port and supports stronger Kerberized authentication as a first-class option; NFSv3 relies on multiple auxiliary-protocol ports and a weaker default trust model (3).
 - Samba/CIFS implements Windows-native SMB for interoperability — `smb.conf` defines shares on the server side, `mount -t cifs` mounts them on a Linux client (4).
 - Choose NFS for Linux-to-Linux storage, Samba/SMB wherever Windows interoperability is required — the decision is about ecosystem fit, not a general performance comparison (5).
@@ -190,6 +190,6 @@ _What the interviewer is probing for:_ Recognizing that mixed-ecosystem requirem
 
 ## 11. Related Concepts & What's Next
 
-This section depends on §51's networking fundamentals and §20's mounting concepts, and contrasts directly with §57's file-transfer tools (persistent mount vs. one-off transfer). It also ties back to §33's process-state coverage (Part 5) — a hung NFS client is a concrete, practical instance of the D-state/I-O-wait connection introduced there. §79 (next) covers backup strategies and tools — including a reuse of `rsync` in a different role than §57's, this time specifically as a repeatable backup mechanism — closing out Part 10.
+This section depends on [§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)'s networking fundamentals and [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)'s mounting concepts, and contrasts directly with [§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md)'s file-transfer tools (persistent mount vs. one-off transfer). It also ties back to [§33](../Part5/Section-33-Part5-What-A-Process-Is.md)'s process-state coverage (Part 5) — a hung NFS client is a concrete, practical instance of the D-state/I-O-wait connection introduced there. [§79](./Section-79-Part10-Backup-Strategies-Tools.md) (next) covers backup strategies and tools — including a reuse of `rsync` in a different role than [§57](../Part7/Section-57-Part7-Remote-File-Transfer-Scp-Rsync-Sftp.md)'s, this time specifically as a repeatable backup mechanism — closing out Part 10.
 
-**Next Section:** §79 — `Section-79-Part10-Backup-Strategies-Tools.md`
+**Next Section:** [§79](./Section-79-Part10-Backup-Strategies-Tools.md) — `Section-79-Part10-Backup-Strategies-Tools.md`

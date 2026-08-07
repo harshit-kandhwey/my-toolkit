@@ -2,7 +2,7 @@
 
 ## 1. Shell Variables: The Basic Mechanism
 
-§41 introduced the shell as the program that reads a command line and turns it into `fork()`/`exec()` calls (§34). Before any of that dispatch logic matters, the shell has to do something more basic first: it has to parse the line itself, and a huge part of that parsing is **variable assignment and expansion** — substituting names for values before the resulting words are ever handed to a program. This section is entirely about that substitution layer.
+[§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md) introduced the shell as the program that reads a command line and turns it into `fork()`/`exec()` calls ([§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)). Before any of that dispatch logic matters, the shell has to do something more basic first: it has to parse the line itself, and a huge part of that parsing is **variable assignment and expansion** — substituting names for values before the resulting words are ever handed to a program. This section is entirely about that substitution layer.
 
 A shell variable is created with a plain assignment:
 
@@ -23,13 +23,13 @@ $ echo "$name"
 harshit
 ```
 
-By default, a shell variable is **local to the current shell process** — it's visible to the interactive shell or script that created it, and to nothing else. This locality is the exact distinction §3 develops next: a shell variable versus an environment variable are not two different kinds of storage, they're the same storage with a different visibility flag set on it.
+By default, a shell variable is **local to the current shell process** — it's visible to the interactive shell or script that created it, and to nothing else. This locality is the exact distinction [§3](../Part1/Section-03-Part1-Open-Source-Licensing-GPL-Governance.md) develops next: a shell variable versus an environment variable are not two different kinds of storage, they're the same storage with a different visibility flag set on it.
 
 > 💡 **Tip:** Variable names are case-sensitive and, by convention (not enforcement), lowercase names are used for shell/script-local variables while uppercase names (`PATH`, `HOME`, `EDITOR`) are reserved for variables the shell or system itself relies on. Nothing stops a script from breaking that convention, but doing so risks accidentally shadowing a variable something else depends on.
 
 ## 2. Environment Variables: What "Environment" Actually Means
 
-§34 (Part 5) established that a new process is created by `fork()`ing an existing one and then `exec()`ing a new program image into it. What `fork()`/`exec()` actually carries across that transition — beyond just the program to run — includes a specific block of data called the **environment**: a list of `KEY=value` strings the child process inherits from its parent at the moment it's created. That inherited block is precisely what "environment variable" refers to — a variable that isn't just visible in the current shell, but gets copied forward into every child process that shell subsequently spawns.
+[§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md) established that a new process is created by `fork()`ing an existing one and then `exec()`ing a new program image into it. What `fork()`/`exec()` actually carries across that transition — beyond just the program to run — includes a specific block of data called the **environment**: a list of `KEY=value` strings the child process inherits from its parent at the moment it's created. That inherited block is precisely what "environment variable" refers to — a variable that isn't just visible in the current shell, but gets copied forward into every child process that shell subsequently spawns.
 
 A plain shell variable, by contrast, is **not** part of that inherited block by default — it exists only in the shell's own memory and stops there. `export` is the command that flips a shell variable into an environment variable, marking it for inclusion in the environment block handed to every child process from that point forward:
 
@@ -51,11 +51,11 @@ child sees: abc123        # inherited, because export flagged it for the environ
 $ export API_URL="https://api.internal.example.com"
 ```
 
-**The mental model worth keeping precise:** exporting a variable does not make it "global" in the sense of shared, mutable storage two processes both read and write — it's a one-way, one-time copy made at the exact instant `fork()`/`exec()` happens. A child process that modifies its own copy of `TOKEN` has zero effect on the parent's `TOKEN`, and a parent that changes `TOKEN` after a child has already started has zero effect on that already-running child. This is a direct, practical consequence of §34's process-isolation model (also the model underpinning §40's IPC section) — environment inheritance is a snapshot, not a live link.
+**The mental model worth keeping precise:** exporting a variable does not make it "global" in the sense of shared, mutable storage two processes both read and write — it's a one-way, one-time copy made at the exact instant `fork()`/`exec()` happens. A child process that modifies its own copy of `TOKEN` has zero effect on the parent's `TOKEN`, and a parent that changes `TOKEN` after a child has already started has zero effect on that already-running child. This is a direct, practical consequence of [§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s process-isolation model (also the model underpinning [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md)'s IPC section) — environment inheritance is a snapshot, not a live link.
 
 > ⚠️ **Warning:** `export`-ing a variable inside a script only affects that script's own child processes, never its parent shell. A common beginner mistake is running `export FOO=bar` inside a script (or a sourced-vs-executed confusion) and expecting the interactive shell that launched it to see `FOO` afterward — it won't, because the script runs as a child process with its own isolated environment copy, and nothing a child does can write back into its parent's shell state. `env` (view a process's current environment) and `printenv VAR` are the fast way to confirm whether a given variable actually made it into a specific process's environment block.
 
-Umask (§29, Part 4) is a useful concrete anchor for this same inheritance idea from a different angle: a process's umask is inherited by its children exactly the way environment variables are, which is why setting `umask 027` in a shell's startup/config file (§41 covered which files load when) reliably applies to everything launched from that shell afterward — it's the same fork/exec inheritance mechanism, just carrying a different piece of process state.
+Umask ([§29](../Part4/Section-29-Part4-Umask-Default-Permissions.md)) is a useful concrete anchor for this same inheritance idea from a different angle: a process's umask is inherited by its children exactly the way environment variables are, which is why setting `umask 027` in a shell's startup/config file ([§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md) covered which files load when) reliably applies to everything launched from that shell afterward — it's the same fork/exec inheritance mechanism, just carrying a different piece of process state.
 
 ## 3. Quoting: Controlling What the Shell Expands
 
@@ -89,7 +89,7 @@ $ echo '$name'
 $name                 # printed literally — no expansion happened
 ```
 
-Single quotes are the right choice whenever the literal text needs to be preserved exactly — writing a `sed`/`awk` program that itself contains `$` (§48–§49 cover both in depth), or constructing a string that's meant to be evaluated by something else later rather than by the current shell right now.
+Single quotes are the right choice whenever the literal text needs to be preserved exactly — writing a `sed`/`awk` program that itself contains `$` ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)–[§49](./Section-49-Part6-Essential-Utilities-Cut-Sort-Uniq-Tr-Wc-Xargs-Find.md) cover both in depth), or constructing a string that's meant to be evaluated by something else later rather than by the current shell right now.
 
 | Quoting           | Variable expansion | Command substitution |  Word-splitting / globbing  |
 | ----------------- | :----------------: | :------------------: | :-------------------------: |
@@ -148,7 +148,7 @@ $ echo "${file}_final.txt"
 report_final.txt     # braces make the boundary explicit
 ```
 
-`${VAR}` also unlocks a family of parameter-expansion modifiers beyond plain substitution — default values (`${VAR:-default}`), length (`${#VAR}`), substring/pattern removal, and more — that belong to §45's (Part 6) bash scripting depth rather than this introductory section; the point to retain here is simply that `${...}` exists as the disambiguated, extensible form of `$...`.
+`${VAR}` also unlocks a family of parameter-expansion modifiers beyond plain substitution — default values (`${VAR:-default}`), length (`${#VAR}`), substring/pattern removal, and more — that belong to [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)'s (Part 6) bash scripting depth rather than this introductory section; the point to retain here is simply that `${...}` exists as the disambiguated, extensible form of `$...`.
 
 ## 6. Command Substitution: `$(...)` and the Legacy Backtick Form
 
@@ -288,7 +288,7 @@ $ bash -c 'printenv LOCAL_ONLY'
                                 # empty output — never exported, never inherited
 ```
 
-**Production usage example:** Debugging a service that isn't picking up a configuration value set in a shell session before launch is a routine incident-response step — `env` or `printenv` against the actual running process (via `/proc/[pid]/environ` if it's already running, §33's Part 5 process coverage) confirms definitively whether the variable was ever in that process's environment block, rather than guessing based on what was typed in some other shell.
+**Production usage example:** Debugging a service that isn't picking up a configuration value set in a shell session before launch is a routine incident-response step — `env` or `printenv` against the actual running process (via `/proc/[pid]/environ` if it's already running, [§33](../Part5/Section-33-Part5-What-A-Process-Is.md)'s Part 5 process coverage) confirms definitively whether the variable was ever in that process's environment block, rather than guessing based on what was typed in some other shell.
 
 **Troubleshooting:** If a variable is set and exported in an interactive shell but a service still doesn't see it, check whether the service was started by a different parent (a systemd unit, a different login session) — export only propagates down the fork/exec chain from the shell that ran `export`, not sideways to unrelated process trees.
 
@@ -310,7 +310,7 @@ _What the interviewer is probing for:_ Whether the candidate understands `export
 _What the interviewer is probing for:_ Concrete understanding of the word-splitting mechanism, not just "always quote variables" as a memorized rule without knowing why.
 
 **🎯 Senior:** _"Walk through exactly what happens, mechanically, when a shell evaluates `count=$(( $(ls | wc -l) + 1 ))`."_
-**Model answer:** The shell processes this in layers, innermost first. `ls | wc -l` runs as a pipeline — `ls`'s stdout is connected to `wc -l`'s stdin via a kernel pipe (§40's IPC coverage), and `wc -l` outputs the line count. That whole pipeline is wrapped in `$(...)`, command substitution, which captures that output as text and substitutes it into the surrounding expression. The result then sits inside `$((...))`, arithmetic expansion, which evaluates the captured number plus 1 as an integer arithmetic expression, and the final numeric result is assigned to `count` via plain parameter assignment. So three of this section's four expansion types are stacked in one line: command substitution nested inside arithmetic expansion, with the final value bound to a shell variable — and because it's all inside `$((...))`, no separate quoting is even needed here, since arithmetic context isn't subject to word-splitting the way a bare command argument would be.
+**Model answer:** The shell processes this in layers, innermost first. `ls | wc -l` runs as a pipeline — `ls`'s stdout is connected to `wc -l`'s stdin via a kernel pipe ([§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md)'s IPC coverage), and `wc -l` outputs the line count. That whole pipeline is wrapped in `$(...)`, command substitution, which captures that output as text and substitutes it into the surrounding expression. The result then sits inside `$((...))`, arithmetic expansion, which evaluates the captured number plus 1 as an integer arithmetic expression, and the final numeric result is assigned to `count` via plain parameter assignment. So three of this section's four expansion types are stacked in one line: command substitution nested inside arithmetic expansion, with the final value bound to a shell variable — and because it's all inside `$((...))`, no separate quoting is even needed here, since arithmetic context isn't subject to word-splitting the way a bare command argument would be.
 _What the interviewer is probing for:_ Ability to decompose a nested expansion into its constituent mechanisms rather than treating it as one opaque idiom, and correctly identifying that arithmetic context has different quoting exposure than a normal argument position.
 
 **🎯 Architect:** _"You're reviewing a fleet of shell scripts before a security audit. What variable/quoting patterns would you specifically flag as risk, and why?"_
@@ -319,7 +319,7 @@ _What the interviewer is probing for:_ Security-minded review instincts that con
 
 ## 13. Key Takeaways
 
-- A shell variable (`VAR=value`, no spaces around `=`) is local to the current shell; `export` promotes it into the environment block copied into every child process at `fork()`/`exec()` time (§34) — export is a one-way snapshot copy, not shared live storage.
+- A shell variable (`VAR=value`, no spaces around `=`) is local to the current shell; `export` promotes it into the environment block copied into every child process at `fork()`/`exec()` time ([§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)) — export is a one-way snapshot copy, not shared live storage.
 - Quoting controls expansion: unquoted is subject to word-splitting and globbing, double quotes allow expansion but suppress splitting/globbing, single quotes suppress everything including expansion — defaulting to double-quoting every variable expansion avoids the majority of real-world scripting bugs.
 - The unquoted-variable word-splitting/globbing footgun (4) is the single most common real shell scripting bug, and it's dangerous specifically with destructive commands (`rm`, `mv`) because the failure mode is silent until a value with whitespace or glob characters actually occurs.
 - Four expansion types matter by name: parameter expansion (`$VAR`/`${VAR}`), command substitution (`$(cmd)`, preferred over legacy backticks for nesting and readability), arithmetic expansion (`$((expr))`, integer-only), and brace expansion (`{a,b,c}`/`{1..5}`, purely textual, no filesystem lookup).
@@ -328,6 +328,6 @@ _What the interviewer is probing for:_ Security-minded review instincts that con
 
 ## 14. Related Concepts & What's Next
 
-This section builds directly on §41's shell overview and config-file coverage — the export/inheritance model here is exactly why setting a variable in the right shell config file (`.bashrc`, `.bash_profile`, `/etc/environment`) makes it available fleet-wide to every subsequently spawned process, and it leans on §34's fork/exec/wait process model (Part 5) for why environment inheritance is a one-way copy rather than shared state. It also ties back to §29's umask (Part 4) as a parallel example of the same inheritance mechanism applied to a different piece of process state. **§43 (next) covers redirection and pipes** — stdin/stdout/stderr, `>`, `>>`, `2>&1`, and the pipe mechanic §40 introduced conceptually — which depends on this section's quoting discipline the moment a redirected filename comes from a variable. §45 later builds full bash scripting fundamentals (shebang, arguments, exit codes) directly on top of the variable and expansion vocabulary established here.
+This section builds directly on [§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md)'s shell overview and config-file coverage — the export/inheritance model here is exactly why setting a variable in the right shell config file (`.bashrc`, `.bash_profile`, `/etc/environment`) makes it available fleet-wide to every subsequently spawned process, and it leans on [§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s fork/exec/wait process model (Part 5) for why environment inheritance is a one-way copy rather than shared state. It also ties back to [§29](../Part4/Section-29-Part4-Umask-Default-Permissions.md)'s umask (Part 4) as a parallel example of the same inheritance mechanism applied to a different piece of process state. **[§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md) (next) covers redirection and pipes** — stdin/stdout/stderr, `>`, `>>`, `2>&1`, and the pipe mechanic [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) introduced conceptually — which depends on this section's quoting discipline the moment a redirected filename comes from a variable. [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) later builds full bash scripting fundamentals (shebang, arguments, exit codes) directly on top of the variable and expansion vocabulary established here.
 
-**Next Section:** §43 — `Section-43-Part6-Redirection-and-Pipes.md`
+**Next Section:** [§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md) — `Section-43-Part6-Redirection-and-Pipes.md`

@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** CDK lets you define AWS infrastructure using an actual general-purpose programming language — Python, TypeScript, Java, C#, Go — instead of writing YAML/JSON CloudFormation templates directly. You get loops, conditionals, functions, classes, and package management exactly like application code, and CDK compiles your code down into a CloudFormation template under the hood, which is then deployed exactly as covered in §79-80.
+**Plain language:** CDK lets you define AWS infrastructure using an actual general-purpose programming language — Python, TypeScript, Java, C#, Go — instead of writing YAML/JSON CloudFormation templates directly. You get loops, conditionals, functions, classes, and package management exactly like application code, and CDK compiles your code down into a CloudFormation template under the hood, which is then deployed exactly as covered in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md).
 
 **Precise definition:** AWS CDK (Cloud Development Kit) is an open-source software development framework for defining cloud infrastructure using familiar programming languages, organizing infrastructure definitions into reusable, composable **constructs**, which CDK synthesizes into standard CloudFormation templates for actual deployment — combining the expressiveness and tooling of a general-purpose programming language with CloudFormation's proven deployment engine underneath.
 
 ## 2. Why It Exists / Problem It Solves
 
-CloudFormation templates (§79-80), even with intrinsic functions and nested stacks, remain fundamentally a **declarative configuration language**, not a general-purpose programming language — there's no real loop construct for "create one of these per item in a list I compute," no real function abstraction for "package this common 12-resource pattern into something I can call with different parameters and reuse across many templates without a separate nested-stack template file," and no access to a language's actual type system, IDE autocomplete, or ecosystem of testing tools.
+CloudFormation templates ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)), even with intrinsic functions and nested stacks, remain fundamentally a **declarative configuration language**, not a general-purpose programming language — there's no real loop construct for "create one of these per item in a list I compute," no real function abstraction for "package this common 12-resource pattern into something I can call with different parameters and reuse across many templates without a separate nested-stack template file," and no access to a language's actual type system, IDE autocomplete, or ecosystem of testing tools.
 
-CDK solves this by letting you write infrastructure definitions in a real programming language you (and your IDE) already understand — with actual loops, conditionals, functions, and object-oriented composition — while still producing, underneath, the exact same CloudFormation templates and deployment mechanics already covered in §79-80. This isn't a replacement for CloudFormation's deployment engine; it's a different, more expressive authoring layer on top of it.
+CDK solves this by letting you write infrastructure definitions in a real programming language you (and your IDE) already understand — with actual loops, conditionals, functions, and object-oriented composition — while still producing, underneath, the exact same CloudFormation templates and deployment mechanics already covered in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md). This isn't a replacement for CloudFormation's deployment engine; it's a different, more expressive authoring layer on top of it.
 
-**What existed before it (conceptually):** hand-written CloudFormation YAML/JSON (§79-80, still fully valid and widely used), or third-party template generators — CDK is AWS's own official answer to "give me a real programming language for this," directly comparable in spirit to Terraform (§82), though architecturally different (CDK generates CloudFormation; Terraform has its own independent execution engine and state model).
+**What existed before it (conceptually):** hand-written CloudFormation YAML/JSON ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md), still fully valid and widely used), or third-party template generators — CDK is AWS's own official answer to "give me a real programming language for this," directly comparable in spirit to Terraform ([§82](./Section-82-Part9-Terraform-on-AWS.md)), though architecturally different (CDK generates CloudFormation; Terraform has its own independent execution engine and state model).
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudFormation Fundamentals & Advanced** (§79-80): CDK's underlying deployment mechanics — stacks, change sets, rollback — are identical, since CDK synthesizes to CloudFormation.
+- **CloudFormation Fundamentals & Advanced** ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)): CDK's underlying deployment mechanics — stacks, change sets, rollback — are identical, since CDK synthesizes to CloudFormation.
 - General programming fluency in at least one supported language (TypeScript and Python are the most common choices) — this section uses Python for its examples, consistent with examples used throughout this roadmap.
 
 ## 4. Internal Working
@@ -27,7 +27,7 @@ CDK solves this by letting you write infrastructure definitions in a real progra
   - **L3 constructs** (sometimes called "patterns") bundle an entire common multi-resource architecture pattern into a single, high-level construct (e.g., "a Lambda function subscribed to an SQS queue with a DLQ already wired up" as one construct call) — the most opinionated, highest-abstraction level.
 - A CDK **app** is composed of one or more **stacks** (directly corresponding to CloudFormation stacks), each containing constructs — you write actual Python/TypeScript code instantiating these construct objects, using real language features (loops, conditionals, functions, classes) to compose and parameterize them.
 - The **`cdk synth`** command executes your CDK application code and produces the resulting CloudFormation template(s) as output — this is the "compile" step, translating your program into the declarative artifact CloudFormation actually deploys.
-- The **`cdk deploy`** command runs `synth` internally and then deploys the resulting template via the same underlying CloudFormation change-set mechanism covered in §79 — meaning everything about change sets, rollback behavior, and stack events applies identically to CDK-deployed infrastructure; CDK doesn't replace or bypass any of that.
+- The **`cdk deploy`** command runs `synth` internally and then deploys the resulting template via the same underlying CloudFormation change-set mechanism covered in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md) — meaning everything about change sets, rollback behavior, and stack events applies identically to CDK-deployed infrastructure; CDK doesn't replace or bypass any of that.
 - CDK maintains a small amount of its own bookkeeping (an `AWS::CDK::Metadata` resource and, for more advanced features, an asset bucket for Lambda code/other files CDK needs to upload) but is otherwise a thin authoring layer over standard CloudFormation, not an independent deployment system.
 
 ```
@@ -62,7 +62,7 @@ Your Python/TypeScript code (constructs, loops, functions, classes)
 1. **Write** CDK application code (Python/TypeScript/etc.), instantiating constructs and composing them into stacks using real programming-language features.
 2. **Synthesize** (`cdk synth`) to generate the resulting CloudFormation template(s), useful for reviewing exactly what will be deployed, or for feeding into a separate CloudFormation-based deployment pipeline.
 3. **Diff** (`cdk diff`) against the currently deployed stack to preview changes, conceptually equivalent to reviewing a change set.
-4. **Deploy** (`cdk deploy`), which synthesizes and then deploys via CloudFormation, with all of §79-80's deployment mechanics (rollback, stack events, drift detection) applying identically underneath.
+4. **Deploy** (`cdk deploy`), which synthesizes and then deploys via CloudFormation, with all of [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)'s deployment mechanics (rollback, stack events, drift detection) applying identically underneath.
 5. **Iterate** — CDK's real-programming-language nature makes refactoring, extracting reusable constructs, and adding automated tests (unit-testing your infrastructure code, a genuinely CDK-specific capability) practical in ways hand-written YAML doesn't easily support.
 
 ## 7. Configuration
@@ -120,11 +120,11 @@ Your Python/TypeScript code (constructs, loops, functions, classes)
   cdk deploy OrderProcessingStack --require-approval broadening
   ```
   **Expected output:** shows a diff of IAM/security-related changes (given `--require-approval broadening`) requiring explicit confirmation, then proceeds through standard CloudFormation deployment, showing stack event progress.
-- **Important arguments:** `--require-approval` controls when CDK pauses for manual confirmation before deploying — `broadening` (a sensible default) specifically flags security-permission-widening changes for explicit review, similar in spirit to CloudFormation's `CAPABILITY_IAM` friction point (§79) but more granular.
-- **Production usage:** in CI/CD pipelines (§83), typically run with `--require-approval never` (since there's no human present to approve interactively) but paired with a separate, earlier automated review/approval gate in the pipeline itself.
+- **Important arguments:** `--require-approval` controls when CDK pauses for manual confirmation before deploying — `broadening` (a sensible default) specifically flags security-permission-widening changes for explicit review, similar in spirit to CloudFormation's `CAPABILITY_IAM` friction point ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)) but more granular.
+- **Production usage:** in CI/CD pipelines ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)), typically run with `--require-approval never` (since there's no human present to approve interactively) but paired with a separate, earlier automated review/approval gate in the pipeline itself.
 - **Common errors:** since `cdk deploy` synthesizes fresh each time, a bug in your CDK code produces a synthesis failure before any deployment is even attempted — generally a faster failure mode than discovering a CloudFormation template error mid-deployment.
 
-## 9. Hands-On Example — The §79 SQS+Lambda Template, Rewritten in CDK (Python)
+## 9. Hands-On Example — The [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md) SQS+Lambda Template, Rewritten in CDK (Python)
 
 ```python
 from aws_cdk import Stack, Duration
@@ -171,29 +171,29 @@ class OrderProcessingStack(Stack):
         )
 ```
 
-Compare this directly to §79's ~70-line YAML template: the CDK version achieves the identical end result — queue, DLQ, redrive policy, IAM role with correctly scoped SQS permissions, Lambda function, and event source mapping — in meaningfully less code, with `grant_consume_messages` specifically eliminating the need to hand-write the IAM policy JSON that granted `sqs:ReceiveMessage`/`sqs:DeleteMessage`/`sqs:GetQueueAttributes` in the original template. This is the concrete value proposition of L2 constructs: encoding the "correct, secure way to wire these two resources together" as a single, well-tested method call rather than requiring every template author to correctly hand-write that IAM policy from scratch every time.
+Compare this directly to [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s ~70-line YAML template: the CDK version achieves the identical end result — queue, DLQ, redrive policy, IAM role with correctly scoped SQS permissions, Lambda function, and event source mapping — in meaningfully less code, with `grant_consume_messages` specifically eliminating the need to hand-write the IAM policy JSON that granted `sqs:ReceiveMessage`/`sqs:DeleteMessage`/`sqs:GetQueueAttributes` in the original template. This is the concrete value proposition of L2 constructs: encoding the "correct, secure way to wire these two resources together" as a single, well-tested method call rather than requiring every template author to correctly hand-write that IAM policy from scratch every time.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** and teams with strong existing software engineering practices often prefer CDK specifically because it lets infrastructure code use the same testing, code-review, and CI tooling already established for application code, rather than maintaining a separate YAML-specific toolchain.
 - **Enterprises** build internal CDK **construct libraries** — custom L2/L3 constructs encoding organization-specific standards (a "compliant S3 bucket" construct that always enables encryption and blocks public access by default, for example) — published internally and reused across many teams, directly extending the same "sensible defaults baked into reusable constructs" principle AWS itself applies to its own L2/L3 constructs.
 - CDK's real-programming-language nature enables genuine **unit testing of infrastructure code** (asserting that a synthesized template contains expected resources/properties) — a testing discipline that's awkward to apply to raw YAML but natural in CDK, given standard language testing frameworks apply directly.
-- Because CDK synthesizes to standard CloudFormation, organizations can **adopt CDK incrementally** alongside existing hand-written CloudFormation templates, or even alongside Terraform-managed infrastructure (§82) for different parts of their estate, without an all-or-nothing migration.
+- Because CDK synthesizes to standard CloudFormation, organizations can **adopt CDK incrementally** alongside existing hand-written CloudFormation templates, or even alongside Terraform-managed infrastructure ([§82](./Section-82-Part9-Terraform-on-AWS.md)) for different parts of their estate, without an all-or-nothing migration.
 
 ## 11. Security Considerations
 
-- L2/L3 construct defaults are generally security-conscious (many AWS-provided constructs default to encryption enabled, least-privilege IAM via the `grant*` methods, etc.) but should still be reviewed, not assumed correct for every specific compliance requirement — cross-reference the §7 warning above.
+- L2/L3 construct defaults are generally security-conscious (many AWS-provided constructs default to encryption enabled, least-privilege IAM via the `grant*` methods, etc.) but should still be reviewed, not assumed correct for every specific compliance requirement — cross-reference the [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md) warning above.
 - Custom internal construct libraries are a genuine security lever for enterprises — encoding secure-by-default patterns once, centrally, and having every team's infrastructure inherit that security posture automatically, rather than relying on every individual template author to correctly implement security best practices independently each time.
 - `cdk deploy --require-approval broadening` (or equivalent CI pipeline gating) provides a CDK-native safety check specifically for IAM-permission-widening changes, worth enabling deliberately in production deployment pipelines.
 
 ## 12. Performance Considerations
 
-- `cdk synth` execution time scales with the complexity of your CDK application code (more constructs, more complex logic) but is generally fast; the actual deployment time bottleneck remains CloudFormation's own resource-provisioning process, identical to §79-80, since CDK doesn't change how CloudFormation itself provisions resources.
+- `cdk synth` execution time scales with the complexity of your CDK application code (more constructs, more complex logic) but is generally fast; the actual deployment time bottleneck remains CloudFormation's own resource-provisioning process, identical to [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md), since CDK doesn't change how CloudFormation itself provisions resources.
 - Asset bundling (packaging Lambda code, Docker images) adds some deployment-pipeline time proportional to asset size — a real, if usually modest, consideration for CDK apps with many or large Lambda functions.
 
 ## 13. Monitoring
 
-- CDK-deployed stacks are ordinary CloudFormation stacks — every monitoring approach from §79-80 (stack events, drift detection, StackSets even) applies identically, since CDK doesn't create a parallel monitoring surface of its own.
+- CDK-deployed stacks are ordinary CloudFormation stacks — every monitoring approach from [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md) (stack events, drift detection, StackSets even) applies identically, since CDK doesn't create a parallel monitoring surface of its own.
 - `cdk diff` run in CI before deployment provides an early, code-based signal of what's about to change, complementary to (not a replacement for) reviewing the actual CloudFormation change set during deployment.
 
 ## 14. Troubleshooting
@@ -217,8 +217,8 @@ Compare this directly to §79's ~70-line YAML template: the CDK version achieves
 
 - ❌ Assuming L2/L3 construct defaults are automatically correct for your specific security/compliance requirements without ever reviewing the synthesized template.
 - ❌ Writing CDK code with the same copy-paste repetition hand-written YAML tends to suffer from, missing the actual point of using a real programming language (functions, loops, reusable classes) to eliminate that repetition.
-- ❌ Treating `cdk deploy`'s underlying mechanics as somehow different from or safer than raw CloudFormation deployment — it's the identical CloudFormation engine underneath, with the identical rollback/failure characteristics from §79.
-- **Common misconception:** "CDK replaces CloudFormation." False — CDK generates and deploys standard CloudFormation templates; it's an authoring-layer alternative to hand-written YAML/JSON, not a different deployment engine. Understanding §79-80's CloudFormation mechanics remains directly relevant and necessary even when using CDK exclusively.
+- ❌ Treating `cdk deploy`'s underlying mechanics as somehow different from or safer than raw CloudFormation deployment — it's the identical CloudFormation engine underneath, with the identical rollback/failure characteristics from [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md).
+- **Common misconception:** "CDK replaces CloudFormation." False — CDK generates and deploys standard CloudFormation templates; it's an authoring-layer alternative to hand-written YAML/JSON, not a different deployment engine. Understanding [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)'s CloudFormation mechanics remains directly relevant and necessary even when using CDK exclusively.
 
 ## 17. Interview Questions with Model Answers
 
@@ -236,12 +236,12 @@ Compare this directly to §79's ~70-line YAML template: the CDK version achieves
 
 ## 18. Common Misconceptions
 
-- "CDK is a different, competing deployment technology from CloudFormation." False — CDK generates standard CloudFormation templates and deploys them via CloudFormation itself; understanding CloudFormation's own mechanics (§79-80) remains fully relevant when using CDK.
+- "CDK is a different, competing deployment technology from CloudFormation." False — CDK generates standard CloudFormation templates and deploys them via CloudFormation itself; understanding CloudFormation's own mechanics ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)) remains fully relevant when using CDK.
 - "Using CDK automatically means your infrastructure is more secure." False — CDK's L2/L3 constructs often have security-conscious defaults, but this isn't automatic or guaranteed for every construct and every property; reviewing synthesized output remains a genuine practice, not an obsolete one.
 
 ## 19. Key Takeaways
 
-🔑 CDK lets you author infrastructure in a real programming language, which CDK synthesizes into standard CloudFormation templates deployed via the exact same mechanics covered in §79-80.
+🔑 CDK lets you author infrastructure in a real programming language, which CDK synthesizes into standard CloudFormation templates deployed via the exact same mechanics covered in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md).
 🔑 Constructs exist at three levels — L1 (raw, thin mapping), L2 (curated abstraction with sensible defaults and convenience methods), L3 (full multi-resource patterns) — with L2's `grant*`-style methods being a particularly high-value convenience for correctly wiring IAM permissions.
 🔑 CDK's real-language nature enables genuine unit testing of infrastructure code and internal construct-library development for organization-specific standards, both awkward to achieve with raw YAML.
 🔑 Construct defaults should still be reviewed for security-sensitive resources — "sensible default" is not automatically "correct for your specific requirement."
@@ -249,6 +249,6 @@ Compare this directly to §79's ~70-line YAML template: the CDK version achieves
 
 ## 20. Related Concepts
 
-- **CloudFormation Fundamentals & Advanced** (the underlying deployment engine CDK generates templates for) → §79-80.
-- **Terraform** (a different, non-CloudFormation-based IaC tool, contrasted directly next) → next section, §82.
-- **CI/CD for Infrastructure** (where `cdk deploy`/`cdk diff` fit into an automated pipeline) → §83.
+- **CloudFormation Fundamentals & Advanced** (the underlying deployment engine CDK generates templates for) → [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md).
+- **Terraform** (a different, non-CloudFormation-based IaC tool, contrasted directly next) → next section, [§82](./Section-82-Part9-Terraform-on-AWS.md).
+- **CI/CD for Infrastructure** (where `cdk deploy`/`cdk diff` fit into an automated pipeline) → [§83](./Section-83-Part9-CodePipeline-CodeBuild.md).

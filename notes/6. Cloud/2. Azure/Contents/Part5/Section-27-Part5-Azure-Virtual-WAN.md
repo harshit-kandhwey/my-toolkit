@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** Azure Virtual WAN is Azure's "networking-as-a-managed-service" answer to the problem of connecting lots of branch offices, VPN/ExpressRoute circuits, and VNets together without you having to hand-build and operate the hub-and-spoke topology yourself. Instead of deploying your own hub VNet with its own VPN Gateway and ExpressRoute Gateway (Section 26) and manually peering every spoke to it, you provision a Virtual WAN and let Azure manage the hub, the routing between everything attached to it, and the global backbone connecting hubs across regions.
+**Plain language:** Azure Virtual WAN is Azure's "networking-as-a-managed-service" answer to the problem of connecting lots of branch offices, VPN/ExpressRoute circuits, and VNets together without you having to hand-build and operate the hub-and-spoke topology yourself. Instead of deploying your own hub VNet with its own VPN Gateway and ExpressRoute Gateway ([Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md)) and manually peering every spoke to it, you provision a Virtual WAN and let Azure manage the hub, the routing between everything attached to it, and the global backbone connecting hubs across regions.
 
 **Precise definition:** Azure Virtual WAN is a networking service that provides an automated, large-scale, Microsoft-managed hub for aggregating connectivity between branch/on-premises sites (via Site-to-Site VPN or ExpressRoute), individual remote users (via Point-to-Site VPN), and Azure VNets, transitively routing traffic between all connected endpoints across Microsoft's global backbone without the customer having to manually build and maintain hub-and-spoke VNet peering or route-table configuration for that transitive connectivity themselves.
 
 ## 2. Why It Exists / Problem It Solves
 
-The hub-and-spoke pattern built manually in Sections 21–26 — a hub VNet holding the VPN Gateway and/or ExpressRoute Gateway, with spoke VNets peered to it — works well for a single region with a modest number of spokes and a handful of on-premises connections. It starts to strain at genuine enterprise scale: dozens of branch offices each needing their own VPN tunnel, multiple regions each needing their own hub, and spokes in one region needing to reach on-premises sites or ExpressRoute circuits terminated in a _different_ region's hub — none of which VNet peering alone provides transitively (Section 23.4.2's peering non-transitivity limitation applies just as much between hubs as between spokes). Solving this by hand means the customer manually stands up a hub VNet per region, configures inter-hub connectivity themselves (historically via VNet-to-VNet VPN connections, itself another operational burden), and hand-maintains route tables so that, say, a branch office connected to the East US hub can still reach a VNet peered to the West Europe hub. Virtual WAN exists to take this entire operational burden — the hub infrastructure, the inter-hub backbone connectivity, and the transitive routing logic between every attached branch, VNet, and circuit — and manage it as a single, declarative construct, letting the customer describe _what_ should connect to _what_ rather than wiring up the underlying VNets, gateways, and routes themselves.
+The hub-and-spoke pattern built manually in Sections 21–26 — a hub VNet holding the VPN Gateway and/or ExpressRoute Gateway, with spoke VNets peered to it — works well for a single region with a modest number of spokes and a handful of on-premises connections. It starts to strain at genuine enterprise scale: dozens of branch offices each needing their own VPN tunnel, multiple regions each needing their own hub, and spokes in one region needing to reach on-premises sites or ExpressRoute circuits terminated in a _different_ region's hub — none of which VNet peering alone provides transitively ([Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).4.2's peering non-transitivity limitation applies just as much between hubs as between spokes). Solving this by hand means the customer manually stands up a hub VNet per region, configures inter-hub connectivity themselves (historically via VNet-to-VNet VPN connections, itself another operational burden), and hand-maintains route tables so that, say, a branch office connected to the East US hub can still reach a VNet peered to the West Europe hub. Virtual WAN exists to take this entire operational burden — the hub infrastructure, the inter-hub backbone connectivity, and the transitive routing logic between every attached branch, VNet, and circuit — and manage it as a single, declarative construct, letting the customer describe _what_ should connect to _what_ rather than wiring up the underlying VNets, gateways, and routes themselves.
 
 ## 3. Core Components
 
@@ -18,17 +18,17 @@ The hub-and-spoke pattern built manually in Sections 21–26 — a hub VNet hold
 
 ### 3.2 Virtual Hubs
 
-**Definition:** A **virtual hub** is a Microsoft-managed VNet (customers don't see or manage it as an ordinary VNet) deployed into a specific region, functioning as the regional hub that branch connections, VPN/ExpressRoute gateways, and spoke VNet connections all attach to — conceptually replacing the manually-built hub VNet from Section 26's architecture, but with the gateway provisioning, inter-hub routing, and route propagation handled automatically by the platform rather than configured by the customer.
+**Definition:** A **virtual hub** is a Microsoft-managed VNet (customers don't see or manage it as an ordinary VNet) deployed into a specific region, functioning as the regional hub that branch connections, VPN/ExpressRoute gateways, and spoke VNet connections all attach to — conceptually replacing the manually-built hub VNet from [Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md)'s architecture, but with the gateway provisioning, inter-hub routing, and route propagation handled automatically by the platform rather than configured by the customer.
 
 **Hub-to-hub connectivity:** When a Virtual WAN has multiple virtual hubs (one per region with a presence), Azure automatically establishes connectivity between hubs over Microsoft's private global backbone — this is the specific capability that replaces the manual VNet-to-VNet VPN connections an organization would otherwise need to build themselves to link regional hubs together.
 
 ### 3.3 Hub Gateways
 
-Each virtual hub can have its own **VPN Gateway** (for Site-to-Site and Point-to-Site connections), **ExpressRoute Gateway**, and (in the higher-tier "Secured Virtual Hub" configuration) an integrated **Azure Firewall** or third-party network virtual appliance — all provisioned and scaled by Azure as part of the hub itself, rather than the customer manually deploying and sizing these gateway resources into a self-managed hub VNet as shown in Section 26.6's diagram.
+Each virtual hub can have its own **VPN Gateway** (for Site-to-Site and Point-to-Site connections), **ExpressRoute Gateway**, and (in the higher-tier "Secured Virtual Hub" configuration) an integrated **Azure Firewall** or third-party network virtual appliance — all provisioned and scaled by Azure as part of the hub itself, rather than the customer manually deploying and sizing these gateway resources into a self-managed hub VNet as shown in [Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md).6's diagram.
 
 ### 3.4 VNet Connections
 
-Spoke VNets attach to a virtual hub via a **VNet connection** — conceptually similar to VNet peering (Section 23), but pointing at the managed virtual hub rather than a customer-managed hub VNet, with the hub automatically propagating routes so the spoke can reach other spokes, branches, and ExpressRoute/VPN-connected sites attached to the same (or, via inter-hub connectivity, a different) hub.
+Spoke VNets attach to a virtual hub via a **VNet connection** — conceptually similar to VNet peering ([Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md)), but pointing at the managed virtual hub rather than a customer-managed hub VNet, with the hub automatically propagating routes so the spoke can reach other spokes, branches, and ExpressRoute/VPN-connected sites attached to the same (or, via inter-hub connectivity, a different) hub.
 
 ### 3.5 Secured Virtual Hub
 
@@ -47,7 +47,7 @@ Spoke VNets attach to a virtual hub via a **VNet connection** — conceptually s
 | Centralized firewall/inspection | Customer builds a separate firewall VNet/subnet and routes traffic through it manually           | Built-in via Secured Virtual Hub                                                                               |
 | Best fit                        | Single region, modest number of spokes, teams wanting full manual control over hub configuration | Many branch sites/regions, large numbers of VPN/ExpressRoute connections, minimal operational overhead desired |
 
-🎯 **Interview Tip:** A frequently tested distinction: Virtual WAN's virtual hub is **not** a VNet the customer can directly inspect or peer with using ordinary VNet peering — spokes attach to it via a specific **VNet connection** resource, and the hub itself is a managed construct. Candidates who describe Virtual WAN as "just VNet peering with extra steps" are missing this managed-hub distinction, which is precisely what eliminates the manual inter-hub routing burden described in Section 27.2.
+🎯 **Interview Tip:** A frequently tested distinction: Virtual WAN's virtual hub is **not** a VNet the customer can directly inspect or peer with using ordinary VNet peering — spokes attach to it via a specific **VNet connection** resource, and the hub itself is a managed construct. Candidates who describe Virtual WAN as "just VNet peering with extra steps" are missing this managed-hub distinction, which is precisely what eliminates the manual inter-hub routing burden described in [Section 27](./Section-27-Part5-Azure-Virtual-WAN.md).2.
 
 ## 5. Architecture Diagram
 
@@ -101,7 +101,7 @@ az network vhub connection create \
 
 ## 7. Production & Enterprise Usage
 
-Organizations with numerous branch offices (retail chains, multi-site manufacturing, large distributed enterprises), multiple Azure regions in active use, or dozens-to-hundreds of individual VPN/ExpressRoute connections adopt Virtual WAN specifically to avoid the linearly-growing operational burden of manually provisioning and maintaining that many gateway resources and route tables across regions. Organizations with a single region, a small number of spokes, and no significant branch-office VPN fleet often continue using the manually-built hub-and-spoke pattern from Section 26, since Virtual WAN's automation overhead isn't justified until the connectivity fleet reaches a scale where manual route/gateway management becomes genuinely burdensome. A common enterprise pattern layers Virtual WAN's Secured Virtual Hub on top of the landing zone architecture (Section 66) to centralize both connectivity and security inspection for every subscription in a multi-subscription estate (Section 67).
+Organizations with numerous branch offices (retail chains, multi-site manufacturing, large distributed enterprises), multiple Azure regions in active use, or dozens-to-hundreds of individual VPN/ExpressRoute connections adopt Virtual WAN specifically to avoid the linearly-growing operational burden of manually provisioning and maintaining that many gateway resources and route tables across regions. Organizations with a single region, a small number of spokes, and no significant branch-office VPN fleet often continue using the manually-built hub-and-spoke pattern from [Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md), since Virtual WAN's automation overhead isn't justified until the connectivity fleet reaches a scale where manual route/gateway management becomes genuinely burdensome. A common enterprise pattern layers Virtual WAN's Secured Virtual Hub on top of the landing zone architecture ([Section 66](../Part13/Section-66-Part13-Landing-Zones-CAF.md)) to centralize both connectivity and security inspection for every subscription in a multi-subscription estate ([Section 67](../Part13/Section-67-Part13-Multi-Subscription-Multi-Tenant-Architecture.md)).
 
 ## 8. Security Considerations
 
@@ -110,7 +110,7 @@ Organizations with numerous branch offices (retail chains, multi-site manufactur
 
 ## 9. Performance Considerations
 
-Inter-hub traffic travels over Microsoft's private global backbone rather than the public internet, generally providing more consistent latency and throughput for cross-region traffic than an equivalent manually-built VNet-to-VNet VPN connection over the internet would. Each virtual hub's gateway throughput is still governed by the same underlying VPN Gateway/ExpressRoute Gateway scaling limits referenced in Section 26.3.3 and 26.4.3 — Virtual WAN automates _provisioning_ of these gateways but doesn't remove their fundamental throughput ceilings, so capacity planning for high-bandwidth branch sites still matters.
+Inter-hub traffic travels over Microsoft's private global backbone rather than the public internet, generally providing more consistent latency and throughput for cross-region traffic than an equivalent manually-built VNet-to-VNet VPN connection over the internet would. Each virtual hub's gateway throughput is still governed by the same underlying VPN Gateway/ExpressRoute Gateway scaling limits referenced in [Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md).3.3 and 26.4.3 — Virtual WAN automates _provisioning_ of these gateways but doesn't remove their fundamental throughput ceilings, so capacity planning for high-bandwidth branch sites still matters.
 
 ## 10. Monitoring
 
@@ -124,11 +124,11 @@ Virtual WAN integrates with Azure Monitor (Part 10) and provides hub-level insig
 | Two spokes in different regions can't reach each other via their hubs | Hub-to-hub connectivity not established (e.g. only one hub exists, or hubs are on the Basic SKU which doesn't support this) | Confirm Standard SKU is used and that multiple hubs are correctly provisioned within the same Virtual WAN                 |
 | VNet connection creation fails with an address space conflict         | Spoke VNet's address range overlaps the hub's address prefix or another connected spoke's range                             | Re-address the conflicting VNet or choose a non-overlapping hub address prefix                                            |
 
-## 12. Interview Questions — Section 27
+## 12. Interview Questions — [Section 27](./Section-27-Part5-Azure-Virtual-WAN.md)
 
 ### 🎯 Intermediate
 
-**Q: What problem does Azure Virtual WAN solve that a manually-built hub-and-spoke topology (Section 26) doesn't solve as easily?**
+**Q: What problem does Azure Virtual WAN solve that a manually-built hub-and-spoke topology ([Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md)) doesn't solve as easily?**
 
 _Model answer:_ A manually-built hub-and-spoke topology works well for a single region with a modest number of spokes, but scaling it to many branch offices and multiple regions requires the customer to manually provision and size gateway resources per hub, and manually build inter-hub connectivity (historically via VNet-to-VNet VPN) along with the route-table configuration for transitive reachability between regions. Virtual WAN automates all of this: it provisions a managed virtual hub per region, automatically establishes hub-to-hub connectivity over Microsoft's global backbone, and automatically propagates routes so that branches, spokes, and circuits attached anywhere in the WAN can reach each other without the customer hand-building that routing logic.
 
@@ -145,7 +145,7 @@ _What the interviewer is probing:_ whether the candidate can correctly identify 
 ## 13. Common Misconceptions
 
 - **"A Virtual WAN's virtual hub is just a regular VNet you can peer with."** False — the virtual hub is a Microsoft-managed construct; spokes attach to it via a specific VNet connection resource, not ordinary VNet peering, and customers don't directly manage the hub's internal configuration the way they would a self-built hub VNet.
-- **"Virtual WAN replaces the need to think about VPN Gateway or ExpressRoute Gateway SKUs/throughput."** Not true — Virtual WAN automates _provisioning_ of these gateways within each hub, but the underlying throughput and scaling characteristics from Section 26.3.3/26.4.3 still apply and still require capacity planning for high-bandwidth sites.
+- **"Virtual WAN replaces the need to think about VPN Gateway or ExpressRoute Gateway SKUs/throughput."** Not true — Virtual WAN automates _provisioning_ of these gateways within each hub, but the underlying throughput and scaling characteristics from [Section 26](./Section-26-Part5-VPN-Gateway-and-ExpressRoute.md).3.3/26.4.3 still apply and still require capacity planning for high-bandwidth sites.
 
 ## 14. Key Takeaways
 
@@ -157,4 +157,4 @@ _What the interviewer is probing:_ whether the candidate can correctly identify 
 
 ## 15. Related Concepts (Next Up)
 
-Section 28 completes Part 5 — Networking next with **Azure DNS**, covering public DNS zone hosting and the Private DNS Zones essential to correctly resolving Private Link endpoints — relevant across every topology in this Part, whether a manually-built hub-and-spoke or a Virtual WAN-managed one.
+[Section 28](./Section-28-Part5-Azure-DNS.md) completes Part 5 — Networking next with **Azure DNS**, covering public DNS zone hosting and the Private DNS Zones essential to correctly resolving Private Link endpoints — relevant across every topology in this Part, whether a manually-built hub-and-spoke or a Virtual WAN-managed one.

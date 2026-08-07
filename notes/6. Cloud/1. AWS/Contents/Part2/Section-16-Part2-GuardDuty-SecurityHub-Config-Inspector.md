@@ -43,7 +43,7 @@ Managed threat detection service continuously analyzing account activity, networ
 
 ### 3.4 Production/Enterprise Usage
 
-- **Organization-wide via delegated administrator** — enable once, covers every member account automatically (Section 5 §8 pattern).
+- **Organization-wide via delegated administrator** — enable once, covers every member account automatically (Section 5 [§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md) pattern).
 - **Protection plans:** S3, EKS, RDS, Lambda, Malware Protection — expanded beyond original EC2/network focus.
 
 ---
@@ -78,7 +78,7 @@ Without it, findings scatter across many consoles/formats — hard to get a sing
 
 ### 5.1 Definition
 
-Continuously records the configuration state of resources, evaluates against rules, flags noncompliant resources — operationalizes "configuration drift" (§5).
+Continuously records the configuration state of resources, evaluates against rules, flags noncompliant resources — operationalizes "configuration drift" ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)).
 
 ### 5.2 Core Capabilities
 
@@ -148,7 +148,7 @@ GuardDuty   Inspector   Config   Access Analyzer   3rd-party
 ## 9. Production & Enterprise Usage
 
 - **Delegated administration is standard** for all four services — a dedicated Security account manages/views findings org-wide.
-- **Compliance evidence generation:** Security Hub's standards checks + Config's historical record together generate actual auditor evidence (operationalizing §3's "compliance inheritance has limits").
+- **Compliance evidence generation:** Security Hub's standards checks + Config's historical record together generate actual auditor evidence (operationalizing [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)'s "compliance inheritance has limits").
 - **SOAR-style automation:** EventBridge-triggered playbooks — auto-quarantine compromised instances, revoke compromised sessions, open tickets — reducing MTTR from hours to seconds for well-understood findings.
 
 ---
@@ -217,4 +217,4 @@ GuardDuty   Inspector   Config   Access Analyzer   3rd-party
 
 - CloudTrail and VPC Flow Logs as underlying GuardDuty data sources → Part 8
 - EventBridge-driven automated remediation in full depth → Part 7
-- Network-layer edge security (WAF, Shield) → §17 (next)
+- Network-layer edge security (WAF, Shield) → [§17](./Section-17-Part2-WAF-Shield-Network-Firewall.md) (next)

@@ -14,8 +14,8 @@
 
 ## 2. Why It Exists
 
-- The literal mechanism delivering elasticity (§1) for EC2 — without ASGs, "elastic" compute requires a human watching dashboards.
-- Solves two problems: **availability** (replacing failed instances automatically) and **cost-efficient scaling** (matching real demand instead of provisioning for a guessed peak — §6).
+- The literal mechanism delivering elasticity ([§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)) for EC2 — without ASGs, "elastic" compute requires a human watching dashboards.
+- Solves two problems: **availability** (replacing failed instances automatically) and **cost-efficient scaling** (matching real demand instead of provisioning for a guessed peak — [§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)).
 - **Self-healing:** continuously monitors actual vs desired instance count, auto-launches replacements for failed/terminated instances.
 
 ---
@@ -32,7 +32,7 @@
 
 ## 4. How ASGs Determine Placement
 
-- Configured with one or more subnets (typically one per AZ) — automatically **distributes instances across specified AZs**, implementing "spread across ≥2 AZs" (§2) automatically.
+- Configured with one or more subnets (typically one per AZ) — automatically **distributes instances across specified AZs**, implementing "spread across ≥2 AZs" ([§2](../Part1/Section-02-Part1-AWS-Global-Infrastructure.md)) automatically.
 - Balancing logic keeps instance count roughly even across AZs, factoring AZ balance into scale-in decisions too.
 
 ---
@@ -113,7 +113,7 @@ Custom termination policies can override this (e.g., prioritize Spot termination
 ## 11. Security Considerations
 
 - Every launched instance inherits the Launch Template's IAM profile, security groups, IMDSv2 settings — a Launch Template misconfiguration is automatically replicated across every future instance, a high-leverage control point.
-- Lifecycle-hook log extraction before termination should ship to a durable, access-controlled destination (S3, encrypted, §14/Part 5) rather than losing logs on destruction.
+- Lifecycle-hook log extraction before termination should ship to a durable, access-controlled destination (S3, encrypted, [§14](../Part2/Section-14-Part2-KMS-and-Encryption.md)/Part 5) rather than losing logs on destruction.
 
 ---
 
@@ -178,6 +178,6 @@ Custom termination policies can override this (e.g., prioritize Spot termination
 
 ## 🌐 Related Concepts (forward links)
 
-- Elastic Load Balancing — health checks, connection draining, traffic distribution → §24
+- Elastic Load Balancing — health checks, connection draining, traffic distribution → [§24](./Section-24-Part3-Elastic-Load-Balancing.md)
 - CloudWatch metrics/alarms underlying dynamic scaling → Part 8
-- ECS/EKS scaling built on ASG concepts → §26
+- ECS/EKS scaling built on ASG concepts → [§26](./Section-26-Part3-Containers-ECS-EKS-Fargate.md)

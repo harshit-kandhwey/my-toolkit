@@ -8,10 +8,10 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **Human usability over raw hashes.** Nobody wants to type `git checkout a3f8e21bc9d4f5e6...` daily. `main`, `develop`, `v2.3.1` are memorable, meaningful names layered over the anonymous hash-addressed object graph from §5.
+1. **Human usability over raw hashes.** Nobody wants to type `git checkout a3f8e21bc9d4f5e6...` daily. `main`, `develop`, `v2.3.1` are memorable, meaningful names layered over the anonymous hash-addressed object graph from [§5](./Section-05-Part2-Object-Model.md).
 2. **Movable pointers enable "current state" tracking.** A branch ref is _designed_ to move forward automatically as you commit — this is precisely what lets "main" always mean "the latest commit on the main line" without you manually updating anything.
-3. **Fixed pointers enable permanent markers.** Tags are designed to _not_ move, giving you a stable, permanent name for one exact point in history — essential for releases (§18).
-4. **A safety net independent of the shared graph.** The reflog (covered in depth later in this section) records ref movements locally, so mistakes that seem to "lose" commits are almost always recoverable — a deliberate design response to the fact that history rewriting (§14, §15) is a first-class, encouraged operation in Git, and needs a safety net to be usable without fear.
+3. **Fixed pointers enable permanent markers.** Tags are designed to _not_ move, giving you a stable, permanent name for one exact point in history — essential for releases ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)).
+4. **A safety net independent of the shared graph.** The reflog (covered in depth later in this section) records ref movements locally, so mistakes that seem to "lose" commits are almost always recoverable — a deliberate design response to the fact that history rewriting ([§14](../Part4/Section-14-Part4-Rebasing.md), [§15](../Part4/Section-15-Part4-Undoing-Things.md)) is a first-class, encouraged operation in Git, and needs a safety net to be usable without fear.
 
 ## 3. Branch Refs — Full Mechanics
 
@@ -40,7 +40,7 @@ This is why committing "moves the branch forward" — literally, one text file's
 $ git branch feature-x
 ```
 
-Git simply writes a new file, `.git/refs/heads/feature-x`, containing the _same_ hash as whatever HEAD currently resolves to. No files are copied, no history is duplicated — this is the entire mechanism behind §2's claim that Git branching is "trivial and instant regardless of repository size."
+Git simply writes a new file, `.git/refs/heads/feature-x`, containing the _same_ hash as whatever HEAD currently resolves to. No files are copied, no history is duplicated — this is the entire mechanism behind [§2](../Part1/Section-02-Part1-Birth-of-Git.md)'s claim that Git branching is "trivial and instant regardless of repository size."
 
 ```
 Before:                          After `git branch feature-x`:
@@ -100,14 +100,14 @@ Detached HEAD committing:
 
 ### 4.3 When you deliberately want detached HEAD
 
-Legitimate uses: inspecting an old release's exact state without disturbing any branch, running a one-off build from a specific historical commit, or bisecting (§19) — where Git deliberately detaches HEAD at each candidate commit during the search.
+Legitimate uses: inspecting an old release's exact state without disturbing any branch, running a one-off build from a specific historical commit, or bisecting ([§19](../Part4/Section-19-Part4-Interrogating-History.md)) — where Git deliberately detaches HEAD at each candidate commit during the search.
 
 ## 5. Tag Refs
 
-Covered structurally in §5's object-model coverage of the tag object; here we cover them purely as **refs**.
+Covered structurally in [§5](./Section-05-Part2-Object-Model.md)'s object-model coverage of the tag object; here we cover them purely as **refs**.
 
 - **Physical form:** `.git/refs/tags/<tag-name>`, containing either a commit hash directly (lightweight tag) or the hash of a tag _object_ (annotated tag), which in turn points to a commit.
-- **Key behavioral difference from branches:** nothing in Git prevents you from moving a tag (`git tag -f`), but doing so on a tag anyone else may have already fetched is a serious foot-gun — anyone who built or deployed something referencing that tag now silently gets different content if they re-fetch, breaking the entire "tags are permanent" assumption the ecosystem relies on. Full discipline in §18.
+- **Key behavioral difference from branches:** nothing in Git prevents you from moving a tag (`git tag -f`), but doing so on a tag anyone else may have already fetched is a serious foot-gun — anyone who built or deployed something referencing that tag now silently gets different content if they re-fetch, breaking the entire "tags are permanent" assumption the ecosystem relies on. Full discipline in [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md).
 
 ## 6. The Reflog
 
@@ -160,9 +160,9 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
         └── feature-x
 ```
 
-> 💡 **Tip:** `refs/remotes/origin/main` (a **remote-tracking branch**) looks like a branch but is read-only bookkeeping — it records where `origin`'s `main` was as of your last fetch. You never commit directly onto it; Git updates it automatically during fetch/pull. Full treatment in §20.
+> 💡 **Tip:** `refs/remotes/origin/main` (a **remote-tracking branch**) looks like a branch but is read-only bookkeeping — it records where `origin`'s `main` was as of your last fetch. You never commit directly onto it; Git updates it automatically during fetch/pull. Full treatment in [§20](../Part5/Section-20-Part5-Remotes-In-Depth.md).
 
-## 8. Commands (Full Documentation per §9 Template)
+## 8. Commands (Full Documentation per [§9](../Part3/Section-09-Part3-Creating-Cloning-Repositories.md) Template)
 
 ### `git branch`
 
@@ -187,14 +187,14 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
     feature-login  a3f8e21 Fix pagination bug
   ```
   Expected output: both branches point at the identical commit immediately after creation, exactly as the branch-creation mechanics described above predict.
-- **Production usage:** naming conventions for branches (`feature/*`, `bugfix/*`, `release/*`) are a core part of branching-strategy discipline, covered fully in §22; `git branch -d` is the routine cleanup step after a feature branch is merged via pull request.
+- **Production usage:** naming conventions for branches (`feature/*`, `bugfix/*`, `release/*`) are a core part of branching-strategy discipline, covered fully in [§22](../Part5/Section-22-Part5-Branching-Strategies.md); `git branch -d` is the routine cleanup step after a feature branch is merged via pull request.
 - **Common errors:** `error: the branch 'feature-x' is not fully merged` when running `-d` on a branch with unmerged unique commits — this is Git protecting you; either merge it first or consciously use `-D` if you're certain you want to discard those commits.
 - **Security impact:** none directly; branch names sometimes leak information (e.g., a branch named `hotfix-customer-acme-breach`) — a minor information-disclosure consideration in public repositories.
 - **Performance impact:** negligible; branch creation/deletion is a tiny file write/delete.
 
 ### `git switch` (modern) / `git checkout` (legacy, dual-purpose)
 
-- **Purpose:** change which branch (or commit) HEAD points to, updating the working directory and index to match. `git switch` was introduced specifically to split this responsibility out of the historically overloaded `git checkout` command (which also handles restoring individual files — a separate, unrelated responsibility now covered by `git restore`, §15).
+- **Purpose:** change which branch (or commit) HEAD points to, updating the working directory and index to match. `git switch` was introduced specifically to split this responsibility out of the historically overloaded `git checkout` command (which also handles restoring individual files — a separate, unrelated responsibility now covered by `git restore`, [§15](../Part4/Section-15-Part4-Undoing-Things.md)).
 - **Syntax:** `git switch <branch-name>` / `git switch -c <new-branch-name>` / `git switch --detach <commit>`
 - **Key options:**
   - `-c <name>` — create a new branch at the current commit _and_ switch to it in one step (equivalent to `git branch <name>` + `git switch <name>`).
@@ -205,7 +205,7 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
   Switched to a new branch 'feature-payments'
   ```
 - **Production usage:** the modern, recommended day-to-day command for branch switching in scripts and muscle memory; `git checkout` remains extremely common in existing tutorials, CI scripts, and muscle memory from before `switch`/`restore` existed (Git 2.23+), so recognizing both is essential.
-- **Common errors:** `error: Your local changes to the following files would be overwritten by checkout` — you have uncommitted changes that conflict with the target branch's version of a file; resolve by committing, stashing (§16), or discarding first.
+- **Common errors:** `error: Your local changes to the following files would be overwritten by checkout` — you have uncommitted changes that conflict with the target branch's version of a file; resolve by committing, stashing ([§16](../Part4/Section-16-Part4-Stashing.md)), or discarding first.
 - **Security impact:** none directly.
 - **Performance impact:** proportional to how many files differ between your current and target state — Git only rewrites files that actually differ, not the entire working tree, which is why switching between branches with small diffs is fast even in large repos.
 
@@ -222,10 +222,10 @@ The reflog is precisely why Git's aggressive, encouraged history-rewriting opera
   $ git reset --hard HEAD@{1}
   HEAD is now at 7e4f9a2 Add feature flag check
   ```
-  This concretely recovers a commit that an accidental `git reset --hard HEAD~1` appeared to discard — full mechanics of `reset` in §15, full disaster-recovery treatment in §30.
+  This concretely recovers a commit that an accidental `git reset --hard HEAD~1` appeared to discard — full mechanics of `reset` in [§15](../Part4/Section-15-Part4-Undoing-Things.md), full disaster-recovery treatment in [§30](../Part7/Section-30-Part7-Disaster-Recovery.md).
 - **Production usage:** the first tool reached for after any local history mistake — accidental force-push undone locally, bad rebase, wrong branch deleted (as long as you know the approximate former commit hash or reflog position).
 - **Common errors:** confusing HEAD's reflog with a specific branch's reflog when the branch in question wasn't checked out at the time of the mistake — check `git reflog show <branch>` specifically if `git reflog` (HEAD's) doesn't show what you expect.
-- **Security impact:** the reflog can retain traces of commits you intended to fully purge (e.g., accidentally committed secrets) even after `reset`/`rebase` seem to remove them from visible history — a real security consideration covered fully in §28's secret-remediation material; simply rewriting visible history is _not_ sufficient to guarantee a secret is gone from the local repository until the reflog entries are also expired and gc'd.
+- **Security impact:** the reflog can retain traces of commits you intended to fully purge (e.g., accidentally committed secrets) even after `reset`/`rebase` seem to remove them from visible history — a real security consideration covered fully in [§28](../Part7/Section-28-Part7-Security.md)'s secret-remediation material; simply rewriting visible history is _not_ sufficient to guarantee a secret is gone from the local repository until the reflog entries are also expired and gc'd.
 - **Performance impact:** negligible to read; reflog files are small and append-only.
 
 ## 9. Hands-On Example — Detached HEAD, Recovery, and Branch Mechanics Together
@@ -277,33 +277,33 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 ## 10. Production & Enterprise Usage
 
 - **CI/CD systems deliberately use detached HEAD.** Most CI runners check out a specific commit (not a branch) for a build job — this is intentional: the job should build _exactly_ the commit that triggered it, immune to the branch moving forward mid-build. Understanding detached HEAD demystifies why CI logs often show "You are in 'detached HEAD' state" without it being an error.
-- **Branch protection rules** (§23) operate on branch refs specifically — a platform like GitHub enforces "no force-push, no deletion, required reviews" on the `refs/heads/main` ref, which is exactly the physical object described in the branch-refs section above.
-- **Reflog retention as an operational policy consideration:** some enterprises shorten or extend `gc.reflogExpire` settings depending on their balance between disk usage and desired local-recovery window — a minor but real operational tuning knob covered further in §29.
+- **Branch protection rules** ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) operate on branch refs specifically — a platform like GitHub enforces "no force-push, no deletion, required reviews" on the `refs/heads/main` ref, which is exactly the physical object described in the branch-refs section above.
+- **Reflog retention as an operational policy consideration:** some enterprises shorten or extend `gc.reflogExpire` settings depending on their balance between disk usage and desired local-recovery window — a minor but real operational tuning knob covered further in [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md).
 
 ## 11. Security Considerations
 
-- Tags and branches are **not** access-control boundaries by themselves — anyone with push access can create, move, or delete any ref unless the hosting platform's branch/tag protection rules (§23) explicitly restrict it.
-- As flagged in the `git reflog` command notes above, the reflog can retain sensitive content (e.g., a secret committed and then "removed" via amend/rebase) locally even after it disappears from visible branch history — full remediation workflow in §28.
+- Tags and branches are **not** access-control boundaries by themselves — anyone with push access can create, move, or delete any ref unless the hosting platform's branch/tag protection rules ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) explicitly restrict it.
+- As flagged in the `git reflog` command notes above, the reflog can retain sensitive content (e.g., a secret committed and then "removed" via amend/rebase) locally even after it disappears from visible branch history — full remediation workflow in [§28](../Part7/Section-28-Part7-Security.md).
 - Force-moving a tag that others have already fetched is a supply-chain integrity risk: if `v2.3.1` is retagged to point at different content, systems that pin to `v2.3.1` by name (rather than by exact hash) will silently receive different code on their next fetch — a real, documented category of software supply-chain attack.
 
 ## 12. Performance Considerations
 
-- With many thousands of refs (common in large monorepos or forks with many stale branches), reading refs one file at a time becomes measurably slower; Git consolidates old refs into a single `packed-refs` file (a plain, git-managed text file) for faster bulk reference resolution — this happens automatically during garbage collection (§7, §29).
-- Reflog files are small and rarely a performance concern, but repositories with extremely high commit/rebase churn over years can accumulate reflog data worth periodically pruning as part of maintenance (§29).
+- With many thousands of refs (common in large monorepos or forks with many stale branches), reading refs one file at a time becomes measurably slower; Git consolidates old refs into a single `packed-refs` file (a plain, git-managed text file) for faster bulk reference resolution — this happens automatically during garbage collection ([§7](./Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md), [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)).
+- Reflog files are small and rarely a performance concern, but repositories with extremely high commit/rebase churn over years can accumulate reflog data worth periodically pruning as part of maintenance ([§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)).
 
 ## 13. Troubleshooting
 
-| Symptom                                                                                              | Likely cause                                                                                                                             | Fix                                                                                                                                                                                         |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fatal: You are in 'detached HEAD' state` (as a surprise, not intentional)                           | Checked out a tag or specific commit rather than a branch                                                                                | If you want to keep any commits made here, run `git switch -c <name>` immediately before switching away                                                                                     |
-| A commit seems to have vanished after `reset --hard` or switching branches                           | The commit is likely just unreferenced by any branch, not deleted                                                                        | `git reflog`, find the hash, `git switch -c <name> <hash>` to recover it                                                                                                                    |
-| `error: pathspec 'X' did not match any file(s) known to git` when trying to `checkout` a branch name | Branch doesn't exist locally (may exist only as a remote-tracking branch)                                                                | `git switch X` in modern Git auto-creates a local tracking branch from a matching remote one; otherwise `git checkout -b X origin/X`                                                        |
-| Reflog entry expected but missing                                                                    | Reflog entries expired per `gc.reflogExpire`/`gc.reflogExpireUnreachable`, or `gc` already ran and pruned genuinely unreferenced objects | Check backup remotes/clones; unfortunately, once both the reflog entry and the object itself are gc'd, local recovery is no longer possible — see §30 for broader disaster recovery options |
+| Symptom                                                                                              | Likely cause                                                                                                                             | Fix                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fatal: You are in 'detached HEAD' state` (as a surprise, not intentional)                           | Checked out a tag or specific commit rather than a branch                                                                                | If you want to keep any commits made here, run `git switch -c <name>` immediately before switching away                                                                                                                                       |
+| A commit seems to have vanished after `reset --hard` or switching branches                           | The commit is likely just unreferenced by any branch, not deleted                                                                        | `git reflog`, find the hash, `git switch -c <name> <hash>` to recover it                                                                                                                                                                      |
+| `error: pathspec 'X' did not match any file(s) known to git` when trying to `checkout` a branch name | Branch doesn't exist locally (may exist only as a remote-tracking branch)                                                                | `git switch X` in modern Git auto-creates a local tracking branch from a matching remote one; otherwise `git checkout -b X origin/X`                                                                                                          |
+| Reflog entry expected but missing                                                                    | Reflog entries expired per `gc.reflogExpire`/`gc.reflogExpireUnreachable`, or `gc` already ran and pruned genuinely unreferenced objects | Check backup remotes/clones; unfortunately, once both the reflog entry and the object itself are gc'd, local recovery is no longer possible — see [§30](../Part7/Section-30-Part7-Disaster-Recovery.md) for broader disaster recovery options |
 
 ## 14. Best Practices
 
 - The instant you make a commit you want to keep while in detached HEAD, run `git switch -c <descriptive-name>` before doing anything else — don't rely on remembering to check the reflog later.
-- Always use annotated tags for releases (per §5's tag-object coverage and §18) and treat tags as immutable once published — never force-move a tag that may already have been fetched by anyone else.
+- Always use annotated tags for releases (per [§5](./Section-05-Part2-Object-Model.md)'s tag-object coverage and [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) and treat tags as immutable once published — never force-move a tag that may already have been fetched by anyone else.
 - Use `git branch -d` (safe delete) as your default; reserve `-D` (force delete) for cases where you've deliberately confirmed the branch's unique commits are disposable.
 
 ## 15. Anti-Patterns & Common Mistakes
@@ -326,7 +326,7 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 **Model answer:** Because a branch is nothing more than a small text file containing a single commit hash, stored under `.git/refs/heads/`. Creating a branch is just writing a new file with that hash as its content — it never copies any file content, never touches the object database's existing objects, and never depends on the size of the repository's history or working tree. This is a direct consequence of Git's ref design: branches are lightweight, movable pointers layered on top of the immutable object graph, not independent copies of anything, which is precisely why branching cost in Git is constant-time regardless of repository scale — in sharp contrast to version control systems where branching historically involved copying files or directories.
 
 **[Architect] Q5. A team member force-pushed over a shared release tag, `v3.1.0`, after discovering a last-minute bug, intending to "fix and retag." What are the risks, and what should the team's policy be?**
-**Model answer:** The core risk is that a tag, once pushed and fetched by anyone else — including CI systems, downstream consumers pinning dependencies, or auditors — is assumed to be a permanent, immutable marker for one exact piece of history. If it's moved, anyone who already has the old `v3.1.0` locally now has content that silently diverges from what the tag currently points to on the remote, and anyone who re-fetches gets different content under the same name with no obvious warning — this is a textbook supply-chain integrity problem, not just an inconvenience. The correct practice is to never reuse a released tag name: cut a new tag, such as `v3.1.1`, for the fix, and treat the original `v3.1.0` as a historical, if flawed, permanent record. Organizationally, this should be enforced with tag-protection rules on the hosting platform (§23) that prevent force-pushes or deletions on tags matching a release naming pattern, combined with clear team documentation that "tags are append-only, never edited," so this isn't left to individual discipline alone.
+**Model answer:** The core risk is that a tag, once pushed and fetched by anyone else — including CI systems, downstream consumers pinning dependencies, or auditors — is assumed to be a permanent, immutable marker for one exact piece of history. If it's moved, anyone who already has the old `v3.1.0` locally now has content that silently diverges from what the tag currently points to on the remote, and anyone who re-fetches gets different content under the same name with no obvious warning — this is a textbook supply-chain integrity problem, not just an inconvenience. The correct practice is to never reuse a released tag name: cut a new tag, such as `v3.1.1`, for the fix, and treat the original `v3.1.0` as a historical, if flawed, permanent record. Organizationally, this should be enforced with tag-protection rules on the hosting platform ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) that prevent force-pushes or deletions on tags matching a release naming pattern, combined with clear team documentation that "tags are append-only, never edited," so this isn't left to individual discipline alone.
 
 ## 17. Common Misconceptions
 
@@ -345,4 +345,4 @@ This walkthrough demonstrates, concretely: detached HEAD committing, the commit 
 
 ## 19. Related Concepts & What's Next
 
-Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** (§4's `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part 3's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.
+Refs point at objects, but so far we've only seen those objects stored one-per-file as **loose objects** ([§4](./Section-04-Part2-Git-Architecture-Three-Areas.md)'s `objects/ab/cdef...` layout). Section 7 goes underneath that simple picture to show how Git actually keeps large repositories fast and small on disk: packfiles, delta compression between similar objects, and the garbage collection process that consolidates loose objects into packs and prunes truly unreachable ones — the last piece needed before Part 3's hands-on daily workflow commands can be taught with full understanding of what's happening underneath them.

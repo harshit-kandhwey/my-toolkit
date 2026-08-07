@@ -2,7 +2,7 @@
 
 ## 1. `free -h`: Reading Used vs. Available Correctly
 
-§81 covered CPU-specific diagnostic tools as the first of the four resource-specific continuations §80 set up. This section moves to memory, and opens with the single most consequential misreading in all of Linux performance work: what "used" memory actually means.
+[§81](./Section-81-Part11-CPU-Load-Analysis.md) covered CPU-specific diagnostic tools as the first of the four resource-specific continuations [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md) set up. This section moves to memory, and opens with the single most consequential misreading in all of Linux performance work: what "used" memory actually means.
 
 **Purpose:** Show a summary of total, used, free, and available memory, plus swap, in one command.
 
@@ -34,7 +34,7 @@ The practical rule: **judge memory pressure by `available`, never by `free`.** A
 
 ## 2. `/proc/meminfo`: The Detail Behind `free`'s Summary
 
-`free`'s columns are a curated summary computed from a much more detailed source: `/proc/meminfo` (§24, Part 3, introduced `/proc` as a virtual filesystem for kernel introspection generally — this is one of its most frequently read files in practice).
+`free`'s columns are a curated summary computed from a much more detailed source: `/proc/meminfo` ([§24](../Part3/Section-24-Part3-Proc-Sys-Virtual-Filesystems.md), introduced `/proc` as a virtual filesystem for kernel introspection generally — this is one of its most frequently read files in practice).
 
 **Purpose:** Expose the full set of kernel memory-accounting figures `free` summarizes, useful when `free -h` alone doesn't answer a specific question.
 
@@ -70,7 +70,7 @@ SwapFree:        2097152 kB
 
 ## 3. The Page Cache: A Feature, Not Consumed Memory
 
-The `Cached` figure in §2 deserves its own explanation because it's the mechanism behind §1's warning, not just a number that happens to be large.
+The `Cached` figure in [§2](../Part1/Section-02-Part1-History-and-Evolution.md) deserves its own explanation because it's the mechanism behind [§1](../Part1/Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s warning, not just a number that happens to be large.
 
 The **page cache** is the kernel opportunistically using otherwise-idle RAM to hold copies of recently-read (and recently-written, pending flush) file data. The next time that same data is requested — the same file read again, the same database page accessed again — the kernel can serve it straight from RAM instead of going back to disk, which is dramatically faster. This happens automatically and transparently: applications don't request it, and most don't even know it's happening.
 
@@ -79,7 +79,7 @@ Two properties make this genuinely a feature rather than memory being wasted:
 - **It's free to use.** The kernel fills spare RAM with page cache precisely because idle RAM produces zero benefit sitting empty — using it to speed up subsequent disk reads costs nothing as long as nothing else needs that memory.
 - **It's reclaimed instantly under pressure.** The moment an application actually needs memory the page cache is occupying, the kernel evicts cached pages (discarding clean ones outright, since they're just a copy of data still safely on disk) and hands the freed memory to the requesting application, essentially immediately. This reclaim is what makes `MemAvailable` a meaningful number rather than a hopeful estimate — it's counting memory the kernel can genuinely get back on demand, not "memory that would need something risky to free."
 
-> 💡 **Tip:** A useful gut-check when someone reports "the server is almost out of memory" based on `free`'s `free` column: ask what `available` shows first, and separately whether swap usage is actually climbing (§77, Part 10, covers swap management directly) — climbing swap usage under sustained low `available` is a real pressure signal; a large `buff/cache` figure with high `available` is not a problem at all.
+> 💡 **Tip:** A useful gut-check when someone reports "the server is almost out of memory" based on `free`'s `free` column: ask what `available` shows first, and separately whether swap usage is actually climbing ([§77](../Part10/Section-77-Part10-Swap-Management.md), covers swap management directly) — climbing swap usage under sustained low `available` is a real pressure signal; a large `buff/cache` figure with high `available` is not a problem at all.
 
 ## 4. The OOM Killer: What Triggers It and How It Chooses a Victim
 
@@ -89,7 +89,7 @@ Page cache reclaim (3) handles the common case of memory pressure gracefully. Th
 
 **How it chooses a victim:** Rather than failing the allocation and crashing whatever asked for it, the kernel selects a process to kill outright, freeing its memory to relieve the pressure. The selection is driven by a per-process **`oom_score`**, computed heuristically from factors including how much memory the process is using (larger consumers score higher, all else equal), how long it's been running, and its `oom_score_adj` setting (5). The process with the highest score is the one killed — the heuristic aims for "the process most likely to be the actual cause of the pressure, and least likely to be critical," but it's a heuristic, not a guarantee it picks correctly.
 
-**Finding evidence the OOM killer fired:** The kernel logs an OOM kill event, and it's visible via `dmesg` or the journal (§68's journald coverage, Part 9, applies directly — kernel messages land in the journal too):
+**Finding evidence the OOM killer fired:** The kernel logs an OOM kill event, and it's visible via `dmesg` or the journal ([§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)'s journald coverage, Part 9, applies directly — kernel messages land in the journal too):
 
 ```bash
 dmesg | grep -i "out of memory"
@@ -121,7 +121,7 @@ echo -500 > /proc/<pid>/oom_score_adj
 | `0`             | Default, unadjusted                                                              |
 | Positive values | Make the process **more likely** to be chosen as the victim                      |
 
-**Production usage example:** A host running a critical, low-memory-footprint control-plane process alongside larger, more expendable batch or worker processes is a reasonable candidate for setting a strongly negative `oom_score_adj` on the critical process — biasing the kernel toward killing a large batch job instead of the small but essential process, if memory pressure ever does escalate to that point. systemd unit files expose this as the `OOMScoreAdjust=` directive (§67, Part 9, covers unit file syntax generally), which is the normal way to set it declaratively rather than writing to `/proc` by hand on every boot.
+**Production usage example:** A host running a critical, low-memory-footprint control-plane process alongside larger, more expendable batch or worker processes is a reasonable candidate for setting a strongly negative `oom_score_adj` on the critical process — biasing the kernel toward killing a large batch job instead of the small but essential process, if memory pressure ever does escalate to that point. systemd unit files expose this as the `OOMScoreAdjust=` directive ([§67](../Part9/Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md), covers unit file syntax generally), which is the normal way to set it declaratively rather than writing to `/proc` by hand on every boot.
 
 **Common errors:** Treating `oom_score_adj` as a substitute for actually fixing a memory-pressure problem — it changes _who_ gets killed when the kernel truly runs out of memory, not _whether_ that condition happens at all; a process protected with `-1000` on a host that keeps hitting genuine OOM conditions will simply force something else to be killed each time, without addressing the underlying capacity or leak problem.
 
@@ -160,6 +160,6 @@ _What the interviewer is probing for:_ Building alerting around the metrics that
 
 ## 9. Related Concepts & What's Next
 
-This section builds directly on §16's virtual memory/paging/swap fundamentals (Part 2) and §77's swap management coverage (Part 10), and connects to §68's journald coverage (Part 9) for where OOM kill evidence actually lives. It follows §81's CPU-specific diagnostics as the second of §80's four resource-specific continuations. §83 (next) moves to disk I/O — `iostat`, `iotop`, `df`, `du` — continuing the same resource-specific pattern for the third of the four resources.
+This section builds directly on [§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md)'s virtual memory/paging/swap fundamentals (Part 2) and [§77](../Part10/Section-77-Part10-Swap-Management.md)'s swap management coverage (Part 10), and connects to [§68](../Part9/Section-68-Part9-Journald-Centralized-Logging-Journalctl.md)'s journald coverage (Part 9) for where OOM kill evidence actually lives. It follows [§81](./Section-81-Part11-CPU-Load-Analysis.md)'s CPU-specific diagnostics as the second of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s four resource-specific continuations. [§83](./Section-83-Part11-Disk-IO-Analysis.md) (next) moves to disk I/O — `iostat`, `iotop`, `df`, `du` — continuing the same resource-specific pattern for the third of the four resources.
 
-**Next Section:** §83 — `Section-83-Part11-Disk-IO-Analysis.md`
+**Next Section:** [§83](./Section-83-Part11-Disk-IO-Analysis.md) — `Section-83-Part11-Disk-IO-Analysis.md`

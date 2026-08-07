@@ -159,6 +159,6 @@ Senior - Design RDS architecture for read-heavy reporting, automatic failover re
 
 ## Related Concepts (forward links)
 
-- Amazon Aurora's architecturally distinct HA/replication approach (shared storage, faster replicas) -> §51
-- DynamoDB's fundamentally different consistency and replication model -> §52
-- Database Migration Service for moving into/between RDS deployments -> §57
+- Amazon Aurora's architecturally distinct HA/replication approach (shared storage, faster replicas) -> [§51](./Section-51-Part6-Aurora-Deep-Dive.md)
+- DynamoDB's fundamentally different consistency and replication model -> [§52](./Section-52-Part6-DynamoDB-Fundamentals-DataModeling.md)
+- Database Migration Service for moving into/between RDS deployments -> [§57](./Section-57-Part6-DMS-Choosing-Right-Database.md)

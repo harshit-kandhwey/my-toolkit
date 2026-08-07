@@ -8,7 +8,7 @@
 
 ## 2. Why This Section Exists
 
-Deep technical knowledge (Parts 1-9) and system design synthesis ability (§96) are necessary but not sufficient for interview success — many qualified candidates underperform specifically because they haven't practiced translating their real technical experience into the structured formats interviewers expect (behavioral frameworks), haven't practiced the time-management and communication skills a live system design session demands under real time pressure, or simply haven't rehearsed rapid recall across the full breadth of topics a loop might touch, even when they know each individual topic well in isolation. This section directly addresses each of these format-specific gaps.
+Deep technical knowledge (Parts 1-9) and system design synthesis ability ([§96](./Section-96-Part10-System-Design-Walkthroughs.md)) are necessary but not sufficient for interview success — many qualified candidates underperform specifically because they haven't practiced translating their real technical experience into the structured formats interviewers expect (behavioral frameworks), haven't practiced the time-management and communication skills a live system design session demands under real time pressure, or simply haven't rehearsed rapid recall across the full breadth of topics a loop might touch, even when they know each individual topic well in isolation. This section directly addresses each of these format-specific gaps.
 
 ## 3. Behavioral Interviews for Technical Roles
 
@@ -23,16 +23,16 @@ Even highly technical AWS/DevOps roles include behavioral rounds, frequently foc
 
 **Mapping this roadmap's content to strong behavioral answers:**
 
-- _"Tell me about a time you diagnosed a difficult production issue"_ → draws directly on §75's multi-pillar investigation flow (alarm → metrics → logs → trace → config → CloudTrail) — a real incident walked through using this exact structure is a naturally strong, technically credible STAR answer.
-- _"Tell me about a time you had to make a trade-off between competing priorities"_ → draws directly on §89's Well-Architected pillar trade-off language — explicitly naming which pillars were in tension (e.g., Reliability vs. Cost) makes for a precise, structured answer rather than a vague "I had to balance things."
-- _"Tell me about a time you disagreed with a technical decision"_ → an opportunity to demonstrate the kind of reasoned, criteria-driven argumentation modeled throughout this roadmap's decision frameworks (§67, §87) — a strong answer shows _why_ the disagreement was reasoned, not just that it existed.
+- _"Tell me about a time you diagnosed a difficult production issue"_ → draws directly on [§75](../Part8/Section-75-Part8-Systems-Manager.md)'s multi-pillar investigation flow (alarm → metrics → logs → trace → config → CloudTrail) — a real incident walked through using this exact structure is a naturally strong, technically credible STAR answer.
+- _"Tell me about a time you had to make a trade-off between competing priorities"_ → draws directly on [§89](./Section-89-Part10-WellArchitected-Framework.md)'s Well-Architected pillar trade-off language — explicitly naming which pillars were in tension (e.g., Reliability vs. Cost) makes for a precise, structured answer rather than a vague "I had to balance things."
+- _"Tell me about a time you disagreed with a technical decision"_ → an opportunity to demonstrate the kind of reasoned, criteria-driven argumentation modeled throughout this roadmap's decision frameworks ([§67](../Part7/Section-67-Part7-Choosing-Integration-Pattern.md), [§87](../Part9/Section-87-Part9-Choosing-IaC-Tool.md)) — a strong answer shows _why_ the disagreement was reasoned, not just that it existed.
 - _"Tell me about a mistake you made"_ → genuine vulnerability matters here; a strong answer names a real mistake (a missing DLQ that caused a poison-message pileup, an unset log retention that caused a cost surprise, a manual production change that caused drift) and, critically, what changed afterward — process, not just personal vigilance.
 
 ⚠️ **Common behavioral-interview mistake:** describing what "the team" did throughout, never clarifying the individual's own specific contribution — interviewers are evaluating you specifically, and an answer that never distinguishes your actions from the group's is a weak signal regardless of how impressive the team's overall outcome was.
 
 ## 4. System Design Interview Execution Technique
 
-Beyond the _content_ of a good design (§96), the _execution_ of a live system design interview has its own skill set:
+Beyond the _content_ of a good design ([§96](./Section-96-Part10-System-Design-Walkthroughs.md)), the _execution_ of a live system design interview has its own skill set:
 
 - **Time-box explicitly**: state a rough plan for how you'll use the available time (e.g., "I'll spend a few minutes clarifying requirements, then sketch the high-level flow, then go deep on the two or three hardest parts") — this signals structured thinking and helps you self-correct if you're running long on one section.
 - **Think out loud**: interviewers are evaluating your reasoning process, not just your final answer — narrate trade-offs as you consider them ("I'm choosing SNS→SQS fan-out here rather than direct SNS→Lambda specifically because...") rather than silently arriving at a diagram.
@@ -65,7 +65,7 @@ A comprehensive senior-level AWS interview loop might touch any of these in a si
 19. **(Migration)** Why does an all-Rehost migration strategy often disappoint on cost/agility expectations later?
 20. **(System Design)** What's the first thing you should do when given an ambiguous system design prompt?
 
-_(Model answers to all 20 are direct call-backs to their originating sections — §9-11 for Q1, §25 for Q2, Part 4 for Q3, Part 5 for Q4, §59 for Q5, §62 for Q6, §63 for Q7, §64 for Q8, §59/§8 for Q9, §72 for Q10, §73 for Q11, §74 for Q12, §79 for Q13, §81 for Q14, §82 for Q15, §86 for Q16, §89 for Q17, §90 for Q18, §93 for Q19, §96 for Q20 — reviewing each original section's interview answers is the most effective rapid-fire preparation.)_
+_(Model answers to all 20 are direct call-backs to their originating sections — [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md) for Q1, [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md) for Q2, Part 4 for Q3, Part 5 for Q4, [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md) for Q5, [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md) for Q6, [§63](../Part7/Section-63-Part7-StepFunctions-Orchestration.md) for Q7, [§64](../Part7/Section-64-Part7-Kinesis-Data-Streams.md) for Q8, [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md)/[§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md) for Q9, [§72](../Part8/Section-72-Part8-XRay-Distributed-Tracing.md) for Q10, [§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md) for Q11, [§74](../Part8/Section-74-Part8-AWS-Config.md) for Q12, [§79](../Part9/Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md) for Q13, [§81](../Part9/Section-81-Part9-AWS-CDK.md) for Q14, [§82](../Part9/Section-82-Part9-Terraform-on-AWS.md) for Q15, [§86](../Part9/Section-86-Part9-CICD-Infrastructure-GitOps.md) for Q16, [§89](./Section-89-Part10-WellArchitected-Framework.md) for Q17, [§90](./Section-90-Part10-Cost-Optimization-FinOps.md) for Q18, [§93](./Section-93-Part10-Migration-Strategies.md) for Q19, [§96](./Section-96-Part10-System-Design-Walkthroughs.md) for Q20 — reviewing each original section's interview answers is the most effective rapid-fire preparation.)_
 
 **Addendum — five more rapid-fire questions covering sections added after this drill was first written:**
 
@@ -75,7 +75,7 @@ _(Model answers to all 20 are direct call-backs to their originating sections �
 24. **(FinOps/DR Capstones)** Name one lever that improves both cost efficiency and reliability simultaneously, and one where they trade off.
 25. **(Cognito)** What's the difference between a Cognito User Pool and an Identity Pool?
 
-_(Model answers: Q21 → §75, Q22 → §76, Q23 → §85, Q24 → §91-92, Q25 → §94.)_
+_(Model answers: Q21 → [§75](../Part8/Section-75-Part8-Systems-Manager.md), Q22 → [§76](../Part8/Section-76-Part8-TrustedAdvisor-HealthDashboard.md), Q23 → [§85](../Part9/Section-85-Part9-Deployment-Strategies.md), Q24 → [§91](./Section-91-Part10-FinOps-Capstone.md)-[§92](./Section-92-Part10-DR-Strategy-Capstone.md), Q25 → [§94](./Section-94-Part10-Amazon-Cognito.md).)_
 
 ## 6. Interview Questions with Model Answers (Meta-Level, About Interview Prep Itself)
 
@@ -102,6 +102,6 @@ _(Model answers: Q21 → §75, Q22 → §76, Q23 → §85, Q24 → §91-92, Q25 
 ## 8. Related Concepts
 
 - Every prior Part and section of this roadmap — this section is a synthesis and application layer, not new technical content.
-- **Well-Architected Framework** (the trade-off vocabulary for both system design and behavioral answers) → §89.
-- **AWS System Design** (the content methodology this section adds execution technique to) → §96.
-- **Full Roadmap Synthesis & Continued Learning Path** (the final section, closing out this entire project) → next section, §98.
+- **Well-Architected Framework** (the trade-off vocabulary for both system design and behavioral answers) → [§89](./Section-89-Part10-WellArchitected-Framework.md).
+- **AWS System Design** (the content methodology this section adds execution technique to) → [§96](./Section-96-Part10-System-Design-Walkthroughs.md).
+- **Full Roadmap Synthesis & Continued Learning Path** (the final section, closing out this entire project) → next section, [§98](./Section-98-Part10-Full-Roadmap-Synthesis.md).

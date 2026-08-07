@@ -115,7 +115,7 @@ $ git commit -m "Stop tracking secrets.env; add to .gitignore"
 
 `--cached` removes the path from the **index only** — the working-directory file is untouched, so nothing is deleted from disk. Without `--cached`, plain `git rm secrets.env` removes it from both the index and the working directory. For an entire directory: `git rm -r --cached node_modules/`.
 
-> ⚠️ **Critical clarification:** this only stops tracking the file **going forward** — the file's prior committed content remains permanently in history, retrievable by anyone with the repo, forever (or until history is rewritten — §15, §28). If the file contained a secret, `git rm --cached` plus `.gitignore` is not remediation; the secret must be treated as compromised and rotated, and full history-scrubbing procedures are §28.
+> ⚠️ **Critical clarification:** this only stops tracking the file **going forward** — the file's prior committed content remains permanently in history, retrievable by anyone with the repo, forever (or until history is rewritten — [§15](../Part4/Section-15-Part4-Undoing-Things.md), [§28](../Part7/Section-28-Part7-Security.md)). If the file contained a secret, `git rm --cached` plus `.gitignore` is not remediation; the secret must be treated as compromised and rotated, and full history-scrubbing procedures are [§28](../Part7/Section-28-Part7-Security.md).
 
 ## 4. `.gitattributes` Syntax and Purpose
 
@@ -141,7 +141,7 @@ $ git commit -m "Stop tracking secrets.env; add to .gitignore"
 *.psd -text -diff -merge
 ```
 
-Without `.gitattributes`, Git guesses text-vs-binary heuristically (checking for a NUL byte in the first several KB of content) — usually correct, but not guaranteed. Explicitly marking known binary types avoids Git ever attempting a line-based diff on, say, a compiled `.dll` and producing meaningless output, or worse, attempting an automatic three-way text merge on a binary file during a merge (§13) and corrupting it.
+Without `.gitattributes`, Git guesses text-vs-binary heuristically (checking for a NUL byte in the first several KB of content) — usually correct, but not guaranteed. Explicitly marking known binary types avoids Git ever attempting a line-based diff on, say, a compiled `.dll` and producing meaningless output, or worse, attempting an automatic three-way text merge on a binary file during a merge ([§13](../Part4/Section-13-Part4-Merging.md)) and corrupting it.
 
 ### 4.2 Custom diff drivers
 
@@ -176,14 +176,14 @@ $ git archive --format=zip -o release.zip HEAD
 
 ## 5. Other Common Attributes (Brief Survey)
 
-| Attribute                             | Effect                                                                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `linguist-vendored`                   | Tells GitHub's language-detection (Linguist) to exclude a path from a repo's language statistics (e.g. vendored third-party code) |
-| `filter=lfs diff=lfs merge=lfs -text` | The standard Git LFS attribute block redirecting large files to pointer-file storage (§26)                                        |
-| `merge=ours`                          | Always resolve conflicts on this path by keeping "our" side, useful for auto-generated files that shouldn't be manually merged    |
-| `linguist-generated`                  | Marks generated code so it's collapsed/hidden in GitHub's diff view by default                                                    |
+| Attribute                             | Effect                                                                                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `linguist-vendored`                   | Tells GitHub's language-detection (Linguist) to exclude a path from a repo's language statistics (e.g. vendored third-party code)      |
+| `filter=lfs diff=lfs merge=lfs -text` | The standard Git LFS attribute block redirecting large files to pointer-file storage ([§26](../Part6/Section-26-Part6-Scaling-Git.md)) |
+| `merge=ours`                          | Always resolve conflicts on this path by keeping "our" side, useful for auto-generated files that shouldn't be manually merged         |
+| `linguist-generated`                  | Marks generated code so it's collapsed/hidden in GitHub's diff view by default                                                         |
 
-Full LFS mechanics are §26; the pattern to internalize now is simply that `.gitattributes` is Git's general-purpose "treat this path specially" mechanism, of which line-ending policy (next) is the single most operationally important use.
+Full LFS mechanics are [§26](../Part6/Section-26-Part6-Scaling-Git.md); the pattern to internalize now is simply that `.gitattributes` is Git's general-purpose "treat this path specially" mechanism, of which line-ending policy (next) is the single most operationally important use.
 
 ## 6. Line Endings in Depth
 
@@ -215,7 +215,7 @@ $ git config --global core.autocrlf false
 | `input` | No conversion             | CRLF converted to LF      | macOS/Linux developers — never want CRLF written to disk, but normalize anything that sneaks in |
 | `false` | No conversion             | No conversion             | Repos that intentionally store CRLF, or teams relying entirely on `.gitattributes` instead      |
 
-`core.autocrlf` is a **per-developer, per-machine** setting (global config, §8) — it does not travel with the repository, which is precisely its weakness: a repo relies on every single contributor having configured it correctly and consistently, and one person with the wrong setting (or `false` when everyone else uses `true`) reintroduces the spurious-diff problem for everyone who later touches files they saved.
+`core.autocrlf` is a **per-developer, per-machine** setting (global config, [§8](./Section-08-Part3-Installation-Configuration.md)) — it does not travel with the repository, which is precisely its weakness: a repo relies on every single contributor having configured it correctly and consistently, and one person with the wrong setting (or `false` when everyone else uses `true`) reintroduces the spurious-diff problem for everyone who later touches files they saved.
 
 ### 6.3 The robust fix: `.gitattributes`
 
@@ -265,7 +265,7 @@ $ git commit -m "Normalize line endings per .gitattributes"
 
 `git add --renormalize .` re-runs the `text=auto` (and any `eol=`) rules against files already in the index, staging any content that needs converting to match the new policy — without this, `.gitattributes` only affects files touched (edited and re-committed) after the file was added, leaving old files in their original, inconsistent state indefinitely.
 
-> ⚠️ **Common confusion to preempt:** always commit a mass line-ending renormalization as its **own isolated commit**, never mixed with actual code changes. A renormalization commit touches every line of every affected file, which makes `git blame` and code-review diffs on that commit meaningless noise — but an isolated, clearly-labeled "normalize line endings" commit lets `git blame -w` (ignore whitespace) or tools aware of line-ending-only commits skip past it cleanly when tracing real history (§19 covers `blame` in depth).
+> ⚠️ **Common confusion to preempt:** always commit a mass line-ending renormalization as its **own isolated commit**, never mixed with actual code changes. A renormalization commit touches every line of every affected file, which makes `git blame` and code-review diffs on that commit meaningless noise — but an isolated, clearly-labeled "normalize line endings" commit lets `git blame -w` (ignore whitespace) or tools aware of line-ending-only commits skip past it cleanly when tracing real history ([§19](../Part4/Section-19-Part4-Interrogating-History.md) covers `blame` in depth).
 
 ### 6.6 Quick Diagnostic
 
@@ -363,4 +363,4 @@ tests/ export-ignore
 
 ## 12. Related Concepts & What's Next
 
-The staging concepts referenced here (`git add`, `git status`, `git diff`) were built in full in §10; this section assumed that vocabulary throughout. `export-ignore` and binary-handling attributes reappear when large binary assets are discussed properly in §26 (Git LFS). Renormalization commits and their effect on history-reading tools connect directly to `git blame` and history search, covered fully in §19. With ignoring and attribute-based file control established, Part 4 moves into branching (§12) — the mechanism for developing multiple lines of work in parallel within the repository this and prior sections have shown how to populate and curate.
+The staging concepts referenced here (`git add`, `git status`, `git diff`) were built in full in [§10](./Section-10-Part3-Core-Workflow.md); this section assumed that vocabulary throughout. `export-ignore` and binary-handling attributes reappear when large binary assets are discussed properly in [§26](../Part6/Section-26-Part6-Scaling-Git.md) (Git LFS). Renormalization commits and their effect on history-reading tools connect directly to `git blame` and history search, covered fully in [§19](../Part4/Section-19-Part4-Interrogating-History.md). With ignoring and attribute-based file control established, Part 4 moves into branching ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) — the mechanism for developing multiple lines of work in parallel within the repository this and prior sections have shown how to populate and curate.

@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** CodeDeploy is AWS's managed deployment automation service — it takes a built application artifact (from CodeBuild, §83, or elsewhere) and actually gets it running on your EC2 instances, on-premises servers, Lambda functions, or ECS services, following a defined deployment procedure with built-in health checking and automatic rollback if something goes wrong.
+**Plain language:** CodeDeploy is AWS's managed deployment automation service — it takes a built application artifact (from CodeBuild, [§83](./Section-83-Part9-CodePipeline-CodeBuild.md), or elsewhere) and actually gets it running on your EC2 instances, on-premises servers, Lambda functions, or ECS services, following a defined deployment procedure with built-in health checking and automatic rollback if something goes wrong.
 
 **Precise definition:** AWS CodeDeploy is a deployment automation service that coordinates application deployments to Amazon EC2 instances, on-premises servers, AWS Lambda functions, and Amazon ECS services, using a deployment configuration (specifying the deployment strategy — in-place or blue/green, and traffic-shifting behavior) and an application specification (AppSpec) file defining the deployment lifecycle hooks, with automated health-check-driven rollback on failure.
 
 ## 2. Why It Exists / Problem It Solves
 
-CodeBuild (§83) produces a built, tested artifact — but getting that artifact actually running in production, replacing whatever version is currently live, is its own distinct, risky operation. Doing this manually (SSH into each server, stop the old version, copy the new files, restart) is slow, error-prone, and doesn't scale to fleets of instances; doing it with a hand-rolled script requires building your own health-checking and rollback logic — and getting that logic wrong is exactly the kind of mistake that turns a routine deployment into a production outage.
+CodeBuild ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) produces a built, tested artifact — but getting that artifact actually running in production, replacing whatever version is currently live, is its own distinct, risky operation. Doing this manually (SSH into each server, stop the old version, copy the new files, restart) is slow, error-prone, and doesn't scale to fleets of instances; doing it with a hand-rolled script requires building your own health-checking and rollback logic — and getting that logic wrong is exactly the kind of mistake that turns a routine deployment into a production outage.
 
 CodeDeploy solves this by providing a **battle-tested, declarative deployment engine**: you define the deployment strategy and the specific lifecycle hooks (what to run before/after traffic shifts to the new version), and CodeDeploy handles the actual sequencing, health verification, and — critically — **automatic rollback** if health checks fail partway through, without requiring you to build that safety logic yourself.
 
 ## 3. Prerequisites and Dependencies
 
 - **EC2, Lambda, ECS** (Part 3): the compute platforms CodeDeploy deploys to.
-- **CodePipeline & CodeBuild** (§83): CodeDeploy is commonly the Deploy-stage action following a CodeBuild Build stage within one CodePipeline pipeline.
-- **Deployment Strategies** (§85, next section): CodeDeploy is the AWS-native _mechanism_ implementing the blue/green, canary, and rolling deployment _patterns_ covered conceptually in that section.
+- **CodePipeline & CodeBuild** ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)): CodeDeploy is commonly the Deploy-stage action following a CodeBuild Build stage within one CodePipeline pipeline.
+- **Deployment Strategies** ([§85](./Section-85-Part9-Deployment-Strategies.md), next section): CodeDeploy is the AWS-native _mechanism_ implementing the blue/green, canary, and rolling deployment _patterns_ covered conceptually in that section.
 
 ## 4. Internal Working
 
@@ -24,8 +24,8 @@ CodeDeploy solves this by providing a **battle-tested, declarative deployment en
 - A **deployment group** defines the target set of instances/resources for a given application, along with the deployment configuration (strategy) to use.
 - The **AppSpec file** (`appspec.yml`, checked into the deployed artifact) defines **lifecycle event hooks** — for EC2/on-premises deployments, this includes hooks like `BeforeInstall`, `AfterInstall`, `ApplicationStart`, and `ValidateService`, each an opportunity to run a specific script (stop the old application, copy new files, run a smoke test) at the correct point in the deployment sequence; for Lambda, the AppSpec instead defines which function version to shift traffic to and any `BeforeAllowTraffic`/`AfterAllowTraffic` validation hooks.
 - For **EC2/on-premises in-place deployments**, CodeDeploy deploys to instances in batches (configurable), running the AppSpec's lifecycle hooks on each batch, and monitoring instance health throughout.
-- For **blue/green deployments** (EC2, Lambda, or ECS), CodeDeploy provisions or identifies a completely separate, parallel "green" environment running the new version, validates its health, and then shifts traffic from "blue" (the current live version) to "green" — either all at once, linearly over a defined time period, or in defined canary percentage increments (full depth on these traffic-shifting patterns in §85).
-- **Automatic rollback** triggers when a deployment's health checks (CloudWatch alarms, §71, can be directly wired as rollback triggers) fail, or when the deployment lifecycle itself reports a failure — CodeDeploy then reverts to the last known-good deployed revision, without requiring manual intervention to initiate the rollback.
+- For **blue/green deployments** (EC2, Lambda, or ECS), CodeDeploy provisions or identifies a completely separate, parallel "green" environment running the new version, validates its health, and then shifts traffic from "blue" (the current live version) to "green" — either all at once, linearly over a defined time period, or in defined canary percentage increments (full depth on these traffic-shifting patterns in [§85](./Section-85-Part9-Deployment-Strategies.md)).
+- **Automatic rollback** triggers when a deployment's health checks (CloudWatch alarms, [§71](../Part8/Section-71-Part8-CloudWatch-Alarms-Dashboards.md), can be directly wired as rollback triggers) fail, or when the deployment lifecycle itself reports a failure — CodeDeploy then reverts to the last known-good deployed revision, without requiring manual intervention to initiate the rollback.
 
 ```
 CodeBuild artifact ──▶ CodeDeploy Deployment
@@ -57,20 +57,20 @@ CodeBuild artifact ──▶ CodeDeploy Deployment
 
 1. **Define** the CodeDeploy application and deployment group(s), specifying the target compute platform and deployment configuration.
 2. **Author** the AppSpec file, checked into the source repository alongside the application code, defining lifecycle hooks or traffic-shift behavior.
-3. A **deployment is triggered** — typically as the Deploy stage of a CodePipeline (§83) following a successful build, using the build's output artifact.
+3. A **deployment is triggered** — typically as the Deploy stage of a CodePipeline ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) following a successful build, using the build's output artifact.
 4. CodeDeploy **executes the deployment** per its configuration — in-place batch-by-batch for EC2/on-premises, or blue/green traffic-shifting for EC2/Lambda/ECS — running AppSpec lifecycle hooks at each defined point.
 5. CodeDeploy **monitors health** throughout (instance health status, configured CloudWatch alarms) and **automatically rolls back** to the last known-good revision if a failure is detected.
 6. Deployment status, per-instance/per-hook detail, and history are available for troubleshooting and audit.
 
 ## 7. Configuration
 
-| Setting                                                                   | Purpose                                                                                        |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Deployment configuration (`AllAtOnce`/`HalfAtATime`/`OneAtATime`/custom)  | Controls batch size and rollout pace for EC2/on-premises in-place deployments                  |
-| Traffic-shifting configuration (Lambda/ECS blue/green)                    | Controls canary percentage/interval or linear shift rate — full depth in §85                   |
-| Rollback configuration (`DEPLOYMENT_FAILURE`, `DEPLOYMENT_STOP_ON_ALARM`) | Determines what conditions trigger automatic rollback                                          |
-| Associated CloudWatch alarms                                              | Health signals CodeDeploy watches during and after a deployment to decide whether to roll back |
-| AppSpec lifecycle hooks                                                   | The specific scripts run at each stage of the deployment                                       |
+| Setting                                                                   | Purpose                                                                                                                     |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Deployment configuration (`AllAtOnce`/`HalfAtATime`/`OneAtATime`/custom)  | Controls batch size and rollout pace for EC2/on-premises in-place deployments                                               |
+| Traffic-shifting configuration (Lambda/ECS blue/green)                    | Controls canary percentage/interval or linear shift rate — full depth in [§85](./Section-85-Part9-Deployment-Strategies.md) |
+| Rollback configuration (`DEPLOYMENT_FAILURE`, `DEPLOYMENT_STOP_ON_ALARM`) | Determines what conditions trigger automatic rollback                                                                       |
+| Associated CloudWatch alarms                                              | Health signals CodeDeploy watches during and after a deployment to decide whether to roll back                              |
+| AppSpec lifecycle hooks                                                   | The specific scripts run at each stage of the deployment                                                                    |
 
 ⚠️ **Warning:** automatic rollback is only as good as the health signals it's watching — a deployment with no CloudWatch alarms configured, or with a `ValidateService`/validation hook that doesn't actually meaningfully check application health (e.g., just checking the process is running, not that it's actually serving correct responses), can "successfully" deploy a broken application with no rollback triggered at all, since CodeDeploy has no independent way to know the deployment is actually unhealthy beyond what it's told to check.
 
@@ -93,8 +93,8 @@ CodeBuild artifact ──▶ CodeDeploy Deployment
     --service-role-arn arn:aws:iam::123456789012:role/CodeDeployServiceRole
   ```
   **Expected output:** the created deployment group's configuration detail.
-- **Important arguments:** `--ec2-tag-filters` targets instances by tag (directly reusing the same tag-based targeting pattern seen in Systems Manager, §75) rather than a static instance list, so the deployment group automatically includes new instances as they're launched with matching tags.
-- **Production usage:** deployment groups are commonly defined via CloudFormation/CDK (§79-81) alongside the rest of the application's infrastructure, so the deployment configuration is versioned and reviewed like any other infrastructure change.
+- **Important arguments:** `--ec2-tag-filters` targets instances by tag (directly reusing the same tag-based targeting pattern seen in Systems Manager, [§75](../Part8/Section-75-Part8-Systems-Manager.md)) rather than a static instance list, so the deployment group automatically includes new instances as they're launched with matching tags.
+- **Production usage:** deployment groups are commonly defined via CloudFormation/CDK ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§81](./Section-81-Part9-AWS-CDK.md)) alongside the rest of the application's infrastructure, so the deployment configuration is versioned and reviewed like any other infrastructure change.
 - **Security impact:** the `service-role-arn` needs permission to interact with the target compute platform (EC2, Lambda, or ECS) on CodeDeploy's behalf — scoped to the specific resources this deployment group actually manages.
 
 ### `aws deploy create-deployment`
@@ -114,9 +114,9 @@ CodeBuild artifact ──▶ CodeDeploy Deployment
   ```json
   { "deploymentId": "d-A1B2C3D4E" }
   ```
-- **Production usage:** typically invoked automatically as a CodePipeline Deploy-stage action (§83) rather than run manually, using the artifact produced by the preceding Build stage.
+- **Production usage:** typically invoked automatically as a CodePipeline Deploy-stage action ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) rather than run manually, using the artifact produced by the preceding Build stage.
 - **Common errors:** a deployment failing at a specific AppSpec lifecycle hook (e.g., `ApplicationStart` failing because the new application version doesn't actually start correctly) is the most common failure mode — CodeDeploy's deployment event log shows exactly which hook failed and why.
-- **Security impact:** requires `codedeploy:CreateDeployment`; a sensitive action worth restricting to the pipeline's own service identity rather than granting broadly to individual engineers, per §86's separation-of-duties principle.
+- **Security impact:** requires `codedeploy:CreateDeployment`; a sensitive action worth restricting to the pipeline's own service identity rather than granting broadly to individual engineers, per [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md)'s separation-of-duties principle.
 
 ### `aws deploy get-deployment`
 
@@ -162,25 +162,25 @@ hooks:
       timeout: 60
 ```
 
-This shows the standard EC2/on-premises AppSpec lifecycle: stop the currently running application (`BeforeInstall`), install the new version's dependencies (`AfterInstall`), start the new version (`ApplicationStart`), and then genuinely validate it's healthy (`ValidateService`) — critically, `health_check.sh` here should perform a real functional check (e.g., an HTTP request to a health endpoint expecting a specific response), not merely check that a process ID exists, directly addressing the §7 warning above about rollback only being as good as the health signal it depends on.
+This shows the standard EC2/on-premises AppSpec lifecycle: stop the currently running application (`BeforeInstall`), install the new version's dependencies (`AfterInstall`), start the new version (`ApplicationStart`), and then genuinely validate it's healthy (`ValidateService`) — critically, `health_check.sh` here should perform a real functional check (e.g., an HTTP request to a health endpoint expecting a specific response), not merely check that a process ID exists, directly addressing the [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md) warning above about rollback only being as good as the health signal it depends on.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** commonly start with simple EC2 in-place deployments (`OneAtATime` or `HalfAtATime`) before adopting blue/green as their availability requirements mature.
-- **Enterprises** standardize on blue/green deployments for production-tier services specifically for the near-zero-downtime and fast-rollback characteristics (full trade-off discussion in §85), often with mandatory CloudWatch alarm-based rollback triggers enforced as a platform-level requirement across all deployment groups, not left to individual team discretion.
-- CodeDeploy for Lambda is commonly used to safely roll out new function versions using weighted alias traffic shifting, directly building on Lambda's versioning/alias model (§25) to get canary-style safety for serverless deployments without needing a separate blue/green infrastructure concept.
-- CodeDeploy integrates natively with **CodePipeline** (§83) as the standard Deploy-stage action, and with **CloudWatch alarms** (§71) as its rollback-trigger mechanism — directly connecting this section to the observability and CI orchestration content covered elsewhere in this roadmap.
+- **Enterprises** standardize on blue/green deployments for production-tier services specifically for the near-zero-downtime and fast-rollback characteristics (full trade-off discussion in [§85](./Section-85-Part9-Deployment-Strategies.md)), often with mandatory CloudWatch alarm-based rollback triggers enforced as a platform-level requirement across all deployment groups, not left to individual team discretion.
+- CodeDeploy for Lambda is commonly used to safely roll out new function versions using weighted alias traffic shifting, directly building on Lambda's versioning/alias model ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)) to get canary-style safety for serverless deployments without needing a separate blue/green infrastructure concept.
+- CodeDeploy integrates natively with **CodePipeline** ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) as the standard Deploy-stage action, and with **CloudWatch alarms** ([§71](../Part8/Section-71-Part8-CloudWatch-Alarms-Dashboards.md)) as its rollback-trigger mechanism — directly connecting this section to the observability and CI orchestration content covered elsewhere in this roadmap.
 
 ## 11. Security Considerations
 
 - The CodeDeploy service role needs platform-specific permissions (EC2 instance management, Lambda alias updates, or ECS task set management) scoped tightly to the specific deployment group's actual target resources.
 - AppSpec lifecycle hook scripts run with whatever permissions the target instance/execution environment has — a compromised or malicious hook script is a genuine risk, making source-repository access control (who can modify the AppSpec and its referenced scripts) a meaningful security boundary.
-- Deployment triggering (`codedeploy:CreateDeployment`) should be restricted to the pipeline's own service identity in production, not granted to individual engineers directly, consistent with §86's pipeline-discipline principles.
+- Deployment triggering (`codedeploy:CreateDeployment`) should be restricted to the pipeline's own service identity in production, not granted to individual engineers directly, consistent with [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md)'s pipeline-discipline principles.
 
 ## 12. Performance Considerations
 
 - In-place deployment batch size (`OneAtATime`, `HalfAtATime`, `AllAtOnce`) directly trades deployment speed against availability during the deployment — `OneAtATime` is safest but slowest for large fleets; `AllAtOnce` is fastest but means the entire fleet is briefly unavailable/updating simultaneously.
-- Blue/green deployments avoid this trade-off entirely for availability (the old environment keeps serving until the new one is validated) at the cost of requiring double the compute capacity during the transition window — a direct cost/availability trade-off worth being explicit about (§89's Well-Architected framing).
+- Blue/green deployments avoid this trade-off entirely for availability (the old environment keeps serving until the new one is validated) at the cost of requiring double the compute capacity during the transition window — a direct cost/availability trade-off worth being explicit about ([§89](../Part10/Section-89-Part10-WellArchitected-Framework.md)'s Well-Architected framing).
 
 ## 13. Monitoring
 
@@ -205,7 +205,7 @@ This shows the standard EC2/on-premises AppSpec lifecycle: stop the currently ru
 - Ensure `ValidateService`/health-check hooks perform genuine functional validation, not just superficial process-existence checks.
 - Configure CloudWatch alarms as explicit rollback triggers for any production deployment group — don't rely solely on deployment-lifecycle failure detection.
 - Prefer blue/green over in-place deployment for production-tier services where the additional compute cost is justified by near-zero-downtime and fast rollback.
-- Trigger deployments only through the CI/CD pipeline's own service identity, not individual engineer credentials, consistent with §86.
+- Trigger deployments only through the CI/CD pipeline's own service identity, not individual engineer credentials, consistent with [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md).
 - Version-control AppSpec files and lifecycle hook scripts alongside application code, subject to the same code review as any other change.
 
 ## 16. Anti-Patterns & Common Mistakes
@@ -232,7 +232,7 @@ This shows the standard EC2/on-premises AppSpec lifecycle: stop the currently ru
 ## 18. Common Misconceptions
 
 - "Blue/green deployments are always strictly better than in-place deployments." Not universally — blue/green requires double the compute capacity during the transition and more complex traffic-management setup; for lower-stakes services, the simpler in-place model with a reasonable batch size may be perfectly adequate and lower-overhead.
-- "CodeDeploy handles building and testing the application." False — that's CodeBuild's (§83) job; CodeDeploy specifically handles getting an already-built artifact deployed and running, picking up where CodeBuild leaves off.
+- "CodeDeploy handles building and testing the application." False — that's CodeBuild's ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) job; CodeDeploy specifically handles getting an already-built artifact deployed and running, picking up where CodeBuild leaves off.
 
 ## 19. Key Takeaways
 
@@ -240,11 +240,11 @@ This shows the standard EC2/on-premises AppSpec lifecycle: stop the currently ru
 🔑 Automatic rollback is only as good as the health signals (CloudWatch alarms, ValidateService checks) it's configured to watch — shallow checks mean shallow safety.
 🔑 In-place deployment batch size and blue/green traffic-shifting configuration are direct, tunable trade-offs between deployment speed, availability, and compute cost during the transition.
 🔑 CodeDeploy is commonly the Deploy-stage action within a CodePipeline pipeline, immediately following a CodeBuild Build stage.
-🔑 Deployment triggering should flow through the CI/CD pipeline's own service identity, not individual engineer credentials, consistent with the broader pipeline-discipline principles in §86.
+🔑 Deployment triggering should flow through the CI/CD pipeline's own service identity, not individual engineer credentials, consistent with the broader pipeline-discipline principles in [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md).
 
 ## 20. Related Concepts
 
-- **AWS CodePipeline & CodeBuild** (the orchestration and build stages preceding a CodeDeploy deployment) → §83.
-- **Deployment Strategies** (the conceptual blue/green, canary, and rolling patterns CodeDeploy implements mechanically) → next section, §85.
-- **CloudWatch Alarms** (the mechanism behind CodeDeploy's automatic rollback triggers) → §71.
-- **Lambda versions and aliases** (the underlying mechanism CodeDeploy uses for Lambda traffic shifting) → §25.
+- **AWS CodePipeline & CodeBuild** (the orchestration and build stages preceding a CodeDeploy deployment) → [§83](./Section-83-Part9-CodePipeline-CodeBuild.md).
+- **Deployment Strategies** (the conceptual blue/green, canary, and rolling patterns CodeDeploy implements mechanically) → next section, [§85](./Section-85-Part9-Deployment-Strategies.md).
+- **CloudWatch Alarms** (the mechanism behind CodeDeploy's automatic rollback triggers) → [§71](../Part8/Section-71-Part8-CloudWatch-Alarms-Dashboards.md).
+- **Lambda versions and aliases** (the underlying mechanism CodeDeploy uses for Lambda traffic shifting) → [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md).

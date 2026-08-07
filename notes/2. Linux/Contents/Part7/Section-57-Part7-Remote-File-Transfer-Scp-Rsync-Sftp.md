@@ -2,11 +2,11 @@
 
 ## 1. Overview: Three Tools, One Transport
 
-§56 covered SSH's architecture, key-based authentication, and tunneling — the secure channel this section takes entirely for granted. All three tools covered here (`scp`, `rsync`, `sftp`) authenticate and encrypt exactly the way an interactive SSH session does: same keys, same `~/.ssh/config` host aliases, same agent forwarding, same hardening posture. Nothing in this section introduces a new trust model — it's entirely about what happens _after_ that SSH connection is established, when the goal shifts from "run a command on a remote host" to "move files between two hosts."
+[§56](./Section-56-Part7-SSH-Architecture-Key-Auth-Config-Tunneling-Hardening.md) covered SSH's architecture, key-based authentication, and tunneling — the secure channel this section takes entirely for granted. All three tools covered here (`scp`, `rsync`, `sftp`) authenticate and encrypt exactly the way an interactive SSH session does: same keys, same `~/.ssh/config` host aliases, same agent forwarding, same hardening posture. Nothing in this section introduces a new trust model — it's entirely about what happens _after_ that SSH connection is established, when the goal shifts from "run a command on a remote host" to "move files between two hosts."
 
 The three tools are not interchangeable despite superficial similarity — each answers a different practical question:
 
-- **`scp`** — "copy this file (or tree) to/from a remote host, once, simply." Closest in spirit to `cp` (§21), just pointed at a remote path instead of a local one.
+- **`scp`** — "copy this file (or tree) to/from a remote host, once, simply." Closest in spirit to `cp` ([§21](../Part3/Section-21-Part3-File-Directory-Operations.md)), just pointed at a remote path instead of a local one.
 - **`rsync`** — "efficiently synchronize a source and destination, transferring only what actually changed." The tool of choice for anything repeated — backups, deployments, mirrors.
 - **`sftp`** — "give me an interactive, FTP-like session over SSH" — browsing, spot-checking, and transferring files conversationally rather than in a single scripted command.
 
@@ -27,13 +27,13 @@ Either side of the copy can be the remote one — `scp` infers direction from wh
 
 **Key flags:**
 
-| Flag | Meaning                                                                                       |
-| ---- | --------------------------------------------------------------------------------------------- |
-| `-r` | Recursive — copy an entire directory tree, not just a single file (the `cp -r` analogue, §21) |
-| `-P` | Specify a non-default SSH port (capital `-P`, distinct from `ssh`'s own lowercase `-p`)       |
-| `-p` | Preserve modification times, access times, and modes from the source file                     |
-| `-C` | Enable compression during transfer                                                            |
-| `-i` | Specify an identity (private key) file, same meaning as `ssh -i`                              |
+| Flag | Meaning                                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-r` | Recursive — copy an entire directory tree, not just a single file (the `cp -r` analogue, [§21](../Part3/Section-21-Part3-File-Directory-Operations.md)) |
+| `-P` | Specify a non-default SSH port (capital `-P`, distinct from `ssh`'s own lowercase `-p`)                                                                 |
+| `-p` | Preserve modification times, access times, and modes from the source file                                                                               |
+| `-C` | Enable compression during transfer                                                                                                                      |
+| `-i` | Specify an identity (private key) file, same meaning as `ssh -i`                                                                                        |
 
 **Example — recursive copy of a directory to a non-standard SSH port:**
 
@@ -45,7 +45,7 @@ scp -r -P 2222 ./build-output/ deploy@app-server:/var/www/app/
 
 > ⚠️ **Warning:** Don't assume `scp` behaves identically across a fleet of hosts with different OpenSSH versions. A script that relies on remote-side glob expansion, or that talks to a very old or embedded SSH server, can silently behave differently — or fail outright — depending on which protocol that particular `scp` binary is actually using. Check `ssh -V` and consult release notes when scripting `scp` for a mixed-version fleet rather than assuming version-independence.
 
-`scp` always transfers the **full file**, every time, regardless of whether the destination already has a byte-identical (or nearly identical) copy — which is exactly the limitation §3 exists to solve.
+`scp` always transfers the **full file**, every time, regardless of whether the destination already has a byte-identical (or nearly identical) copy — which is exactly the limitation [§3](../Part1/Section-03-Part1-Open-Source-Licensing-GPL-Governance.md) exists to solve.
 
 ## 3. rsync: Efficient, Delta-Based Synchronization
 
@@ -91,11 +91,11 @@ In practice, `-a` is the default starting point for almost every real `rsync` in
 >
 > With the trailing slash, `src/`'s contents land directly inside `dest/` — `dest/file1`, `dest/file2`, and so on. Without it, `rsync` treats `src` as a single directory entry to be created inside `dest/`, producing `dest/src/file1`, `dest/src/file2` — an entire extra directory level the author usually didn't intend. Both invocations run without error and produce a plausible-looking result, which is exactly why this mistake survives unnoticed until someone later goes looking for a file at the path they expected and it isn't there (or finds it nested one level deeper than every other tool in the pipeline assumes). The destination path's trailing slash, by contrast, has no such special meaning — it's purely the source side this applies to.
 
-`rsync` also runs perfectly well purely locally (no `host:` prefix at all, source and destination both local paths) — the same delta-transfer efficiency applies, which is why it shows up as a backup tool (§79, Part 10) independent of any network transfer use case.
+`rsync` also runs perfectly well purely locally (no `host:` prefix at all, source and destination both local paths) — the same delta-transfer efficiency applies, which is why it shows up as a backup tool ([§79](../Part10/Section-79-Part10-Backup-Strategies-Tools.md)) independent of any network transfer use case.
 
 ## 4. sftp: Interactive, Session-Based File Access
 
-**`sftp`** provides an interactive, FTP-like command shell running over an SSH connection — but it's worth being precise about what that means, because "sftp is scp with a UI" undersells it. SFTP (SSH File Transfer Protocol) is a **genuinely distinct protocol** layered on top of an SSH connection, not simply an interactive wrapper spawning `scp` commands underneath — it defines its own request/response messages for listing directories, reading/writing file ranges, renaming, and managing permissions remotely, independent of what a plain SSH exec session (running an arbitrary shell command) provides. That distinction is exactly why §2's OpenSSH-version note about `scp` moving to "the SFTP protocol under the hood" is a meaningful change rather than a cosmetic one — it's genuinely switching to this different protocol's wire behavior.
+**`sftp`** provides an interactive, FTP-like command shell running over an SSH connection — but it's worth being precise about what that means, because "sftp is scp with a UI" undersells it. SFTP (SSH File Transfer Protocol) is a **genuinely distinct protocol** layered on top of an SSH connection, not simply an interactive wrapper spawning `scp` commands underneath — it defines its own request/response messages for listing directories, reading/writing file ranges, renaming, and managing permissions remotely, independent of what a plain SSH exec session (running an arbitrary shell command) provides. That distinction is exactly why [§2](../Part1/Section-02-Part1-History-and-Evolution.md)'s OpenSSH-version note about `scp` moving to "the SFTP protocol under the hood" is a meaningful change rather than a cosmetic one — it's genuinely switching to this different protocol's wire behavior.
 
 **Basic usage:**
 
@@ -128,7 +128,7 @@ Match Group sftponly
     X11Forwarding no
 ```
 
-This is real, commonly deployed hardening — not a niche configuration — anywhere a Linux host needs to accept file drops from a party that shouldn't have shell access, and it's worth recognizing on sight during a security review of `sshd_config` (§96, Part 12 covers SSH hardening more broadly).
+This is real, commonly deployed hardening — not a niche configuration — anywhere a Linux host needs to accept file drops from a party that shouldn't have shell access, and it's worth recognizing on sight during a security review of `sshd_config` ([§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md) covers SSH hardening more broadly).
 
 ## 5. Choosing the Right Tool
 
@@ -152,7 +152,7 @@ This is real, commonly deployed hardening — not a niche configuration — anyw
 
 ## 7. Key Takeaways
 
-- All three tools run entirely over the SSH transport and trust model §56 established — same keys, same config, same hardening posture; this section is about post-connection file movement, not a new auth story.
+- All three tools run entirely over the SSH transport and trust model [§56](./Section-56-Part7-SSH-Architecture-Key-Auth-Config-Tunneling-Hardening.md) established — same keys, same config, same hardening posture; this section is about post-connection file movement, not a new auth story.
 - `scp` is the simplest tool — `cp`-like syntax, `-r` for recursion, `-P` for a non-default port — but always transfers full files and, on modern OpenSSH (9.0+), now runs over the SFTP protocol under the hood rather than the deprecated legacy SCP protocol, which can shift edge-case behavior (wildcard expansion) across a mixed-version fleet.
 - `rsync`'s delta-transfer algorithm — sending only changed blocks — is its core differentiator, making repeated syncs of large or mostly-unchanged data dramatically more efficient than `scp`'s always-full-copy behavior.
 - `-a` (archive mode) is `-rlptgoD` bundled together — recursion plus preservation of symlinks, permissions, times, group, owner, and device files — and is the correct default starting point for almost any real `rsync` invocation.
@@ -162,6 +162,6 @@ This is real, commonly deployed hardening — not a niche configuration — anyw
 
 ## 8. Related Concepts & What's Next
 
-This section is a direct extension of §56's SSH architecture and key-based authentication — every tool here rides that same transport and trust model rather than introducing a new one. It also builds on §21's local file and directory operations (Part 3), since `scp`, `rsync`, and `sftp` are best understood as those same copy/move semantics extended across a network boundary rather than a new conceptual model. §58 (next) moves to network services on Linux — `systemd-networkd` and `NetworkManager` — closing out Part 7's networking coverage by returning to how a host manages its own network configuration day to day.
+This section is a direct extension of [§56](./Section-56-Part7-SSH-Architecture-Key-Auth-Config-Tunneling-Hardening.md)'s SSH architecture and key-based authentication — every tool here rides that same transport and trust model rather than introducing a new one. It also builds on [§21](../Part3/Section-21-Part3-File-Directory-Operations.md)'s local file and directory operations (Part 3), since `scp`, `rsync`, and `sftp` are best understood as those same copy/move semantics extended across a network boundary rather than a new conceptual model. [§58](./Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) (next) moves to network services on Linux — `systemd-networkd` and `NetworkManager` — closing out Part 7's networking coverage by returning to how a host manages its own network configuration day to day.
 
-**Next Section:** §58 — `Section-58-Part7-Network-Services.md`
+**Next Section:** [§58](./Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) — `Section-58-Part7-Network-Services.md`

@@ -159,6 +159,6 @@ Senior - Design S3 config for financial transaction records: 7-year immutable re
 
 ## Related Concepts (forward links)
 
-- Amazon EBS in full depth, applying similar encryption/backup principles to block storage -> §43
-- Route 53 Failover routing relying on CRR-replicated data -> §34
-- AWS Backup as a unified backup service wrapping S3 lifecycle/versioning concepts -> §47
+- Amazon EBS in full depth, applying similar encryption/backup principles to block storage -> [§43](./Section-43-Part5-EBS-Full-Depth.md)
+- Route 53 Failover routing relying on CRR-replicated data -> [§34](../Part4/Section-34-Part4-Route53-DNS.md)
+- AWS Backup as a unified backup service wrapping S3 lifecycle/versioning concepts -> [§47](./Section-47-Part5-Backup-Strategies-DR-Patterns.md)

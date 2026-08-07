@@ -14,9 +14,9 @@
 
 ## 2. Why It Exists
 
-- The concrete realization of FaaS (§5) — AWS manages everything except your function's code, the logical endpoint of the "less operational burden" trend from EC2 through ASG automation.
+- The concrete realization of FaaS ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)) — AWS manages everything except your function's code, the logical endpoint of the "less operational burden" trend from EC2 through ASG automation.
 - Even a perfectly-tuned ASG still means thinking about instance types, AMIs, patching, capacity — pure waste for event-driven/intermittent/unpredictable workloads. Lambda removes it entirely.
-- Extends §6's consumption-based pricing to its logical extreme — paying for actual execution time at sub-second granularity, not provisioned (even elastic) capacity.
+- Extends [§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)'s consumption-based pricing to its logical extreme — paying for actual execution time at sub-second granularity, not provisioned (even elastic) capacity.
 
 ---
 
@@ -70,7 +70,7 @@
 ## 6. Configuration — Memory, Timeout, Memory/CPU Relationship
 
 - **Memory** — configurable in fine-grained MB increments; **CPU scales proportionally with memory** — no independent CPU dial (frequently tested, non-obvious).
-- **Timeout** — max 15 minutes per invocation — precisely why Lambda isn't suited for long-running processes (contrast with §8's ECS/EKS, no such ceiling).
+- **Timeout** — max 15 minutes per invocation — precisely why Lambda isn't suited for long-running processes (contrast with [§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md)'s ECS/EKS, no such ceiling).
 - **Right-sizing memory is a performance AND cost lever** — a CPU-bound function may run faster (and cost less overall, since billing = duration × memory) at higher memory despite the higher per-ms rate. "Lower memory = lower cost" is often wrong.
 
 ---
@@ -79,14 +79,14 @@
 
 - **Ephemeral by design** — no guaranteed persistent state between invocations (a warm environment _may_ retain `/tmp`/globals, but never reliably).
 - **`/tmp` storage** — ephemeral local disk for one invocation (or opportunistically across warm ones), never a persistence substitute.
-- **Statelessness implication:** persistent/shared data must live externally (S3, DynamoDB, ElastiCache) — extends Section 6 §9's "externalize state" principle to serverless.
-- **Environment variables** for non-secret config; **secrets pulled from Secrets Manager/Parameter Store at runtime** (§15), never hardcoded.
+- **Statelessness implication:** persistent/shared data must live externally (S3, DynamoDB, ElastiCache) — extends Section 6 [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)'s "externalize state" principle to serverless.
+- **Environment variables** for non-secret config; **secrets pulled from Secrets Manager/Parameter Store at runtime** ([§15](../Part2/Section-15-Part2-Secrets-Manager-and-Parameter-Store.md)), never hardcoded.
 
 ---
 
 ## 8. IAM Integration — Execution Role
 
-- Every function has an **execution role** (IAM role, §9/§11) with `lambda.amazonaws.com` as trusted principal.
+- Every function has an **execution role** (IAM role, [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)/[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)) with `lambda.amazonaws.com` as trusted principal.
 - Least privilege applies fully — scoped per function, arguably more important here given how many small single-purpose functions a serverless architecture accumulates, each a distinct blast-radius boundary.
 
 ---
@@ -102,7 +102,7 @@
 
 - **Lambda behind API Gateway/ALB** — standard serverless REST/HTTP API pattern, no server layer to manage.
 - **Event-driven data pipelines** — S3 upload → Lambda → DynamoDB, or SQS → batch Lambda — common production pattern (full depth Part 7).
-- **Lambda as operational glue** — many automated-remediation patterns (§16 GuardDuty/Config remediation, §14 KMS rotation) are themselves Lambda functions.
+- **Lambda as operational glue** — many automated-remediation patterns ([§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md) GuardDuty/Config remediation, [§14](../Part2/Section-14-Part2-KMS-and-Encryption.md) KMS rotation) are themselves Lambda functions.
 - **Compute Savings Plans apply to Lambda** — relevant cost lever for high-volume steady-state usage.
 
 ---
@@ -111,15 +111,15 @@
 
 - **Execution role least privilege** — the primary Lambda-specific control, higher-stakes given function count.
 - **VPC vs non-VPC Lambda** — VPC access for private resources (RDS) vs default internet/AWS-service access outside a VPC — a real architectural decision (full detail Part 4).
-- **Supply-chain risk applies** — vulnerable dependencies in deployment packages/container images; Amazon Inspector (§16) scans Lambda functions.
+- **Supply-chain risk applies** — vulnerable dependencies in deployment packages/container images; Amazon Inspector ([§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md)) scans Lambda functions.
 
 ---
 
 ## 12. Performance Considerations
 
 - Cold starts (§3.3) are the primary concern — mitigated by Provisioned Concurrency, lighter init code, or lighter runtime.
-- Memory/CPU right-sizing (§6) — profile actual execution time, don't assume lower memory = lower cost.
-- 15-minute timeout is a hard boundary — exceeding workloads need Step Functions orchestration or a different compute type (§8).
+- Memory/CPU right-sizing ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)) — profile actual execution time, don't assume lower memory = lower cost.
+- 15-minute timeout is a hard boundary — exceeding workloads need Step Functions orchestration or a different compute type ([§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md)).
 
 ---
 
@@ -178,7 +178,7 @@
 
 ## 🌐 Related Concepts (forward links)
 
-- Containers — ECS, EKS, Fargate for workloads exceeding Lambda's constraints → §26 (next)
+- Containers — ECS, EKS, Fargate for workloads exceeding Lambda's constraints → [§26](./Section-26-Part3-Containers-ECS-EKS-Fargate.md) (next)
 - Step Functions and event-driven architecture patterns → Part 7
 - VPC-Lambda networking integration → Part 4
 - DynamoDB, S3, and other Lambda-adjacent data stores → Parts 5-6

@@ -4,11 +4,11 @@
 
 **Plain language:** A Virtual Private Cloud (VPC) network is your own private, software-defined network inside GCP — the container that everything else in this Part (subnets, firewall rules, load balancers, routes) lives inside. In GCP, this container is not tied to any single region; it spans the entire globe.
 
-**Precise:** A GCP **VPC network** is a **global**, project-scoped, virtual Layer-3 network providing connectivity for Compute Engine VM instances, GKE clusters, App Engine flexible environments, and other resources, implemented as a software-defined overlay on Google's physical network rather than a traditional per-region networking construct. A VPC network itself holds no IP address ranges; its **subnets** — regional sub-resources — hold the IP ranges (covered fully in Section 20).
+**Precise:** A GCP **VPC network** is a **global**, project-scoped, virtual Layer-3 network providing connectivity for Compute Engine VM instances, GKE clusters, App Engine flexible environments, and other resources, implemented as a software-defined overlay on Google's physical network rather than a traditional per-region networking construct. A VPC network itself holds no IP address ranges; its **subnets** — regional sub-resources — hold the IP ranges (covered fully in [Section 20](./Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)).
 
 ## 2. Why It Exists / Problem It Solves
 
-Every cloud resource needs network isolation from other customers' resources and a private address space for internal communication. Without a VPC construct, every VM would either be exposed directly to the internet or share an address space with unrelated tenants — both unacceptable for security and manageability. A VPC solves this by giving each project (or group of projects, via Shared VPC — Section 25) an isolated, private IP address space with full control over routing and firewalling.
+Every cloud resource needs network isolation from other customers' resources and a private address space for internal communication. Without a VPC construct, every VM would either be exposed directly to the internet or share an address space with unrelated tenants — both unacceptable for security and manageability. A VPC solves this by giving each project (or group of projects, via Shared VPC — [Section 25](./Section-25-Part3-Shared-VPC-Peering-PSC.md)) an isolated, private IP address space with full control over routing and firewalling.
 
 GCP's specific design choice — making the VPC itself **global** rather than regional — solves an additional problem that AWS and Azure customers must engineer around manually: it lets a single network span every region on Earth without any peering, transit gateway, or explicit inter-region connectivity setup. A VM in `us-central1` and a VM in `asia-south1` can be in the same VPC network, communicate over internal (private) IP addresses, and be governed by the same set of firewall rules, by default.
 
@@ -19,7 +19,7 @@ GCP's specific design choice — making the VPC itself **global** rather than re
 A VPC network is created once, with no region specified, and its scope automatically extends to every GCP region. This is fundamentally different from AWS (where a VPC is created inside one specific region) and Azure (where a VNet is likewise regional). Consequences:
 
 - Firewall rules attached to a VPC apply network-wide, across all regions, unless scoped down with target tags/service accounts and regional considerations.
-- Routes (Section 20) can direct traffic between subnets in different regions without any peering construct — it is one network.
+- Routes ([Section 20](./Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)) can direct traffic between subnets in different regions without any peering construct — it is one network.
 - Only **subnets** carry a region and an IP range; the VPC itself is just the enclosing global namespace.
 
 ### 3.2 Auto Mode vs Custom Mode VPCs
@@ -29,7 +29,7 @@ Every VPC network is created in one of two modes, chosen at creation time (mode 
 - **Auto mode:** GCP automatically creates one subnet in **every** GCP region, each using a predetermined `/20` CIDR block from a reserved `10.128.0.0/9` range. Convenient for quick starts and learning, but you have no control over subnet CIDR ranges and a subnet exists in every region whether you use it or not, which is rarely desirable for real architecture.
 - **Custom mode:** No subnets are created automatically. You explicitly create each subnet, in each region you actually need, with an IP range you choose. This is the mode used for essentially all production and enterprise deployments, because it gives full control over IP address planning and avoids unwanted regional footprint.
 
-> 💡 **Tip:** Always create new production VPCs in custom mode. Auto mode is a convenience for tutorials, not an architecture pattern — most enterprises disable auto-mode VPC creation entirely via an Organization Policy constraint (`compute.skipDefaultNetworkCreation` and related constraints, covered in Section 37).
+> 💡 **Tip:** Always create new production VPCs in custom mode. Auto mode is a convenience for tutorials, not an architecture pattern — most enterprises disable auto-mode VPC creation entirely via an Organization Policy constraint (`compute.skipDefaultNetworkCreation` and related constraints, covered in [Section 37](../Part5/Section-37-Part5-Organization-Policies.md)).
 
 ### 3.3 The Default VPC and Its Pitfalls
 
@@ -37,21 +37,21 @@ Every new GCP project is created with a **default VPC network** — an auto-mode
 
 - **Pitfall — implicit broad exposure:** The default SSH/RDP rules mean any VM created without changes is reachable from the entire internet on those ports. This is a common source of real-world security incidents and audit findings.
 - **Pitfall — uncontrolled IP planning:** Because it is auto-mode, it has a subnet (and IP range) in every region automatically, complicating later custom IP address planning if left in place.
-- **Enterprise practice:** Delete the default VPC (or prevent its creation entirely via Org Policy on new projects) and build custom-mode VPCs deliberately, with firewall rules following least-privilege from the start (Section 21).
+- **Enterprise practice:** Delete the default VPC (or prevent its creation entirely via Org Policy on new projects) and build custom-mode VPCs deliberately, with firewall rules following least-privilege from the start ([Section 21](./Section-21-Part3-Firewall-Rules.md)).
 
 ### 3.4 VPC Network Components (Forward Map)
 
 A VPC network by itself is just a namespace; its practical behavior comes from components covered in the rest of Part 3:
 
-| Component                                       | Scope                                         | Covered In |
-| ----------------------------------------------- | --------------------------------------------- | ---------- |
-| Subnets (primary + secondary IP ranges)         | Regional                                      | Section 20 |
-| Routes (system-generated + custom)              | Global (routes can target regional next-hops) | Section 20 |
-| Firewall rules / hierarchical firewall policies | Global (VPC) / Org-Folder (hierarchical)      | Section 21 |
-| Load balancers                                  | Global or Regional depending on type          | Section 22 |
-| Cloud DNS                                       | Global (public) / VPC-scoped (private)        | Section 23 |
-| Cloud NAT, VPN, Interconnect                    | Regional (NAT/VPN gateway) / Global reach     | Section 24 |
-| Shared VPC, Peering, Private Service Connect    | Cross-project / cross-VPC                     | Section 25 |
+| Component                                       | Scope                                         | Covered In                                                           |
+| ----------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
+| Subnets (primary + secondary IP ranges)         | Regional                                      | [Section 20](./Section-20-Part3-Subnets-IP-Addressing-and-Routes.md) |
+| Routes (system-generated + custom)              | Global (routes can target regional next-hops) | [Section 20](./Section-20-Part3-Subnets-IP-Addressing-and-Routes.md) |
+| Firewall rules / hierarchical firewall policies | Global (VPC) / Org-Folder (hierarchical)      | [Section 21](./Section-21-Part3-Firewall-Rules.md)                   |
+| Load balancers                                  | Global or Regional depending on type          | [Section 22](./Section-22-Part3-Cloud-Load-Balancing.md)             |
+| Cloud DNS                                       | Global (public) / VPC-scoped (private)        | [Section 23](./Section-23-Part3-Cloud-DNS.md)                        |
+| Cloud NAT, VPN, Interconnect                    | Regional (NAT/VPN gateway) / Global reach     | [Section 24](./Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)       |
+| Shared VPC, Peering, Private Service Connect    | Cross-project / cross-VPC                     | [Section 25](./Section-25-Part3-Shared-VPC-Peering-PSC.md)           |
 
 ## 4. Comparison: GCP VPC vs AWS VPC vs Azure VNet
 
@@ -120,9 +120,9 @@ prod-vpc   CUSTOM       GLOBAL
 
 ## 7. Production & Enterprise Usage
 
-- **Delete or block the default VPC** in every production project; enforce this at scale via an Organization Policy constraint applied at the Folder or Organization level (Section 37), not case-by-case.
-- **One VPC per environment, not per team**, is a common enterprise pattern using Shared VPC (Section 25) — a single host VPC per environment (`prod`, `staging`, `dev`) shared into many service projects, rather than one VPC per application team, to keep IP address planning centralized.
-- **Global BGP routing mode** (`--bgp-routing-mode=global`) is standard for enterprises using Cloud Router with Interconnect/VPN (Section 24), since it advertises routes to all regions rather than just the local one.
+- **Delete or block the default VPC** in every production project; enforce this at scale via an Organization Policy constraint applied at the Folder or Organization level ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)), not case-by-case.
+- **One VPC per environment, not per team**, is a common enterprise pattern using Shared VPC ([Section 25](./Section-25-Part3-Shared-VPC-Peering-PSC.md)) — a single host VPC per environment (`prod`, `staging`, `dev`) shared into many service projects, rather than one VPC per application team, to keep IP address planning centralized.
+- **Global BGP routing mode** (`--bgp-routing-mode=global`) is standard for enterprises using Cloud Router with Interconnect/VPN ([Section 24](./Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)), since it advertises routes to all regions rather than just the local one.
 
 ## 8. Common Misconceptions
 
@@ -138,7 +138,7 @@ prod-vpc   CUSTOM       GLOBAL
 **Model answer:** Auto mode automatically creates one subnet per region using predetermined `/20` ranges from a reserved block, offering convenience but no control over IP planning. Custom mode creates no subnets automatically — you explicitly create subnets in only the regions you need, with CIDR ranges you choose. Production deployments almost always use custom mode for deliberate IP address management and to avoid an unwanted regional footprint.
 
 **🎯 Senior/Architect:** _A new enterprise customer wants every application team to have isolated projects for billing/IAM, but a single centrally-managed network with consistent firewall and IP address governance. How do the VPC-global design and auto/custom modes factor into your design?_
-**Model answer:** I'd use a Shared VPC (Section 25) architecture: one custom-mode host VPC per environment, owned by a central networking team, with subnets deliberately planned per region to avoid overlap. Application teams get their own service projects for billing/IAM isolation but attach to the shared host VPC's subnets for compute resources, inheriting centrally-managed firewall rules and routes. Because the VPC is global, this single host network can span every region the organization operates in without any cross-region peering, and because it's custom mode, IP address planning stays centrally controlled rather than fragmented per team — critical at enterprise scale to avoid CIDR overlap when connecting to on-premises networks via Interconnect/VPN (Section 24).
+**Model answer:** I'd use a Shared VPC ([Section 25](./Section-25-Part3-Shared-VPC-Peering-PSC.md)) architecture: one custom-mode host VPC per environment, owned by a central networking team, with subnets deliberately planned per region to avoid overlap. Application teams get their own service projects for billing/IAM isolation but attach to the shared host VPC's subnets for compute resources, inheriting centrally-managed firewall rules and routes. Because the VPC is global, this single host network can span every region the organization operates in without any cross-region peering, and because it's custom mode, IP address planning stays centrally controlled rather than fragmented per team — critical at enterprise scale to avoid CIDR overlap when connecting to on-premises networks via Interconnect/VPN ([Section 24](./Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)).
 
 ## 10. Key Takeaways
 
@@ -149,4 +149,4 @@ prod-vpc   CUSTOM       GLOBAL
 
 ## 11. Related Concepts
 
-Subnets and IP addressing (Section 20), firewall rules (Section 21), Shared VPC and Peering (Section 25), and Organization Policy enforcement of network guardrails (Section 37) all build directly on the VPC fundamentals introduced here.
+Subnets and IP addressing ([Section 20](./Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)), firewall rules ([Section 21](./Section-21-Part3-Firewall-Rules.md)), Shared VPC and Peering ([Section 25](./Section-25-Part3-Shared-VPC-Peering-PSC.md)), and Organization Policy enforcement of network guardrails ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)) all build directly on the VPC fundamentals introduced here.

@@ -10,14 +10,14 @@
 
 Every hands-on example across Parts 1-8 showed AWS CLI commands — `aws sqs create-queue`, `aws lambda create-function`, `aws cloudwatch put-metric-alarm` — as the teaching mechanism, while consistently noting that **production deployments use IaC instead**. The reason: manually created infrastructure (via console clicks or ad hoc CLI commands) has no durable record of _why_ it exists, no way to reproduce it exactly in another environment (staging, disaster recovery, a new region), no peer-review step before a change takes effect, and no reliable way to know what would happen if you tried to delete or modify it without carefully re-deriving its full current configuration by hand.
 
-IaC solves this by making infrastructure a first-class artifact of the same engineering discipline already applied to application code: version-controlled, reviewable via pull request, testable, and deployable through the same automated pipelines. CloudFormation specifically solves this as AWS's own native tool — deeply integrated with every AWS service (including day-one support for new service features, since AWS builds both), requiring no separate state-management infrastructure (unlike Terraform, previewed in §82), and free to use (you pay only for the resources it creates, not for CloudFormation itself).
+IaC solves this by making infrastructure a first-class artifact of the same engineering discipline already applied to application code: version-controlled, reviewable via pull request, testable, and deployable through the same automated pipelines. CloudFormation specifically solves this as AWS's own native tool — deeply integrated with every AWS service (including day-one support for new service features, since AWS builds both), requiring no separate state-management infrastructure (unlike Terraform, previewed in [§82](./Section-82-Part9-Terraform-on-AWS.md)), and free to use (you pay only for the resources it creates, not for CloudFormation itself).
 
 **What existed before it:** manual console configuration (undocumented, non-reproducible, error-prone) or ad hoc shell scripts wrapping CLI commands (better than nothing, but lacking any notion of "current desired state" — such scripts create resources but don't inherently know how to safely update or tear them down without bespoke, brittle logic).
 
 ## 3. Prerequisites and Dependencies
 
-- General familiarity with any AWS resource type from Parts 1-8 — this section uses SQS and Lambda as running examples, both covered in depth in §59 and §25 respectively.
-- **IAM** (§9-11): CloudFormation itself operates via IAM permissions (either the deploying user's own credentials, or an explicit service role), and most templates define IAM resources (roles, policies) as part of what they provision.
+- General familiarity with any AWS resource type from Parts 1-8 — this section uses SQS and Lambda as running examples, both covered in depth in [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md) and [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md) respectively.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): CloudFormation itself operates via IAM permissions (either the deploying user's own credentials, or an explicit service role), and most templates define IAM resources (roles, policies) as part of what they provision.
 - Basic YAML or JSON syntax familiarity is helpful but not assumed — this section explains template structure from first principles.
 
 ## 4. Internal Working
@@ -94,7 +94,7 @@ Template (YAML/JSON, version-controlled) --> CloudFormation --> Stack
   ```json
   { "Parameters": [], "Description": "Order processing queue and DLQ" }
   ```
-- **Production usage:** typically run as an automated first step in a CI/CD pipeline (§83) before any deployment attempt, catching syntax errors early and cheaply rather than during an actual deployment attempt.
+- **Production usage:** typically run as an automated first step in a CI/CD pipeline ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) before any deployment attempt, catching syntax errors early and cheaply rather than during an actual deployment attempt.
 - **Common errors:** YAML indentation errors are a very common source of validation failures — YAML's whitespace sensitivity is a frequent, if mundane, source of template authoring friction.
 - **Security impact:** requires only `cloudformation:ValidateTemplate`; purely a syntax check, doesn't touch any actual resources.
 
@@ -118,7 +118,7 @@ Template (YAML/JSON, version-controlled) --> CloudFormation --> Stack
   Successfully created/updated stack - order-processing-stack
   ```
 - **Important arguments:** `--capabilities CAPABILITY_IAM` (or `CAPABILITY_NAMED_IAM`) is a required, explicit acknowledgment when a template creates IAM resources — a deliberate CloudFormation safety measure requiring the deployer to consciously confirm they intend to create identity/permission resources, rather than this happening silently.
-- **Production usage:** in real pipelines, this (or the underlying create-change-set/execute-change-set pair) is invoked by CI/CD automation (§83) rather than run manually from a developer's laptop against production, though manual deployment is common for development/testing environments.
+- **Production usage:** in real pipelines, this (or the underlying create-change-set/execute-change-set pair) is invoked by CI/CD automation ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) rather than run manually from a developer's laptop against production, though manual deployment is common for development/testing environments.
 - **Common errors:** `ROLLBACK_COMPLETE` stack state after a failed creation means the stack must be deleted before retrying (a stack that failed to create cannot simply be re-created with the same name without first deleting the failed attempt); missing `--capabilities` when IAM resources are involved produces a clear, specific error requiring the flag.
 - **Security impact:** the deploying identity needs permissions for every resource type the template creates — a template creating IAM roles, Lambda functions, and SQS queues needs a correspondingly broad set of permissions, which is why production pipelines typically use a dedicated, carefully scoped deployment role rather than an individual engineer's personal credentials.
 
@@ -226,14 +226,14 @@ Outputs:
     Value: !GetAtt OrderQueue.Arn
 ```
 
-This single template — deployable to dev, staging, or production via the `Environment` parameter — captures exactly the SQS + DLQ + IAM role + Lambda + event source mapping pattern taught piece-by-piece across §59 and §25, but now as a single, version-controlled, repeatable, peer-reviewable definition rather than a sequence of manual CLI commands. Notice `!GetAtt OrderDLQ.Arn` referencing the DLQ before it's technically "created" in file order — CloudFormation resolves this dependency automatically based on the reference, not the order resources happen to appear in the file.
+This single template — deployable to dev, staging, or production via the `Environment` parameter — captures exactly the SQS + DLQ + IAM role + Lambda + event source mapping pattern taught piece-by-piece across [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md) and [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md), but now as a single, version-controlled, repeatable, peer-reviewable definition rather than a sequence of manual CLI commands. Notice `!GetAtt OrderDLQ.Arn` referencing the DLQ before it's technically "created" in file order — CloudFormation resolves this dependency automatically based on the reference, not the order resources happen to appear in the file.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** often begin with a handful of hand-written CloudFormation templates for their core infrastructure, growing organically as the team's IaC discipline matures.
-- **Enterprises** enforce IaC as a mandatory practice — manual console changes to production infrastructure are frequently prohibited by policy (sometimes technically enforced via restrictive IAM permissions preventing console-based mutation of certain resources), with all changes required to flow through version-controlled templates and a reviewed CI/CD pipeline (§83).
-- **Nested stacks** and **StackSets** (full depth §80) let large organizations compose reusable template modules and deploy consistent infrastructure across many accounts/regions, mirroring the same organization-wide deployment patterns seen with CloudTrail organization trails (§73) and Config Conformance Packs (§74).
-- **Drift detection** (full depth §80) addresses a real operational risk: someone manually modifying a CloudFormation-managed resource outside the template, causing the actual resource state to diverge ("drift") from what the template describes — a problem unique to IaC-managed environments that pure manual management doesn't have (because there's no "intended state" to drift from) but that IaC's own benefits make worth detecting and correcting.
+- **Enterprises** enforce IaC as a mandatory practice — manual console changes to production infrastructure are frequently prohibited by policy (sometimes technically enforced via restrictive IAM permissions preventing console-based mutation of certain resources), with all changes required to flow through version-controlled templates and a reviewed CI/CD pipeline ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)).
+- **Nested stacks** and **StackSets** (full depth [§80](./Section-80-Part9-CloudFormation-Advanced.md)) let large organizations compose reusable template modules and deploy consistent infrastructure across many accounts/regions, mirroring the same organization-wide deployment patterns seen with CloudTrail organization trails ([§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)) and Config Conformance Packs ([§74](../Part8/Section-74-Part8-AWS-Config.md)).
+- **Drift detection** (full depth [§80](./Section-80-Part9-CloudFormation-Advanced.md)) addresses a real operational risk: someone manually modifying a CloudFormation-managed resource outside the template, causing the actual resource state to diverge ("drift") from what the template describes — a problem unique to IaC-managed environments that pure manual management doesn't have (because there's no "intended state" to drift from) but that IaC's own benefits make worth detecting and correcting.
 
 ## 11. Security Considerations
 
@@ -243,14 +243,14 @@ This single template — deployable to dev, staging, or production via the `Envi
 
 ## 12. Performance Considerations
 
-- Large templates with many interdependent resources can take a meaningful amount of time to deploy, since CloudFormation respects dependency ordering rather than parallelizing everything — splitting a very large template into multiple, appropriately-scoped stacks (or using nested stacks, §80) can improve both deployment time and logical organization.
+- Large templates with many interdependent resources can take a meaningful amount of time to deploy, since CloudFormation respects dependency ordering rather than parallelizing everything — splitting a very large template into multiple, appropriately-scoped stacks (or using nested stacks, [§80](./Section-80-Part9-CloudFormation-Advanced.md)) can improve both deployment time and logical organization.
 - Change sets add a small amount of deployment-pipeline latency (computing the diff before applying it) but are a worthwhile trade-off for the safety of reviewing planned changes before they're applied, especially for production deployments.
 
 ## 13. Monitoring
 
-- Stack events (§8) are the primary "did this deployment succeed and why/why not" signal.
-- CloudFormation can optionally publish stack-level events to an SNS topic, enabling automated notification/alarming on deployment failures — a direct application of §61's SNS patterns to the IaC deployment process itself.
-- Drift detection results (§80) are worth periodically checking or actively monitoring, as a signal that manual out-of-band changes have occurred.
+- Stack events ([§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md)) are the primary "did this deployment succeed and why/why not" signal.
+- CloudFormation can optionally publish stack-level events to an SNS topic, enabling automated notification/alarming on deployment failures — a direct application of [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)'s SNS patterns to the IaC deployment process itself.
+- Drift detection results ([§80](./Section-80-Part9-CloudFormation-Advanced.md)) are worth periodically checking or actively monitoring, as a signal that manual out-of-band changes have occurred.
 
 ## 14. Troubleshooting
 
@@ -288,7 +288,7 @@ This single template — deployable to dev, staging, or production via the `Envi
 **Model answer:** First, pull the stack events and scan for the specific resource that first failed — not just the most recent events, since a single failure typically cascades into a series of subsequent rollback events that aren't themselves the root cause — and read that resource's ResourceStatusReason for the specific underlying error. UPDATE_ROLLBACK_COMPLETE specifically means CloudFormation successfully rolled back to the previous working state after the failure, so production should currently be in its prior, stable configuration rather than half-updated, which is good news operationally even though the update itself didn't succeed. Once the root cause is understood — commonly something like an IAM permission gap, an invalid property value, or a resource limit — fix the template to address that specific issue, and specifically re-review the change set for the corrected template before attempting the update again, in case the fix has other implications worth verifying beforehand.
 
 **🎯 Architect:** _"Design an IaC governance strategy for an organization where individual teams currently have direct console access to production and inconsistently use CloudFormation, leading to frequent drift and unpredictable infrastructure state."_
-**Model answer:** Move toward restricting direct console-based mutation of production resources via IAM policy — permitting read/view access broadly for visibility and debugging, but requiring actual create/update/delete actions on production infrastructure to flow only through the organization's CI/CD deployment pipeline's own role, which teams don't have standing credentials for directly. This structurally prevents the "quick manual fix" pattern that causes drift, since there's no direct path to make an out-of-band change even if someone wanted to. Pair this with regular, automated drift detection (§80) across all managed stacks specifically to catch and surface any remaining discrepancies for correction, and with clear internal documentation and tooling making the "right way" (a template change through the reviewed pipeline) at least as fast and low-friction as the "wrong way" used to be, since governance that's purely restrictive without also being practical tends to get worked around rather than followed. Roll this out incrementally, starting with the most critical/sensitive production stacks first, rather than attempting an org-wide simultaneous cutover that risks significant workflow disruption.
+**Model answer:** Move toward restricting direct console-based mutation of production resources via IAM policy — permitting read/view access broadly for visibility and debugging, but requiring actual create/update/delete actions on production infrastructure to flow only through the organization's CI/CD deployment pipeline's own role, which teams don't have standing credentials for directly. This structurally prevents the "quick manual fix" pattern that causes drift, since there's no direct path to make an out-of-band change even if someone wanted to. Pair this with regular, automated drift detection ([§80](./Section-80-Part9-CloudFormation-Advanced.md)) across all managed stacks specifically to catch and surface any remaining discrepancies for correction, and with clear internal documentation and tooling making the "right way" (a template change through the reviewed pipeline) at least as fast and low-friction as the "wrong way" used to be, since governance that's purely restrictive without also being practical tends to get worked around rather than followed. Roll this out incrementally, starting with the most critical/sensitive production stacks first, rather than attempting an org-wide simultaneous cutover that risks significant workflow disruption.
 
 ## 18. Common Misconceptions
 
@@ -305,6 +305,6 @@ This single template — deployable to dev, staging, or production via the `Envi
 
 ## 20. Related Concepts
 
-- **CloudFormation Advanced** (intrinsic functions, nested stacks, StackSets, drift detection in full depth) → next section, §80.
-- **IAM** (the identity/permission model underlying both deployment identities and the resources templates create) → §9-11.
-- Every AWS resource type covered across Parts 1-8 is directly provisionable via CloudFormation — this section's SQS/Lambda example directly reuses §59 and §25 concepts.
+- **CloudFormation Advanced** (intrinsic functions, nested stacks, StackSets, drift detection in full depth) → next section, [§80](./Section-80-Part9-CloudFormation-Advanced.md).
+- **IAM** (the identity/permission model underlying both deployment identities and the resources templates create) → [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md).
+- Every AWS resource type covered across Parts 1-8 is directly provisionable via CloudFormation — this section's SQS/Lambda example directly reuses [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md) and [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md) concepts.

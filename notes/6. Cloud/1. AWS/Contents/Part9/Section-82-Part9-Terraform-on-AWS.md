@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-CloudFormation (§79-80) and CDK (§81) are both fundamentally **AWS-specific** — they exist to manage AWS resources, and while CloudFormation has some multi-service reach, neither tool has any concept of managing a non-AWS resource. Many real organizations run genuinely **multi-cloud or hybrid infrastructure** (AWS plus Azure or GCP, AWS plus on-premises systems, AWS plus SaaS tools like Datadog or PagerDuty that also need to be provisioned/configured) — and want **one consistent IaC tool, language, and workflow** across all of it, rather than learning and maintaining separate tooling per platform.
+CloudFormation ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)) and CDK ([§81](./Section-81-Part9-AWS-CDK.md)) are both fundamentally **AWS-specific** — they exist to manage AWS resources, and while CloudFormation has some multi-service reach, neither tool has any concept of managing a non-AWS resource. Many real organizations run genuinely **multi-cloud or hybrid infrastructure** (AWS plus Azure or GCP, AWS plus on-premises systems, AWS plus SaaS tools like Datadog or PagerDuty that also need to be provisioned/configured) — and want **one consistent IaC tool, language, and workflow** across all of it, rather than learning and maintaining separate tooling per platform.
 
 Terraform solves this by being **provider-agnostic at its core** — the Terraform engine itself knows nothing about AWS specifically; an AWS **provider** (a plugin) translates Terraform's generic resource-management model into actual AWS API calls, and the exact same pattern applies to every other supported system via its own provider. This is architecturally different from CDK, which is _also_ language-based and code-like in authoring experience but generates CloudFormation specifically — Terraform talks to AWS APIs directly, with no CloudFormation layer involved at all.
 
@@ -16,8 +16,8 @@ Terraform solves this by being **provider-agnostic at its core** — the Terrafo
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudFormation Fundamentals & Advanced** (§79-80): understanding CloudFormation's declarative desired-state model transfers conceptually, even though Terraform's actual execution mechanics (state file, plan/apply) differ meaningfully, as covered below.
-- General familiarity with any AWS resource type — this section reuses the SQS+Lambda example from §79 and §3 for direct, side-by-side comparison.
+- **CloudFormation Fundamentals & Advanced** ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§80](./Section-80-Part9-CloudFormation-Advanced.md)): understanding CloudFormation's declarative desired-state model transfers conceptually, even though Terraform's actual execution mechanics (state file, plan/apply) differ meaningfully, as covered below.
+- General familiarity with any AWS resource type — this section reuses the SQS+Lambda example from [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md) and [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md) for direct, side-by-side comparison.
 
 ## 4. Internal Working
 
@@ -91,7 +91,7 @@ main.tf (HCL config, provider-agnostic engine)
   - Installing hashicorp/aws v5.x...
   Terraform has been successfully initialized!
   ```
-- **Production usage:** run once per working directory (and re-run whenever providers/backend configuration change); typically the first step in any CI/CD pipeline stage that runs Terraform (§83).
+- **Production usage:** run once per working directory (and re-run whenever providers/backend configuration change); typically the first step in any CI/CD pipeline stage that runs Terraform ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)).
 - **Common errors:** backend configuration errors (e.g., an S3 bucket for remote state that doesn't exist or isn't accessible) fail at this step, before any actual infrastructure changes are attempted.
 
 ### `terraform plan`
@@ -117,7 +117,7 @@ main.tf (HCL config, provider-agnostic engine)
 
 - **Important arguments:** `-out=<planfile>` saves the computed plan to a file, which can then be passed to `terraform apply` to guarantee the exact reviewed plan is what gets applied — important in CI/CD pipelines where you want to ensure no drift occurs between the reviewed plan and the actual applied change.
 - **Production usage:** the direct Terraform equivalent of reviewing a CloudFormation change set — this review step before any real change is applied is a shared, foundational IaC safety practice across every tool covered in this Part.
-- **Common errors:** a plan showing an unexpected `destroy` and `create` (replacement) for a resource you expected to update in place is the Terraform equivalent of the §79 CloudFormation warning about resource replacement — some property changes force replacement in Terraform too, and the plan output makes this explicit before it happens.
+- **Common errors:** a plan showing an unexpected `destroy` and `create` (replacement) for a resource you expected to update in place is the Terraform equivalent of the [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md) CloudFormation warning about resource replacement — some property changes force replacement in Terraform too, and the plan output makes this explicit before it happens.
 
 ### `terraform apply`
 
@@ -133,7 +133,7 @@ main.tf (HCL config, provider-agnostic engine)
   **Expected output:** progress output as each resource is created/modified/destroyed, concluding with `Apply complete! Resources: 4 added, 0 changed, 0 destroyed.`
 - **Production usage:** in CI/CD pipelines, typically applied against a previously reviewed and saved plan file (`terraform apply tfplan`) rather than an interactively-approved fresh plan, ensuring exactly what was reviewed is exactly what gets applied.
 - **Common errors:** state lock conflicts (`Error: Error acquiring the state lock`) occur if another `apply` is already in progress — the DynamoDB-based locking mechanism (for an S3 backend) is specifically what prevents two concurrent applies from corrupting the state file, and this error is that protection working as intended, not a bug.
-- **Security impact:** the credentials/role Terraform runs under needs permissions for every resource type the configuration manages, exactly analogous to CloudFormation's deployment-role considerations (§79).
+- **Security impact:** the credentials/role Terraform runs under needs permissions for every resource type the configuration manages, exactly analogous to CloudFormation's deployment-role considerations ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)).
 
 ## 9. Hands-On Example — The Same SQS+Lambda Pattern in Terraform (HCL)
 
@@ -201,13 +201,13 @@ output "queue_url" {
 }
 ```
 
-This is functionally identical to §79's CloudFormation YAML and §81's CDK Python — same resources, same end result — but demonstrates HCL's syntax and Terraform's implicit dependency resolution via resource attribute references (`aws_sqs_queue.order_dlq.arn`), conceptually parallel to CloudFormation's `!GetAtt` but using Terraform's own reference syntax, resolved from Terraform's own state/plan engine rather than CloudFormation's.
+This is functionally identical to [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s CloudFormation YAML and [§81](./Section-81-Part9-AWS-CDK.md)'s CDK Python — same resources, same end result — but demonstrates HCL's syntax and Terraform's implicit dependency resolution via resource attribute references (`aws_sqs_queue.order_dlq.arn`), conceptually parallel to CloudFormation's `!GetAtt` but using Terraform's own reference syntax, resolved from Terraform's own state/plan engine rather than CloudFormation's.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups and enterprises with genuinely multi-cloud or multi-system infrastructure** (AWS plus Azure/GCP, or AWS plus significant SaaS tooling like Datadog, PagerDuty, GitHub configuration) are the clearest fit for Terraform's core value proposition — one tool, one language, one workflow across everything, rather than fragmented per-platform tooling.
 - **Terraform Cloud/Enterprise** (HashiCorp's commercial offering) or **OpenTofu** (the open-source fork following HashiCorp's 2023 license change) provide managed remote state, policy-as-code enforcement, and team collaboration features beyond the open-source CLI tool alone — a genuinely relevant, evolving area worth verifying current details against official documentation given the licensing history.
-- **Modules** (Terraform's reusable-component mechanism) are published both by HashiCorp/AWS themselves and by the broader community (the Terraform Registry), letting teams consume well-tested, pre-built patterns rather than authoring every resource from scratch — conceptually parallel to CDK's construct libraries (§81) and CloudFormation's nested-stack modules (§80), but with a larger, more cloud-agnostic community ecosystem given Terraform's broader adoption across multiple clouds.
+- **Modules** (Terraform's reusable-component mechanism) are published both by HashiCorp/AWS themselves and by the broader community (the Terraform Registry), letting teams consume well-tested, pre-built patterns rather than authoring every resource from scratch — conceptually parallel to CDK's construct libraries ([§81](./Section-81-Part9-AWS-CDK.md)) and CloudFormation's nested-stack modules ([§80](./Section-80-Part9-CloudFormation-Advanced.md)), but with a larger, more cloud-agnostic community ecosystem given Terraform's broader adoption across multiple clouds.
 - Organizations with existing, deep Terraform investment predating significant AWS usage (common for companies that started multi-cloud, or started on a different cloud, and later adopted AWS) frequently continue using Terraform for AWS specifically for workflow consistency with their existing non-AWS Terraform-managed infrastructure.
 
 ## 11. Security Considerations
@@ -219,12 +219,12 @@ This is functionally identical to §79's CloudFormation YAML and §81's CDK Pyth
 ## 12. Performance Considerations
 
 - `terraform plan`'s live-API-querying behavior (checking actual current AWS state, not just the state file) adds some latency proportional to the number of managed resources, but is specifically what allows Terraform to detect drift during planning — a genuine trade-off between plan speed and drift-awareness.
-- Very large Terraform configurations/state files can see meaningfully slower plan/apply cycles; splitting into multiple smaller, appropriately-scoped state files (sometimes called "workspaces" or separate root modules) is a common production pattern for managing this at scale, conceptually parallel to splitting a very large CloudFormation template into multiple stacks (§79).
+- Very large Terraform configurations/state files can see meaningfully slower plan/apply cycles; splitting into multiple smaller, appropriately-scoped state files (sometimes called "workspaces" or separate root modules) is a common production pattern for managing this at scale, conceptually parallel to splitting a very large CloudFormation template into multiple stacks ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)).
 
 ## 13. Monitoring
 
-- Terraform itself doesn't have a CloudFormation-stack-events equivalent built into AWS — plan/apply output and any CI/CD pipeline logging around Terraform runs are the primary operational visibility, making pipeline logging discipline (§83) particularly important for Terraform-managed infrastructure specifically.
-- Drift detection (comparable in concept to CloudFormation's, §80) is achieved by simply running `terraform plan` periodically and reviewing whether it reports any unexpected changes — Terraform doesn't have a separate dedicated "drift detection" feature distinct from its normal plan mechanism, since plan inherently checks live state against configuration every time.
+- Terraform itself doesn't have a CloudFormation-stack-events equivalent built into AWS — plan/apply output and any CI/CD pipeline logging around Terraform runs are the primary operational visibility, making pipeline logging discipline ([§83](./Section-83-Part9-CodePipeline-CodeBuild.md)) particularly important for Terraform-managed infrastructure specifically.
+- Drift detection (comparable in concept to CloudFormation's, [§80](./Section-80-Part9-CloudFormation-Advanced.md)) is achieved by simply running `terraform plan` periodically and reviewing whether it reports any unexpected changes — Terraform doesn't have a separate dedicated "drift detection" feature distinct from its normal plan mechanism, since plan inherently checks live state against configuration every time.
 
 ## 14. Troubleshooting
 
@@ -246,9 +246,9 @@ This is functionally identical to §79's CloudFormation YAML and §81's CDK Pyth
 ## 16. Anti-Patterns & Common Mistakes
 
 - ❌ Using local-only state storage for team or production infrastructure, risking loss/corruption and preventing safe concurrent collaboration.
-- ❌ Manually modifying a Terraform-managed resource outside Terraform, causing the exact same drift problem discussed for CloudFormation (§80), but requiring `terraform plan`/`import` rather than CloudFormation's dedicated drift-detection feature to identify and reconcile.
+- ❌ Manually modifying a Terraform-managed resource outside Terraform, causing the exact same drift problem discussed for CloudFormation ([§80](./Section-80-Part9-CloudFormation-Advanced.md)), but requiring `terraform plan`/`import` rather than CloudFormation's dedicated drift-detection feature to identify and reconcile.
 - ❌ Applying changes without reviewing the plan output, missing an unexpected destroy/replace action on a critical stateful resource.
-- **Common misconception:** "Terraform and CloudFormation/CDK are basically interchangeable, just pick whichever." Not entirely — the multi-cloud/multi-provider capability is Terraform's genuine, distinguishing value proposition; for a purely single-cloud AWS shop with no other systems needing IaC management, CloudFormation/CDK's deeper AWS-native integration and lack of separate state-file management responsibility are real, legitimate counter-considerations, not just arbitrary preference — the full comparison is covered next in §84.
+- **Common misconception:** "Terraform and CloudFormation/CDK are basically interchangeable, just pick whichever." Not entirely — the multi-cloud/multi-provider capability is Terraform's genuine, distinguishing value proposition; for a purely single-cloud AWS shop with no other systems needing IaC management, CloudFormation/CDK's deeper AWS-native integration and lack of separate state-file management responsibility are real, legitimate counter-considerations, not just arbitrary preference — the full comparison is covered next in [§84](./Section-84-Part9-CodeDeploy.md).
 
 ## 17. Interview Questions with Model Answers
 
@@ -279,6 +279,6 @@ This is functionally identical to §79's CloudFormation YAML and §81's CDK Pyth
 
 ## 20. Related Concepts
 
-- **CloudFormation Fundamentals & Advanced, AWS CDK** (the AWS-native alternatives directly contrasted throughout this section) → §79-81.
-- **CI/CD for Infrastructure** (where `terraform plan`/`apply` fit into an automated pipeline, including remote state and locking considerations) → next section, §83.
-- **Choosing the Right IaC Tool** (the full CloudFormation vs. CDK vs. Terraform decision framework) → §84.
+- **CloudFormation Fundamentals & Advanced, AWS CDK** (the AWS-native alternatives directly contrasted throughout this section) → [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§81](./Section-81-Part9-AWS-CDK.md).
+- **CI/CD for Infrastructure** (where `terraform plan`/`apply` fit into an automated pipeline, including remote state and locking considerations) → next section, [§83](./Section-83-Part9-CodePipeline-CodeBuild.md).
+- **Choosing the Right IaC Tool** (the full CloudFormation vs. CDK vs. Terraform decision framework) → [§84](./Section-84-Part9-CodeDeploy.md).

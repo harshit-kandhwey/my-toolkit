@@ -171,6 +171,6 @@ Senior - Design API architecture for tiered external API sales, needing global l
 
 ## Related Concepts (forward links)
 
-- VPC Endpoints (for Private APIs), Flow Logs, network troubleshooting -> §37 (next, final content section)
+- VPC Endpoints (for Private APIs), Flow Logs, network troubleshooting -> [§37](./Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md) (next, final content section)
 - Amazon Cognito in full depth -> Part 10 (related technologies)
-- Part 4 Wrap-Up and comprehensive Networking interview drill -> §38
+- Part 4 Wrap-Up and comprehensive Networking interview drill -> [§38](./Section-38-Part4-WrapUp-and-Interview-Drill.md)

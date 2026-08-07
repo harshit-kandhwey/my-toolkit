@@ -4,11 +4,11 @@
 
 **Plain language:** Azure App Service lets you deploy a web application, API, or mobile backend by just handing Azure your code (or container), without ever creating, patching, or managing a VM yourself — Azure runs it on infrastructure it fully manages.
 
-**Precise definition:** Azure App Service is a fully managed Platform-as-a-Service (PaaS) offering for hosting web applications, REST APIs, and mobile backends, supporting multiple languages and frameworks natively or via custom containers, with built-in support for autoscaling, deployment slots, custom domains/TLS, and integration with CI/CD pipelines — Microsoft manages the underlying OS, runtime patching, and infrastructure entirely, per the PaaS responsibility model introduced in Section 2.5.
+**Precise definition:** Azure App Service is a fully managed Platform-as-a-Service (PaaS) offering for hosting web applications, REST APIs, and mobile backends, supporting multiple languages and frameworks natively or via custom containers, with built-in support for autoscaling, deployment slots, custom domains/TLS, and integration with CI/CD pipelines — Microsoft manages the underlying OS, runtime patching, and infrastructure entirely, per the PaaS responsibility model introduced in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).5.
 
 ## 2. Why It Exists / Problem It Solves
 
-Running a web application on IaaS VMs (Section 11) or a VM Scale Set (Section 12) requires the customer to manage OS patching, runtime installation and updates, web server configuration, scaling logic, and load balancing — substantial operational overhead for a very common use case (hosting a web app or API) that, in the majority of cases, doesn't actually require OS-level customization. App Service exists to eliminate that overhead entirely for this common case: the customer supplies application code or a container image, and Azure handles everything below the application layer, letting development teams deploy and iterate faster without needing dedicated infrastructure operations expertise for every project.
+Running a web application on IaaS VMs ([Section 11](./Section-11-Part3-Azure-Virtual-Machines.md)) or a VM Scale Set ([Section 12](./Section-12-Part3-VM-Scale-Sets.md)) requires the customer to manage OS patching, runtime installation and updates, web server configuration, scaling logic, and load balancing — substantial operational overhead for a very common use case (hosting a web app or API) that, in the majority of cases, doesn't actually require OS-level customization. App Service exists to eliminate that overhead entirely for this common case: the customer supplies application code or a container image, and Azure handles everything below the application layer, letting development teams deploy and iterate faster without needing dedicated infrastructure operations expertise for every project.
 
 ## 3. Core Concepts
 
@@ -35,7 +35,7 @@ App Service natively supports common language runtimes (as of general Azure prac
 
 - **Continuous deployment from source control** — App Service can be configured to automatically deploy on every push to a connected GitHub/Azure DevOps repository branch, the standard modern pattern integrated with CI/CD (Part 9).
 - **ZIP deploy** — pushing a pre-built application package directly, common in CI/CD pipeline steps.
-- **Container deploy** — pointing App Service at a container image in Azure Container Registry (Section 35) or another registry.
+- **Container deploy** — pointing App Service at a container image in Azure Container Registry ([Section 35](../Part7/Section-35-Part7-Azure-Container-Registry.md)) or another registry.
 
 ### 3.3 Deployment Slots
 
@@ -50,11 +50,11 @@ App Service natively supports common language runtimes (as of general Azure prac
 App Service supports two scaling dimensions:
 
 - **Scale up** (vertical) — moving to a higher App Service Plan tier/size for more CPU/memory per instance.
-- **Scale out** (horizontal) — increasing the number of running instances behind the built-in load balancing, either manually or via autoscale rules (conceptually identical to the VM Scale Set autoscaling covered in Section 12.3.2, but managed entirely by the App Service platform rather than requiring the customer to configure a separate scale set and load balancer).
+- **Scale out** (horizontal) — increasing the number of running instances behind the built-in load balancing, either manually or via autoscale rules (conceptually identical to the VM Scale Set autoscaling covered in [Section 12](./Section-12-Part3-VM-Scale-Sets.md).3.2, but managed entirely by the App Service platform rather than requiring the customer to configure a separate scale set and load balancer).
 
 ### 3.5 Networking Integration
 
-By default, an App Service app is reachable over the public internet at a Microsoft-provided subdomain (`<app-name>.azurewebsites.net`), with support for custom domains and managed TLS certificates. For network isolation, App Service supports **VNet Integration** (allowing the app to reach resources inside a private Virtual Network, Section 21) and **Private Endpoints** (allowing inbound traffic to the app to be restricted to private network paths rather than the public internet) — these networking concepts are covered in depth in Part 5, and are commonly required in enterprise architectures where the app must reach a database or backend service that isn't publicly exposed.
+By default, an App Service app is reachable over the public internet at a Microsoft-provided subdomain (`<app-name>.azurewebsites.net`), with support for custom domains and managed TLS certificates. For network isolation, App Service supports **VNet Integration** (allowing the app to reach resources inside a private Virtual Network, [Section 21](../Part5/Section-21-Part5-Virtual-Network-Fundamentals.md)) and **Private Endpoints** (allowing inbound traffic to the app to be restricted to private network paths rather than the public internet) — these networking concepts are covered in depth in Part 5, and are commonly required in enterprise architectures where the app must reach a database or backend service that isn't publicly exposed.
 
 ## 4. Architecture Diagram
 
@@ -124,7 +124,7 @@ Enterprises use App Service extensively for internal and customer-facing web app
 ## 7. Security Considerations
 
 - Because App Service is internet-reachable by default via its `.azurewebsites.net` domain, restricting or disabling public access (via access restrictions, Private Endpoints, or requiring traffic to flow only through a fronting service like Front Door/Application Gateway) is an important consideration for apps that shouldn't be directly internet-accessible.
-- Managed Identities (Section 9) are the recommended way for an App Service app to authenticate to other Azure resources (like Key Vault or a Storage Account), avoiding stored connection-string secrets in application configuration wherever possible.
+- Managed Identities ([Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) are the recommended way for an App Service app to authenticate to other Azure resources (like Key Vault or a Storage Account), avoiding stored connection-string secrets in application configuration wherever possible.
 - TLS should always be enforced (HTTPS-only setting), and Azure-managed certificates can handle custom domain TLS without the customer needing to manually procure or rotate certificates.
 
 ## 8. Performance Considerations
@@ -133,7 +133,7 @@ Cold start latency (the delay before an app instance is ready to serve its first
 
 ## 9. Monitoring
 
-App Service integrates natively with Application Insights (Section 52, covered fully in Part 10) for request tracing, dependency tracking, and performance monitoring, in addition to standard Azure Monitor platform metrics (CPU, memory, response time, HTTP error rates) available by default.
+App Service integrates natively with Application Insights ([Section 52](../Part10/Section-52-Part10-Application-Insights.md), covered fully in Part 10) for request tracing, dependency tracking, and performance monitoring, in addition to standard Azure Monitor platform metrics (CPU, memory, response time, HTTP error rates) available by default.
 
 ## 10. Troubleshooting
 
@@ -143,7 +143,7 @@ App Service integrates natively with Application Insights (Section 52, covered f
 | App works fine at low traffic but degrades under load               | Under-provisioned tier/instance count, or autoscale rules too conservative               | Review scale-out rules and consider a higher tier or more aggressive scale-out thresholds                |
 | Slot swap causes a brief spike in errors immediately after swapping | New version wasn't properly warmed up before the swap completed                          | Configure swap with warm-up (application initialization) enabled before the swap fully redirects traffic |
 
-## 11. Interview Questions — Section 13
+## 11. Interview Questions — [Section 13](./Section-13-Part3-Azure-App-Service.md)
 
 ### 🎯 Beginner
 
@@ -151,7 +151,7 @@ App Service integrates natively with Application Insights (Section 52, covered f
 
 _Model answer:_ App Service is PaaS — Microsoft manages the OS, runtime patching, and underlying infrastructure entirely, so the team only manages application code and configuration. This removes the operational burden of OS patching, manual scaling configuration, and infrastructure management that a VM-hosted application would require, at the cost of less low-level control, which is usually an acceptable trade-off for standard web applications and APIs.
 
-_What the interviewer is probing:_ whether the candidate can connect App Service concretely back to the general PaaS-vs-IaaS trade-off established in Section 2.
+_What the interviewer is probing:_ whether the candidate can connect App Service concretely back to the general PaaS-vs-IaaS trade-off established in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).
 
 ### 🎯 Senior
 
@@ -175,4 +175,4 @@ _What the interviewer is probing:_ whether the candidate has genuine familiarity
 
 ## 14. Related Concepts (Next Up)
 
-Section 14 covers **Azure Functions** — Azure's serverless/FaaS compute offering (introduced conceptually in Section 2.7), representing a further step along the PaaS-to-serverless abstraction spectrum from App Service, where even the concept of a continuously-running app instance is abstracted away in favor of individually-triggered, independently-scaled function executions.
+[Section 14](./Section-14-Part3-Azure-Functions.md) covers **Azure Functions** — Azure's serverless/FaaS compute offering (introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).7), representing a further step along the PaaS-to-serverless abstraction spectrum from App Service, where even the concept of a continuously-running app instance is abstracted away in favor of individually-triggered, independently-scaled function executions.

@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-§12 gave you cheap, instant branches — the natural consequence is that work constantly diverges. Merging is the half of the branch lifecycle that reunites it: without a reliable, automatic way to combine parallel lines of development, branching would be a one-way trip, and the entire copy-modify-merge philosophy from §1's distributed-model discussion that Git is built on would collapse back into manual, error-prone reconciliation.
+[§12](./Section-12-Part4-Branching-In-Depth.md) gave you cheap, instant branches — the natural consequence is that work constantly diverges. Merging is the half of the branch lifecycle that reunites it: without a reliable, automatic way to combine parallel lines of development, branching would be a one-way trip, and the entire copy-modify-merge philosophy from [§1](../Part1/Section-01-Part1-Version-Control-Fundamentals.md)'s distributed-model discussion that Git is built on would collapse back into manual, error-prone reconciliation.
 
 ## 3. Fast-Forward Merges — Mechanics
 
@@ -83,7 +83,7 @@ Merge made by the 'ort' strategy.
  1 file changed, 12 insertions(+)
 ```
 
-The resulting merge commit `M4` is structurally ordinary except for one thing: its commit object (§5's commit-object coverage) lists **two** `parent` lines instead of one. Everything else about it — a root tree, author/committer, a message — is identical in shape to any other commit.
+The resulting merge commit `M4` is structurally ordinary except for one thing: its commit object ([§5](../Part2/Section-05-Part2-Object-Model.md)'s commit-object coverage) lists **two** `parent` lines instead of one. Everything else about it — a root tree, author/committer, a message — is identical in shape to any other commit.
 
 > 💡 **Tip:** `git merge-base main feature-payments` prints the exact commit Git is using as the common ancestor — genuinely useful when you need to understand _why_ a merge behaved the way it did, or to manually diff "what changed on this branch since it diverged" (`git diff $(git merge-base main feature) feature`).
 
@@ -126,21 +126,21 @@ $ git merge -s recursive feature-x
 $ git merge -X ours feature-x
 ```
 
-| Strategy (`-s`)              | What it is                                                                                                          | When Git uses it                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `ort` (default, Git 2.34+)   | "Ostensibly Recursive Twist" — the modern rewrite of `recursive`, faster and more correct on renames                | Default for merging two branches                                                   |
-| `recursive` (legacy default) | Predecessor to `ort`; still available, still correct, just superseded                                               | Explicitly requested, or on older Git                                              |
-| `resolve`                    | An older, simpler three-way merge, only handles two heads, doesn't handle renames as well                           | Rarely chosen manually today                                                       |
-| `octopus`                    | Merges **more than two** branches simultaneously in one commit                                                      | Default automatically when you pass more than one branch to `git merge`            |
-| `ours`                       | Records a merge but **discards all content changes from the other branch entirely** — keeps your tree exactly as-is | Deliberately "pretend to merge, keep only our history," a narrow and rare use case |
-| `subtree`                    | A variant for merging a whole separate project as a subdirectory                                                    | Legacy alternative to `git subtree` (§27)                                          |
+| Strategy (`-s`)              | What it is                                                                                                          | When Git uses it                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `ort` (default, Git 2.34+)   | "Ostensibly Recursive Twist" — the modern rewrite of `recursive`, faster and more correct on renames                | Default for merging two branches                                                              |
+| `recursive` (legacy default) | Predecessor to `ort`; still available, still correct, just superseded                                               | Explicitly requested, or on older Git                                                         |
+| `resolve`                    | An older, simpler three-way merge, only handles two heads, doesn't handle renames as well                           | Rarely chosen manually today                                                                  |
+| `octopus`                    | Merges **more than two** branches simultaneously in one commit                                                      | Default automatically when you pass more than one branch to `git merge`                       |
+| `ours`                       | Records a merge but **discards all content changes from the other branch entirely** — keeps your tree exactly as-is | Deliberately "pretend to merge, keep only our history," a narrow and rare use case            |
+| `subtree`                    | A variant for merging a whole separate project as a subdirectory                                                    | Legacy alternative to `git subtree` ([§27](../Part6/Section-27-Part6-Submodules-Subtrees.md)) |
 
-| Strategy Option (`-X`)   | Effect                                                                                                                                             | Requires strategy |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `-X ours`                | On a genuine per-file/per-hunk **conflict**, prefer _our_ side automatically, but still incorporate the other branch's **non-conflicting** changes | `ort`/`recursive` |
-| `-X theirs`              | Same, but prefer the incoming branch's side on conflicts                                                                                           | `ort`/`recursive` |
-| `-X ignore-space-change` | Don't treat whitespace-only differences as conflicts                                                                                               | `ort`/`recursive` |
-| `-X renormalize`         | Re-apply `.gitattributes` (§11) normalization before comparing, avoiding spurious line-ending conflicts                                            | `ort`/`recursive` |
+| Strategy Option (`-X`)   | Effect                                                                                                                                                             | Requires strategy |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| `-X ours`                | On a genuine per-file/per-hunk **conflict**, prefer _our_ side automatically, but still incorporate the other branch's **non-conflicting** changes                 | `ort`/`recursive` |
+| `-X theirs`              | Same, but prefer the incoming branch's side on conflicts                                                                                                           | `ort`/`recursive` |
+| `-X ignore-space-change` | Don't treat whitespace-only differences as conflicts                                                                                                               | `ort`/`recursive` |
+| `-X renormalize`         | Re-apply `.gitattributes` ([§11](../Part3/Section-11-Part3-Ignoring-Controlling-Files.md)) normalization before comparing, avoiding spurious line-ending conflicts | `ort`/`recursive` |
 
 > ⚠️ **Critical clarification / Common confusion to preempt:** `-s ours` and `-X ours` sound identical but do drastically different things. `git merge -s ours feature-x` produces a merge commit that **records feature-x as merged in the graph but silently discards every one of its content changes** — the resulting tree is byte-identical to what you had before, full stop, even for files feature-x never touched conflictingly. `git merge -X ours feature-x` performs a **real** three-way merge, incorporating feature-x's non-conflicting changes normally, and only falls back to "prefer our side" on the specific hunks that genuinely conflict. Using `-s ours` when you meant `-X ours` is a classic way to accidentally throw away an entire branch's work while the commit log claims it was merged.
 
@@ -216,7 +216,7 @@ Expected output:
 [main 7c2a9f1] Merge branch 'feature-pricing'
 ```
 
-> 💡 **Tip:** For multi-file conflicts, a configured mergetool (§8's mergetool configuration) turns this into a guided visual workflow — `git mergetool` launches your registered tool per conflicted file and stages each one automatically once you close it with a resolution saved.
+> 💡 **Tip:** For multi-file conflicts, a configured mergetool ([§8](../Part3/Section-08-Part3-Installation-Configuration.md)'s mergetool configuration) turns this into a guided visual workflow — `git mergetool` launches your registered tool per conflicted file and stages each one automatically once you close it with a resolution saved.
 
 ## 9. `git merge --abort` — Backing Out Entirely
 
@@ -227,7 +227,7 @@ If a conflict resolution turns out to be more than you want to deal with right n
 $ git merge --abort
 ```
 
-This restores the working directory, index, and branch pointer to precisely how they were before `git merge` was run — as though the merge attempt never happened. It only works while a merge is actually in progress (i.e., conflict markers are still unresolved); once you've committed the merge, `--abort` is no longer applicable and undoing it becomes a `git reset`/`git revert` question instead (§15).
+This restores the working directory, index, and branch pointer to precisely how they were before `git merge` was run — as though the merge attempt never happened. It only works while a merge is actually in progress (i.e., conflict markers are still unresolved); once you've committed the merge, `--abort` is no longer applicable and undoing it becomes a `git reset`/`git revert` question instead ([§15](./Section-15-Part4-Undoing-Things.md)).
 
 ## 10. Squash Merges: `--squash`
 
@@ -286,8 +286,8 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 
 ## 12. Production & Enterprise Usage
 
-- Hosting platforms' pull-request "Merge" button typically offers three modes mapping directly onto this section: **Merge commit** (ordinary/`--no-ff`), **Squash and merge** (the squash-merges section above), and **Rebase and merge** (§14) — the platform-level names for exactly the mechanics taught here.
-- Branch protection rules (§23) commonly require PR checks (CI, review approval) to pass before the merge button is even enabled, but the underlying `git merge` mechanics are identical whether triggered by a human locally or by the platform's merge button.
+- Hosting platforms' pull-request "Merge" button typically offers three modes mapping directly onto this section: **Merge commit** (ordinary/`--no-ff`), **Squash and merge** (the squash-merges section above), and **Rebase and merge** ([§14](./Section-14-Part4-Rebasing.md)) — the platform-level names for exactly the mechanics taught here.
+- Branch protection rules ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) commonly require PR checks (CI, review approval) to pass before the merge button is even enabled, but the underlying `git merge` mechanics are identical whether triggered by a human locally or by the platform's merge button.
 - Large teams frequently standardize on one merge mode repo-wide specifically to keep `git log --graph` legible and consistent — mixing all three freely produces a genuinely confusing history over time.
 
 ## 13. Troubleshooting
@@ -314,7 +314,7 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 **Model answer:** It's a useful mnemonic more than a precise technical statement. `--no-ff` forces a merge commit to exist and explicitly preserves full ancestry — both parent links, both branches' individual commit histories all remain intact and walkable. `--squash` does the opposite on the ancestry axis: it deliberately produces no merge commit and no parent link to the source branch at all, collapsing everything into one ordinary commit as if you'd typed the whole diff yourself. Where the framing is useful: both are explicit overrides of the _default_ merge behavior (which fast-forwards when possible and otherwise creates a two-parent merge commit preserving ancestry) pulling in opposite directions — more history-preserving on one side, more history-discarding on the other. Where it misleads: they're not mutually exclusive toggles of the same setting; you choose one merge mode per operation, not a spectrum between them, and `--squash` doesn't even create a merge commit for `--no-ff` to be "more" or "less" of.
 
 **[Senior] Q5. Your team wants `main`'s history to read as one clean commit per feature, but individual contributors still want granular WIP commits on their own branches. What merge policy achieves both?**
-**Model answer:** Squash merging feature branches into `main` on the hosting platform's PR flow achieves exactly this: contributors commit as often and messily as they like on their feature branch — that granular history is genuinely useful during review and for the author's own iteration — but the squash merge collapses the entire branch into a single, clean commit on `main` at merge time, with a commit message the team can standardize (often tied to Conventional Commits, §18, for changelog generation). The trade-off to flag explicitly: the feature branch's individual commit history is not preserved on `main` after this — if someone later needs `git blame` or `git bisect` (§19) granularity within that feature, it's gone from `main`'s perspective, though still recoverable from the original feature branch or PR if it hasn't been deleted. Teams that value that granular history long-term instead favor `--no-ff` merges or a rebase-then-merge policy (§14) that keeps individual commits but with a clean, linear, force-pushed-and-rebased history.
+**Model answer:** Squash merging feature branches into `main` on the hosting platform's PR flow achieves exactly this: contributors commit as often and messily as they like on their feature branch — that granular history is genuinely useful during review and for the author's own iteration — but the squash merge collapses the entire branch into a single, clean commit on `main` at merge time, with a commit message the team can standardize (often tied to Conventional Commits, [§18](./Section-18-Part4-Tags-Versioning-Release-Management.md), for changelog generation). The trade-off to flag explicitly: the feature branch's individual commit history is not preserved on `main` after this — if someone later needs `git blame` or `git bisect` ([§19](./Section-19-Part4-Interrogating-History.md)) granularity within that feature, it's gone from `main`'s perspective, though still recoverable from the original feature branch or PR if it hasn't been deleted. Teams that value that granular history long-term instead favor `--no-ff` merges or a rebase-then-merge policy ([§14](./Section-14-Part4-Rebasing.md)) that keeps individual commits but with a clean, linear, force-pushed-and-rebased history.
 
 ## 15. Common Misconceptions
 
@@ -334,4 +334,4 @@ $ git commit -m "Merge branch-b, resolving conflict with branch-a"
 
 ## 17. Related Concepts & What's Next
 
-Merging is one of two ways to reconcile diverged history — §14 covers the other: rebasing, which rewrites commits onto a new base instead of joining two tips with a merge commit, trading a preserved-but-branchy history for a rewritten-but-linear one. The trade-offs between the two, and the hard rule about when rebasing is unsafe, are §14's core subject.
+Merging is one of two ways to reconcile diverged history — [§14](./Section-14-Part4-Rebasing.md) covers the other: rebasing, which rewrites commits onto a new base instead of joining two tips with a merge commit, trading a preserved-but-branchy history for a rewritten-but-linear one. The trade-offs between the two, and the hard rule about when rebasing is unsafe, are [§14](./Section-14-Part4-Rebasing.md)'s core subject.

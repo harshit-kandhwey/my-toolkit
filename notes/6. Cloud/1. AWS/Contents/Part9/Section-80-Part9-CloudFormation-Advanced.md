@@ -2,28 +2,28 @@
 
 ## 1. Definition
 
-**Plain language:** This section covers the CloudFormation features that turn basic templates (§79) into genuinely production-scale infrastructure tooling: intrinsic functions (built-in template logic beyond static values), nested stacks and cross-stack references (composing reusable modules), StackSets (deploying one template consistently across many accounts/regions), and drift detection (catching manual changes that have silently diverged from the template).
+**Plain language:** This section covers the CloudFormation features that turn basic templates ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)) into genuinely production-scale infrastructure tooling: intrinsic functions (built-in template logic beyond static values), nested stacks and cross-stack references (composing reusable modules), StackSets (deploying one template consistently across many accounts/regions), and drift detection (catching manual changes that have silently diverged from the template).
 
 **Precise definition:** These are advanced CloudFormation capabilities layered on the base template/stack model — intrinsic functions (`Ref`, `Fn::GetAtt`, `Fn::Sub`, `Fn::If`, and others) providing dynamic value resolution and conditional logic within templates; nested stacks and `Fn::ImportValue`/exports enabling template composition and cross-stack referencing; StackSets enabling centralized, consistent multi-account/multi-region deployment; and drift detection identifying divergence between a stack's template-defined state and its actual deployed resource state.
 
 ## 2. Why It Exists / Problem It Solves
 
-§79's basic template model — static resource definitions with simple parameter substitution — works for a single, standalone stack, but real infrastructure has needs the basic model doesn't address: templates need to reference values that only exist at deploy time (an auto-generated ARN, an account ID, a region), templates need to reuse common patterns (the same VPC setup across a dozen different application stacks) without copy-pasting the same resource definitions repeatedly, organizations need to deploy the same baseline infrastructure consistently across many AWS accounts (echoing the same pattern CloudTrail organization trails, §73, and Config Conformance Packs, §74, solve for their respective domains), and — critically — once infrastructure is IaC-managed, teams need a way to detect if someone has manually modified it outside the template, since that manual modification silently breaks the fundamental IaC guarantee that the template is the authoritative source of truth.
+[§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s basic template model — static resource definitions with simple parameter substitution — works for a single, standalone stack, but real infrastructure has needs the basic model doesn't address: templates need to reference values that only exist at deploy time (an auto-generated ARN, an account ID, a region), templates need to reuse common patterns (the same VPC setup across a dozen different application stacks) without copy-pasting the same resource definitions repeatedly, organizations need to deploy the same baseline infrastructure consistently across many AWS accounts (echoing the same pattern CloudTrail organization trails, [§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md), and Config Conformance Packs, [§74](../Part8/Section-74-Part8-AWS-Config.md), solve for their respective domains), and — critically — once infrastructure is IaC-managed, teams need a way to detect if someone has manually modified it outside the template, since that manual modification silently breaks the fundamental IaC guarantee that the template is the authoritative source of truth.
 
 Intrinsic functions, nested stacks, StackSets, and drift detection each solve one of these specific gaps, together turning CloudFormation from "a way to create resources from a static file" into a genuinely composable, organization-scale infrastructure management system.
 
 ## 3. Prerequisites and Dependencies
 
-- **Infrastructure as Code Fundamentals & CloudFormation Basics** (§79): templates, stacks, change sets, and the SQS+Lambda example are assumed foundational knowledge.
-- **AWS Organizations** concepts (referenced in §13, §73-74): StackSets' organization-wide deployment model directly parallels these previously covered multi-account patterns.
+- **Infrastructure as Code Fundamentals & CloudFormation Basics** ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)): templates, stacks, change sets, and the SQS+Lambda example are assumed foundational knowledge.
+- **AWS Organizations** concepts (referenced in [§13](../Part2/Section-13-Part2-AWS-Organizations-and-SCPs.md), [§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)-[§74](../Part8/Section-74-Part8-AWS-Config.md)): StackSets' organization-wide deployment model directly parallels these previously covered multi-account patterns.
 
 ## 4. Internal Working
 
 ### Intrinsic Functions
 
 - `!Ref` resolves to a resource's primary identifier (e.g., a queue's URL) or a parameter's value — the most basic and commonly used intrinsic function.
-- `!GetAtt` retrieves a specific _attribute_ of a resource beyond its primary identifier (e.g., a queue's ARN, not just its URL) — already used extensively in §79's example (`!GetAtt OrderDLQ.Arn`).
-- `!Sub` performs string substitution, interpolating parameter/resource references into a larger string (e.g., building a resource name from an environment parameter) — also already used in §79's example.
+- `!GetAtt` retrieves a specific _attribute_ of a resource beyond its primary identifier (e.g., a queue's ARN, not just its URL) — already used extensively in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s example (`!GetAtt OrderDLQ.Arn`).
+- `!Sub` performs string substitution, interpolating parameter/resource references into a larger string (e.g., building a resource name from an environment parameter) — also already used in [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s example.
 - `!If` (paired with a `Conditions` section) enables conditional resource creation or property values based on parameter values — e.g., "only create a certain resource if `Environment` equals `production`."
 - `!ImportValue` retrieves a value another stack has explicitly `Export`-ed in its `Outputs` section — the mechanism behind cross-stack referencing, letting one stack consume a resource created by a completely separate stack (e.g., a shared VPC stack's subnet IDs consumed by many separate application stacks).
 
@@ -174,7 +174,7 @@ Drift Detection (on-demand):
   }
   ```
 - **Production usage:** run periodically (often scheduled) across an organization's stacks, or triggered specifically after a suspected unauthorized/manual change, as a genuine operational governance practice complementing the "don't manually modify IaC-managed resources" policy with actual verification.
-- **Common errors:** drift detection is asynchronous — `detect-stack-drift` returns immediately with a detection ID; results must be polled separately, similar in pattern to CloudWatch Logs Insights' asynchronous query model (§70).
+- **Common errors:** drift detection is asynchronous — `detect-stack-drift` returns immediately with a detection ID; results must be polled separately, similar in pattern to CloudWatch Logs Insights' asynchronous query model ([§70](../Part8/Section-70-Part8-CloudWatch-Logs.md)).
 - **Troubleshooting tip:** `PropertyDifferences` shows the exact expected-vs-actual values, immediately clarifying whether reconciliation means "update the template to match this intentional change" or "redeploy to revert this unintentional one."
 
 ## 9. Hands-On Example — Cross-Stack Reference and Conditional Resource Creation
@@ -210,14 +210,14 @@ Resources:
       BackupVaultName: production-backups
 ```
 
-This demonstrates both `Fn::ImportValue` (consuming the shared VPC's ID from a completely independent stack) and `Fn::If`-driven conditional resource creation (the backup vault only gets created at all when `Environment` equals `production`) — two genuinely common production patterns neither achievable with §79's basic static-template model alone.
+This demonstrates both `Fn::ImportValue` (consuming the shared VPC's ID from a completely independent stack) and `Fn::If`-driven conditional resource creation (the backup vault only gets created at all when `Environment` equals `production`) — two genuinely common production patterns neither achievable with [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)'s basic static-template model alone.
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** typically adopt nested stacks or cross-stack references once they notice the same infrastructure pattern (a VPC setup, a standard logging configuration) being copy-pasted across multiple templates — a natural refactoring trigger.
 - **Enterprises** build extensive libraries of reusable nested-stack modules maintained by a central platform/infrastructure team, consumed by many product teams' application stacks, and use StackSets extensively for organization-wide security baselines, standard monitoring/alerting setup, and required tagging/governance enforcement — deployed and updated centrally, automatically covering new accounts as the organization grows.
-- **Drift detection** is frequently built into scheduled compliance/governance checks (sometimes itself implemented as a Config custom rule or a scheduled Lambda, tying back to §74's compliance framework) rather than only run reactively after a suspected issue.
-- StackSets' operation-preference safety controls (gradual rollout percentage, failure tolerance) mirror the same "don't change everything at once" discipline seen in §60's DLQ redrive throttling and Part 8's broader incident-response caution around aggressive, high-blast-radius changes.
+- **Drift detection** is frequently built into scheduled compliance/governance checks (sometimes itself implemented as a Config custom rule or a scheduled Lambda, tying back to [§74](../Part8/Section-74-Part8-AWS-Config.md)'s compliance framework) rather than only run reactively after a suspected issue.
+- StackSets' operation-preference safety controls (gradual rollout percentage, failure tolerance) mirror the same "don't change everything at once" discipline seen in [§60](../Part7/Section-60-Part7-SQS-Advanced-DLQ-FIFO-VisibilityTimeout.md)'s DLQ redrive throttling and Part 8's broader incident-response caution around aggressive, high-blast-radius changes.
 
 ## 11. Security Considerations
 
@@ -233,24 +233,24 @@ This demonstrates both `Fn::ImportValue` (consuming the shared VPC's ID from a c
 
 ## 13. Monitoring
 
-| Signal                                                             | What it tells you                                                                                                                |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Drift detection status/results (per stack, scheduled or on-demand) | Whether actual infrastructure state has diverged from the template — a genuine governance signal.                                |
-| StackSet operation status (per deployment across accounts)         | Progress and per-account success/failure during a multi-account rollout.                                                         |
-| CloudFormation stack events (from §79)                             | Still the primary per-stack operational signal, applicable identically to nested stacks and individual StackSet stack instances. |
+| Signal                                                                                                 | What it tells you                                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Drift detection status/results (per stack, scheduled or on-demand)                                     | Whether actual infrastructure state has diverged from the template — a genuine governance signal.                                |
+| StackSet operation status (per deployment across accounts)                                             | Progress and per-account success/failure during a multi-account rollout.                                                         |
+| CloudFormation stack events (from [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)) | Still the primary per-stack operational signal, applicable identically to nested stacks and individual StackSet stack instances. |
 
 ## 14. Troubleshooting
 
-| Symptom                                                | Likely Root Cause                                                                                        | Fix                                                                                                                         |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Cannot delete/modify a stack's export                  | Another stack still imports that value via `Fn::ImportValue`                                             | Identify and update/remove the dependent stack's import first, or use `list-imports` to find all current consumers          |
-| StackSet deployment stuck/failed in some accounts only | Target account permissions issue (for self-managed model) or an account-specific resource conflict/limit | Review the StackSet operation's per-account status detail for the specific failure reason                                   |
-| Drift detection shows unexpected `MODIFIED` status     | A manual change was made outside the template (intentionally or not)                                     | Investigate via CloudTrail (§73) to identify who/what made the change, then decide whether to update the template or revert |
-| Nested stack fails to create, parent stack rolls back  | An error within the nested stack's own template/resources                                                | Check the nested stack's own stack events specifically, not just the parent's summary status                                |
+| Symptom                                                | Likely Root Cause                                                                                        | Fix                                                                                                                                                                                     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cannot delete/modify a stack's export                  | Another stack still imports that value via `Fn::ImportValue`                                             | Identify and update/remove the dependent stack's import first, or use `list-imports` to find all current consumers                                                                      |
+| StackSet deployment stuck/failed in some accounts only | Target account permissions issue (for self-managed model) or an account-specific resource conflict/limit | Review the StackSet operation's per-account status detail for the specific failure reason                                                                                               |
+| Drift detection shows unexpected `MODIFIED` status     | A manual change was made outside the template (intentionally or not)                                     | Investigate via CloudTrail ([§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)) to identify who/what made the change, then decide whether to update the template or revert |
+| Nested stack fails to create, parent stack rolls back  | An error within the nested stack's own template/resources                                                | Check the nested stack's own stack events specifically, not just the parent's summary status                                                                                            |
 
 ## 15. Best Practices
 
-- Use nested stacks or nested-stack-equivalent modules (also achievable via CDK constructs, §81) for genuinely reusable infrastructure patterns, rather than copy-pasting the same resource definitions across multiple templates.
+- Use nested stacks or nested-stack-equivalent modules (also achievable via CDK constructs, [§81](./Section-81-Part9-AWS-CDK.md)) for genuinely reusable infrastructure patterns, rather than copy-pasting the same resource definitions across multiple templates.
 - Use StackSets with service-managed permissions and Organizations integration for any baseline infrastructure that should automatically apply to new accounts.
 - Configure StackSet operation preferences deliberately (gradual rollout, reasonable failure tolerance) rather than defaulting to "deploy everywhere immediately."
 - Run drift detection on a regular schedule, not only reactively, and treat findings as actionable governance signals.
@@ -275,7 +275,7 @@ This demonstrates both `Fn::ImportValue` (consuming the shared VPC's ID from a c
 **Model answer:** Use the StackSet operation preferences specifically to control blast radius — setting a low MaxConcurrentPercentage, maybe starting around 5-10%, so only a small number of accounts get the change initially, combined with a reasonable but not overly permissive FailureTolerancePercentage that would halt the rollout if more than a small number of those initial accounts fail. Also consider deploying first to a small, deliberately chosen subset of lower-risk, non-production accounts via explicit account targeting before expanding to the full 150-account, Organizations-wide scope, effectively creating a canary-style rollout on top of the StackSet's built-in gradual-percentage mechanism. Throughout the rollout, actively monitor the per-account operation status, and if any failures do occur in the early batches, pause and investigate the specific failure reason before allowing the rollout to continue to the remaining accounts, rather than letting the automated percentage-based rollout proceed unattended through a change with already-known uncertainty.
 
 **🎯 Architect:** _"Design a system that would have caught a security group's ingress rule being manually broadened (bypassing your CloudFormation-managed configuration) within minutes of it happening, rather than discovering it days later during a routine audit."_
-**Model answer:** Scheduled drift detection alone, even run frequently, introduces some inherent detection lag between when it last ran and when the change occurred. For near-real-time detection specifically, combine two things: first, a CloudTrail-based (§73) CloudWatch Logs metric filter and alarm specifically on the security-group-modification API call, giving immediate notification the moment the change happens, independent of any CloudFormation-specific mechanism at all. Second, pair that with an AWS Config rule (§74) evaluating security group ingress rules against the expected baseline on configuration-change-triggered evaluation, which would flag the resulting non-compliant state within minutes of the change as well, and could be wired to automated remediation to revert the change automatically for well-understood violations. CloudFormation's own drift detection is valuable as a periodic, template-specific reconciliation check, but for the sub-minutes detection speed this scenario is asking for, the CloudTrail-alarm-plus-Config-rule combination — both of which detect the underlying change independent of when CloudFormation's own drift detection happens to next run — is the more directly responsive architecture.
+**Model answer:** Scheduled drift detection alone, even run frequently, introduces some inherent detection lag between when it last ran and when the change occurred. For near-real-time detection specifically, combine two things: first, a CloudTrail-based ([§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)) CloudWatch Logs metric filter and alarm specifically on the security-group-modification API call, giving immediate notification the moment the change happens, independent of any CloudFormation-specific mechanism at all. Second, pair that with an AWS Config rule ([§74](../Part8/Section-74-Part8-AWS-Config.md)) evaluating security group ingress rules against the expected baseline on configuration-change-triggered evaluation, which would flag the resulting non-compliant state within minutes of the change as well, and could be wired to automated remediation to revert the change automatically for well-understood violations. CloudFormation's own drift detection is valuable as a periodic, template-specific reconciliation check, but for the sub-minutes detection speed this scenario is asking for, the CloudTrail-alarm-plus-Config-rule combination — both of which detect the underlying change independent of when CloudFormation's own drift detection happens to next run — is the more directly responsive architecture.
 
 ## 18. Common Misconceptions
 
@@ -292,6 +292,6 @@ This demonstrates both `Fn::ImportValue` (consuming the shared VPC's ID from a c
 
 ## 20. Related Concepts
 
-- **CloudFormation Fundamentals** (templates, stacks, change sets) → §79.
-- **AWS CDK** (an alternative, code-based way to generate CloudFormation templates, including similar composition patterns via constructs) → next section, §81.
-- **AWS Organizations, CloudTrail organization trails, Config Conformance Packs** (the same multi-account deployment/governance pattern StackSets generalizes) → §13, §73-74.
+- **CloudFormation Fundamentals** (templates, stacks, change sets) → [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md).
+- **AWS CDK** (an alternative, code-based way to generate CloudFormation templates, including similar composition patterns via constructs) → next section, [§81](./Section-81-Part9-AWS-CDK.md).
+- **AWS Organizations, CloudTrail organization trails, Config Conformance Packs** (the same multi-account deployment/governance pattern StackSets generalizes) → [§13](../Part2/Section-13-Part2-AWS-Organizations-and-SCPs.md), [§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)-[§74](../Part8/Section-74-Part8-AWS-Config.md).

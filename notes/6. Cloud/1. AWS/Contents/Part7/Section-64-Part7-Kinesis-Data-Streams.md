@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-SQS and SNS (§59-61) both fundamentally **remove** a message once it's been meaningfully processed/delivered — a message is either consumed once (SQS) or pushed once per subscriber and not retained afterward (SNS). Neither is designed for a scenario where:
+SQS and SNS ([§59](./Section-59-Part7-SQS-Fundamentals.md)-[§61](./Section-61-Part7-SNS-PubSub-Messaging.md)) both fundamentally **remove** a message once it's been meaningfully processed/delivered — a message is either consumed once (SQS) or pushed once per subscriber and not retained afterward (SNS). Neither is designed for a scenario where:
 
 - The **same data needs to be read multiple times by multiple, independent applications**, each processing it differently and each needing to track its own read position, potentially replaying from an earlier point.
 - **Strict, stream-wide ordering** matters, at very high throughput (millions of events per second), not just within a small partition group as with FIFO SQS.
@@ -16,12 +16,12 @@ SQS and SNS (§59-61) both fundamentally **remove** a message once it's been mea
 
 Kinesis solves this with a **log-based** model (conceptually similar to Apache Kafka) rather than a queue-based model: records are appended to a durable, ordered log and _retained_ for a configurable window, and consumers read from the log using their own tracked position (a sequence number / iterator), rather than the log "forgetting" a record once read. Multiple consumer applications can independently read the entire stream from whatever position each wants, without affecting each other — a structurally different consumption model from SQS's single-consumer-per-message semantics.
 
-**What existed before it:** self-managed Kafka clusters (still common, and covered directly in §66 as Amazon MSK, the managed Kafka alternative) requiring significant operational overhead for cluster management, partition rebalancing, and scaling.
+**What existed before it:** self-managed Kafka clusters (still common, and covered directly in [§66](./Section-66-Part7-Amazon-MSK.md) as Amazon MSK, the managed Kafka alternative) requiring significant operational overhead for cluster management, partition rebalancing, and scaling.
 
 ## 3. Prerequisites and Dependencies
 
-- **SQS/SNS** (§59-61): understanding the queue and pub/sub models makes the log-based streaming model's differences clearer by contrast.
-- **Lambda** (§25): a very common Kinesis consumer via event source mappings, similar to SQS's Lambda integration.
+- **SQS/SNS** ([§59](./Section-59-Part7-SQS-Fundamentals.md)-[§61](./Section-61-Part7-SNS-PubSub-Messaging.md)): understanding the queue and pub/sub models makes the log-based streaming model's differences clearer by contrast.
+- **Lambda** ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)): a very common Kinesis consumer via event source mappings, similar to SQS's Lambda integration.
 - Basic familiarity with the concept of **partitioning** for horizontal scale (introduced from scratch below).
 
 ## 4. Internal Working
@@ -63,7 +63,7 @@ Producer C (partition key: "user-123") --+         |
 3. Kinesis **durably stores** records in shard order, retained per the configured retention period.
 4. **Consumers** (using KCL, the raw SDK, or a Lambda event source mapping) read records from one or more shards, tracking their own position via checkpoints.
 5. Consumers **checkpoint** their progress (typically via KCL, which persists checkpoints to a DynamoDB table it manages) so that if a consumer worker restarts, it resumes from its last checkpoint rather than reprocessing the entire stream or losing its place.
-6. Records eventually **age out** of the retention window and are removed, whether or not every consumer has read them — so consumers must keep up within the retention period or explicitly plan for reprocessing via the stream's data being additionally landed elsewhere (e.g., via Kinesis Data Firehose to S3, §65).
+6. Records eventually **age out** of the retention window and are removed, whether or not every consumer has read them — so consumers must keep up within the retention period or explicitly plan for reprocessing via the stream's data being additionally landed elsewhere (e.g., via Kinesis Data Firehose to S3, [§65](./Section-65-Part7-Kinesis-Data-Firehose.md)).
 
 ## 7. Configuration
 
@@ -119,7 +119,7 @@ Producer C (partition key: "user-123") --+         |
     "SequenceNumber": "49546986683135544286507457936321625675700192471156785154"
   }
   ```
-- **Important arguments:** `--partition-key` is the critical design decision (§7 warning above); `--data` must be base64-encoded when using the CLI directly (SDKs typically handle this encoding transparently).
+- **Important arguments:** `--partition-key` is the critical design decision ([§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md) warning above); `--data` must be base64-encoded when using the CLI directly (SDKs typically handle this encoding transparently).
 - **Production usage:** high-throughput producers use `PutRecords` (batched) rather than looping individual `PutRecord` calls, both for throughput efficiency and to reduce per-call overhead costs.
 - **Common errors:** `ProvisionedThroughputExceededException` when a shard's write capacity is exceeded — commonly caused by a hot-shard partition-key problem rather than genuinely needing more total shards.
 - **Performance impact:** batching via `PutRecords` is materially more throughput-efficient than individual `PutRecord` calls at any meaningful volume.
@@ -183,7 +183,7 @@ Resources:
             ParallelizationFactor: 2 # allows up to 2 concurrent Lambda invocations per shard
 ```
 
-Similar to SQS's Lambda event source mapping (§59), AWS manages the polling and checkpointing for you — `StartingPosition: LATEST` means the Lambda only processes new records from deployment onward; `TRIM_HORIZON` would instead process the entire retained history first. `ParallelizationFactor` is Kinesis-specific — it allows multiple concurrent Lambda invocations to process different batches from the _same_ shard (up to 10), which is not something SQS offers per-queue in the same way, since Kinesis's per-shard ordering is a producer-side partition-key concern rather than something a single serial consumer must strictly preserve end-to-end unless the application specifically requires it.
+Similar to SQS's Lambda event source mapping ([§59](./Section-59-Part7-SQS-Fundamentals.md)), AWS manages the polling and checkpointing for you — `StartingPosition: LATEST` means the Lambda only processes new records from deployment onward; `TRIM_HORIZON` would instead process the entire retained history first. `ParallelizationFactor` is Kinesis-specific — it allows multiple concurrent Lambda invocations to process different batches from the _same_ shard (up to 10), which is not something SQS offers per-queue in the same way, since Kinesis's per-shard ordering is a producer-side partition-key concern rather than something a single serial consumer must strictly preserve end-to-end unless the application specifically requires it.
 
 **Partition key design comparison:**
 
@@ -198,14 +198,14 @@ producer.put_record(StreamName="events", Data=data, PartitionKey=str(user_id))
 
 ## 10. Production & Enterprise Usage
 
-- **Startups** commonly start with a small number of shards or On-Demand mode for a single analytics or logging pipeline, often feeding a Lambda consumer or a Kinesis Data Firehose delivery (§65) to S3.
+- **Startups** commonly start with a small number of shards or On-Demand mode for a single analytics or logging pipeline, often feeding a Lambda consumer or a Kinesis Data Firehose delivery ([§65](./Section-65-Part7-Kinesis-Data-Firehose.md)) to S3.
 - **Enterprises** use Kinesis Data Streams as the backbone of large-scale **real-time analytics**, **clickstream processing**, **IoT telemetry ingestion**, and **change-data-capture (CDC) pipelines** (e.g., streaming database changes for downstream consumption by multiple teams), often with many independent consumer applications reading the same stream — fraud detection, real-time dashboards, and long-term storage pipelines all reading from one shared, durable stream concurrently, each with EFO consumers to guarantee dedicated throughput.
 - **Multi-consumer replay** is a genuinely enterprise-scale pattern: a new team can start consuming an existing high-volume stream from the beginning of the current retention window without any coordination with, or impact on, existing consumers — a capability neither SQS nor SNS provides.
-- Kinesis is frequently compared directly against **Amazon MSK** (managed Kafka, §66) for streaming workloads — the choice between them is a common architecture decision covered fully in §67.
+- Kinesis is frequently compared directly against **Amazon MSK** (managed Kafka, [§66](./Section-66-Part7-Amazon-MSK.md)) for streaming workloads — the choice between them is a common architecture decision covered fully in [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
 
 ## 11. Security Considerations
 
-- Server-side encryption via KMS protects records at rest within the stream (cross-reference §14).
+- Server-side encryption via KMS protects records at rest within the stream (cross-reference [§14](../Part2/Section-14-Part2-KMS-and-Encryption.md)).
 - IAM policies scope `kinesis:PutRecord`/`PutRecords` (producer) and `kinesis:GetRecords`/`GetShardIterator`/`SubscribeToShard` (consumer, the latter for EFO) separately — least privilege applies exactly as with SQS/SNS.
 - Because Kinesis retains data for potentially up to a year, data classification and retention-period decisions have direct compliance implications (e.g., PII in a stream retained for 365 days is a materially different compliance posture than the same data in an SQS queue's default 4-day retention).
 
@@ -280,7 +280,7 @@ producer.put_record(StreamName="events", Data=data, PartitionKey=str(user_id))
 
 ## 20. Related Concepts
 
-- **Kinesis Data Firehose** (a simpler, delivery-focused Kinesis variant for landing streaming data into S3/Redshift/OpenSearch without custom consumer code) → next section, §65.
-- **Amazon MSK** (managed Kafka, a direct alternative to Kinesis Data Streams for similar use cases) → §66; full comparison → §67.
-- **Lambda event source mappings** (a common managed Kinesis consumer pattern) → §25, and SQS's analogous integration, §59.
-- **SQS FIFO's per-`MessageGroupId` ordering** (a smaller-scale conceptual analogue to Kinesis's per-partition-key ordering) → §60.
+- **Kinesis Data Firehose** (a simpler, delivery-focused Kinesis variant for landing streaming data into S3/Redshift/OpenSearch without custom consumer code) → next section, [§65](./Section-65-Part7-Kinesis-Data-Firehose.md).
+- **Amazon MSK** (managed Kafka, a direct alternative to Kinesis Data Streams for similar use cases) → [§66](./Section-66-Part7-Amazon-MSK.md); full comparison → [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
+- **Lambda event source mappings** (a common managed Kinesis consumer pattern) → [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md), and SQS's analogous integration, [§59](./Section-59-Part7-SQS-Fundamentals.md).
+- **SQS FIFO's per-`MessageGroupId` ordering** (a smaller-scale conceptual analogue to Kinesis's per-partition-key ordering) → [§60](./Section-60-Part7-SQS-Advanced-DLQ-FIFO-VisibilityTimeout.md).

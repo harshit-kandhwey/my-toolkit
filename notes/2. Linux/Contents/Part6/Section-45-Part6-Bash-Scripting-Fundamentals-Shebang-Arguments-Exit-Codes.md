@@ -2,14 +2,14 @@
 
 ## 1. The Shebang Line: How the Kernel Knows What to Run a Script With
 
-§41 covered the shells that exist on a typical Linux system and how a login shell gets selected; this section starts from a different but related question — when a script file is executed directly, how does the kernel know which interpreter should run it? The answer is the **shebang line**, the first line of an executable script:
+[§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md) covered the shells that exist on a typical Linux system and how a login shell gets selected; this section starts from a different but related question — when a script file is executed directly, how does the kernel know which interpreter should run it? The answer is the **shebang line**, the first line of an executable script:
 
 ```bash
 #!/bin/bash
 echo "hello"
 ```
 
-The `#!` characters (pronounced "shebang" or "hashbang") are not a comment in this position, even though `#` starts a comment everywhere else in the file. The kernel reads exactly this first line, before anything else, when asked to execute a file directly — if the line starts with `#!`, the kernel treats the rest of the line as the path to an interpreter, and instead of trying to execute the script's contents as machine code, it runs `<interpreter> <script-path>` on your behalf. This is a kernel-level convention (part of the `execve()` behavior covered conceptually in §34's fork/exec/wait lifecycle), not a bash feature — it works identically for Python, Perl, or any other interpreted language's scripts.
+The `#!` characters (pronounced "shebang" or "hashbang") are not a comment in this position, even though `#` starts a comment everywhere else in the file. The kernel reads exactly this first line, before anything else, when asked to execute a file directly — if the line starts with `#!`, the kernel treats the rest of the line as the path to an interpreter, and instead of trying to execute the script's contents as machine code, it runs `<interpreter> <script-path>` on your behalf. This is a kernel-level convention (part of the `execve()` behavior covered conceptually in [§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s fork/exec/wait lifecycle), not a bash feature — it works identically for Python, Perl, or any other interpreted language's scripts.
 
 Two common forms of the shebang for bash specifically:
 
@@ -25,11 +25,11 @@ Two common forms of the shebang for bash specifically:
 
 > 💡 **Tip:** `#!/bin/bash` is the more common convention in production Linux scripting because most target environments (servers, containers, CI runners) have a known, fixed bash location — but `#!/usr/bin/env bash` is the safer default for anything that might run on a developer's laptop, a heterogeneous fleet, or an unknown environment, because it defers to `$PATH` instead of assuming a specific filesystem layout.
 
-The shebang only takes effect when a script is executed **directly** as a program (§2 below covers exactly what that requires) — if a script is invoked as `bash script.sh`, the shebang line is irrelevant, because you've already told the kernel which interpreter to use by naming it explicitly on the command line; bash simply treats the shebang line as an ordinary comment in that case, which is harmless but does nothing.
+The shebang only takes effect when a script is executed **directly** as a program ([§2](../Part1/Section-02-Part1-History-and-Evolution.md) below covers exactly what that requires) — if a script is invoked as `bash script.sh`, the shebang line is irrelevant, because you've already told the kernel which interpreter to use by naming it explicitly on the command line; bash simply treats the shebang line as an ordinary comment in that case, which is harmless but does nothing.
 
 ## 2. Making a Script Executable, and the Two Ways to Run One
 
-A freshly written script file, even with a correct shebang, is not runnable by path until it has the **executable permission bit** set — §27 (Part 4) covered `chmod` in full; the relevant invocation here is:
+A freshly written script file, even with a correct shebang, is not runnable by path until it has the **executable permission bit** set — [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md) covered `chmod` in full; the relevant invocation here is:
 
 ```bash
 $ chmod +x deploy.sh
@@ -121,11 +121,11 @@ while [[ $# -gt 0 ]]; do
 done
 ```
 
-`shift N` consumes `N` arguments at once (default `1` if omitted) — the `--env)` branch above consumes two positional parameters (the flag itself and its value) in a single `shift 2` rather than two separate `shift` calls, which is a common idiom worth recognizing when reading other people's flag-parsing loops. §46 (next) covers `while` and `case` themselves in full depth; this section assumes just enough of their shape to show `shift` in a realistic context.
+`shift N` consumes `N` arguments at once (default `1` if omitted) — the `--env)` branch above consumes two positional parameters (the flag itself and its value) in a single `shift 2` rather than two separate `shift` calls, which is a common idiom worth recognizing when reading other people's flag-parsing loops. [§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md) (next) covers `while` and `case` themselves in full depth; this section assumes just enough of their shape to show `shift` in a realistic context.
 
 ## 5. Exit Codes: How a Script Reports Success or Failure
 
-§44 introduced exit codes conceptually as the mechanism `&&` and `||` branch on; this section covers them in full depth as their own topic. Every command and every script, on completion, sets a numeric **exit status** that the calling shell can inspect via the special variable `$?` immediately afterward:
+[§44](./Section-44-Part6-Command-Chaining-Control-Operators.md) introduced exit codes conceptually as the mechanism `&&` and `||` branch on; this section covers them in full depth as their own topic. Every command and every script, on completion, sets a numeric **exit status** that the calling shell can inspect via the special variable `$?` immediately afterward:
 
 ```bash
 $ grep "pattern" file.txt
@@ -154,18 +154,18 @@ echo "Processing $1..."
 exit 0
 ```
 
-If a script reaches its end without an explicit `exit`, its exit code is simply the exit code of the last command it ran — an implicit, easy-to-overlook behavior worth knowing when debugging why a script "succeeded" despite an earlier command failing partway through (this is exactly the gap `set -e`, §6, exists to close).
+If a script reaches its end without an explicit `exit`, its exit code is simply the exit code of the last command it ran — an implicit, easy-to-overlook behavior worth knowing when debugging why a script "succeeded" despite an earlier command failing partway through (this is exactly the gap `set -e`, [§6](../Part1/Section-06-Part1-Where-Linux-Runs-Today.md), exists to close).
 
 **A handful of exit codes carry reserved, conventional meanings worth recognizing on sight** rather than treating as arbitrary numbers:
 
-| Code    | Conventional meaning                                                                                                                                                       |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`     | Success                                                                                                                                                                    |
-| `1`     | General/catch-all failure — the most common non-success code, no more specific meaning implied                                                                             |
-| `2`     | Frequently used for shell builtin misuse (bad flag/argument) — convention, not a kernel-enforced rule                                                                      |
-| `126`   | Command found but not executable — usually a missing `chmod +x` (2) on a script being invoked                                                                              |
-| `127`   | Command not found — a typo, or the binary isn't installed/isn't on `$PATH`                                                                                                 |
-| `128+N` | Process terminated by signal `N` — e.g. `130` = `128 + 2` (`SIGINT`, Ctrl+C), `137` = `128 + 9` (`SIGKILL`) — §36's signal coverage explains the signal numbers themselves |
+| Code    | Conventional meaning                                                                                                                                                                                               |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `0`     | Success                                                                                                                                                                                                            |
+| `1`     | General/catch-all failure — the most common non-success code, no more specific meaning implied                                                                                                                     |
+| `2`     | Frequently used for shell builtin misuse (bad flag/argument) — convention, not a kernel-enforced rule                                                                                                              |
+| `126`   | Command found but not executable — usually a missing `chmod +x` (2) on a script being invoked                                                                                                                      |
+| `127`   | Command not found — a typo, or the binary isn't installed/isn't on `$PATH`                                                                                                                                         |
+| `128+N` | Process terminated by signal `N` — e.g. `130` = `128 + 2` (`SIGINT`, Ctrl+C), `137` = `128 + 9` (`SIGKILL`) — [§36](../Part5/Section-36-Part5-Signals.md)'s signal coverage explains the signal numbers themselves |
 
 > 💡 **Tip:** `130` showing up as a script's exit code is a very common real-world signal, not a bug to chase — it almost always means someone pressed Ctrl+C while the script (or something it called) was running, and the shell translated that `SIGINT` into the `128+2` convention above.
 
@@ -240,6 +240,6 @@ _What the interviewer is probing for:_ Prioritizing the argument-quoting bug as 
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §41's shell-selection groundwork (which interpreter the shebang line ultimately names) and on §44's introductory treatment of exit codes as the mechanism `&&`/`||` branch on, going to full depth on exit codes here instead. It also leans on §21's (Part 3) `chmod` coverage for the executable-bit half of running a script directly. §46 (next) picks up exactly where the flag-parsing example in 4 left off, covering `if`/`else`, `case`, `for`, `while`, and `until` in full depth — the control-flow vocabulary this section deliberately used only minimally.
+This section builds directly on [§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md)'s shell-selection groundwork (which interpreter the shebang line ultimately names) and on [§44](./Section-44-Part6-Command-Chaining-Control-Operators.md)'s introductory treatment of exit codes as the mechanism `&&`/`||` branch on, going to full depth on exit codes here instead. It also leans on [§21](../Part3/Section-21-Part3-File-Directory-Operations.md)'s (Part 3) `chmod` coverage for the executable-bit half of running a script directly. [§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md) (next) picks up exactly where the flag-parsing example in 4 left off, covering `if`/`else`, `case`, `for`, `while`, and `until` in full depth — the control-flow vocabulary this section deliberately used only minimally.
 
-**Next Section:** §46 — `Section-46-Part6-Control-Structures.md`
+**Next Section:** [§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md) — `Section-46-Part6-Control-Structures.md`

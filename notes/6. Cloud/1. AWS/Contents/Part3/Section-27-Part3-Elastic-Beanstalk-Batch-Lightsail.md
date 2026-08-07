@@ -16,7 +16,7 @@
 
 ### 2.1 Why It Exists
 
-- The concrete AWS PaaS offering (§5) for traditional applications — upload code, Beanstalk auto-provisions/wires an EC2 ASG behind an ELB with sensible defaults.
+- The concrete AWS PaaS offering ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)) for traditional applications — upload code, Beanstalk auto-provisions/wires an EC2 ASG behind an ELB with sensible defaults.
 - Value proposition: everything Beanstalk provisions could be built manually — its value is doing that wiring automatically/consistently, letting developers focus on code, not infrastructure assembly.
 
 ### 2.2 Not a New Compute Type
@@ -26,7 +26,7 @@
 
 ### 2.3 Environments and Deployment
 
-- A Beanstalk **application** has multiple **environments** (production, staging) — mirrors §7's environment separation, automated at deployment level.
+- A Beanstalk **application** has multiple **environments** (production, staging) — mirrors [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)'s environment separation, automated at deployment level.
 - **Deployment policies** (all-at-once, rolling, rolling with batch, immutable, blue/green) — different risk/downtime/cost trade-offs, previewing Part 9's deployment strategies in packaged form.
 
 ### 2.4 When to Use Beanstalk vs Manual vs Containers
@@ -71,7 +71,7 @@
 
 ### 4.2 What It Bundles
 
-- **Compute + storage + networking, one flat-rate package** — deliberate contrast to EC2's unbundled, consumption-based pricing (§6).
+- **Compute + storage + networking, one flat-rate package** — deliberate contrast to EC2's unbundled, consumption-based pricing ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)).
 - **Simplified networking** — abstracts VPC/subnet/security-group config behind a simpler firewall interface.
 - Also offers managed databases, container services, simple load balancers — a parallel simplified mini-ecosystem.
 
@@ -161,7 +161,7 @@
 
 ## Related Concepts (forward links)
 
-- Part 3 Wrap-Up and comprehensive Compute interview drill → §28 (final section)
+- Part 3 Wrap-Up and comprehensive Compute interview drill → [§28](./Section-28-Part3-WrapUp-and-Interview-Drill.md) (final section)
 - Deployment strategies (rolling, blue/green, canary) in full depth → Part 9
 - VPC/subnet design underlying Beanstalk and Lightsail networking → Part 4
 - SQS as a building block for custom job-queue patterns outside Batch's scope → Part 7

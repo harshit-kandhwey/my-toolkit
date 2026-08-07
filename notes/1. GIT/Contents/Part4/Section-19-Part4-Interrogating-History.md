@@ -4,11 +4,11 @@
 
 **Plain language:** Once history exists, you often need to _ask it questions_: who wrote this line, when did this bug first appear, which commits touched this file last month, was a specific string ever present anywhere in the project's past. This section is the investigative toolkit for querying history rather than changing it.
 
-**Precise:** Git provides a family of read-only history-interrogation commands, all operating over the same commit graph and object database established in §5-§7: `git log` (commit history traversal and filtering), `git blame` (per-line attribution), `git bisect` (binary search over history for a regression), `git grep` (content search across tracked trees, including historical ones), and `git shortlog` (aggregate contributor summaries). None of these mutate any ref, object, or working-directory state.
+**Precise:** Git provides a family of read-only history-interrogation commands, all operating over the same commit graph and object database established in [§5](../Part2/Section-05-Part2-Object-Model.md)-[§7](../Part2/Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md): `git log` (commit history traversal and filtering), `git blame` (per-line attribution), `git bisect` (binary search over history for a regression), `git grep` (content search across tracked trees, including historical ones), and `git shortlog` (aggregate contributor summaries). None of these mutate any ref, object, or working-directory state.
 
 ## 2. Why It Exists / Problem It Solves
 
-§10 covered `git log` at the level needed for daily workflow — "what did I just commit." Real investigative work needs far more: "which commit introduced this exact string," "who last touched this specific line and why," "which of these 200 commits between a known-good and known-bad state broke the build," "has this function ever existed in a deleted file." Without dedicated tooling for these questions, debugging a regression or understanding unfamiliar code would mean manually eyeballing `git log -p` output — infeasible at any real repository size.
+[§10](../Part3/Section-10-Part3-Core-Workflow.md) covered `git log` at the level needed for daily workflow — "what did I just commit." Real investigative work needs far more: "which commit introduced this exact string," "who last touched this specific line and why," "which of these 200 commits between a known-good and known-bad state broke the build," "has this function ever existed in a deleted file." Without dedicated tooling for these questions, debugging a regression or understanding unfamiliar code would mean manually eyeballing `git log -p` output — infeasible at any real repository size.
 
 ## 3. `git log` Deep Dive — Beyond the Basics
 
@@ -37,7 +37,7 @@ Expected output (illustrative):
 | `--decorate` | Show which refs (branches, tags, HEAD) point at each commit                                                  |
 | `--all`      | Include every ref (all local branches, all remote-tracking branches), not just the current branch's ancestry |
 
-> 💡 **Tip:** `git log --graph --oneline --decorate --all` is common enough as a daily-driver command that most engineers alias it — recall §8's `alias.lg` example configured exactly this.
+> 💡 **Tip:** `git log --graph --oneline --decorate --all` is common enough as a daily-driver command that most engineers alias it — recall [§8](../Part3/Section-08-Part3-Installation-Configuration.md)'s `alias.lg` example configured exactly this.
 
 ### 3.2 Custom formatting: `--pretty=format:`
 
@@ -53,13 +53,13 @@ Expected output:
 7c2a9f1 | Harshit Kandhwey | 3 hours ago | Add search results rendering
 ```
 
-| Placeholder   | Meaning                                                            |
-| ------------- | ------------------------------------------------------------------ |
-| `%h` / `%H`   | Abbreviated / full commit hash                                     |
-| `%an` / `%ae` | Author name / email                                                |
-| `%ad` / `%ar` | Author date (absolute) / author date (relative, "2 hours ago")     |
-| `%s`          | Subject line (first line of the commit message)                    |
-| `%cn` / `%cd` | Committer name / committer date — distinct from author, per §5 |
+| Placeholder   | Meaning                                                                                                     |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `%h` / `%H`   | Abbreviated / full commit hash                                                                              |
+| `%an` / `%ae` | Author name / email                                                                                         |
+| `%ad` / `%ar` | Author date (absolute) / author date (relative, "2 hours ago")                                              |
+| `%s`          | Subject line (first line of the commit message)                                                             |
+| `%cn` / `%cd` | Committer name / committer date — distinct from author, per [§5](../Part2/Section-05-Part2-Object-Model.md) |
 
 ### 3.3 Filtering by author, date, and path
 
@@ -126,7 +126,7 @@ $ git blame -C pricing.js
 
 ## 5. `git bisect` — Systematic Regression Search
 
-When you know a specific commit was **good** and a later one is **bad**, but not which of potentially hundreds of commits in between introduced the regression, `git bisect` performs an automated binary search over the commit graph, checking out (in detached HEAD, exactly as described in §6) successive candidate commits for you to test.
+When you know a specific commit was **good** and a later one is **bad**, but not which of potentially hundreds of commits in between introduced the regression, `git bisect` performs an automated binary search over the commit graph, checking out (in detached HEAD, exactly as described in [§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) successive candidate commits for you to test.
 
 ### 5.1 Manual workflow
 
@@ -179,12 +179,12 @@ $ git grep "getDiscount" v1.4.0
 $ git grep -n "getDiscount" -- "*.js"
 ```
 
-|                                            | `git grep`                                                                   | OS `grep`/`ripgrep` over the working directory            |
-| ------------------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Respects `.gitignore` (§11)                | Yes, automatically — never searches ignored files/build output               | No — searches everything on disk unless manually excluded |
-| Search historical commits without checkout | **Yes** — `git grep <pattern> <commit>` searches that commit's tree directly | No — requires checking out or cloning that state first    |
-| Requires being inside a Git repository     | Yes                                                                          | No                                                        |
-| Speed on large repos                       | Generally fast; can leverage Git's own tree/index structures                 | Depends entirely on the tool and file count on disk       |
+|                                                                                        | `git grep`                                                                   | OS `grep`/`ripgrep` over the working directory            |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Respects `.gitignore` ([§11](../Part3/Section-11-Part3-Ignoring-Controlling-Files.md)) | Yes, automatically — never searches ignored files/build output               | No — searches everything on disk unless manually excluded |
+| Search historical commits without checkout                                             | **Yes** — `git grep <pattern> <commit>` searches that commit's tree directly | No — requires checking out or cloning that state first    |
+| Requires being inside a Git repository                                                 | Yes                                                                          | No                                                        |
+| Speed on large repos                                                                   | Generally fast; can leverage Git's own tree/index structures                 | Depends entirely on the tool and file count on disk       |
 
 `git grep <pattern> <commit>` is the specific capability worth internalizing: you can search _any past commit's_ content directly, with no `checkout`, no detached HEAD, no working-directory disruption at all — genuinely useful for "did this string ever exist anywhere in history" investigations combined with the pickaxe search covered above or a manual walk across tags.
 
@@ -243,7 +243,7 @@ $ git grep -n "retryCount" v1.0.0
 - Incident postmortems routinely use `git bisect run` against an automated regression test as the fastest, most objective way to identify a root-cause commit, replacing much slower manual code review of the entire suspect range.
 - `git blame` output is a standard input to code-review tooling and IDE integrations (inline "who last changed this line" annotations), though senior engineers know to treat it as a starting point for a conversation, not a verdict, per the caveat above.
 - `git shortlog -sn` output frequently appears in release notes, contributor-recognition tooling, and open-source project reporting (e.g., "N contributors made M commits since the last release").
-- Security incident response sometimes uses `git log -S`/`-G` and `git grep` across historical commits specifically to determine whether a secret or vulnerable pattern was ever introduced anywhere in history, not just in the current tree — directly feeding into the secret-remediation workflow of §28.
+- Security incident response sometimes uses `git log -S`/`-G` and `git grep` across historical commits specifically to determine whether a secret or vulnerable pattern was ever introduced anywhere in history, not just in the current tree — directly feeding into the secret-remediation workflow of [§28](../Part7/Section-28-Part7-Security.md).
 
 ## 10. Troubleshooting
 
@@ -269,7 +269,7 @@ $ git grep -n "retryCount" v1.0.0
 **Model answer:** I'd write a script that builds the project and runs a targeted performance benchmark, exiting 0 if a measured metric (e.g., request latency) stays under a defined threshold and non-zero otherwise, then run `git bisect start`, mark the current HEAD bad and a known-good older commit good, and hand the script to `git bisect run` to search unattended. Reliability risks: if the build system, dependency versions, or the benchmark script itself changed meaningfully across the bisected range, old commits might fail to build or run for reasons unrelated to the actual regression, producing a false "bad" result that isn't about performance at all — `git bisect skip` lets you mark such commits as untestable rather than wrongly good or bad, but a large enough tooling change partway through the range can still corrupt the search. I'd also flag that performance measurements carry noise, so a single-run pass/fail threshold can produce flaky bisect results; a more robust script would average multiple runs before deciding good or bad.
 
 **[Senior] Q5. A security team asks whether an API key was ever committed to the repository at any point in its history, even if it's not present now. How do you answer this with Git's history tools, precisely?**
-**Model answer:** I'd combine `git log -S "<the exact key or a distinctive fragment>"` across all branches (`--all`) to find any commit where that string's occurrence count changed — this catches both its introduction and its later removal — and `git grep "<pattern>" <ref>` against specific historical tags or commits for a more targeted check without needing to check anything out. I'd also widen the search with `-G` for a regex pattern if the exact key value isn't known but its format is (e.g., a known API key prefix pattern). Importantly, I'd be precise with the security team about what a negative result actually proves: these tools search the reachable commit graph, so anything already garbage-collected as truly unreferenced (e.g., from an old force-pushed rewrite that was never actually pushed anywhere else, or old enough to be pruned) may no longer be searchable this way — a genuinely thorough audit for a leaked secret also needs to consider the reflog (§6) and, since the secret may already have propagated to clones or forks before removal, treat rotation of the actual credential as mandatory regardless of what the history search finds, exactly the remediation posture §28 covers in full.
+**Model answer:** I'd combine `git log -S "<the exact key or a distinctive fragment>"` across all branches (`--all`) to find any commit where that string's occurrence count changed — this catches both its introduction and its later removal — and `git grep "<pattern>" <ref>` against specific historical tags or commits for a more targeted check without needing to check anything out. I'd also widen the search with `-G` for a regex pattern if the exact key value isn't known but its format is (e.g., a known API key prefix pattern). Importantly, I'd be precise with the security team about what a negative result actually proves: these tools search the reachable commit graph, so anything already garbage-collected as truly unreferenced (e.g., from an old force-pushed rewrite that was never actually pushed anywhere else, or old enough to be pruned) may no longer be searchable this way — a genuinely thorough audit for a leaked secret also needs to consider the reflog ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) and, since the secret may already have propagated to clones or forks before removal, treat rotation of the actual credential as mandatory regardless of what the history search finds, exactly the remediation posture [§28](../Part7/Section-28-Part7-Security.md) covers in full.
 
 ## 12. Common Misconceptions
 
@@ -289,4 +289,4 @@ $ git grep -n "retryCount" v1.0.0
 
 ## 14. Related Concepts & What's Next
 
-This section closes Part 4: creating and combining branches (§12-13), rewriting history (§14), undoing mistakes (§15), setting work aside (§16), moving specific changes deliberately (§17), marking releases (§18), and now interrogating everything that's accumulated (§19). Part 5 moves outward from single-repository mechanics to collaboration at scale: remotes in full depth, SSH/HTTPS transport, collaboration models, branching strategies as team-level policy built on everything Part 4 taught, and Git hosting platforms including self-hosted servers and GUI clients.
+This section closes Part 4: creating and combining branches ([§12](./Section-12-Part4-Branching-In-Depth.md)-[§13](./Section-13-Part4-Merging.md)), rewriting history ([§14](./Section-14-Part4-Rebasing.md)), undoing mistakes ([§15](./Section-15-Part4-Undoing-Things.md)), setting work aside ([§16](./Section-16-Part4-Stashing.md)), moving specific changes deliberately ([§17](./Section-17-Part4-Cherry-Pick-Patches.md)), marking releases ([§18](./Section-18-Part4-Tags-Versioning-Release-Management.md)), and now interrogating everything that's accumulated ([§19](./Section-19-Part4-Interrogating-History.md)). Part 5 moves outward from single-repository mechanics to collaboration at scale: remotes in full depth, SSH/HTTPS transport, collaboration models, branching strategies as team-level policy built on everything Part 4 taught, and Git hosting platforms including self-hosted servers and GUI clients.

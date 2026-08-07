@@ -67,7 +67,7 @@ Managed DDoS protection service, two tiers, protecting resources from traffic fl
 
 - Paid subscription adding:
   - Enhanced detection/mitigation for sophisticated attacks, including **Layer 7**.
-  - **24/7 DDoS Response Team (DRT)** access (parallels §7's TAM concept, for DDoS incidents).
+  - **24/7 DDoS Response Team (DRT)** access (parallels [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)'s TAM concept, for DDoS incidents).
   - **Cost protection** — reimbursement for scaling charges incurred specifically due to a DDoS attack.
   - Advanced real-time metrics/reporting, integration with WAF.
 
@@ -118,8 +118,8 @@ Your Application
 
 ## 7. Production & Enterprise Usage
 
-- **WAF + CloudFront as default edge pattern** — filters at global edge locations (§2) before traffic reaches the Region; security AND cost benefit (blocked requests never consume origin compute).
-- **Shield Advanced for business-critical internet-facing workloads** — justified for DRT access + cost-protection guarantee, mirroring §7's support-plan risk/cost logic.
+- **WAF + CloudFront as default edge pattern** — filters at global edge locations ([§2](../Part1/Section-02-Part1-AWS-Global-Infrastructure.md)) before traffic reaches the Region; security AND cost benefit (blocked requests never consume origin compute).
+- **Shield Advanced for business-critical internet-facing workloads** — justified for DRT access + cost-protection guarantee, mirroring [§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)'s support-plan risk/cost logic.
 - **WAF logging into the Section 8 detective stack** — CloudWatch/S3/Kinesis Data Firehose, Security Hub ingestion — edge security folded into the same aggregated view.
 - **Network Firewall for outbound/egress control** — restrict VPC egress to approved domains, defending against exfiltration/compromised-instance callbacks; complements GuardDuty's _detection_ with _prevention_.
 
@@ -189,4 +189,4 @@ Your Application
 
 - Full VPC architecture, security groups, NACLs, CloudFront, Route 53, Network Firewall placement → Part 4
 - WAF/Shield logging integration with CloudWatch, S3, Kinesis Data Firehose → Part 7/Part 8
-- Part 2 wrap-up and comprehensive drill → §18 (final section)
+- Part 2 wrap-up and comprehensive drill → [§18](./Section-18-Part2-WrapUp-and-Interview-Drill.md) (final section)

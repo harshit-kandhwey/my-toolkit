@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Once curated data exists in BigQuery (Section 44), someone still has to turn it into dashboards and reports that business stakeholders can actually read and trust. Google offers two very different tools for this: **Looker Studio**, a free, lightweight, drag-and-drop report builder anyone can pick up in an afternoon, and **Looker**, an enterprise BI platform where metrics are defined once in code and reused consistently across every dashboard, team, and tool in the organization.
+**Plain language:** Once curated data exists in BigQuery ([Section 44](./Section-44-Part6-BigQuery-Deep-Dive.md)), someone still has to turn it into dashboards and reports that business stakeholders can actually read and trust. Google offers two very different tools for this: **Looker Studio**, a free, lightweight, drag-and-drop report builder anyone can pick up in an afternoon, and **Looker**, an enterprise BI platform where metrics are defined once in code and reused consistently across every dashboard, team, and tool in the organization.
 
 **Precise:** Looker and Looker Studio are Google's two business intelligence and visualization offerings. **Looker Studio** (formerly Google Data Studio) is a free, self-service reporting and dashboarding tool for connecting to data sources and building visualizations directly. **Looker** is a full enterprise BI platform built around **LookML**, a version-controlled semantic modeling language that centrally defines metrics, dimensions, and business logic once, so every downstream report, dashboard, and embedded analytics experience queries the same governed definitions rather than each author redefining "revenue" or "active user" independently.
 
@@ -146,4 +146,4 @@ https://lookerstudio.google.com/reporting/create?c.reportId=REPORT_ID
 
 ## 11. Related Concepts
 
-BigQuery (Section 44) as the primary data source both tools query against, Dataplex Catalog (Section 47) for discovering and governing the underlying tables before they reach a dashboard, and the Data Pipeline Architecture Patterns synthesis (Section 49) tying the full curated-data-to-dashboard pipeline together.
+BigQuery ([Section 44](./Section-44-Part6-BigQuery-Deep-Dive.md)) as the primary data source both tools query against, Dataplex Catalog ([Section 47](./Section-47-Part6-Dataplex-Data-Governance-Catalog.md)) for discovering and governing the underlying tables before they reach a dashboard, and the Data Pipeline Architecture Patterns synthesis ([Section 49](./Section-49-Part6-Data-Pipeline-Architecture-Patterns.md)) tying the full curated-data-to-dashboard pipeline together.

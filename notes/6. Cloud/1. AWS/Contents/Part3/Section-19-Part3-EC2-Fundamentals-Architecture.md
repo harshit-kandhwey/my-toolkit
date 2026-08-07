@@ -8,15 +8,15 @@
 
 **Plain-language:** EC2 lets you rent a virtual computer in an AWS data center, turn it on, use it like a normal server, and turn it off when done — paying only for the time it ran.
 
-**Precise:** **Amazon EC2** is AWS's **IaaS compute service** providing resizable, on-demand virtual servers (instances), giving you control over the OS and everything above it, while AWS manages the underlying hardware and virtualization layer (§3's IaaS split, made concrete).
+**Precise:** **Amazon EC2** is AWS's **IaaS compute service** providing resizable, on-demand virtual servers (instances), giving you control over the OS and everything above it, while AWS manages the underlying hardware and virtualization layer ([§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)'s IaaS split, made concrete).
 
 ---
 
 ## 2. Why It Exists
 
-- The literal mechanism behind "trade capital expense for variable expense" (§1) — provision a virtual server in seconds, pay per time unit.
-- Embodies elasticity (§4) — launch more on demand, terminate when done, rather than owning fixed peak capacity.
-- As IaaS (§5), EC2 gives maximum control (OS choice, installed software, config) in exchange for maximum responsibility (§3) — you patch/secure the guest OS and everything above the hypervisor.
+- The literal mechanism behind "trade capital expense for variable expense" ([§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)) — provision a virtual server in seconds, pay per time unit.
+- Embodies elasticity ([§4](../Part1/Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md)) — launch more on demand, terminate when done, rather than owning fixed peak capacity.
+- As IaaS ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)), EC2 gives maximum control (OS choice, installed software, config) in exchange for maximum responsibility ([§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)) — you patch/secure the guest OS and everything above the hypervisor.
 
 ---
 
@@ -24,7 +24,7 @@
 
 - A **virtual machine** — AWS physical hosts run a **hypervisor** partitioning one machine into multiple isolated VMs (instances).
 - **AWS's current hypervisor: the Nitro System** — offloads virtualization overhead (networking, storage) to dedicated Nitro cards, freeing the main CPU, delivering near-bare-metal performance despite virtualization.
-- **Multi-tenancy in action:** multiple customers can share a physical host, isolated by the hypervisor — AWS is responsible for that isolation boundary ("security of the cloud," §3).
+- **Multi-tenancy in action:** multiple customers can share a physical host, isolated by the hypervisor — AWS is responsible for that isolation boundary ("security of the cloud," [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)).
 
 ---
 
@@ -58,7 +58,7 @@
 
 - **IMDS** — provides an instance info about itself (instance ID, AMI ID, security groups, network config, IAM role's temp credentials) via a local non-routable address, queryable only from within.
 - **User Data** — script executed automatically **once, on first boot** by default — the standard bootstrapping mechanism (install software, apply config, join a cluster).
-- **IMDSv2** (§11.8) — hardened, session-token-based; a modern security baseline against SSRF-based credential theft.
+- **IMDSv2** ([§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)1.8) — hardened, session-token-based; a modern security baseline against SSRF-based credential theft.
 
 ---
 
@@ -83,7 +83,7 @@
 ## 7. Elastic IP Addresses (preview; full depth Part 4)
 
 - Static public IPv4 address, remains constant across stop/start (unlike default public IPs), remappable to a different instance for failover.
-- **Cost nuance:** charged when allocated but **not associated with a running instance** — discourages hoarding scarce public IPv4 addresses (§6 cost governance).
+- **Cost nuance:** charged when allocated but **not associated with a running instance** — discourages hoarding scarce public IPv4 addresses ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md) cost governance).
 
 ---
 
@@ -95,15 +95,15 @@
 
 ## 9. Production & Enterprise Usage
 
-- **EC2 underlies higher-level services** — Elastic Beanstalk, ECS-on-EC2, and some managed services ultimately run on EC2 (§27).
-- **Right-sizing** — continuous review of instance size vs actual CloudWatch utilization, not a one-time launch decision (§6 cost discipline).
+- **EC2 underlies higher-level services** — Elastic Beanstalk, ECS-on-EC2, and some managed services ultimately run on EC2 ([§27](./Section-27-Part3-Elastic-Beanstalk-Batch-Lightsail.md)).
+- **Right-sizing** — continuous review of instance size vs actual CloudWatch utilization, not a one-time launch decision ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md) cost discipline).
 - **Nitro's security relevance:** offloading virtualization to dedicated hardware means AWS states even AWS operators have no mechanism to access customer instance memory on Nitro-based instances — a concrete technical detail strengthening the Shared Responsibility Model's infrastructure commitment.
 
 ---
 
 ## 10. Security Considerations
 
-- Guest OS patching remains entirely customer responsibility regardless of instance type/generation (§3, §16 Inspector).
+- Guest OS patching remains entirely customer responsibility regardless of instance type/generation ([§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md), [§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md) Inspector).
 - IMDSv2 enforcement should be default for every new instance.
 - Security groups (full depth Part 4) are the primary instance-level network access control — scope as tightly as IAM least privilege demands.
 
@@ -170,6 +170,6 @@
 
 ## 🌐 Related Concepts (forward links)
 
-- AMIs, instance types/families, instance lifecycle in full depth → §20
-- EC2 storage (EBS types), networking (security groups, ENIs), IAM integration → §22
+- AMIs, instance types/families, instance lifecycle in full depth → [§20](./Section-20-Part3-AMIs-Instance-Types-Lifecycle.md)
+- EC2 storage (EBS types), networking (security groups, ENIs), IAM integration → [§22](./Section-22-Part3-EC2-Storage-Networking-Security.md)
 - CloudWatch-based right-sizing and monitoring → Part 8

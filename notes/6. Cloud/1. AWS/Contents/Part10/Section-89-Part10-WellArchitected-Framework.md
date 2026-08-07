@@ -32,29 +32,29 @@ The Well-Architected Framework solves this by giving a **structured, repeatable 
 
 **Core question:** How do you protect information, systems, and assets while delivering business value through risk assessments and mitigation strategies?
 
-- Emphasizes strong identity foundations (least privilege, Part 2's IAM), traceability (CloudTrail, §73), defense in depth across every layer, automating security best practices, and preparing for security events rather than assuming they won't happen.
-- Concretely draws on: IAM (Part 2), encryption via KMS (§14), VPC security groups/NACLs (Part 4), CloudTrail/Config (§73-74).
+- Emphasizes strong identity foundations (least privilege, Part 2's IAM), traceability (CloudTrail, [§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)), defense in depth across every layer, automating security best practices, and preparing for security events rather than assuming they won't happen.
+- Concretely draws on: IAM (Part 2), encryption via KMS ([§14](../Part2/Section-14-Part2-KMS-and-Encryption.md)), VPC security groups/NACLs (Part 4), CloudTrail/Config ([§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)-[§74](../Part8/Section-74-Part8-AWS-Config.md)).
 
 ### Pillar 3: Reliability
 
 **Core question:** Can the workload perform its intended function correctly and consistently, including recovering quickly from failure?
 
 - Emphasizes automatically recovering from failure, testing recovery procedures (not just having them on paper), scaling horizontally to increase aggregate availability, and managing change through automation.
-- Concretely draws on: SQS DLQs and retry patterns (§59-60), multi-AZ architecture (Part 4), Step Functions error handling (§63), CloudWatch alarms (§71).
+- Concretely draws on: SQS DLQs and retry patterns ([§59](../Part7/Section-59-Part7-SQS-Fundamentals.md)-[§60](../Part7/Section-60-Part7-SQS-Advanced-DLQ-FIFO-VisibilityTimeout.md)), multi-AZ architecture (Part 4), Step Functions error handling ([§63](../Part7/Section-63-Part7-StepFunctions-Orchestration.md)), CloudWatch alarms ([§71](../Part8/Section-71-Part8-CloudWatch-Alarms-Dashboards.md)).
 
 ### Pillar 4: Performance Efficiency
 
 **Core question:** Can you use computing resources efficiently to meet requirements, and maintain that efficiency as demand changes and technology evolves?
 
 - Emphasizes democratizing advanced technologies (using managed services instead of building everything yourself), going global in minutes, using serverless architectures, and experimenting more often given IaC's low cost of trying alternatives.
-- Concretely draws on: Lambda/serverless (Part 3), Kinesis shard/partition-key design (§64), CloudWatch metrics for identifying bottlenecks (§69).
+- Concretely draws on: Lambda/serverless (Part 3), Kinesis shard/partition-key design ([§64](../Part7/Section-64-Part7-Kinesis-Data-Streams.md)), CloudWatch metrics for identifying bottlenecks ([§69](../Part8/Section-69-Part8-CloudWatch-Fundamentals.md)).
 
 ### Pillar 5: Cost Optimization
 
 **Core question:** Can you run systems to deliver business value at the lowest price point?
 
 - Emphasizes adopting a consumption model (pay for what you use), measuring overall efficiency, stopping spending on undifferentiated heavy lifting (using managed services), and analyzing/attributing expenditure.
-- Full depth in the next section, §90 — this pillar gets its own dedicated section given its interview prominence and the amount of AWS-specific tooling supporting it.
+- Full depth in the next section, [§90](./Section-90-Part10-Cost-Optimization-FinOps.md) — this pillar gets its own dedicated section given its interview prominence and the amount of AWS-specific tooling supporting it.
 
 ### Pillar 6: Sustainability
 
@@ -92,7 +92,7 @@ The Well-Architected Framework solves this by giving a **structured, repeatable 
 **Model answer:** High uptime alone is a Reliability-pillar success but doesn't guarantee the other five pillars are in good shape. On Security, the team could have achieved that uptime with overly broad IAM permissions or without CloudTrail properly configured, meaning nobody would even know if something went wrong from a security perspective. On Cost Optimization, they may have achieved that reliability by simply over-provisioning everything rather than architecting genuinely efficient redundancy, paying far more than necessary for the reliability they're getting. On Operational Excellence, if that uptime was achieved through manual, undocumented heroics rather than automated recovery and IaC-managed infrastructure, it's fragile in a way that won't survive key people leaving the team. This is exactly the value of the multi-pillar review — a team naturally optimizing hard for the one metric they're measured on (uptime) can develop serious blind spots in every dimension they're not explicitly checking.
 
 **🎯 Architect:** _"You're brought in to do a Well-Architected review of a system that's been in production for three years, built rapidly by a startup team under significant time pressure. What's your general approach?"_
-**Model answer:** Start with the Security pillar first regardless of what else the review covers, since security gaps in a three-year-old, rapidly-built system are both likely (given the described time pressure) and typically the highest-severity category of finding — checking IAM permission scope, whether CloudTrail/Config are properly configured (§73-74), and encryption coverage. Then move through Reliability, specifically looking for single points of failure and untested recovery procedures, since rapid early-stage development commonly prioritizes shipping over redundancy. For Operational Excellence, check whether infrastructure is actually IaC-managed (Part 9) or still has manually-created, undocumented resources from the early days — drift and tribal knowledge are extremely common in exactly this kind of system. Deliberately hold off on deep Cost Optimization analysis until after the higher-risk pillars, since cost inefficiency, while worth fixing, is rarely as urgent as a security or reliability gap — though obvious, easy cost wins are still worth noting along the way. Throughout, document findings with an explicit severity/effort framing, since a startup team under continued time pressure needs a prioritized, actionable list, not an overwhelming, undifferentiated wall of every possible improvement.
+**Model answer:** Start with the Security pillar first regardless of what else the review covers, since security gaps in a three-year-old, rapidly-built system are both likely (given the described time pressure) and typically the highest-severity category of finding — checking IAM permission scope, whether CloudTrail/Config are properly configured ([§73](../Part8/Section-73-Part8-CloudTrail-Audit-Governance.md)-[§74](../Part8/Section-74-Part8-AWS-Config.md)), and encryption coverage. Then move through Reliability, specifically looking for single points of failure and untested recovery procedures, since rapid early-stage development commonly prioritizes shipping over redundancy. For Operational Excellence, check whether infrastructure is actually IaC-managed (Part 9) or still has manually-created, undocumented resources from the early days — drift and tribal knowledge are extremely common in exactly this kind of system. Deliberately hold off on deep Cost Optimization analysis until after the higher-risk pillars, since cost inefficiency, while worth fixing, is rarely as urgent as a security or reliability gap — though obvious, easy cost wins are still worth noting along the way. Throughout, document findings with an explicit severity/effort framing, since a startup team under continued time pressure needs a prioritized, actionable list, not an overwhelming, undifferentiated wall of every possible improvement.
 
 ## 8. Common Misconceptions
 
@@ -110,6 +110,6 @@ The Well-Architected Framework solves this by giving a **structured, repeatable 
 ## 10. Related Concepts
 
 - Every prior Part in this roadmap supplies the concrete technical content these pillars organize and evaluate.
-- **Cost Optimization** (Pillar 5, expanded to its own full section given interview prominence) → next section, §90.
-- **Migration Strategies** (where Well-Architected thinking directly informs _how_ to approach moving workloads to AWS) → §93.
-- **FinOps Capstone** and **Disaster Recovery Strategy Capstone** (applying this Part's pillars, especially Cost Optimization and Reliability, at full organizational and architectural scale) → §91-92.
+- **Cost Optimization** (Pillar 5, expanded to its own full section given interview prominence) → next section, [§90](./Section-90-Part10-Cost-Optimization-FinOps.md).
+- **Migration Strategies** (where Well-Architected thinking directly informs _how_ to approach moving workloads to AWS) → [§93](./Section-93-Part10-Migration-Strategies.md).
+- **FinOps Capstone** and **Disaster Recovery Strategy Capstone** (applying this Part's pillars, especially Cost Optimization and Reliability, at full organizational and architectural scale) → [§91](./Section-91-Part10-FinOps-Capstone.md)-[§92](./Section-92-Part10-DR-Strategy-Capstone.md).

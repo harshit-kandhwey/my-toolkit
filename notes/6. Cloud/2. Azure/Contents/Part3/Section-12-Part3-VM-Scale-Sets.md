@@ -8,13 +8,13 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-A single VM (Section 11) is a single point of failure and a fixed capacity — if it goes down, the application is unavailable, and if load exceeds what it can handle, the application degrades or fails, with no automatic way to add capacity. Manually creating additional VMs to handle load, or to replace a failed one, is slow (provisioning takes time) and error-prone (ensuring every manually-created VM is configured identically is difficult at scale). VM Scale Sets solve this by treating "how many identical VMs should be running" as a managed, automatically-adjustable property rather than a fixed, manually-maintained set of individually-managed machines — new instances are created automatically to replace failures or handle load increases, and instances are removed automatically when load decreases, all from one consistent template.
+A single VM ([Section 11](./Section-11-Part3-Azure-Virtual-Machines.md)) is a single point of failure and a fixed capacity — if it goes down, the application is unavailable, and if load exceeds what it can handle, the application degrades or fails, with no automatic way to add capacity. Manually creating additional VMs to handle load, or to replace a failed one, is slow (provisioning takes time) and error-prone (ensuring every manually-created VM is configured identically is difficult at scale). VM Scale Sets solve this by treating "how many identical VMs should be running" as a managed, automatically-adjustable property rather than a fixed, manually-maintained set of individually-managed machines — new instances are created automatically to replace failures or handle load increases, and instances are removed automatically when load decreases, all from one consistent template.
 
 ## 3. Core Concepts
 
 ### 3.1 The Scale Set Model
 
-A Scale Set is defined by a single **VM profile** — the image, size, OS configuration, extensions, and networking configuration that every instance in the set will share — plus a **capacity** (the current number of running instances) that can change over time, either manually or automatically. Every instance created from this profile is functionally identical at creation time (though individual instances can subsequently diverge slightly through in-place changes, which is why immutable, redeployed-not-patched instance management is the recommended pattern, discussed in Section 12.7).
+A Scale Set is defined by a single **VM profile** — the image, size, OS configuration, extensions, and networking configuration that every instance in the set will share — plus a **capacity** (the current number of running instances) that can change over time, either manually or automatically. Every instance created from this profile is functionally identical at creation time (though individual instances can subsequently diverge slightly through in-place changes, which is why immutable, redeployed-not-patched instance management is the recommended pattern, discussed in [Section 12](./Section-12-Part3-VM-Scale-Sets.md).7).
 
 ### 3.2 Autoscaling
 
@@ -32,7 +32,7 @@ A Scale Set is defined by a single **VM profile** — the image, size, OS config
 
 ### 3.3 Availability Zone and Fault Domain Distribution
 
-A Scale Set can be configured to automatically spread its instances across multiple **Availability Zones** (Section 3.3.2) in regions that support them, and within a zone (or in regions without zone support), across multiple **Fault Domains** — groups of underlying hardware (racks, power, network switches) that share a common potential point of failure. This distribution is Azure's mechanism for ensuring that a single physical failure (a rack losing power, an entire zone going offline) doesn't take down every instance in the scale set simultaneously — this directly implements the high-availability pattern introduced conceptually in Section 3.3.2, now applied concretely to a specific compute resource.
+A Scale Set can be configured to automatically spread its instances across multiple **Availability Zones** ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2) in regions that support them, and within a zone (or in regions without zone support), across multiple **Fault Domains** — groups of underlying hardware (racks, power, network switches) that share a common potential point of failure. This distribution is Azure's mechanism for ensuring that a single physical failure (a rack losing power, an entire zone going offline) doesn't take down every instance in the scale set simultaneously — this directly implements the high-availability pattern introduced conceptually in [Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2, now applied concretely to a specific compute resource.
 
 ### 3.4 Rolling Upgrades
 
@@ -80,11 +80,11 @@ az vmss create \
   --upgrade-policy-mode Rolling
 ```
 
-- **Purpose:** Creates a scale set starting at 2 instances, distributed across all three specified Availability Zones, attached to a load balancer (Section 24, to be covered in Part 5) to distribute incoming traffic, with a Rolling upgrade policy for safe future updates.
+- **Purpose:** Creates a scale set starting at 2 instances, distributed across all three specified Availability Zones, attached to a load balancer ([Section 24](../Part5/Section-24-Part5-Load-Balancer-vs-Application-Gateway.md), to be covered in Part 5) to distribute incoming traffic, with a Rolling upgrade policy for safe future updates.
 - **Important arguments explained individually:**
   - `--zones` — explicitly requests zone distribution; omitting this either uses fault-domain-only distribution or requires the region to support zones, depending on configuration.
-  - `--upgrade-policy-mode` — set to `Rolling` rather than `Manual` or `Automatic`, following the production-safe pattern discussed in Section 12.3.4.
-- **Common error:** Requesting more zones than the target region supports returns an error; verify zone support for the region first (Section 3.3.2).
+  - `--upgrade-policy-mode` — set to `Rolling` rather than `Manual` or `Automatic`, following the production-safe pattern discussed in [Section 12](./Section-12-Part3-VM-Scale-Sets.md).3.4.
+- **Common error:** Requesting more zones than the target region supports returns an error; verify zone support for the region first ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2).
 
 **Configuring an autoscale rule (scale out example):**
 
@@ -104,7 +104,7 @@ az monitor autoscale rule create \
 ```
 
 - **Purpose:** Establishes the autoscale profile's boundaries (2–10 instances) and a specific scale-out rule (add 2 instances when average CPU exceeds 70% over a 10-minute window).
-- **Production usage note:** A corresponding scale-in rule (not shown, but essential per the tip in Section 12.3.2) would be added similarly, triggering on a lower CPU threshold to remove instances as load decreases.
+- **Production usage note:** A corresponding scale-in rule (not shown, but essential per the tip in [Section 12](./Section-12-Part3-VM-Scale-Sets.md).3.2) would be added similarly, triggering on a lower CPU threshold to remove instances as load decreases.
 
 ## 6. Production & Enterprise Usage
 
@@ -112,7 +112,7 @@ VM Scale Sets are the standard enterprise pattern for any stateless, horizontall
 
 ## 7. Security Considerations
 
-Because Scale Set instances are frequently created, replaced, and scaled automatically, the **immutable infrastructure** pattern is strongly recommended: rather than manually patching or configuring individual running instances (changes which would be lost whenever that instance is replaced during scale-in or a rolling upgrade), configuration and security updates should be baked into a new golden image version (Section 11.6), which is then rolled out via a controlled rolling upgrade — treating running instances as disposable and always deployable fresh from a known-good, current image, rather than as long-lived, individually-maintained machines.
+Because Scale Set instances are frequently created, replaced, and scaled automatically, the **immutable infrastructure** pattern is strongly recommended: rather than manually patching or configuring individual running instances (changes which would be lost whenever that instance is replaced during scale-in or a rolling upgrade), configuration and security updates should be baked into a new golden image version ([Section 11](./Section-11-Part3-Azure-Virtual-Machines.md).6), which is then rolled out via a controlled rolling upgrade — treating running instances as disposable and always deployable fresh from a known-good, current image, rather than as long-lived, individually-maintained machines.
 
 ## 8. Performance Considerations
 
@@ -130,7 +130,7 @@ Scale set health is monitored both at the aggregate level (overall instance coun
 | New instances fail health checks after a rolling upgrade | New image version has a configuration or startup issue                                                       | Rolling upgrade should halt automatically on health check failures if configured correctly; investigate the new image version, roll back if needed               |
 | Autoscaling reacts too slowly to sudden traffic spikes   | Evaluation window too long for the workload's traffic pattern, or provisioning time itself is the bottleneck | Shorten the evaluation window for critical scale-out rules, raise the minimum baseline instance count, or use scheduled pre-scaling for predictable spike events |
 
-## 11. Interview Questions — Section 12
+## 11. Interview Questions — [Section 12](./Section-12-Part3-VM-Scale-Sets.md)
 
 ### 🎯 Intermediate
 
@@ -151,7 +151,7 @@ _What the interviewer is probing:_ whether the candidate can reason jointly abou
 ## 12. Common Misconceptions
 
 - **"Autoscaling reacts instantly to load changes."** False — there's inherent latency from metric evaluation windows and instance provisioning time; this latency must be accounted for in capacity planning, especially for sharp traffic spikes.
-- **"You should manually patch running scale set instances to save time."** An anti-pattern — manual in-place changes to individual instances are lost on replacement/rolling upgrade and cause configuration drift; changes belong in the golden image and VM profile instead (the immutable infrastructure pattern, Section 12.7).
+- **"You should manually patch running scale set instances to save time."** An anti-pattern — manual in-place changes to individual instances are lost on replacement/rolling upgrade and cause configuration drift; changes belong in the golden image and VM profile instead (the immutable infrastructure pattern, [Section 12](./Section-12-Part3-VM-Scale-Sets.md).7).
 
 ## 13. Key Takeaways
 
@@ -162,4 +162,4 @@ _What the interviewer is probing:_ whether the candidate can reason jointly abou
 
 ## 14. Related Concepts (Next Up)
 
-Section 13 shifts from IaaS compute (VMs and Scale Sets) to **Azure App Service**, a PaaS compute offering — directly contrasting the operational responsibilities just covered (OS patching, image management, scaling configuration all customer-managed) against a model where Azure manages the underlying OS and scaling infrastructure itself, revisiting the IaaS-vs-PaaS distinction first introduced in Section 2.4-2.5 with a concrete service example.
+[Section 13](./Section-13-Part3-Azure-App-Service.md) shifts from IaaS compute (VMs and Scale Sets) to **Azure App Service**, a PaaS compute offering — directly contrasting the operational responsibilities just covered (OS patching, image management, scaling configuration all customer-managed) against a model where Azure manages the underlying OS and scaling infrastructure itself, revisiting the IaaS-vs-PaaS distinction first introduced in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).4-2.5 with a concrete service example.

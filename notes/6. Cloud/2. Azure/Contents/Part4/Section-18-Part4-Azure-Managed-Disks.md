@@ -4,17 +4,17 @@
 
 **Plain language:** A Managed Disk is the virtual hard drive attached to an Azure VM — Azure handles the underlying storage infrastructure for it entirely, so you just choose a size and performance level, rather than having to create and manage the storage account details yourself.
 
-**Precise definition:** Azure Managed Disks are block-storage resources, managed as first-class ARM resources independent of any Storage Account the customer must directly configure, providing persistent OS and data storage for Virtual Machines (Section 11), with Azure handling underlying storage account management, placement, and availability-set/zone alignment automatically.
+**Precise definition:** Azure Managed Disks are block-storage resources, managed as first-class ARM resources independent of any Storage Account the customer must directly configure, providing persistent OS and data storage for Virtual Machines ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md)), with Azure handling underlying storage account management, placement, and availability-set/zone alignment automatically.
 
 ## 2. Why It Exists / Problem It Solves
 
-Before Managed Disks (an evolution of the platform), VM disks were "unmanaged" — backed directly by Page Blobs (Section 17.3.2) in a Storage Account that the customer had to create and manage themselves, including tracking which VMs' disks lived in which Storage Accounts to avoid hitting per-account scalability limits (Section 16.8) when running many VMs, and manually ensuring disks for VMs in the same Availability Set were spread across different underlying storage infrastructure for actual fault tolerance. This was operationally burdensome and error-prone at any real scale. Managed Disks solve this by making the disk itself a fully independent, directly-manageable ARM resource — Azure handles the underlying storage placement, scalability, and fault-domain alignment automatically, removing an entire category of manual capacity-planning and configuration work from the customer.
+Before Managed Disks (an evolution of the platform), VM disks were "unmanaged" — backed directly by Page Blobs ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.2) in a Storage Account that the customer had to create and manage themselves, including tracking which VMs' disks lived in which Storage Accounts to avoid hitting per-account scalability limits ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).8) when running many VMs, and manually ensuring disks for VMs in the same Availability Set were spread across different underlying storage infrastructure for actual fault tolerance. This was operationally burdensome and error-prone at any real scale. Managed Disks solve this by making the disk itself a fully independent, directly-manageable ARM resource — Azure handles the underlying storage placement, scalability, and fault-domain alignment automatically, removing an entire category of manual capacity-planning and configuration work from the customer.
 
 ## 3. Core Concepts
 
 ### 3.1 Disk Roles
 
-- **OS Disk** — the disk containing the VM's operating system, created automatically from the chosen image (Section 11.5) when the VM is provisioned; every VM has exactly one OS disk.
+- **OS Disk** — the disk containing the VM's operating system, created automatically from the chosen image ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).5) when the VM is provisioned; every VM has exactly one OS disk.
 - **Data Disk** — additional disks attached to a VM for application data, separate from the OS disk; a VM can have zero or many data disks (up to a size-dependent maximum), and adding/removing data disks doesn't require recreating the VM.
 - **Temporary Disk** — a disk physically local to the VM's specific underlying host, providing very low-latency scratch storage (e.g., for OS page files or application temp files), but **not durable** — its contents are lost on certain events (VM deallocation, migration to different host hardware) and it should never be used for data requiring persistence.
 
@@ -39,7 +39,7 @@ Managed Disks support configurable **host caching** (ReadOnly, ReadWrite, or Non
 
 ### 3.4 Disk Encryption
 
-Managed Disks are encrypted at rest by default using **Server-Side Encryption (SSE)** with Microsoft-managed keys, with the option to instead use **customer-managed keys** (stored in Azure Key Vault, Section 56) for organizations requiring direct control over the encryption key lifecycle — this encryption-at-rest topic connects to the broader security/compliance discussion in Part 11.
+Managed Disks are encrypted at rest by default using **Server-Side Encryption (SSE)** with Microsoft-managed keys, with the option to instead use **customer-managed keys** (stored in Azure Key Vault, [Section 56](../Part11/Section-56-Part11-Key-Vault.md)) for organizations requiring direct control over the encryption key lifecycle — this encryption-at-rest topic connects to the broader security/compliance discussion in Part 11.
 
 ## 4. Architecture Diagram
 
@@ -77,9 +77,9 @@ az vm disk attach \
 
 - **Purpose:** Creates an independent Managed Disk resource (Premium SSD performance, locally redundant), then attaches it to an existing running VM as an additional data disk — demonstrating that data disks can be added without recreating the VM.
 - **Important arguments explained individually:**
-  - `--sku` — combines the performance tier and redundancy option (`Premium_LRS` = Premium SSD, Locally Redundant Storage — disk-level redundancy options are conceptually related to, but configured independently from, the Storage Account-level redundancy options covered in Section 20).
-  - `--size-gb` — as discussed in Section 18.3.2, this size can implicitly affect available IOPS/throughput on certain disk tiers, not just storage capacity — chosen deliberately with performance requirements in mind, not purely capacity requirements.
-- **Common error:** Attaching a disk to a VM that has already reached its maximum data disk count (a limit determined by the VM's specific size/series, Section 11.4) fails — resolved by choosing a larger VM size supporting more attached disks, or consolidating data onto fewer, larger disks.
+  - `--sku` — combines the performance tier and redundancy option (`Premium_LRS` = Premium SSD, Locally Redundant Storage — disk-level redundancy options are conceptually related to, but configured independently from, the Storage Account-level redundancy options covered in [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)).
+  - `--size-gb` — as discussed in [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).3.2, this size can implicitly affect available IOPS/throughput on certain disk tiers, not just storage capacity — chosen deliberately with performance requirements in mind, not purely capacity requirements.
+- **Common error:** Attaching a disk to a VM that has already reached its maximum data disk count (a limit determined by the VM's specific size/series, [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).4) fails — resolved by choosing a larger VM size supporting more attached disks, or consolidating data onto fewer, larger disks.
 
 **Resizing an existing disk (requires VM deallocation for most disk types):**
 
@@ -93,16 +93,16 @@ az vm start --resource-group rg-myapp-prod --name vm-web-01
 
 ## 6. Production & Enterprise Usage
 
-Enterprises separate OS disks from data disks deliberately (rather than storing application data on the OS disk) to allow independent lifecycle management — an OS disk might be replaced entirely as part of an image update, while data disks persist independently across that kind of change — and to allow choosing different performance tiers appropriate to each disk's actual access pattern (e.g., a lower-cost tier for the OS disk, a high-performance tier specifically for a database's data disk). Production database workloads on IaaS VMs (rather than PaaS database services like Azure SQL Database, Section 29) typically require Premium SSD or Ultra Disk tiers with carefully-tuned caching configuration specific to the database engine's own documented best practices, since database performance is frequently disk-I/O-bound in practice.
+Enterprises separate OS disks from data disks deliberately (rather than storing application data on the OS disk) to allow independent lifecycle management — an OS disk might be replaced entirely as part of an image update, while data disks persist independently across that kind of change — and to allow choosing different performance tiers appropriate to each disk's actual access pattern (e.g., a lower-cost tier for the OS disk, a high-performance tier specifically for a database's data disk). Production database workloads on IaaS VMs (rather than PaaS database services like Azure SQL Database, [Section 29](../Part6/Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md)) typically require Premium SSD or Ultra Disk tiers with carefully-tuned caching configuration specific to the database engine's own documented best practices, since database performance is frequently disk-I/O-bound in practice.
 
 ## 7. Security Considerations
 
-- Encryption at rest (Section 18.3.4) is enabled by default; customer-managed keys should be considered for workloads with specific compliance requirements mandating direct control over encryption key lifecycle and rotation.
+- Encryption at rest ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md).3.4) is enabled by default; customer-managed keys should be considered for workloads with specific compliance requirements mandating direct control over encryption key lifecycle and rotation.
 - Managed Disks can be configured with network access restrictions (Private Endpoints for disk access operations, relevant primarily to disk import/export/snapshot scenarios) to limit exposure beyond the attached VM's own access.
 
 ## 8. Performance Considerations
 
-As emphasized in Section 18.3.2 and 18.3.3, disk performance is a function of tier, size (for certain tiers), and caching configuration together — a common troubleshooting mistake is addressing perceived "slow disk" performance purely by choosing a higher-cost tier without first verifying whether size-driven IOPS/throughput limits or an inappropriate caching configuration were the actual bottleneck, potentially spending more than necessary without addressing the real constraint.
+As emphasized in [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).3.2 and 18.3.3, disk performance is a function of tier, size (for certain tiers), and caching configuration together — a common troubleshooting mistake is addressing perceived "slow disk" performance purely by choosing a higher-cost tier without first verifying whether size-driven IOPS/throughput limits or an inappropriate caching configuration were the actual bottleneck, potentially spending more than necessary without addressing the real constraint.
 
 ## 9. Monitoring
 
@@ -116,7 +116,7 @@ Disk-level metrics (IOPS consumed vs. provisioned limit, throughput consumed vs.
 | Disk performance plateaus well below expectations despite a "fast" tier selection | Disk size too small to unlock the tier's higher IOPS/throughput limits (size-dependent scaling), or caching misconfigured for the workload | Review documented IOPS/throughput limits for the specific size and tier combination in use; verify caching configuration matches the workload's documented requirements |
 | Cannot attach an additional data disk to a VM                                     | VM has reached the maximum data disk count for its current size                                                                            | Choose a larger VM size supporting more disks, or consolidate existing data onto fewer, larger disks                                                                    |
 
-## 11. Interview Questions — Section 18
+## 11. Interview Questions — [Section 18](./Section-18-Part4-Azure-Managed-Disks.md)
 
 ### 🎯 Beginner
 
@@ -137,7 +137,7 @@ _What the interviewer is probing:_ a methodical, metrics-driven diagnostic appro
 ## 12. Common Misconceptions
 
 - **"The Temporary Disk is just a smaller, cheaper regular disk."** False and risky — it's fundamentally non-durable, a categorically different guarantee than any Managed Disk tier, regardless of cost or size.
-- **"A higher-cost disk tier always fixes performance problems."** Not necessarily — size-dependent IOPS/throughput scaling, caching misconfiguration, or VM-level throughput ceilings can all be the actual bottleneck independent of the disk tier chosen; diagnosing the actual constraint (Section 18.11) should precede a tier upgrade decision.
+- **"A higher-cost disk tier always fixes performance problems."** Not necessarily — size-dependent IOPS/throughput scaling, caching misconfiguration, or VM-level throughput ceilings can all be the actual bottleneck independent of the disk tier chosen; diagnosing the actual constraint ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md).11) should precede a tier upgrade decision.
 
 ## 13. Key Takeaways
 
@@ -149,9 +149,9 @@ _What the interviewer is probing:_ a methodical, metrics-driven diagnostic appro
 
 ## 14. Disk Snapshots and Incremental Snapshots
 
-### 14.1 Why This Extends Beyond Backup (Section 11.15.2)
+### 14.1 Why This Extends Beyond Backup ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.2)
 
-Section 11.15.2 covered **Azure Backup** — scheduled, policy-driven, application-consistent VM backups. This subsection covers a related but distinct, disk-level mechanism: **manually or ad hoc-triggered point-in-time copies of an individual Managed Disk**, useful for scenarios narrower than a full VM backup — such as capturing a disk's state immediately before a risky change, or efficiently creating new disks from a known-good state — without necessarily invoking the full VM Backup policy/vault machinery.
+[Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.2 covered **Azure Backup** — scheduled, policy-driven, application-consistent VM backups. This subsection covers a related but distinct, disk-level mechanism: **manually or ad hoc-triggered point-in-time copies of an individual Managed Disk**, useful for scenarios narrower than a full VM backup — such as capturing a disk's state immediately before a risky change, or efficiently creating new disks from a known-good state — without necessarily invoking the full VM Backup policy/vault machinery.
 
 ### 14.2 Disk Snapshots
 
@@ -161,7 +161,7 @@ Section 11.15.2 covered **Azure Backup** — scheduled, policy-driven, applicati
 
 - **Pre-change safety copy** — taking a snapshot immediately before a risky operation (an OS upgrade, a major application deployment, a schema migration on a VM-hosted database) provides a fast, disk-level rollback point distinct from a full VM backup/restore cycle.
 - **Disk cloning / environment replication** — creating a new disk from a snapshot is a fast way to stand up an identical copy of a disk's content — for example, cloning a production disk's data into a new disk attached to a troubleshooting or staging VM, without disturbing the original.
-- **Cross-region disk copy** — snapshots can be copied to a different region, providing a disk-level mechanism to seed disaster-recovery infrastructure or migrate a disk's content, complementary to (and more granular/manual than) the VM-level Azure Site Recovery replication introduced in Section 11.15.3 and covered fully in Section 62.
+- **Cross-region disk copy** — snapshots can be copied to a different region, providing a disk-level mechanism to seed disaster-recovery infrastructure or migrate a disk's content, complementary to (and more granular/manual than) the VM-level Azure Site Recovery replication introduced in [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.3 and covered fully in [Section 62](../Part12/Section-62-Part12-Azure-Site-Recovery-Backup.md).
 
 ### 14.3 Incremental Snapshots
 
@@ -173,13 +173,13 @@ Section 11.15.2 covered **Azure Backup** — scheduled, policy-driven, applicati
 
 ### 14.4 Snapshots vs. Azure Backup vs. Azure Site Recovery — Choosing the Right Tool
 
-| Mechanism                                             | Scope                                                            | Trigger                                                                 | Best Fit                                                                                                                                   |
-| ----------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Disk Snapshot / Incremental Snapshot**              | Single disk                                                      | Manual/ad hoc, or scripted on a custom schedule                         | Pre-change safety copies, disk cloning, lightweight custom recovery-point strategies outside the formal Azure Backup policy framework      |
-| **Azure Backup (Section 11.15.2)**                    | Whole VM (OS disk + data disks together, application-consistent) | Policy-driven, scheduled, centrally managed via Recovery Services Vault | Standard production VM data-protection baseline — the default recommended mechanism for routine, policy-governed recovery point management |
-| **Azure Site Recovery (Section 11.15.3, Section 62)** | Whole VM, replicated continuously to a different region          | Continuous replication                                                  | Regional disaster recovery — recovering the entire workload in a different region, not disk-level point-in-time recovery within a region   |
+| Mechanism                                                                                                                                                                 | Scope                                                            | Trigger                                                                 | Best Fit                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Disk Snapshot / Incremental Snapshot**                                                                                                                                  | Single disk                                                      | Manual/ad hoc, or scripted on a custom schedule                         | Pre-change safety copies, disk cloning, lightweight custom recovery-point strategies outside the formal Azure Backup policy framework      |
+| **Azure Backup ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.2)**                                                                                 | Whole VM (OS disk + data disks together, application-consistent) | Policy-driven, scheduled, centrally managed via Recovery Services Vault | Standard production VM data-protection baseline — the default recommended mechanism for routine, policy-governed recovery point management |
+| **Azure Site Recovery ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.3, [Section 62](../Part12/Section-62-Part12-Azure-Site-Recovery-Backup.md))** | Whole VM, replicated continuously to a different region          | Continuous replication                                                  | Regional disaster recovery — recovering the entire workload in a different region, not disk-level point-in-time recovery within a region   |
 
-💡 **Tip:** Snapshots are a _complementary_, more granular/manual tool alongside Azure Backup, not a replacement for it — production VMs should still have an Azure Backup policy as their baseline data-protection mechanism (Section 11.15.2), with ad hoc snapshots used for the specific, narrower scenarios (pre-change safety, cloning) snapshots are particularly well suited to.
+💡 **Tip:** Snapshots are a _complementary_, more granular/manual tool alongside Azure Backup, not a replacement for it — production VMs should still have an Azure Backup policy as their baseline data-protection mechanism ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.2), with ad hoc snapshots used for the specific, narrower scenarios (pre-change safety, cloning) snapshots are particularly well suited to.
 
 ### 14.5 Configuration Example
 
@@ -191,12 +191,12 @@ az snapshot create \
   --incremental true
 ```
 
-- **Purpose:** Creates an incremental snapshot of the data disk from Section 18.5's example, immediately before a planned risky change (per the pre-change safety pattern, Section 18.14.2), following the general incremental-snapshot cost/performance benefit described in Section 18.14.3.
+- **Purpose:** Creates an incremental snapshot of the data disk from [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).5's example, immediately before a planned risky change (per the pre-change safety pattern, [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14.2), following the general incremental-snapshot cost/performance benefit described in [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14.3.
 - **Important arguments explained individually:**
   - `--incremental true` — explicitly requests an incremental snapshot rather than a full snapshot; ⚠️ verify current default behavior, since this may already be the platform default depending on current documentation.
 - **Common error:** Attempting to create a disk from a snapshot without sufficient quota/capacity in the target resource group or region — snapshots and disks created from them still consume standard disk-resource quota.
 
-### 14.6 Interview Questions — Section 18.14
+### 14.6 Interview Questions — [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14
 
 **🎯 Intermediate**
 **Q: What's the advantage of an incremental snapshot over a full snapshot for a disk that needs frequent point-in-time copies?**
@@ -212,7 +212,7 @@ _Model answer:_ Not necessarily redundant — Azure Backup provides the standard
 
 _What the interviewer is probing:_ whether the candidate can articulate the genuine complementary value of a more granular, event-triggered mechanism alongside a broader scheduled one, rather than assuming any two data-protection mechanisms covering "the same disk" must be redundant.
 
-### 14.7 Key Takeaways — Section 18.14
+### 14.7 Key Takeaways — [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14
 
 - 🔑 Disk Snapshots provide manual/ad hoc, single-disk point-in-time copies, complementary to (not a replacement for) Azure Backup's policy-driven, whole-VM protection.
 - 🔑 Incremental Snapshots capture only changed data since the prior snapshot, making frequent recurring snapshot schedules practical and cost-effective at scale.
@@ -220,4 +220,4 @@ _What the interviewer is probing:_ whether the candidate can articulate the genu
 
 ## 15. Related Concepts (Next Up)
 
-Section 19 covers **Azure Files and File Sync** — the traditional network file share service (introduced by name in Section 16.3.2) that, unlike Managed Disks (attached to one VM at a time), supports concurrent access from multiple clients simultaneously via SMB/NFS protocols, filling a genuinely different storage need than the block-storage-per-VM model just covered.
+[Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md) covers **Azure Files and File Sync** — the traditional network file share service (introduced by name in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).3.2) that, unlike Managed Disks (attached to one VM at a time), supports concurrent access from multiple clients simultaneously via SMB/NFS protocols, filling a genuinely different storage need than the block-storage-per-VM model just covered.

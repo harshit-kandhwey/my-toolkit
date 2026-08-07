@@ -26,7 +26,7 @@
 1. **Compute time** — per instance-hour or per-second (EC2); Lambda = per request + per GB-second.
 2. **Storage** — per GB-month, often tiered by access frequency (Part 5: S3 storage classes).
 3. **Requests / API calls** — per thousand/million (S3, DynamoDB, SQS, API Gateway).
-4. **Data transfer** — charged by direction/destination (see §4 — most misunderstood dimension).
+4. **Data transfer** — charged by direction/destination (see [§4](./Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md) — most misunderstood dimension).
 5. **Provisioned capacity** — pre-allocated throughput (e.g., DynamoDB provisioned capacity), charged regardless of actual usage, vs. on-demand request pricing.
 
 > 🔑 For any new service, ask: "what is its metering unit?" — time, storage-time, requests, or data transferred.
@@ -63,7 +63,7 @@
 ## 6. Free Tier — Cost-Management Context
 
 - Three categories (Section 4): always-free, 12-months-free, short-term trials.
-- It's an **allowance, not an enforced ceiling** — exceeding it bills normally, silently, unless guardrails (§7) are set.
+- It's an **allowance, not an enforced ceiling** — exceeding it bills normally, silently, unless guardrails ([§7](./Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)) are set.
 - Practical: always clean up lab resources (terminate instances, delete unused volumes/snapshots) — a forgotten running resource is the most common unwanted-charge source for learners.
 
 ---
@@ -117,7 +117,7 @@
 
 ## 9. Production & Enterprise Usage
 
-- **FinOps:** cross-functional practice (finance + engineering + leadership) continuously optimizing spend vs. business value, using §7's tools as instrumentation (Part 10).
+- **FinOps:** cross-functional practice (finance + engineering + leadership) continuously optimizing spend vs. business value, using [§7](./Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md)'s tools as instrumentation (Part 10).
 - **Showback/chargeback:** tags + Cost Explorer/CUR attribute spend to teams/products — for visibility or actual internal billing.
 - **Reserved capacity planning:** analyze steady-state usage via Cost Explorer before committing to RIs/Savings Plans.
 - **Guardrails:** Budgets alerts + SCPs (restrict expensive actions/Regions) + automated remediation (e.g., Lambda triggered by a Budget alert to stop non-prod resources).

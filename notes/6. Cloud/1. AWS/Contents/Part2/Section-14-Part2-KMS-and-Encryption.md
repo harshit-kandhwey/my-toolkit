@@ -28,7 +28,7 @@
 - **Encryption in transit** — protects data moving over a network (TLS/HTTPS).
 - **Symmetric encryption** — same key encrypts and decrypts; faster, default for most AWS features.
 - **Asymmetric encryption** — key pair (public/private); used for signing or when the encrypting party shouldn't decrypt.
-- **Envelope encryption** — the KMS-at-scale pattern (§5): encrypt data with a fast local key, encrypt that key with a KMS master key.
+- **Envelope encryption** — the KMS-at-scale pattern ([§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)): encrypt data with a fast local key, encrypt that key with a KMS master key.
 - **Plaintext vs ciphertext** — readable vs encrypted/unreadable.
 
 ---
@@ -115,7 +115,7 @@ DECRYPT: App→KMS: Decrypt(Encrypted DK) → KMS→App: [Plaintext DK]
 - **In transit** — TLS/HTTPS, a separate mechanism from KMS (certificate-based key exchange), often discussed together as a complete data-protection story.
 - **Client-side encryption** — app encrypts data before sending to AWS (AWS Encryption SDK, often using KMS underneath) — strongest model, AWS never sees plaintext, more implementation complexity.
 
-> 🔑 Recall §5 (Shared Responsibility Model): encryption **enablement** is always a customer responsibility across every service tier — AWS provides the tooling, you must turn it on and configure it.
+> 🔑 Recall [§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md) (Shared Responsibility Model): encryption **enablement** is always a customer responsibility across every service tier — AWS provides the tooling, you must turn it on and configure it.
 
 ---
 
@@ -197,6 +197,6 @@ DECRYPT: App→KMS: Decrypt(Encrypted DK) → KMS→App: [Plaintext DK]
 
 ## 🌐 Related Concepts (forward links)
 
-- Secrets Manager and Parameter Store (use KMS under the hood) → §15
+- Secrets Manager and Parameter Store (use KMS under the hood) → [§15](./Section-15-Part2-Secrets-Manager-and-Parameter-Store.md)
 - Service-specific encryption (S3 SSE, EBS, RDS) → Parts 5 and 6
 - TLS/certificate management via AWS Certificate Manager → Part 4

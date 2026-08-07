@@ -4,11 +4,11 @@
 
 **Plain language:** Before Git is useful, you install the program itself, then tell it who you are and how you like it to behave — identity, default editor, default branch name, authentication method to reach remote servers, and dozens of optional preferences.
 
-**Precise:** Git installation places the `git` binary (plus supporting tooling — Git Bash, credential helpers, GUI launchers on some platforms) on your system; Git configuration is a layered key-value store, read from three (or four, counting a rarely-used "worktree" scope) increasingly specific files, that governs everything from `user.name` to network transport behavior. Nothing in this section touches the object model (§5) or refs (§6) — it is entirely about the environment Git runs _in_, and the credentials it uses to talk to a remote (deep dive in §20).
+**Precise:** Git installation places the `git` binary (plus supporting tooling — Git Bash, credential helpers, GUI launchers on some platforms) on your system; Git configuration is a layered key-value store, read from three (or four, counting a rarely-used "worktree" scope) increasingly specific files, that governs everything from `user.name` to network transport behavior. Nothing in this section touches the object model ([§5](../Part2/Section-05-Part2-Object-Model.md)) or refs ([§6](../Part2/Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) — it is entirely about the environment Git runs _in_, and the credentials it uses to talk to a remote (deep dive in [§20](../Part5/Section-20-Part5-Remotes-In-Depth.md)).
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **Every commit needs an author.** Git refuses (or at least strongly warns) to build commit objects without `user.name` and `user.email` set, because that metadata is baked permanently into every commit object (§5) — it cannot be silently defaulted the way a filename can.
+1. **Every commit needs an author.** Git refuses (or at least strongly warns) to build commit objects without `user.name` and `user.email` set, because that metadata is baked permanently into every commit object ([§5](../Part2/Section-05-Part2-Object-Model.md)) — it cannot be silently defaulted the way a filename can.
 2. **One tool, many humans, many preferences.** A single `git` binary serves millions of different workflows; rather than hard-code behavior, Git externalizes preferences (editor, line-ending policy, default branch name, aliases) into config files so the same binary adapts per machine and per repository.
 3. **Authentication is not the same problem as version control.** Talking to a remote server (GitHub, GitLab, a self-hosted server) requires proving _who you are_ over a network — a concern orthogonal to Git's local object model, solved by layering standard mechanisms (SSH keys, HTTPS credential helpers) on top rather than inventing a proprietary one.
 
@@ -25,8 +25,8 @@ The standard distribution is **Git for Windows** (`git-scm.com`), which bundles 
 
 Installer choices worth understanding rather than clicking through blindly:
 
-- **Line-ending conversion** (the "Checkout Windows-style, commit Unix-style" prompt) sets `core.autocrlf` — full treatment of why this matters is §11; the safe modern default on Windows is `autocrlf=true`, though a `.gitattributes` policy (§11) is the more robust fix.
-- **Default editor** — the installer lets you pick Vim, Notepad, VS Code, or others for `core.editor`; this only matters for operations that open an editor (commit messages without `-m`, interactive rebase in §14, `git config -e`).
+- **Line-ending conversion** (the "Checkout Windows-style, commit Unix-style" prompt) sets `core.autocrlf` — full treatment of why this matters is [§11](./Section-11-Part3-Ignoring-Controlling-Files.md); the safe modern default on Windows is `autocrlf=true`, though a `.gitattributes` policy ([§11](./Section-11-Part3-Ignoring-Controlling-Files.md)) is the more robust fix.
+- **Default editor** — the installer lets you pick Vim, Notepad, VS Code, or others for `core.editor`; this only matters for operations that open an editor (commit messages without `-m`, interactive rebase in [§14](../Part4/Section-14-Part4-Rebasing.md), `git config -e`).
 - **PATH environment** — "Git from the command line and also from 3rd-party software" is the recommended option so `git` works from any terminal, not just Git Bash.
 
 ### 3.2 macOS
@@ -61,12 +61,12 @@ $ which git        # Git Bash / macOS / Linux
 
 Git configuration is layered: more specific scopes override less specific ones.
 
-| Scope                 | File location                                                                  | Applies to                                           | Flag                                                    |
-| --------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------- |
-| **System**            | `/etc/gitconfig` (Linux/Mac) or `C:\Program Files\Git\etc\gitconfig` (Windows) | Every user on the machine                            | `git config --system`                                   |
-| **Global**            | `~/.gitconfig` (or `~/.config/git/config`)                                     | Every repository for the current user                | `git config --global`                                   |
-| **Local**             | `.git/config` inside a specific repository                                     | That one repository only                             | `git config --local` (or no flag — this is the default) |
-| **Worktree** _(rare)_ | `.git/config.worktree`, requires `extensions.worktreeConfig`                   | One worktree (§31) of a repo with multiple worktrees | `git config --worktree`                                 |
+| Scope                 | File location                                                                  | Applies to                                                                                            | Flag                                                    |
+| --------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **System**            | `/etc/gitconfig` (Linux/Mac) or `C:\Program Files\Git\etc\gitconfig` (Windows) | Every user on the machine                                                                             | `git config --system`                                   |
+| **Global**            | `~/.gitconfig` (or `~/.config/git/config`)                                     | Every repository for the current user                                                                 | `git config --global`                                   |
+| **Local**             | `.git/config` inside a specific repository                                     | That one repository only                                                                              | `git config --local` (or no flag — this is the default) |
+| **Worktree** _(rare)_ | `.git/config.worktree`, requires `extensions.worktreeConfig`                   | One worktree ([§31](../Part8/Section-31-Part8-Advanced-Tooling.md)) of a repo with multiple worktrees | `git config --worktree`                                 |
 
 **Precedence: local beats global beats system.** A `user.email` set locally in one repo (common for "use my work email only in this company's repos") silently overrides whatever is set globally, which is precisely the intended use case, not a bug to be confused by.
 
@@ -131,7 +131,7 @@ $ git config --global -e
     st = status
 ```
 
-Hand-editing is perfectly safe and common — unlike `.git/objects` or `.git/index` (§4), config files are plain text with no binary structure or consistency invariants to break.
+Hand-editing is perfectly safe and common — unlike `.git/objects` or `.git/index` ([§4](../Part2/Section-04-Part2-Git-Architecture-Three-Areas.md)), config files are plain text with no binary structure or consistency invariants to break.
 
 ## 5. First-Time Setup Checklist
 
@@ -171,11 +171,11 @@ $ git st
 $ git lg
 ```
 
-> 💡 **Tip:** Prefixing an alias body with `!` lets it run an arbitrary shell command rather than just another Git subcommand, e.g. `git config --global alias.root '!pwd'` — this is how power users build small custom workflows without leaving Git's own command surface. Full scripting/hooks territory is §24.
+> 💡 **Tip:** Prefixing an alias body with `!` lets it run an arbitrary shell command rather than just another Git subcommand, e.g. `git config --global alias.root '!pwd'` — this is how power users build small custom workflows without leaving Git's own command surface. Full scripting/hooks territory is [§24](../Part6/Section-24-Part6-Git-Hooks-Automation.md).
 
 ## 7. SSH Keys and Remote Authentication
 
-Talking to a remote host (GitHub, GitLab, a company Git server) requires proving your identity over the network. Git supports two transport families for this, and understanding both — plus _when_ each authentication step happens — matters from day one, even though full remote mechanics are §20.
+Talking to a remote host (GitHub, GitLab, a company Git server) requires proving your identity over the network. Git supports two transport families for this, and understanding both — plus _when_ each authentication step happens — matters from day one, even though full remote mechanics are [§20](../Part5/Section-20-Part5-Remotes-In-Depth.md).
 
 ### 7.1 Generating an SSH key pair
 
@@ -210,14 +210,14 @@ That message — despite looking like an error — is the expected **success** o
 
 ### 7.3 HTTPS vs SSH remote URLs
 
-| Aspect                        | HTTPS                                                                                             | SSH                                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| URL form                      | `https://github.com/user/repo.git`                                                                | `git@github.com:user/repo.git`                                                                |
-| Auth mechanism                | Username + Personal Access Token (PAT), or a credential helper caching one                        | Public/private key pair                                                                       |
-| Firewall friendliness         | Excellent — uses port 443, same as normal web traffic, works through almost every corporate proxy | Uses port 22, which some corporate/hotel/airport networks block                               |
-| First-time setup              | Generate a PAT on the hosting platform                                                            | Generate a key pair, register the public key                                                  |
-| Per-repo credential switching | Easy with credential helpers or `.netrc`-style scoping                                            | Requires SSH config `Host` aliases with different `IdentityFile`s (§20) for multiple accounts |
-| Typical enterprise preference | Common where port 22 is blocked, or where token-based auth integrates with SSO                    | Common where key-based auth is mandated and port 22 is open                                   |
+| Aspect                        | HTTPS                                                                                             | SSH                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL form                      | `https://github.com/user/repo.git`                                                                | `git@github.com:user/repo.git`                                                                                                                 |
+| Auth mechanism                | Username + Personal Access Token (PAT), or a credential helper caching one                        | Public/private key pair                                                                                                                        |
+| Firewall friendliness         | Excellent — uses port 443, same as normal web traffic, works through almost every corporate proxy | Uses port 22, which some corporate/hotel/airport networks block                                                                                |
+| First-time setup              | Generate a PAT on the hosting platform                                                            | Generate a key pair, register the public key                                                                                                   |
+| Per-repo credential switching | Easy with credential helpers or `.netrc`-style scoping                                            | Requires SSH config `Host` aliases with different `IdentityFile`s ([§20](../Part5/Section-20-Part5-Remotes-In-Depth.md)) for multiple accounts |
+| Typical enterprise preference | Common where port 22 is blocked, or where token-based auth integrates with SSO                    | Common where key-based auth is mandated and port 22 is open                                                                                    |
 
 Neither is objectively "better" — they are two transport/authentication mechanisms Git supports interchangeably for the same underlying operations (fetch/push). A single repository can even have different remotes configured with different URL schemes.
 
@@ -242,11 +242,11 @@ $ git config --global credential.helper 'cache --timeout=3600'
 
 The first time you push over HTTPS, Git prompts for username + token (or opens a browser for OAuth, depending on the helper); the credential helper then stores it securely (Windows Credential Manager, macOS Keychain, or the GNOME/KDE keyring on Linux via `libsecret`) so subsequent pushes are silent.
 
-> ⚠️ **Critical clarification:** a Personal Access Token is not the same as your account password — it is a separate, scoped, revocable credential (you choose its permissions and expiry) that you generate from the hosting platform's developer settings. Treat a PAT exactly like a password: never commit it, never paste it into chat, and revoke it immediately if it leaks (full secrets-in-history remediation is §28).
+> ⚠️ **Critical clarification:** a Personal Access Token is not the same as your account password — it is a separate, scoped, revocable credential (you choose its permissions and expiry) that you generate from the hosting platform's developer settings. Treat a PAT exactly like a password: never commit it, never paste it into chat, and revoke it immediately if it leaks (full secrets-in-history remediation is [§28](../Part7/Section-28-Part7-Security.md)).
 
 ## 8. Configuring an External Diff/Merge Tool
 
-Git's built-in text diff output is adequate for quick review, but a visual diff/merge tool is far superior for genuinely gnarly merge conflicts (full conflict-resolution workflow in §13). Git lets you register any tool via config:
+Git's built-in text diff output is adequate for quick review, but a visual diff/merge tool is far superior for genuinely gnarly merge conflicts (full conflict-resolution workflow in [§13](../Part4/Section-13-Part4-Merging.md)). Git lets you register any tool via config:
 
 ```bash
 # Purpose: use VS Code as both the diff and merge tool
@@ -317,7 +317,7 @@ $ git config --list --show-origin | grep gitconfig
 
 ## 12. Common Misconceptions
 
-1. **"Git needs a GitHub account to work."** Git is fully functional entirely locally — commits, branches, merges, history — with zero network access or hosting account. A hosting platform is only needed for remote collaboration (§20, §23).
+1. **"Git needs a GitHub account to work."** Git is fully functional entirely locally — commits, branches, merges, history — with zero network access or hosting account. A hosting platform is only needed for remote collaboration ([§20](../Part5/Section-20-Part5-Remotes-In-Depth.md), [§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)).
 2. **"SSH and HTTPS remotes give different Git functionality."** They are purely different authentication/transport mechanisms for the exact same set of operations (fetch, push, clone) — neither unlocks or restricts any Git feature.
 3. **"My GitHub password is my Git credential."** Since the PAT-only transition, your account password is not usable for HTTPS Git operations at all; only a token (or SSH key) works.
 4. **"`git config --list` tells me which file a setting came from."** It shows the merged, effective values only; `--show-origin` is required to see the source file.
@@ -332,4 +332,4 @@ $ git config --list --show-origin | grep gitconfig
 
 ## 14. Related Concepts & What's Next
 
-Configuration set up here — identity, credential helpers, SSH keys — becomes load-bearing the moment you touch a remote, and §20 (Remotes in Depth) revisits authentication with full push/fetch/pull mechanics, multiple-remote setups, and per-host SSH config for juggling multiple accounts. The merge tool configured earlier in this section (the external diff/merge tool setup) becomes practically necessary once §13 (Merging) introduces real conflict resolution. With Git installed and configured, §9 moves to actually creating and cloning your first repositories.
+Configuration set up here — identity, credential helpers, SSH keys — becomes load-bearing the moment you touch a remote, and [§20](../Part5/Section-20-Part5-Remotes-In-Depth.md) (Remotes in Depth) revisits authentication with full push/fetch/pull mechanics, multiple-remote setups, and per-host SSH config for juggling multiple accounts. The merge tool configured earlier in this section (the external diff/merge tool setup) becomes practically necessary once [§13](../Part4/Section-13-Part4-Merging.md) (Merging) introduces real conflict resolution. With Git installed and configured, [§9](./Section-09-Part3-Creating-Cloning-Repositories.md) moves to actually creating and cloning your first repositories.

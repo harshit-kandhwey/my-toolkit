@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-App Engine Flexible (Section 6) already ran arbitrary containers, but always kept at least one instance warm and had slow deployment/scaling cycles. Cloud Functions (Section 8) scaled to zero but restricted you to a single function handler in a supported language, not an arbitrary container. Cloud Run exists to combine the best of both: the container flexibility of Flexible (bring any language, any dependency, any binary) with the fast, granular, scale-to-zero autoscaling of Cloud Functions — filling the gap between "PaaS with container support but no scale-to-zero" and "scale-to-zero but function-only," without requiring the operational complexity of running a full Kubernetes cluster (GKE, Section 30) just to get container-based serving.
+App Engine Flexible ([Section 6](./Section-06-Part1-App-Engine.md)) already ran arbitrary containers, but always kept at least one instance warm and had slow deployment/scaling cycles. Cloud Functions ([Section 8](./Section-08-Part1-Cloud-Functions.md)) scaled to zero but restricted you to a single function handler in a supported language, not an arbitrary container. Cloud Run exists to combine the best of both: the container flexibility of Flexible (bring any language, any dependency, any binary) with the fast, granular, scale-to-zero autoscaling of Cloud Functions — filling the gap between "PaaS with container support but no scale-to-zero" and "scale-to-zero but function-only," without requiring the operational complexity of running a full Kubernetes cluster (GKE, [Section 30](../Part4/Section-30-Part4-GKE-Architecture-Deep-Dive.md)) just to get container-based serving.
 
 ## 3. Concurrency and Autoscaling
 
@@ -19,16 +19,16 @@ Cloud Run's defining architectural feature is **per-instance request concurrency
 
 ## 4. Cloud Run Services vs. Jobs
 
-| Aspect           | Cloud Run **Service**                                             | Cloud Run **Job**                                                                         |
-| ---------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Invocation model | Responds to incoming HTTP/gRPC requests                           | Runs to completion, then exits — not request-driven                                       |
-| Use case         | Web APIs, webhooks, microservices                                 | Batch processing, one-off scripts, scheduled data tasks                                   |
-| Scaling          | Autoscaled by concurrent request load, can scale to zero          | Runs a specified number of parallel task executions, then stops entirely                  |
-| Typical trigger  | Direct HTTP call, Load Balancer, Cloud Scheduler (as an HTTP hit) | `gcloud run jobs execute`, Cloud Scheduler, Workflows (Section 53), Eventarc (Section 53) |
+| Aspect           | Cloud Run **Service**                                             | Cloud Run **Job**                                                                                                                                                                               |
+| ---------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invocation model | Responds to incoming HTTP/gRPC requests                           | Runs to completion, then exits — not request-driven                                                                                                                                             |
+| Use case         | Web APIs, webhooks, microservices                                 | Batch processing, one-off scripts, scheduled data tasks                                                                                                                                         |
+| Scaling          | Autoscaled by concurrent request load, can scale to zero          | Runs a specified number of parallel task executions, then stops entirely                                                                                                                        |
+| Typical trigger  | Direct HTTP call, Load Balancer, Cloud Scheduler (as an HTTP hit) | `gcloud run jobs execute`, Cloud Scheduler, Workflows ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)), Eventarc ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)) |
 
 ## 5. Revisions and Traffic Splitting
 
-Every deployment to a Cloud Run service creates an immutable **revision** — a specific, versioned combination of container image, configuration, and environment variables. Traffic can be split across multiple revisions by percentage, identical in purpose to App Engine's version traffic splitting (Section 6.6), enabling canary deployments and instant rollback by simply shifting the traffic percentage back to a previous revision, since old revisions remain deployed and addressable rather than being deleted on redeploy.
+Every deployment to a Cloud Run service creates an immutable **revision** — a specific, versioned combination of container image, configuration, and environment variables. Traffic can be split across multiple revisions by percentage, identical in purpose to App Engine's version traffic splitting ([Section 6](./Section-06-Part1-App-Engine.md).6), enabling canary deployments and instant rollback by simply shifting the traffic percentage back to a previous revision, since old revisions remain deployed and addressable rather than being deleted on redeploy.
 
 ## 6. Architecture Diagram
 
@@ -96,7 +96,7 @@ Execution [nightly-reconciliation-a1b2c] completed successfully.
 
 ## 8. Comparison: Cloud Run vs. App Engine Flexible vs. GKE
 
-| Aspect                    | Cloud Run                                                        | App Engine Flexible                               | GKE (Section 30)                                                                           |
+| Aspect                    | Cloud Run                                                        | App Engine Flexible                               | GKE ([Section 30](../Part4/Section-30-Part4-GKE-Architecture-Deep-Dive.md))                |
 | ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Scale-to-zero             | Yes                                                              | No                                                | No (nodes generally run continuously; workload-level scale-to-zero requires extra tooling) |
 | Operational overhead      | Minimal — no cluster/node management                             | Minimal — no cluster/node management              | Higher — cluster upgrades, node pools, networking config                                   |
@@ -106,8 +106,8 @@ Execution [nightly-reconciliation-a1b2c] completed successfully.
 ## 9. Production & Enterprise Usage
 
 - **Microservices backends:** Cloud Run is a common default for stateless microservices and internal APIs, given minimal operational overhead and pay-per-use billing that scales cleanly from near-zero to high-traffic without capacity planning.
-- **Event-driven processing:** Cloud Run services are frequently invoked by Eventarc (Section 53) in response to Pub/Sub messages or Cloud Storage events, and Cloud Run Jobs are invoked by Cloud Scheduler for recurring batch tasks — a common alternative to Cloud Functions for anything needing more than a single lightweight handler.
-- **Gradual migration path:** Organizations migrating off App Engine Flexible or self-managed container platforms commonly choose Cloud Run first before considering GKE, reserving GKE for cases genuinely requiring Kubernetes-level orchestration control (Section 10 covers this decision in full).
+- **Event-driven processing:** Cloud Run services are frequently invoked by Eventarc ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)) in response to Pub/Sub messages or Cloud Storage events, and Cloud Run Jobs are invoked by Cloud Scheduler for recurring batch tasks — a common alternative to Cloud Functions for anything needing more than a single lightweight handler.
+- **Gradual migration path:** Organizations migrating off App Engine Flexible or self-managed container platforms commonly choose Cloud Run first before considering GKE, reserving GKE for cases genuinely requiring Kubernetes-level orchestration control ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md) covers this decision in full).
 
 ## 10. Common Misconceptions
 
@@ -123,15 +123,15 @@ Execution [nightly-reconciliation-a1b2c] completed successfully.
 **Model answer:** The concurrency setting controls how many simultaneous requests a single container instance will handle before Cloud Run spins up an additional instance. A higher concurrency value means fewer total instances are needed to absorb a given request volume, which reduces cost (fewer billed instance-seconds) but also means each instance needs enough CPU/memory to genuinely serve that many requests in parallel without degrading latency. Setting concurrency too high for a CPU-bound workload can cause requests to queue behind each other on an already-busy instance; setting it too low creates more frequent scaling events and, for a service scaled to zero, more frequent cold starts as new instances are provisioned.
 
 **🎯 Senior/Architect:** _You're migrating a fleet of Cloud Functions handling Pub/Sub events, HTTP webhooks, and scheduled batch jobs into a more maintainable architecture. Where does Cloud Run fit, and where wouldn't you use it?_
-**Model answer:** For the HTTP webhook handlers and any function whose logic has grown complex enough to need multiple files, custom dependencies, or shared code across handlers, I'd containerize them as Cloud Run services — this gives full control over the runtime environment and avoids the more constrained deployment model of individual functions, while keeping the same scale-to-zero cost profile. For the scheduled batch jobs, I'd use Cloud Run Jobs directly rather than services, since jobs are purpose-built for run-to-completion semantics without needing to fake a request-response cycle. For the Pub/Sub-triggered event handlers, I'd evaluate whether they're simple enough to remain as 2nd-gen Cloud Functions (Section 8), which are themselves built on Cloud Run and Eventarc under the hood — if the handlers are small, single-purpose, and rarely change, keeping them as Cloud Functions may be less operational overhead than maintaining container builds for each; if they're numerous, complex, or share significant logic, consolidating into Cloud Run services triggered by Eventarc reduces duplication and gives more deployment control (canary revisions, traffic splitting) than individual functions provide.
+**Model answer:** For the HTTP webhook handlers and any function whose logic has grown complex enough to need multiple files, custom dependencies, or shared code across handlers, I'd containerize them as Cloud Run services — this gives full control over the runtime environment and avoids the more constrained deployment model of individual functions, while keeping the same scale-to-zero cost profile. For the scheduled batch jobs, I'd use Cloud Run Jobs directly rather than services, since jobs are purpose-built for run-to-completion semantics without needing to fake a request-response cycle. For the Pub/Sub-triggered event handlers, I'd evaluate whether they're simple enough to remain as 2nd-gen Cloud Functions ([Section 8](./Section-08-Part1-Cloud-Functions.md)), which are themselves built on Cloud Run and Eventarc under the hood — if the handlers are small, single-purpose, and rarely change, keeping them as Cloud Functions may be less operational overhead than maintaining container builds for each; if they're numerous, complex, or share significant logic, consolidating into Cloud Run services triggered by Eventarc reduces duplication and gives more deployment control (canary revisions, traffic splitting) than individual functions provide.
 
 ## 12. Key Takeaways
 
 - 🔑 Cloud Run runs arbitrary containers with configurable per-instance request concurrency, autoscaling — including to zero — based on load.
 - 🔑 Services are request-driven and long-running; Jobs are run-to-completion batch tasks — a clear split in invocation model.
 - 🔑 Revisions are immutable per-deployment snapshots, enabling traffic splitting for canary rollouts and instant rollback, just like App Engine's version traffic splitting.
-- 🔑 Cloud Run sits between App Engine Flexible (always-on containers) and GKE (full Kubernetes orchestration) in the control-vs-convenience spectrum explored fully in Section 10.
+- 🔑 Cloud Run sits between App Engine Flexible (always-on containers) and GKE (full Kubernetes orchestration) in the control-vs-convenience spectrum explored fully in [Section 10](./Section-10-Part1-Compute-Decision-Matrix.md).
 
 ## 13. Related Concepts
 
-App Engine as the PaaS predecessor (Section 6), Cloud Functions for lightweight single-purpose event handlers (Section 8), Eventarc and Workflows for event-driven orchestration (Section 53), GKE for full Kubernetes control (Section 30), and the full compute decision matrix (Section 10) all build on the serverless container model introduced here.
+App Engine as the PaaS predecessor ([Section 6](./Section-06-Part1-App-Engine.md)), Cloud Functions for lightweight single-purpose event handlers ([Section 8](./Section-08-Part1-Cloud-Functions.md)), Eventarc and Workflows for event-driven orchestration ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)), GKE for full Kubernetes control ([Section 30](../Part4/Section-30-Part4-GKE-Architecture-Deep-Dive.md)), and the full compute decision matrix ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)) all build on the serverless container model introduced here.

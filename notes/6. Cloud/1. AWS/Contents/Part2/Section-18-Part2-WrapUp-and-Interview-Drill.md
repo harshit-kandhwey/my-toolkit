@@ -26,7 +26,7 @@ Roles/Policies  Logic             temp credentials,  SSO across      Multi-accou
                                 lifecycle
 ```
 
-**Throughline:** §1–2 establish who can do what within an account. §3–4 extend that across accounts and to humans at scale. §5 provides the governing structure. §6–7 protect the data and credentials identities touch. §8 detects failures despite all of the above. §9 stops bad traffic before it reaches anything else. Every section builds on the ones before it.
+**Throughline:** [§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)–[§2](../Part1/Section-02-Part1-AWS-Global-Infrastructure.md) establish who can do what within an account. [§3](../Part1/Section-03-Part1-Shared-Responsibility-Model.md)–[§4](../Part1/Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md) extend that across accounts and to humans at scale. [§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md) provides the governing structure. [§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)–[§7](../Part1/Section-07-Part1-AWS-Support-Plans-and-Service-Category-Map.md) protect the data and credentials identities touch. [§8](../Part1/Section-08-Part1-Wrap-Up-and-Foundations-Interview-Drill.md) detects failures despite all of the above. [§9](./Section-09-Part2-IAM-Core-Concepts.md) stops bad traffic before it reaches anything else. Every section builds on the ones before it.
 
 ---
 

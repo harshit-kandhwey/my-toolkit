@@ -4,7 +4,7 @@
 
 **Plain language:** Applications, scripts, and automated processes need to authenticate to Azure just like people do — but they shouldn't use a human's username and password. Service Principals and Managed Identities are the two mechanisms Azure provides for giving non-human actors their own identity, so they can authenticate and be granted RBAC permissions independently of any person.
 
-**Precise definition:** A **Service Principal** is the tenant-local security principal representing an application's identity and permissions within Microsoft Entra ID (introduced conceptually in Section 6.3.4), authenticated via a client secret, certificate, or federated credential. A **Managed Identity** is a special, Microsoft-managed type of service principal, automatically created and lifecycle-bound to a specific Azure resource, that eliminates the need to store, rotate, or manage any credential at all.
+**Precise definition:** A **Service Principal** is the tenant-local security principal representing an application's identity and permissions within Microsoft Entra ID (introduced conceptually in [Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.4), authenticated via a client secret, certificate, or federated credential. A **Managed Identity** is a special, Microsoft-managed type of service principal, automatically created and lifecycle-bound to a specific Azure resource, that eliminates the need to store, rotate, or manage any credential at all.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -12,11 +12,11 @@ Automated processes — a CI/CD pipeline, a web application that needs to read f
 
 ## 3. Service Principals — Deep Dive
 
-**Definition:** A Service Principal is created when an application is registered in Entra ID (Section 6.3.4) — it represents that application's identity and permissions within a specific tenant, separate from the global Application object.
+**Definition:** A Service Principal is created when an application is registered in Entra ID ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.4) — it represents that application's identity and permissions within a specific tenant, separate from the global Application object.
 
 **Authentication methods for Service Principals:**
 
-- **Client secret** — a password-like string generated for the application, which must be stored securely (ideally in Azure Key Vault, Section 56) and rotated periodically. The simplest method, but carries the most credential-management burden and risk.
+- **Client secret** — a password-like string generated for the application, which must be stored securely (ideally in Azure Key Vault, [Section 56](../Part11/Section-56-Part11-Key-Vault.md)) and rotated periodically. The simplest method, but carries the most credential-management burden and risk.
 - **Certificate** — a X.509 certificate used for authentication instead of a shared secret, generally considered more secure since the private key never needs to be transmitted, but still requires certificate lifecycle management (renewal, secure storage).
 - **Federated credential (Workload Identity Federation)** — allows an external system (such as a GitHub Actions pipeline or another cloud provider's workload identity) to exchange its own trusted token for an Azure access token, without storing any Azure-specific secret at all. This is the modern recommended approach for CI/CD pipelines specifically because it removes the stored-secret problem entirely for that use case.
 
@@ -68,7 +68,7 @@ az vm identity assign --resource-group rg-myapp-prod --name vm-web-01
 }
 ```
 
-- **Next step required:** Enabling the identity alone grants no permissions — an RBAC role assignment (Section 8) must still be created, targeting this new identity as the security principal, before it can actually access any resource.
+- **Next step required:** Enabling the identity alone grants no permissions — an RBAC role assignment ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md)) must still be created, targeting this new identity as the security principal, before it can actually access any resource.
 
 **Granting the newly created Managed Identity access to a Storage Account:**
 
@@ -84,23 +84,23 @@ az role assignment create \
 
 ## 6. Production & Enterprise Usage
 
-Enterprise Azure environments strongly standardize on Managed Identities for any workload actually hosted in Azure, reserving Service Principals with stored credentials for the genuinely necessary cases: CI/CD systems hosted outside Azure (though even here, Workload Identity Federation is increasingly preferred to avoid stored secrets entirely), hybrid/multi-cloud automation, and legacy systems that predate Managed Identity availability for their specific resource type. A common enterprise governance control is an Azure Policy (Section 57) that flags or blocks the creation of Service Principal credentials with long-lived secrets (e.g., secrets with multi-year expiration) or without an expiration date at all, forcing shorter rotation cycles as a security baseline.
+Enterprise Azure environments strongly standardize on Managed Identities for any workload actually hosted in Azure, reserving Service Principals with stored credentials for the genuinely necessary cases: CI/CD systems hosted outside Azure (though even here, Workload Identity Federation is increasingly preferred to avoid stored secrets entirely), hybrid/multi-cloud automation, and legacy systems that predate Managed Identity availability for their specific resource type. A common enterprise governance control is an Azure Policy ([Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md)) that flags or blocks the creation of Service Principal credentials with long-lived secrets (e.g., secrets with multi-year expiration) or without an expiration date at all, forcing shorter rotation cycles as a security baseline.
 
 ## 7. Security Considerations
 
 - Managed Identities structurally eliminate an entire class of credential-leak risk (there is no secret to leak, since the application never handles one directly) — this is their single biggest security advantage over Service Principals with stored secrets.
-- Service Principal secrets, when required, should always be stored in Azure Key Vault (Section 56) rather than in application configuration files, environment variables committed to source control, or CI/CD pipeline variables stored in plaintext.
-- Both Service Principals and Managed Identities should follow the same least-privilege RBAC principles as human identities (Section 8.7) — an over-privileged application identity is just as dangerous as an over-privileged human one, and arguably more so since applications often run unattended and continuously.
+- Service Principal secrets, when required, should always be stored in Azure Key Vault ([Section 56](../Part11/Section-56-Part11-Key-Vault.md)) rather than in application configuration files, environment variables committed to source control, or CI/CD pipeline variables stored in plaintext.
+- Both Service Principals and Managed Identities should follow the same least-privilege RBAC principles as human identities ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md).7) — an over-privileged application identity is just as dangerous as an over-privileged human one, and arguably more so since applications often run unattended and continuously.
 
 ## 8. Troubleshooting
 
 | Symptom                                                                      | Likely Cause                                                                                                                                                                                         | Fix                                                                                                                                                                           |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Application code fails to acquire a token from the Managed Identity endpoint | Managed Identity not yet enabled on the resource, or code is running somewhere other than the expected Azure resource (e.g., a developer's local machine, where no Managed Identity endpoint exists) | Verify identity is enabled (`az vm identity show`); use a different local-development credential mechanism when running outside Azure                                         |
-| Token acquired successfully but API calls still fail with "Forbidden"        | Identity has no RBAC role assignment for the target resource                                                                                                                                         | Assign an appropriate role at the correct scope (Section 8.5)                                                                                                                 |
+| Token acquired successfully but API calls still fail with "Forbidden"        | Identity has no RBAC role assignment for the target resource                                                                                                                                         | Assign an appropriate role at the correct scope ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md).5)                                                              |
 | Service Principal authentication suddenly stops working in production        | Client secret expired                                                                                                                                                                                | Rotate/regenerate the secret and update wherever it's stored (ideally Key Vault), then investigate moving to a Managed Identity or federated credential to prevent recurrence |
 
-## 9. Interview Questions — Section 9
+## 9. Interview Questions — [Section 9](./Section-09-Part2-Managed-Identities-and-Service-Principals.md)
 
 ### 🎯 Intermediate
 
@@ -121,7 +121,7 @@ _What the interviewer is probing:_ awareness of the modern federated-credential 
 ## 10. Common Misconceptions
 
 - **"Managed Identities work from anywhere, including my local machine."** False — Managed Identity's metadata endpoint is only reachable from within the specific Azure resource it's bound to; local development requires a different credential mechanism (such as a developer's own `az login` session via the SDK's default credential chain).
-- **"A Service Principal and an App Registration are the same thing."** Related but distinct — the App Registration creates the global Application object, and the Service Principal is the tenant-local identity instance derived from it (as introduced in Section 6.3.4); in casual conversation the terms are sometimes used loosely, but the distinction matters precisely in multi-tenant application scenarios.
+- **"A Service Principal and an App Registration are the same thing."** Related but distinct — the App Registration creates the global Application object, and the Service Principal is the tenant-local identity instance derived from it (as introduced in [Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.4); in casual conversation the terms are sometimes used loosely, but the distinction matters precisely in multi-tenant application scenarios.
 
 ## 11. Key Takeaways
 
@@ -133,4 +133,4 @@ _What the interviewer is probing:_ awareness of the modern federated-credential 
 
 ## 12. Related Concepts (Next Up)
 
-Section 10 covers **Conditional Access, Multi-Factor Authentication (MFA), and Privileged Identity Management (PIM)** — the additional Entra ID security controls layered on top of the identities (human and non-human) discussed across Sections 6–9, completing Part 2 before Part 3 moves into Core Compute services.
+[Section 10](./Section-10-Part2-Conditional-Access-MFA-PIM.md) covers **Conditional Access, Multi-Factor Authentication (MFA), and Privileged Identity Management (PIM)** — the additional Entra ID security controls layered on top of the identities (human and non-human) discussed across Sections 6–9, completing Part 2 before Part 3 moves into Core Compute services.

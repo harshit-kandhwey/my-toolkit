@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-CloudTrail (§73) tells you _that_ an API call happened — `ModifySecurityGroupRule` was called by user X at time Y. It does not, on its own, easily answer "what did the security group actually look like before and after that change" or "is this security group currently compliant with our 'no unrestricted inbound SSH' policy" — reconstructing configuration state from a sequence of API calls, and evaluating current state against a policy, are both meaningfully different problems than knowing an API call occurred.
+CloudTrail ([§73](./Section-73-Part8-CloudTrail-Audit-Governance.md)) tells you _that_ an API call happened — `ModifySecurityGroupRule` was called by user X at time Y. It does not, on its own, easily answer "what did the security group actually look like before and after that change" or "is this security group currently compliant with our 'no unrestricted inbound SSH' policy" — reconstructing configuration state from a sequence of API calls, and evaluating current state against a policy, are both meaningfully different problems than knowing an API call occurred.
 
 AWS Config solves this by maintaining an actual **configuration snapshot timeline** per resource — not just "an API call happened" but "here is exactly what this resource's configuration looked like at this point in time, and here's what changed between this snapshot and the previous one" — plus a **rules engine** that continuously evaluates current (and, for some rule types, historical) configuration against defined compliance requirements, flagging non-compliant resources automatically rather than requiring someone to manually audit configurations.
 
@@ -16,9 +16,9 @@ AWS Config solves this by maintaining an actual **configuration snapshot timelin
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudTrail** (§73): complementary but distinct — Config is frequently discussed alongside CloudTrail specifically because they're commonly confused; understanding the "activity record" vs. "configuration state" distinction is foundational here.
+- **CloudTrail** ([§73](./Section-73-Part8-CloudTrail-Audit-Governance.md)): complementary but distinct — Config is frequently discussed alongside CloudTrail specifically because they're commonly confused; understanding the "activity record" vs. "configuration state" distinction is foundational here.
 - General familiarity with common AWS resource types (S3, EC2, security groups, IAM) whose configuration Config tracks, assumed from earlier Parts.
-- **IAM** (§9-11): Config rules frequently evaluate IAM-related configuration (e.g., "no IAM user has console access without MFA") and Config itself operates via an IAM service role.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): Config rules frequently evaluate IAM-related configuration (e.g., "no IAM user has console access without MFA") and Config itself operates via an IAM service role.
 
 ## 4. Internal Working
 
@@ -61,7 +61,7 @@ Resource Configuration Change (e.g., security group rule modified)
 2. Config **continuously records** configuration items as tracked resources are created, modified, or deleted, building each resource's configuration history.
 3. **Define/enable Config Rules** (Managed or custom) relevant to your compliance requirements.
 4. Config **evaluates** resources against rules, either periodically or on configuration change, marking `COMPLIANT`/`NON_COMPLIANT`.
-5. Non-compliant findings are surfaced via the Config dashboard, and optionally trigger **notifications** (via EventBridge, §62, which natively receives Config compliance change events) or **automated remediation**.
+5. Non-compliant findings are surfaced via the Config dashboard, and optionally trigger **notifications** (via EventBridge, [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md), which natively receives Config compliance change events) or **automated remediation**.
 6. Engineers/auditors **query configuration history** for point-in-time or change-over-time investigation, independent of whether any rule violation was involved.
 
 ## 7. Configuration
@@ -216,20 +216,20 @@ This demonstrates the custom-rule pattern for an organization-specific policy (e
 
 ## 13. Monitoring
 
-| Signal                                                  | What it tells you                                                                                                                                                            |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Config Rule compliance summary (per rule, per resource) | The current, real-time compliance posture across tracked resources — the primary Config dashboard view.                                                                      |
-| EventBridge Config compliance change events             | Real-time notification when a resource's compliance status changes (native EventBridge integration, §62), enabling immediate alerting or automated remediation triggering.   |
-| Configuration Recorder status                           | Whether Config is actively recording — analogous to CloudTrail's `IsLogging` health check, worth monitoring for the same "is my governance tooling actually working" reason. |
+| Signal                                                  | What it tells you                                                                                                                                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Config Rule compliance summary (per rule, per resource) | The current, real-time compliance posture across tracked resources — the primary Config dashboard view.                                                                                                                                          |
+| EventBridge Config compliance change events             | Real-time notification when a resource's compliance status changes (native EventBridge integration, [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md)), enabling immediate alerting or automated remediation triggering. |
+| Configuration Recorder status                           | Whether Config is actively recording — analogous to CloudTrail's `IsLogging` health check, worth monitoring for the same "is my governance tooling actually working" reason.                                                                     |
 
 ## 14. Troubleshooting
 
-| Symptom                                                           | Likely Root Cause                                                                                                 | Fix                                                                                                           |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| A resource shows no configuration history                         | Resource type not in the recorder's tracked scope, or resource existed before Config was enabled                  | Verify recorder scope includes the resource type; historical data before Config enablement is unrecoverable   |
-| Custom rule shows no evaluation result                            | Lambda function's response doesn't match Config's expected evaluation format, or the function is erroring         | Review the Lambda's CloudWatch Logs (§70) for the custom rule's execution errors                              |
-| Compliance status not updating after a known configuration change | Rule configured for periodic (not configuration-change-triggered) evaluation, so the update simply hasn't run yet | Switch to configuration-change-triggered evaluation for faster detection, or wait for the next periodic cycle |
-| Aggregator missing data from some accounts                        | Those accounts' Config wasn't properly authorized to share data with the aggregator account                       | Verify aggregator authorization is correctly configured in each source account                                |
+| Symptom                                                           | Likely Root Cause                                                                                                 | Fix                                                                                                                       |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| A resource shows no configuration history                         | Resource type not in the recorder's tracked scope, or resource existed before Config was enabled                  | Verify recorder scope includes the resource type; historical data before Config enablement is unrecoverable               |
+| Custom rule shows no evaluation result                            | Lambda function's response doesn't match Config's expected evaluation format, or the function is erroring         | Review the Lambda's CloudWatch Logs ([§70](./Section-70-Part8-CloudWatch-Logs.md)) for the custom rule's execution errors |
+| Compliance status not updating after a known configuration change | Rule configured for periodic (not configuration-change-triggered) evaluation, so the update simply hasn't run yet | Switch to configuration-change-triggered evaluation for faster detection, or wait for the next periodic cycle             |
+| Aggregator missing data from some accounts                        | Those accounts' Config wasn't properly authorized to share data with the aggregator account                       | Verify aggregator authorization is correctly configured in each source account                                            |
 
 ## 15. Best Practices
 
@@ -275,7 +275,7 @@ This demonstrates the custom-rule pattern for an organization-specific policy (e
 
 ## 20. Related Concepts
 
-- **CloudTrail** (the complementary API-activity record, distinct from Config's configuration-state focus) → §73.
-- **EventBridge** (native integration for real-time compliance-change notifications and automated remediation triggering) → §62.
+- **CloudTrail** (the complementary API-activity record, distinct from Config's configuration-state focus) → [§73](./Section-73-Part8-CloudTrail-Audit-Governance.md).
+- **EventBridge** (native integration for real-time compliance-change notifications and automated remediation triggering) → [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md).
 - **IAM / Service Control Policies** (the preventive-control counterpart to Config's detective capability) — referenced here as a natural extension beyond this roadmap's current depth.
 - **Systems Manager Automation** (the mechanism underlying Config's automated remediation actions) — a natural extension topic for anyone building out automated remediation.

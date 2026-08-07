@@ -48,8 +48,8 @@ GCP (and public cloud generally) solves this by converting infrastructure from a
 - **PaaS (Platform as a Service):** The cloud provider manages the underlying infrastructure and operating system; you deploy just your application code. Example on GCP: App Engine.
 - **SaaS (Software as a Service):** A complete, ready-to-use application delivered over the internet, with no infrastructure management by the consumer at all. Example: Google Workspace (Gmail, Docs) — not usually classified as "GCP" proper, but built on the same underlying infrastructure.
 - **Serverless:** A deployment model where the cloud provider automatically manages server provisioning and scaling, including scaling down to zero when there's no traffic, so you are billed only for actual execution rather than for idle reserved capacity. Example on GCP: Cloud Functions, Cloud Run.
-- **Region:** A specific geographic location (e.g., `us-central1` in Iowa, USA) where GCP resources are hosted, made up of multiple isolated zones (covered fully in Section 2).
-- **Zone:** An isolated location within a region, roughly analogous to a single data center or cluster of data centers, used for placing resources to protect against localized failures (covered fully in Section 2).
+- **Region:** A specific geographic location (e.g., `us-central1` in Iowa, USA) where GCP resources are hosted, made up of multiple isolated zones (covered fully in [Section 2](./Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md)).
+- **Zone:** An isolated location within a region, roughly analogous to a single data center or cluster of data centers, used for placing resources to protect against localized failures (covered fully in [Section 2](./Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md)).
 - **Managed service:** A service where Google handles operational responsibilities like patching, backups, and high availability, in contrast to unmanaged services where you handle these yourself.
 - **Console:** The GCP web-based graphical user interface (console.cloud.google.com) for managing resources.
 - **`gcloud`:** The primary command-line interface (CLI) tool for interacting with most GCP services.
@@ -74,16 +74,16 @@ GCP is one of the three dominant global public cloud providers, alongside AWS (m
 ## 8. Prerequisites
 
 - No prior cloud experience is required to start GCP.
-- Basic familiarity with the command line (any OS) will help once we reach `gcloud` usage in Section 5 and onward.
+- Basic familiarity with the command line (any OS) will help once we reach `gcloud` usage in [Section 5](./Section-05-Part1-Compute-Engine-Deep-Dive.md) and onward.
 - Basic understanding of client-server architecture (a "server" responds to requests from a "client") is helpful for later networking and compute sections.
 
 ## 9. Key Takeaways
 
 - 🔑 GCP converts infrastructure from a CapEx (buy hardware upfront) model to an OpEx (pay for usage) model.
 - 🔑 GCP evolved from Google's internal infrastructure experience — most notably, Kubernetes/GKE traces directly back to Google's internal Borg system.
-- 🔑 GCP offers IaaS (Compute Engine), PaaS (App Engine), and serverless (Cloud Run, Cloud Functions) compute models, each trading off control for convenience differently — this trade-off is explored in depth in Section 10.
+- 🔑 GCP offers IaaS (Compute Engine), PaaS (App Engine), and serverless (Cloud Run, Cloud Functions) compute models, each trading off control for convenience differently — this trade-off is explored in depth in [Section 10](./Section-10-Part1-Compute-Decision-Matrix.md).
 - 🔑 GCP's key differentiators in the market are BigQuery (analytics), GKE (Kubernetes), and AI/ML (Vertex AI, TPUs).
 
 ## 10. Related Concepts
 
-Region/zone infrastructure (Section 2), resource hierarchy (Section 3), the compute service decision matrix (Section 10), and the GCP vs. AWS vs. Azure comparison (Section 82) all build directly on the concepts introduced here.
+Region/zone infrastructure ([Section 2](./Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md)), resource hierarchy ([Section 3](./Section-03-Part1-Resource-Hierarchy.md)), the compute service decision matrix ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)), and the GCP vs. AWS vs. Azure comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all build directly on the concepts introduced here.

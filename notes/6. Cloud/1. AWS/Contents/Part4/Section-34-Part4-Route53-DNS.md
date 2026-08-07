@@ -200,7 +200,7 @@ Senior - Design Route 53 strategy for a global app: US/EU/Asia users, performanc
 
 ## Related Concepts (forward links)
 
-- CloudFront CDN, which frequently uses Route 53 and works alongside its routing policies -> §35
-- AWS Global Accelerator, a complementary network-layer alternative to DNS-based routing/failover (see Section 6a above) -> §34a
+- CloudFront CDN, which frequently uses Route 53 and works alongside its routing policies -> [§35](./Section-35-Part4-CloudFront-CDN.md)
+- AWS Global Accelerator, a complementary network-layer alternative to DNS-based routing/failover (see Section 6a above) -> [§34](./Section-34-Part4-Route53-DNS.md)a
 - Multi-Region DR patterns using Failover routing as one component -> Part 10
-- VPC Endpoints, Flow Logs, and network troubleshooting tools -> §37
+- VPC Endpoints, Flow Logs, and network troubleshooting tools -> [§37](./Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md)

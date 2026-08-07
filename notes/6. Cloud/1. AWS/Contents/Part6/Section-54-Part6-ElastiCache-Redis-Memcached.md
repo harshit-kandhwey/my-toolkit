@@ -138,6 +138,6 @@ Senior - Design caching for high-traffic e-commerce: product catalog in RDS, use
 
 ## Related Concepts (forward links)
 
-- Amazon Redshift for analytical/data-warehouse workloads, a genuinely different paradigm -> §55
-- DocumentDB and Neptune as further specialized database engines -> §56
-- Choosing among all of Part 6's database services for a given workload -> §57
+- Amazon Redshift for analytical/data-warehouse workloads, a genuinely different paradigm -> [§55](./Section-55-Part6-Redshift-Data-Warehousing.md)
+- DocumentDB and Neptune as further specialized database engines -> [§56](./Section-56-Part6-DocumentDB-Neptune.md)
+- Choosing among all of Part 6's database services for a given workload -> [§57](./Section-57-Part6-DMS-Choosing-Right-Database.md)

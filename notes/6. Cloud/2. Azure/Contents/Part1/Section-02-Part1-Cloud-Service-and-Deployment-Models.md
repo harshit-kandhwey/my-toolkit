@@ -32,7 +32,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 **Definition:** IaaS provides the fundamental building blocks — virtual machines, virtual networks, and storage — with Microsoft managing only the physical hardware and the hypervisor layer. You are responsible for the guest operating system, all patching above it, and everything you install and run.
 
-**Azure examples:** Azure Virtual Machines (Section 11), Virtual Network (Section 21), Managed Disks (Section 18).
+**Azure examples:** Azure Virtual Machines ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md)), Virtual Network ([Section 21](../Part5/Section-21-Part5-Virtual-Network-Fundamentals.md)), Managed Disks ([Section 18](../Part4/Section-18-Part4-Azure-Managed-Disks.md)).
 
 **When to use it:**
 
@@ -46,7 +46,7 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 **Definition:** PaaS provides a managed runtime environment — Microsoft manages the OS, patching, and underlying scaling infrastructure, and you deploy only your application code and configuration.
 
-**Azure examples:** Azure App Service (Section 13), Azure SQL Database (Section 29, as opposed to SQL Server on a VM which would be IaaS), Azure Kubernetes Service in its managed-control-plane sense (Section 36 — note AKS is a hybrid case, explained below).
+**Azure examples:** Azure App Service ([Section 13](../Part3/Section-13-Part3-Azure-App-Service.md)), Azure SQL Database ([Section 29](../Part6/Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md), as opposed to SQL Server on a VM which would be IaaS), Azure Kubernetes Service in its managed-control-plane sense ([Section 36](../Part7/Section-36-Part7-AKS-Architecture.md) — note AKS is a hybrid case, explained below).
 
 **When to use it:**
 
@@ -70,8 +70,8 @@ The clearest way to understand IaaS vs PaaS vs SaaS is the "who manages what" ta
 
 Two additional models are commonly discussed alongside the classic three:
 
-- **FaaS (Function-as-a-Service)** — an even more abstracted form of PaaS where you deploy individual functions (small units of code) rather than a whole application, and the platform handles all infrastructure including scaling to zero when idle. Azure Functions (Section 14, Section 40) is Azure's FaaS offering.
-- **CaaS (Containers-as-a-Service)** — a model where the unit of deployment is a container image rather than either a VM or raw code. Azure Container Instances (Section 15) is a pure CaaS offering; AKS sits between CaaS and full IaaS/PaaS hybrid as discussed above.
+- **FaaS (Function-as-a-Service)** — an even more abstracted form of PaaS where you deploy individual functions (small units of code) rather than a whole application, and the platform handles all infrastructure including scaling to zero when idle. Azure Functions ([Section 14](../Part3/Section-14-Part3-Azure-Functions.md), [Section 40](../Part8/Section-40-Part8-Azure-Functions-Deep-Dive.md)) is Azure's FaaS offering.
+- **CaaS (Containers-as-a-Service)** — a model where the unit of deployment is a container image rather than either a VM or raw code. Azure Container Instances ([Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md)) is a pure CaaS offering; AKS sits between CaaS and full IaaS/PaaS hybrid as discussed above.
 
 These aren't separate rows on the responsibility table so much as they are refinements within the IaaS→PaaS spectrum, trading further customer responsibility for further convenience.
 
@@ -88,7 +88,7 @@ Separately from _how much_ Microsoft manages, you must decide _where_ infrastruc
 
 In practice, large enterprises rarely commit to a single service model. A typical enterprise Azure estate mixes: legacy applications on IaaS VMs (because rewriting them for PaaS isn't cost-justified), new applications built on PaaS/serverless (App Service, Functions) to minimize operational overhead, and SaaS for productivity tooling (Microsoft 365). Deployment-model-wise, regulated enterprises frequently run **hybrid**, keeping sensitive data on-premises or in a private cloud while bursting compute or running less-sensitive workloads in the Azure public cloud — this pattern is formalized later in the Cloud Adoption Framework and landing zone architecture (Part 13).
 
-## 10. Interview Questions — Section 2
+## 10. Interview Questions — [Section 2](./Section-02-Part1-Cloud-Service-and-Deployment-Models.md)
 
 ### 🎯 Beginner
 
@@ -120,4 +120,4 @@ _What the interviewer is probing:_ whether the candidate can navigate real-world
 
 ## 13. Related Concepts (Next Up)
 
-Section 3 will cover Azure's **physical global infrastructure** — Regions, Availability Zones, Region Pairs — which is the literal physical substrate that every IaaS, PaaS, and SaaS resource discussed in this section is ultimately deployed onto.
+[Section 3](./Section-03-Part1-Azure-Global-Infrastructure.md) will cover Azure's **physical global infrastructure** — Regions, Availability Zones, Region Pairs — which is the literal physical substrate that every IaaS, PaaS, and SaaS resource discussed in this section is ultimately deployed onto.

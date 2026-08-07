@@ -10,9 +10,9 @@
 
 Kubernetes networking has a few hard requirements: every Pod must be able to reach every other Pod without NAT, every node must reach every Pod, and a Pod's own view of its IP must match what other Pods see. Historically, many Kubernetes networking implementations satisfied this with an **overlay network** — encapsulating Pod traffic inside an additional network layer on top of the underlying infrastructure network — which works but adds encapsulation overhead and makes Pod IPs invisible to the underlying network's own tooling (firewall rules, VPC flow logs, routing).
 
-GKE's **VPC-native** model solves this differently: Pod IPs are allocated directly from the VPC's own address space (via secondary/alias IP ranges), so Pods are first-class citizens of the VPC network itself — visible to VPC firewall rules, flow logs, and routable without any encapsulation overhead. This is a major reason GKE networking integrates more deeply with the rest of GCP's networking stack (Section 19–27) than a bolt-on overlay would.
+GKE's **VPC-native** model solves this differently: Pod IPs are allocated directly from the VPC's own address space (via secondary/alias IP ranges), so Pods are first-class citizens of the VPC network itself — visible to VPC firewall rules, flow logs, and routable without any encapsulation overhead. This is a major reason GKE networking integrates more deeply with the rest of GCP's networking stack ([Section 19](../Part3/Section-19-Part3-VPC-Fundamentals.md)–[Section 27](../Part3/Section-27-Part3-Network-Intelligence-Center-Traffic-Director.md)) than a bolt-on overlay would.
 
-Storage has a related but different problem: containers are ephemeral by design (Section 28), but many real workloads (databases, stateful services) need data that survives a Pod restart or rescheduling to a different node. The CSI-based storage integration exists to let Kubernetes-native storage requests (`PersistentVolumeClaim`) transparently provision and attach real GCP storage (Persistent Disks, Filestore) behind the scenes.
+Storage has a related but different problem: containers are ephemeral by design ([Section 28](./Section-28-Part4-Container-Fundamentals-Recap-on-GCP.md)), but many real workloads (databases, stateful services) need data that survives a Pod restart or rescheduling to a different node. The CSI-based storage integration exists to let Kubernetes-native storage requests (`PersistentVolumeClaim`) transparently provision and attach real GCP storage (Persistent Disks, Filestore) behind the scenes.
 
 ## 3. VPC-Native Clusters and Alias IP Ranges
 
@@ -24,7 +24,7 @@ A **VPC-native cluster** (the GKE default and strongly recommended mode) provisi
 | **Pod secondary range**     | Alias IP range for Pod IPs — every Pod gets a routable IP from this range. |
 | **Service secondary range** | Alias IP range for ClusterIP Service virtual IPs.                          |
 
-Because Pod and Service ranges are genuine VPC secondary ranges (not an overlay), Pod-to-Pod traffic across nodes routes natively through the VPC without additional encapsulation, and VPC-level constructs — firewall rules, VPC Flow Logs, Private Service Connect, Shared VPC (Section 25) — can see and act on Pod IPs directly.
+Because Pod and Service ranges are genuine VPC secondary ranges (not an overlay), Pod-to-Pod traffic across nodes routes natively through the VPC without additional encapsulation, and VPC-level constructs — firewall rules, VPC Flow Logs, Private Service Connect, Shared VPC ([Section 25](../Part3/Section-25-Part3-Shared-VPC-Peering-PSC.md)) — can see and act on Pod IPs directly.
 
 > ⚠️ **Interview-relevant nuance:** The older alternative, a **routes-based cluster**, used a custom route per node and did not give Pods first-class VPC IP identities in the same way. Routes-based clusters are legacy and effectively deprecated for new clusters — VPC-native is the default and the answer to "which should I use" in virtually every current scenario.
 
@@ -40,7 +40,7 @@ Because Pod and Service ranges are genuine VPC secondary ranges (not an overlay)
 
 For HTTP(S) traffic specifically, exposing each Service behind its own load balancer doesn't scale well once an application has many services needing host/path-based routing, TLS termination, and shared certificates. Kubernetes solves this with higher-level HTTP routing resources:
 
-- **GKE Ingress:** implements the Kubernetes `Ingress` resource by automatically provisioning and configuring a GCP HTTP(S) Load Balancer (Section 22) based on host/path routing rules declared in the `Ingress` manifest — one declarative Kubernetes object drives real GCP load-balancing infrastructure.
+- **GKE Ingress:** implements the Kubernetes `Ingress` resource by automatically provisioning and configuring a GCP HTTP(S) Load Balancer ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)) based on host/path routing rules declared in the `Ingress` manifest — one declarative Kubernetes object drives real GCP load-balancing infrastructure.
 - **Gateway API:** the newer, more expressive Kubernetes-native API for traffic routing (`Gateway`, `HTTPRoute`, and related resources), designed as the long-term successor to `Ingress` with richer capabilities (traffic splitting/weighting, more granular header/path matching, cleaner separation between infrastructure operators and application teams). GKE supports the Gateway API via its own managed Gateway controller, also backed by GCP's load balancing infrastructure.
 
 > 💡 **Tip:** New GKE workloads needing advanced HTTP routing (traffic splitting for canary deploys, cross-namespace routing) should generally default to the Gateway API rather than `Ingress`, since `Ingress` is functionally frozen while the Gateway API is where new routing capability is actively developed across the Kubernetes ecosystem, not just on GKE.
@@ -162,4 +162,4 @@ my-app-data   Bound    pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx   50Gi       RWO
 
 ## 13. Related Concepts
 
-GKE architecture and node pools (Section 30), VPC subnets and alias IP ranges (Section 20), Cloud Load Balancing internals (Section 22), Persistent Disks and Filestore as standalone GCP services (Section 12), and Shared VPC/Private Service Connect (Section 25) all build directly on the networking and storage model introduced here.
+GKE architecture and node pools ([Section 30](./Section-30-Part4-GKE-Architecture-Deep-Dive.md)), VPC subnets and alias IP ranges ([Section 20](../Part3/Section-20-Part3-Subnets-IP-Addressing-and-Routes.md)), Cloud Load Balancing internals ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)), Persistent Disks and Filestore as standalone GCP services ([Section 12](../Part2/Section-12-Part2-Persistent-Disks-and-Filestore.md)), and Shared VPC/Private Service Connect ([Section 25](../Part3/Section-25-Part3-Shared-VPC-Peering-PSC.md)) all build directly on the networking and storage model introduced here.

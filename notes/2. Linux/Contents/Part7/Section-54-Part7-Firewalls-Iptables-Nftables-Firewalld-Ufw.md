@@ -2,7 +2,7 @@
 
 ## 1. Overview: One Kernel Framework, Four Names Administrators Argue About
 
-§51 covered the ports and protocols a host actually exposes, and §52 covered the tools that configure interfaces and routes. This section covers the layer that sits on top of both: deciding which of that traffic the kernel is actually allowed to let through. The most common source of confusion in this entire area isn't any single tool's syntax — it's that **iptables, nftables, firewalld, and ufw are not four competing firewalls**. They are four different altitudes of the same underlying capability, and conflating them ("should I use iptables or firewalld?") is a bit like asking "should I use assembly or my deployment script?" — the honest answer is that one is frequently built on the other.
+[§51](./Section-51-Part7-Networking-Fundamentals-Recap.md) covered the ports and protocols a host actually exposes, and [§52](./Section-52-Part7-Network-Configuration-Tools.md) covered the tools that configure interfaces and routes. This section covers the layer that sits on top of both: deciding which of that traffic the kernel is actually allowed to let through. The most common source of confusion in this entire area isn't any single tool's syntax — it's that **iptables, nftables, firewalld, and ufw are not four competing firewalls**. They are four different altitudes of the same underlying capability, and conflating them ("should I use iptables or firewalld?") is a bit like asking "should I use assembly or my deployment script?" — the honest answer is that one is frequently built on the other.
 
 At the bottom sits **Netfilter**, a packet-filtering framework built directly into the Linux kernel — hooks at specific points in the network stack where packets can be inspected, matched against rules, and accepted, dropped, or otherwise redirected. Netfilter itself has no user-facing command; it's activated and configured entirely through userspace tools that talk to it. **iptables** was, for roughly two decades, the standard userspace tool for that job. **nftables** is Netfilter's modern successor interface, aiming to replace iptables's syntax and internal model with something cleaner while using the same underlying kernel framework. **firewalld** and **ufw** sit a layer higher still — they don't talk to the kernel directly at all; they generate and manage iptables/nftables rules on the administrator's behalf, in exchange for a simpler, more distro-idiomatic command surface.
 
@@ -26,7 +26,7 @@ Each chain holds an ordered list of **rules**, evaluated top to bottom until one
 | `DROP`   | Silently discard the packet — no response sent to the sender                                    |
 | `REJECT` | Discard the packet but send back an explicit rejection (e.g., ICMP port-unreachable or TCP RST) |
 
-A worked example — allowing inbound SSH (§51 covers why port 22/TCP is the relevant number here) while leaving a default-deny posture for everything else on `INPUT`:
+A worked example — allowing inbound SSH ([§51](./Section-51-Part7-Networking-Fundamentals-Recap.md) covers why port 22/TCP is the relevant number here) while leaving a default-deny posture for everything else on `INPUT`:
 
 ```bash
 iptables -A INPUT -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
@@ -98,7 +98,7 @@ ufw enable
 
 > ⚠️ **Warning:** `ufw enable` applies the current rule set immediately, including the default-deny-incoming policy set moments earlier — running it over an SSH session **before** confirming `ufw allow ssh` (or the equivalent port) has actually been added is the ufw-specific version of the same lockout risk described in 2's warning. `ufw status` (or `ufw status verbose`) before `ufw enable` is the habitual check that prevents it — confirm the SSH rule is listed before flipping the switch that starts enforcing a default-deny posture.
 
-ufw persists its rules across reboots on its own (it writes to files under `/etc/ufw/` and reapplies them via a systemd service at boot — §65 onward covers systemd unit mechanics in depth), so unlike raw iptables there's no separate persistence step to remember.
+ufw persists its rules across reboots on its own (it writes to files under `/etc/ufw/` and reapplies them via a systemd service at boot — [§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) onward covers systemd unit mechanics in depth), so unlike raw iptables there's no separate persistence step to remember.
 
 ## 6. Hands-On: Checking What's Actually Enforcing Rules on an Unfamiliar Host
 
@@ -176,6 +176,6 @@ _What the interviewer is probing for:_ Pragmatic standardization (consistency at
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §51's ports/protocols (what firewall rules actually match against) and §52's network configuration tools (interfaces that zones and rules attach to). It's a direct prerequisite for Part 12's security hardening coverage (§89–§96), where firewall rules become one concrete control among several in a broader hardening posture, and for §55 (next), which covers the diagnostic tools — `ss`, `tcpdump`, and friends — used to verify a firewall's actual observed behavior rather than trusting the rule set's intent on paper.
+This section builds directly on [§51](./Section-51-Part7-Networking-Fundamentals-Recap.md)'s ports/protocols (what firewall rules actually match against) and [§52](./Section-52-Part7-Network-Configuration-Tools.md)'s network configuration tools (interfaces that zones and rules attach to). It's a direct prerequisite for Part 12's security hardening coverage ([§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)–[§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)), where firewall rules become one concrete control among several in a broader hardening posture, and for [§55](./Section-55-Part7-Network-Diagnostics.md) (next), which covers the diagnostic tools — `ss`, `tcpdump`, and friends — used to verify a firewall's actual observed behavior rather than trusting the rule set's intent on paper.
 
-**Next Section:** §55 — `Section-55-Part7-Network-Diagnostics.md`
+**Next Section:** [§55](./Section-55-Part7-Network-Diagnostics.md) — `Section-55-Part7-Network-Diagnostics.md`

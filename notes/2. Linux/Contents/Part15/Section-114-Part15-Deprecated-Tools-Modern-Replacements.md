@@ -2,22 +2,22 @@
 
 ## 1. A Consolidated "Old vs. New" Reference
 
-§113 covered version and distribution differences broadly. This section narrows to one specific, high-value slice of that problem: tools that were once the default and have since been formally superseded, consolidated into a single reference table with the reasoning behind each replacement. This section is deliberately table-and-reference-heavy rather than prose-heavy — its job is to be the place an administrator checks when they encounter unfamiliar legacy syntax in an inherited script, or want a quick sanity check on which command is the current recommended default.
+[§113](./Section-113-Part15-Version-Distribution-Differences-That-Matter.md) covered version and distribution differences broadly. This section narrows to one specific, high-value slice of that problem: tools that were once the default and have since been formally superseded, consolidated into a single reference table with the reasoning behind each replacement. This section is deliberately table-and-reference-heavy rather than prose-heavy — its job is to be the place an administrator checks when they encounter unfamiliar legacy syntax in an inherited script, or want a quick sanity check on which command is the current recommended default.
 
 The recurring pattern worth noticing across every pair below: **the old tool is usually still present and functional** on current systems, kept for backward compatibility rather than removed outright. Recognizing legacy syntax remains a genuinely useful skill for exactly that reason — old scripts, old documentation, and old muscle memory don't disappear just because a replacement exists.
 
 ## 2. Master Reference Table
 
-| Deprecated Tool                            | Modern Replacement           | Covered In |
-| ------------------------------------------ | ---------------------------- | ---------- |
-| `ifconfig`                                 | `ip` (iproute2 suite)        | §52        |
-| `iptables`                                 | `nftables`                   | §54        |
-| `netstat`                                  | `ss`                         | §55        |
-| `route`                                    | `ip route`                   | §52        |
-| `arp`                                      | `ip neigh`                   | §52        |
-| SysVinit / Upstart                         | `systemd`                    | §13        |
-| `yum`                                      | `dnf`                        | §61        |
-| `/etc/network/interfaces`, ifcfg-* scripts | `netplan` / `NetworkManager` | §52, §58   |
+| Deprecated Tool                            | Modern Replacement           | Covered In                                                                                                                                            |
+| ------------------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ifconfig`                                 | `ip` (iproute2 suite)        | [§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md)                                                                                       |
+| `iptables`                                 | `nftables`                   | [§54](../Part7/Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md)                                                                         |
+| `netstat`                                  | `ss`                         | [§55](../Part7/Section-55-Part7-Network-Diagnostics.md)                                                                                               |
+| `route`                                    | `ip route`                   | [§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md)                                                                                       |
+| `arp`                                      | `ip neigh`                   | [§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md)                                                                                       |
+| SysVinit / Upstart                         | `systemd`                    | [§13](../Part2/Section-13-Part2-Init-Systems.md)                                                                                                      |
+| `yum`                                      | `dnf`                        | [§61](../Part8/Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md)                                                                                          |
+| `/etc/network/interfaces`, ifcfg-* scripts | `netplan` / `NetworkManager` | [§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md), [§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) |
 
 ## 3. `ifconfig` → `ip`
 
@@ -53,8 +53,8 @@ The recurring pattern worth noticing across every pair below: **the old tool is 
 
 Two further pairs were covered in depth elsewhere and are included here only for completeness of this consolidated reference, not re-explained:
 
-- **SysVinit/Upstart → systemd** — full reasoning in §13 (Part 2): sequential, script-based startup with no built-in supervision replaced by dependency-graph-based parallel startup with integrated supervision and logging.
-- **`yum` → `dnf`** — full reasoning in §61 (Part 8): `dnf` is the RHEL-family package manager's successor to `yum`, with a more reliable dependency-resolution engine and better performance, while retaining largely compatible command syntax so existing muscle memory transfers directly (`dnf install` behaves the same as `yum install` from a user's perspective).
+- **SysVinit/Upstart → systemd** — full reasoning in [§13](../Part2/Section-13-Part2-Init-Systems.md): sequential, script-based startup with no built-in supervision replaced by dependency-graph-based parallel startup with integrated supervision and logging.
+- **`yum` → `dnf`** — full reasoning in [§61](../Part8/Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md): `dnf` is the RHEL-family package manager's successor to `yum`, with a more reliable dependency-resolution engine and better performance, while retaining largely compatible command syntax so existing muscle memory transfers directly (`dnf install` behaves the same as `yum install` from a user's perspective).
 
 ## 9. Legacy Network Configuration Files → `netplan` / `NetworkManager`
 
@@ -66,7 +66,7 @@ Two further pairs were covered in depth elsewhere and are included here only for
 
 Every pair in this section illustrates the same deliberate ecosystem choice: **incremental replacement while maintaining backward compatibility, rather than a hard breaking change.** The old tool is superseded, documented as legacy, and often no longer installed by default — but it is rarely removed outright or made to simply stop working. `iptables-nft`'s translation shim is the clearest example of this philosophy made explicit: rather than forcing every existing script to be rewritten the day `nftables` became the default backend, the ecosystem built a compatibility layer that lets old syntax keep working on the new engine.
 
-This is a direct echo of the ecosystem-change pattern §13 raised in the SysVinit-to-systemd context (itself tracing back to §2's uneven-rollout observation in Part 1): fundamental tooling changes in Linux tend to arrive as a long period of coexistence and gradual migration, not an instant cutover — which is precisely why recognizing legacy syntax remains a practically useful skill long after the modern replacement has become the default.
+This is a direct echo of the ecosystem-change pattern [§13](../Part2/Section-13-Part2-Init-Systems.md) raised in the SysVinit-to-systemd context (itself tracing back to [§2](../Part1/Section-02-Part1-History-and-Evolution.md)'s uneven-rollout observation in Part 1): fundamental tooling changes in Linux tend to arrive as a long period of coexistence and gradual migration, not an instant cutover — which is precisely why recognizing legacy syntax remains a practically useful skill long after the modern replacement has become the default.
 
 > 💡 **Tip:** When writing new automation, prefer the modern tool in every pair above by default (`ip`, `nftables`/`iptables-nft` awareness, `ss`, `dnf`, `netplan`/`NetworkManager`) — but don't discard the ability to read the legacy equivalent. Inherited scripts, older documentation, and long-lived hosts will keep surfacing it for years.
 
@@ -116,14 +116,14 @@ _What the interviewer is probing for:_ Recognizing that a large-scale documentat
 
 ## 15. Key Takeaways
 
-- `ifconfig` → `ip`, `iptables` → `nftables`, and `netstat` → `ss` are the three headline pairs (§52, §54, §55), each replacing an aging, single-purpose or duplicated tool with a more capable, more efficient, unified equivalent.
+- `ifconfig` → `ip`, `iptables` → `nftables`, and `netstat` → `ss` are the three headline pairs ([§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md), [§54](../Part7/Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md), [§55](../Part7/Section-55-Part7-Network-Diagnostics.md)), each replacing an aging, single-purpose or duplicated tool with a more capable, more efficient, unified equivalent.
 - `route` → `ip route` and `arp` → `ip neigh` follow the same underlying `net-tools`-to-`iproute2` consolidation pattern as `ifconfig` → `ip`.
-- SysVinit/Upstart → systemd (§13) and `yum` → `dnf` (§61) round out the set, both retaining largely familiar operational patterns despite the underlying architecture or engine change.
-- Legacy static network configuration files give way to `netplan`/`NetworkManager` (§52, §58), trading distribution-specific manual syntax for a more unified, declarative or dynamic approach.
+- SysVinit/Upstart → systemd ([§13](../Part2/Section-13-Part2-Init-Systems.md)) and `yum` → `dnf` ([§61](../Part8/Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md)) round out the set, both retaining largely familiar operational patterns despite the underlying architecture or engine change.
+- Legacy static network configuration files give way to `netplan`/`NetworkManager` ([§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md), [§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)), trading distribution-specific manual syntax for a more unified, declarative or dynamic approach.
 - The unifying pattern across every pair is deliberate incremental replacement with backward compatibility preserved, not a hard break — which is exactly why recognizing legacy syntax remains a practically relevant skill even when writing exclusively with modern tools.
 
 ## 16. Related Concepts & What's Next
 
-This section consolidates §52 (`ip` vs. `ifconfig`, Part 7), §54 (`iptables` vs. `nftables`, Part 7), §55 (`ss` vs. `netstat`, Part 7), §13 (SysVinit vs. systemd, Part 2), §61 (`yum` vs. `dnf`, Part 8), and §58 (network services, Part 7) into one reference. §115 (next, and the last section of Part 15) shifts scope one more level up — from tool-level differences within Linux to the higher-level decision of when Linux itself, versus another operating system entirely, is the right infrastructure choice.
+This section consolidates [§52](../Part7/Section-52-Part7-Network-Configuration-Tools.md) (`ip` vs. `ifconfig`, Part 7), [§54](../Part7/Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md) (`iptables` vs. `nftables`, Part 7), [§55](../Part7/Section-55-Part7-Network-Diagnostics.md) (`ss` vs. `netstat`, Part 7), [§13](../Part2/Section-13-Part2-Init-Systems.md) (SysVinit vs. systemd, Part 2), [§61](../Part8/Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md) (`yum` vs. `dnf`, Part 8), and [§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) (network services, Part 7) into one reference. [§115](./Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md) (next, and the last section of Part 15) shifts scope one more level up — from tool-level differences within Linux to the higher-level decision of when Linux itself, versus another operating system entirely, is the right infrastructure choice.
 
-**Next Section:** §115 — `Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md`
+**Next Section:** [§115](./Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md) — `Section-115-Part15-Linux-Vs-Other-Operating-Systems-Decision-Criteria.md`

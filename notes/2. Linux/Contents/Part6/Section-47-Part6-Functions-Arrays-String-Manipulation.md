@@ -24,7 +24,7 @@ A function must be **defined before it's called** — bash reads and executes to
 
 ## 2. Function Arguments: Their Own `$1`/`$@`/`$#` Scope
 
-§45 covered positional parameters (`$1`, `$@`, `$#`) as how a _script_ reads its arguments. Functions get an entirely separate copy of the same mechanism — calling a function with arguments gives that function its own `$1`, `$2`, `$@`, and `$#`, temporarily shadowing whatever the script's own positional parameters were:
+[§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covered positional parameters (`$1`, `$@`, `$#`) as how a _script_ reads its arguments. Functions get an entirely separate copy of the same mechanism — calling a function with arguments gives that function its own `$1`, `$2`, `$@`, and `$#`, temporarily shadowing whatever the script's own positional parameters were:
 
 ```bash
 #!/usr/bin/env bash
@@ -44,7 +44,7 @@ Deploying version 1.4.2 to production
 Script's own $1 is still: staging
 ```
 
-Inside `deploy`, `$1` is `"production"` and `$2` is `"1.4.2"` — the arguments passed to the _function call_, not the script's own `$1`. Once the function returns, the script's original `$1` (`"staging"`) is exactly as it was; the function's parameter scope doesn't leak in either direction. `$@`, `$*`, and `$#` inside a function follow the same rule — they all refer to the function's own arguments, and the `"$@"` vs `$*` quoting distinction from §45 applies identically inside a function body.
+Inside `deploy`, `$1` is `"production"` and `$2` is `"1.4.2"` — the arguments passed to the _function call_, not the script's own `$1`. Once the function returns, the script's original `$1` (`"staging"`) is exactly as it was; the function's parameter scope doesn't leak in either direction. `$@`, `$*`, and `$#` inside a function follow the same rule — they all refer to the function's own arguments, and the `"$@"` vs `$*` quoting distinction from [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) applies identically inside a function body.
 
 ## 3. `local`: Variable Scoping, and the Global-by-Default Gotcha
 
@@ -87,11 +87,11 @@ outside: 0
 
 > ⚠️ **Warning:** Forgetting `local` is one of the most common bash bugs in scripts with more than a couple of functions, and it's insidious precisely because it usually _works_ in isolated testing — a function that assigns to `result` without `local` will silently clobber a global `result` variable set by an entirely unrelated part of the script, and the bug only surfaces once two functions happen to use the same variable name, often far later and in a different code path than where the assignment actually happened. Declare every variable a function doesn't explicitly intend to expose globally as `local`, as a default habit rather than an afterthought.
 
-`local` can be combined with assignment on one line (`local result="$1"`) — but one subtlety worth knowing: `local var=$(some_command)` discards the exit status of `some_command`, because `local` itself is the last command that runs and its own exit status (from the declaration) is what `$?` sees afterward. If a script relies on `set -e` (§45) to catch a failing command substitution, splitting the declaration and assignment (`local var; var=$(some_command)`) preserves the inner command's exit status where `set -e` can actually see it.
+`local` can be combined with assignment on one line (`local result="$1"`) — but one subtlety worth knowing: `local var=$(some_command)` discards the exit status of `some_command`, because `local` itself is the last command that runs and its own exit status (from the declaration) is what `$?` sees afterward. If a script relies on `set -e` ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)) to catch a failing command substitution, splitting the declaration and assignment (`local var; var=$(some_command)`) preserves the inner command's exit status where `set -e` can actually see it.
 
 ## 4. Return Values: `return` Is Exit-Code-Only, Not for Data
 
-`return N` sets a function's exit status, exactly like `exit N` sets a script's — a number from `0` to `255`, following the same "0 = success, nonzero = failure" convention §45 covered for scripts. If a function has no explicit `return`, its exit status is simply the exit status of the last command it ran, the same implicit fallback §45 described for scripts.
+`return N` sets a function's exit status, exactly like `exit N` sets a script's — a number from `0` to `255`, following the same "0 = success, nonzero = failure" convention [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covered for scripts. If a function has no explicit `return`, its exit status is simply the exit status of the last command it ran, the same implicit fallback [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) described for scripts.
 
 ```bash
 file_exists() {
@@ -146,7 +146,7 @@ hosts[1]="web02-replaced" # overwrite by index
 unset 'hosts[2]'          # remove db01 by index — leaves a gap, doesn't renumber
 ```
 
-**Iterating** over an array follows the exact same quoting logic §45 established for `"$@"` vs `$*`, and it matters just as much:
+**Iterating** over an array follows the exact same quoting logic [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) established for `"$@"` vs `$*`, and it matters just as much:
 
 ```bash
 for host in "${hosts[@]}"; do
@@ -154,7 +154,7 @@ for host in "${hosts[@]}"; do
 done
 ```
 
-`"${hosts[@]}"` — quoted, with `@` — expands each array element as its own separate word, exactly preserving elements that contain spaces (`"web server 01"` stays one item). `${hosts[@]}` unquoted, or `"${hosts[*]}"` quoted with `*`, both flatten and re-split on `$IFS`, which silently breaks any element containing whitespace — the identical word-splitting hazard §42 covered for scalar variables and §45 covered for `$@`/`$*`, just showing up again one level up in arrays. Always quote `"${arr[@]}"` when iterating or passing array elements onward, as a default, not a special case.
+`"${hosts[@]}"` — quoted, with `@` — expands each array element as its own separate word, exactly preserving elements that contain spaces (`"web server 01"` stays one item). `${hosts[@]}` unquoted, or `"${hosts[*]}"` quoted with `*`, both flatten and re-split on `$IFS`, which silently breaks any element containing whitespace — the identical word-splitting hazard [§42](./Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion-Command-Substitution.md) covered for scalar variables and [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covered for `$@`/`$*`, just showing up again one level up in arrays. Always quote `"${arr[@]}"` when iterating or passing array elements onward, as a default, not a special case.
 
 ## 6. Associative Arrays (Bash 4+)
 
@@ -231,15 +231,15 @@ echo "${str: -4}"       # tion         — negative offset (note the required sp
 | `${#var}`              | Length of `var`                                 |
 | `${var:offset:length}` | Substring, starting at `offset`, `length` chars |
 
-> 💡 **Tip:** These operators are genuinely worth reaching for — extracting a filename from a path, stripping a known suffix, or a single find/replace are common enough that spawning `sed` or `basename` for them is unnecessary overhead in a hot loop. But this table is close to the practical ceiling of what's worth doing in raw parameter expansion. Anything beyond it — regex with capture groups, conditional replacement, multi-line text, column-based extraction — gets noticeably harder to read as nested `${var...}` expressions than as a single `sed` or `awk` invocation, which is exactly §48's (next) territory. Treat parameter expansion as the right tool for simple, single-value string cleanup, not as a substitute for a real text-processing tool once the logic gets any more involved than the operators in this table.
+> 💡 **Tip:** These operators are genuinely worth reaching for — extracting a filename from a path, stripping a known suffix, or a single find/replace are common enough that spawning `sed` or `basename` for them is unnecessary overhead in a hot loop. But this table is close to the practical ceiling of what's worth doing in raw parameter expansion. Anything beyond it — regex with capture groups, conditional replacement, multi-line text, column-based extraction — gets noticeably harder to read as nested `${var...}` expressions than as a single `sed` or `awk` invocation, which is exactly [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)'s (next) territory. Treat parameter expansion as the right tool for simple, single-value string cleanup, not as a substitute for a real text-processing tool once the logic gets any more involved than the operators in this table.
 
 ## 8. Common Misconceptions
 
 1. **"`return` can hand back any value a function computes."** It can only set an exit code, `0`–`255`, and anything outside that range wraps around silently — it is not a data-return mechanism (4). "Returning" data is done by `echo`ing and capturing the output with `$(...)`.
 2. **"Variables assigned inside a function are automatically local to it."** The opposite is true — bash variables are global by default even when assigned inside a function, and `local` must be declared explicitly to scope a variable to the function (3). Omitting it is a common source of one function silently clobbering another's variable.
-3. **"`${arr[@]}` and `"${arr[@]}"` behave the same."** They diverge exactly the way `$@` and `"$@"` do (§45) — unquoted, array elements are word-split and glob-expanded; quoted, each element is preserved as its own word regardless of embedded whitespace (5).
+3. **"`${arr[@]}` and `"${arr[@]}"` behave the same."** They diverge exactly the way `$@` and `"$@"` do ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)) — unquoted, array elements are word-split and glob-expanded; quoted, each element is preserved as its own word regardless of embedded whitespace (5).
 4. **"Associative arrays are just indexed arrays with string keys."** They require `declare -A` explicitly and are a bash 4+ feature entirely absent in older bash (notably stock macOS bash) — code relying on them isn't portable to every environment bash itself runs on (6).
-5. **"Parameter expansion string operators can replace `sed`/`awk` for any text task."** They cover simple, single-value operations well, but nested parameter expansions for anything involving regex capture groups, multi-line text, or column extraction becomes hard to read fast — that's the point where reaching for `sed`/`awk` (§48) is the more maintainable choice (7).
+5. **"Parameter expansion string operators can replace `sed`/`awk` for any text task."** They cover simple, single-value operations well, but nested parameter expansions for anything involving regex capture groups, multi-line text, or column extraction becomes hard to read fast — that's the point where reaching for `sed`/`awk` ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)) is the more maintainable choice (7).
 
 ## 9. Tiered Interview Questions
 
@@ -273,11 +273,11 @@ _What the interviewer is probing for:_ Judgment about where bash's native data s
 - Bash variables are global by default even inside functions — `local` must be declared explicitly to scope a variable, and omitting it is a common, insidious source of one function silently clobbering another's variable.
 - `return N` sets only a numeric exit code (0–255) and is not a data-return mechanism; the idiom for returning actual data is `echo`ing a value and capturing it with `$(...)` in the caller.
 - Indexed arrays (`arr=(a b c)`) support `${arr[@]}` (all elements), `${#arr[@]}` (count), and `+=` for appending; associative arrays (`declare -A`, bash 4+) add named-key lookups via `${arr[key]}` and `${!arr[@]}` for enumerating keys.
-- `"${arr[@]}"` quoted preserves each array element as a separate word; unquoted or `${arr[*]}` flattens and word-splits — the identical hazard §45 covered for `"$@"` vs `$*`, one level up.
-- Parameter expansion (`${var#pattern}`, `${var%pattern}`, `${var/pat/repl}`, `${#var}`, `${var:offset:length}`) handles simple string manipulation without spawning an external process, but anything beyond simple single-value cases is more maintainable as `sed`/`awk` (§48, next).
+- `"${arr[@]}"` quoted preserves each array element as a separate word; unquoted or `${arr[*]}` flattens and word-splits — the identical hazard [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covered for `"$@"` vs `$*`, one level up.
+- Parameter expansion (`${var#pattern}`, `${var%pattern}`, `${var/pat/repl}`, `${#var}`, `${var:offset:length}`) handles simple string manipulation without spawning an external process, but anything beyond simple single-value cases is more maintainable as `sed`/`awk` ([§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md), next).
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §45's positional-parameter and quoting groundwork — function arguments reuse the exact same `$1`/`$@`/`$#`/quoting mechanics, just in a new, per-call scope — and assumes §46's control-structure syntax (`if`, `case`, `for`) as the vocabulary functions are typically built from. §48 (next) covers `grep`, `sed`, and `awk` in full, which is the natural escalation path the moment string manipulation in this section's parameter-expansion operators starts feeling strained.
+This section builds directly on [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)'s positional-parameter and quoting groundwork — function arguments reuse the exact same `$1`/`$@`/`$#`/quoting mechanics, just in a new, per-call scope — and assumes [§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md)'s control-structure syntax (`if`, `case`, `for`) as the vocabulary functions are typically built from. [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) (next) covers `grep`, `sed`, and `awk` in full, which is the natural escalation path the moment string manipulation in this section's parameter-expansion operators starts feeling strained.
 
-**Next Section:** §48 — `Section-48-Part6-Text-Processing-Tools.md`
+**Next Section:** [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md) — `Section-48-Part6-Text-Processing-Tools.md`

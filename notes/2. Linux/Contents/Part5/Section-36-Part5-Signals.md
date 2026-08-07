@@ -2,7 +2,7 @@
 
 ## 1. What a Signal Actually Is
 
-§35 walked through a process's normal lifecycle — `fork()`, `exec()`, running, exiting, `wait()`-ed on by its parent. What that lifecycle didn't cover is how a process gets interrupted from _outside_ that normal flow — how the kernel tells a process "stop what you're doing" without going through any of its regular input channels at all. That mechanism is a **signal**.
+[§35](./Section-35-Part5-Process-Lifecycle-Fork-Exec-Wait-Zombie-Orphan.md) walked through a process's normal lifecycle — `fork()`, `exec()`, running, exiting, `wait()`-ed on by its parent. What that lifecycle didn't cover is how a process gets interrupted from _outside_ that normal flow — how the kernel tells a process "stop what you're doing" without going through any of its regular input channels at all. That mechanism is a **signal**.
 
 A signal is a small, asynchronous notification delivered to a process by the kernel — not data passed through a pipe, a file descriptor, or any channel the receiving process explicitly reads from. A process doesn't "poll" for signals as part of its normal logic; the kernel interrupts whatever the process is doing, delivers the signal, and either runs a handler the process registered in advance or falls back to a default kernel-defined action if the process registered nothing.
 
@@ -11,25 +11,25 @@ This asynchrony is the entire point and the entire danger. A signal can arrive b
 Signals originate from several places, not just other processes deliberately targeting one:
 
 - **The kernel itself**, in response to a hardware exception (e.g., a process dereferences invalid memory and the kernel delivers `SIGSEGV`).
-- **Another process**, via the `kill()` system call (despite the name, `kill()` sends any signal, not just termination — §3 covers the actual `kill` command).
-- **The terminal driver**, translating a keystroke like Ctrl+C into a signal sent to the foreground process group (§37 covers foreground/background job control and exactly how this delivery works).
+- **Another process**, via the `kill()` system call (despite the name, `kill()` sends any signal, not just termination — [§3](../Part1/Section-03-Part1-Open-Source-Licensing-GPL-Governance.md) covers the actual `kill` command).
+- **The terminal driver**, translating a keystroke like Ctrl+C into a signal sent to the foreground process group ([§37](./Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md) covers foreground/background job control and exactly how this delivery works).
 - **The process itself**, sending a signal to itself or another process it has permission to signal.
 
-> 💡 **Tip:** The signal-vs-data distinction is worth holding onto precisely because it explains why signals are so limited as an IPC mechanism (§40 covers real inter-process communication) — a signal carries almost no payload beyond "which signal number arrived," so it's suited to notifying a process that something happened, not to transferring any actual information about what that something was.
+> 💡 **Tip:** The signal-vs-data distinction is worth holding onto precisely because it explains why signals are so limited as an IPC mechanism ([§40](./Section-40-Part5-Inter-Process-Communication-Overview.md) covers real inter-process communication) — a signal carries almost no payload beyond "which signal number arrived," so it's suited to notifying a process that something happened, not to transferring any actual information about what that something was.
 
 ## 2. Key Signals
 
 Every signal has both a **number** and a **symbolic name**; scripts and command-line tools accept either, though the name is more portable across kernel versions (numbering below is the common Linux/x86 convention — a small number of signals vary by architecture).
 
-| Signal    | Number | Default Action              | Typical Meaning / Origin                                                                            |
-| --------- | ------ | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| `SIGHUP`  | 1      | Terminate                   | Historically: controlling terminal disconnected. Today: widely repurposed as "reload configuration" |
-| `SIGINT`  | 2      | Terminate                   | Interrupt from the keyboard — Ctrl+C, sent to the foreground process group                          |
-| `SIGKILL` | 9      | Terminate (un-catchable)    | Immediate, unconditional termination — the kernel simply removes the process                        |
-| `SIGSEGV` | 11     | Terminate (+ core dump)     | Invalid memory access — a genuine fault, not a graceful request                                     |
-| `SIGTERM` | 15     | Terminate                   | The polite, catchable request to terminate — the default signal sent by `kill` with no flags        |
-| `SIGSTOP` | 19     | Stop process (un-catchable) | Suspend the process — job control (§37), cannot be caught, blocked, or ignored, same as `SIGKILL`   |
-| `SIGCONT` | 18     | Continue if stopped         | Resume a process previously suspended by `SIGSTOP`/`SIGTSTP`                                        |
+| Signal    | Number | Default Action              | Typical Meaning / Origin                                                                                                                                                       |
+| --------- | ------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SIGHUP`  | 1      | Terminate                   | Historically: controlling terminal disconnected. Today: widely repurposed as "reload configuration"                                                                            |
+| `SIGINT`  | 2      | Terminate                   | Interrupt from the keyboard — Ctrl+C, sent to the foreground process group                                                                                                     |
+| `SIGKILL` | 9      | Terminate (un-catchable)    | Immediate, unconditional termination — the kernel simply removes the process                                                                                                   |
+| `SIGSEGV` | 11     | Terminate (+ core dump)     | Invalid memory access — a genuine fault, not a graceful request                                                                                                                |
+| `SIGTERM` | 15     | Terminate                   | The polite, catchable request to terminate — the default signal sent by `kill` with no flags                                                                                   |
+| `SIGSTOP` | 19     | Stop process (un-catchable) | Suspend the process — job control ([§37](./Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md)), cannot be caught, blocked, or ignored, same as `SIGKILL` |
+| `SIGCONT` | 18     | Continue if stopped         | Resume a process previously suspended by `SIGSTOP`/`SIGTSTP`                                                                                                                   |
 
 **`SIGHUP`'s repurposing is worth calling out explicitly** because it's a common source of confusion for anyone reading older documentation literally: it originally meant "the terminal line hung up" — the controlling terminal session ended, so the process should exit. Modern long-running daemons (nginx, many others) instead hook a `SIGHUP` handler to mean "re-read your configuration file without restarting" — the signal number and delivery mechanism didn't change, but the convention layered on top of it did, entirely by application-level agreement rather than any kernel enforcement.
 
@@ -37,9 +37,9 @@ Every signal has both a **number** and a **symbolic name**; scripts and command-
 
 This is a **kernel guarantee**, not a convention that a sufficiently determined program could work around. Every other signal in the table above can be intercepted by a process — given a custom handler, deliberately ignored, or temporarily blocked from delivery. `SIGKILL` (9) and `SIGSTOP` (19) are structurally different: the kernel does not offer any API surface for a process to register a handler for them, ignore them, or block them. When either is sent, the kernel acts directly — terminating or suspending the process — without ever giving the target process's own code a chance to run in response.
 
-The reason is deliberate: every other signal being catchable means a sufficiently broken or malicious process could catch `SIGTERM`, do nothing, and simply never die — leaving an administrator with no way to forcibly stop it. `SIGKILL` exists specifically as the guaranteed backstop that cannot be defeated this way, and `SIGSTOP` exists as the equivalent guarantee for job control (§37) — a shell needs to be able to suspend a job unconditionally, not subject to that job's own cooperation.
+The reason is deliberate: every other signal being catchable means a sufficiently broken or malicious process could catch `SIGTERM`, do nothing, and simply never die — leaving an administrator with no way to forcibly stop it. `SIGKILL` exists specifically as the guaranteed backstop that cannot be defeated this way, and `SIGSTOP` exists as the equivalent guarantee for job control ([§37](./Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md)) — a shell needs to be able to suspend a job unconditionally, not subject to that job's own cooperation.
 
-> ⚠️ **Warning:** "Un-catchable" doesn't mean "instantaneous" from an administrator's point of view. `SIGKILL` reaching a process's signal-handling code is guaranteed and immediate, but the process still has to actually exit — and if it's blocked in an uninterruptible kernel wait (D state, §33 covered process states), the kernel itself won't act on the pending signal until that wait resolves. This is the concrete answer to "why does `kill -9` sometimes not work" — covered in full in 7.
+> ⚠️ **Warning:** "Un-catchable" doesn't mean "instantaneous" from an administrator's point of view. `SIGKILL` reaching a process's signal-handling code is guaranteed and immediate, but the process still has to actually exit — and if it's blocked in an uninterruptible kernel wait (D state, [§33](./Section-33-Part5-What-A-Process-Is.md) covered process states), the kernel itself won't act on the pending signal until that wait resolves. This is the concrete answer to "why does `kill -9` sometimes not work" — covered in full in 7.
 
 ## 4. Signal Handling Options: Default, Ignore, Custom Handler
 
@@ -47,7 +47,7 @@ For every signal a process is actually allowed to intercept (i.e., everything ex
 
 1. **Default action** — do nothing special; let the kernel apply whatever its built-in default is for that signal (terminate, terminate-with-core-dump, stop, continue, or in a handful of cases, ignore). This is every process's disposition unless it explicitly changes it.
 2. **Ignore** — explicitly tell the kernel to discard the signal on delivery, doing nothing at all. A process can ignore `SIGTERM`, for instance, though doing so for a shutdown signal without providing an alternative graceful-exit path is generally poor practice — it defeats the cooperative shutdown pattern covered in 6.
-3. **Custom handler** — register a function that runs when the signal arrives, executing arbitrary (ideally minimal, per §1's Tip) application code instead of the kernel's default action. This is how a daemon implements "on `SIGHUP`, re-read config" or "on `SIGTERM`, finish the in-flight request, close connections cleanly, then exit" rather than dying mid-work.
+3. **Custom handler** — register a function that runs when the signal arrives, executing arbitrary (ideally minimal, per [§1](../Part1/Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s Tip) application code instead of the kernel's default action. This is how a daemon implements "on `SIGHUP`, re-read config" or "on `SIGTERM`, finish the in-flight request, close connections cleanly, then exit" rather than dying mid-work.
 
 The distinction between disposition 1 and 2 matters more than it looks: a process that has taken no action at all for `SIGTERM` still dies immediately on receipt (default action = terminate) — a process only survives `SIGTERM` if it has deliberately registered a handler or set it to be ignored. "I didn't write any signal-handling code" is not the same as "my process is protected from `SIGTERM`."
 
@@ -119,7 +119,7 @@ The pattern underlying almost every well-behaved process-stopping mechanism on L
 2. **Wait a bounded grace period.** Long enough for well-behaved cleanup, short enough not to hang indefinitely on a process that never intends to exit.
 3. **Escalate to `SIGKILL` if the process is still alive after the grace period.** At this point, cooperation has been given a fair chance and failed — `SIGKILL`'s un-catchable guarantee (3) is what makes this step reliable regardless of what the target process's code does or doesn't do.
 
-> 💡 **Tip:** This exact pattern is not just a shell scripting idiom — it's precisely what **systemd** does internally when stopping a service (`TimeoutStopSec`, full depth in Part 9, §65–§72) and what **Docker/Kubernetes** do when stopping a container (`docker stop`'s grace period, Kubernetes's `terminationGracePeriodSeconds`). Understanding this three-step sequence at the signal level directly explains behavior that otherwise looks like unrelated, tool-specific configuration in each of those higher-level systems — they're all the same underlying pattern with a different grace-period knob exposed.
+> 💡 **Tip:** This exact pattern is not just a shell scripting idiom — it's precisely what **systemd** does internally when stopping a service (`TimeoutStopSec`, full depth in Part 9, [§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) and what **Docker/Kubernetes** do when stopping a container (`docker stop`'s grace period, Kubernetes's `terminationGracePeriodSeconds`). Understanding this three-step sequence at the signal level directly explains behavior that otherwise looks like unrelated, tool-specific configuration in each of those higher-level systems — they're all the same underlying pattern with a different grace-period knob exposed.
 
 A manual shell version of the same idea:
 
@@ -133,9 +133,9 @@ kill -0 4821 2>/dev/null && kill -9 4821   # step 3: still alive? force it
 
 ## 7. Why `kill -9` Sometimes "Doesn't Work"
 
-This is one of the most common points of genuine confusion, because it looks like it contradicts §3's kernel guarantee — it doesn't. `SIGKILL` delivery to a process is guaranteed; what isn't guaranteed is that the process can act on it _immediately_.
+This is one of the most common points of genuine confusion, because it looks like it contradicts [§3](../Part1/Section-03-Part1-Open-Source-Licensing-GPL-Governance.md)'s kernel guarantee — it doesn't. `SIGKILL` delivery to a process is guaranteed; what isn't guaranteed is that the process can act on it _immediately_.
 
-The concrete cause is almost always **uninterruptible sleep (D state)**, covered in §33's process-states discussion. A process blocked in D-state is waiting on a kernel-level operation — typically slow or hung I/O (an unresponsive NFS mount, a failing disk, a stuck device driver) — and the kernel will not deliver even `SIGKILL` to the process's own code path until that kernel-level wait resolves one way or another. The signal is recorded as pending, not lost, but "pending forever" looks indistinguishable from "`kill -9` didn't work" to an administrator watching `ps` show the process still there.
+The concrete cause is almost always **uninterruptible sleep (D state)**, covered in [§33](./Section-33-Part5-What-A-Process-Is.md)'s process-states discussion. A process blocked in D-state is waiting on a kernel-level operation — typically slow or hung I/O (an unresponsive NFS mount, a failing disk, a stuck device driver) — and the kernel will not deliver even `SIGKILL` to the process's own code path until that kernel-level wait resolves one way or another. The signal is recorded as pending, not lost, but "pending forever" looks indistinguishable from "`kill -9` didn't work" to an administrator watching `ps` show the process still there.
 
 **Diagnosing it:**
 
@@ -145,7 +145,7 @@ ps -o pid,stat,comm -p 4821
 
 A `STAT` column showing `D` (rather than `S`, `R`, `T`, or `Z`) confirms uninterruptible sleep is the cause, not a signal-handling bug. The practical fix is almost never "send the signal harder" — it's identifying and resolving whatever the process is actually blocked on at the kernel level (the hung mount, the failing device), since no signal, including `SIGKILL`, can pull a process out of D-state from the outside.
 
-> ⚠️ **Warning:** Don't mistake a zombie (`Z` state, §33 and §35) for this problem — a zombie process is already dead and holds no resources beyond its exit-status entry; sending it any signal, including `SIGKILL`, is a no-op because there's no running process left to signal. A zombie's exit code needs to be reaped via `wait()` by its parent (§35), not killed.
+> ⚠️ **Warning:** Don't mistake a zombie (`Z` state, [§33](./Section-33-Part5-What-A-Process-Is.md) and [§35](./Section-35-Part5-Process-Lifecycle-Fork-Exec-Wait-Zombie-Orphan.md)) for this problem — a zombie process is already dead and holds no resources beyond its exit-status entry; sending it any signal, including `SIGKILL`, is a no-op because there's no running process left to signal. A zombie's exit code needs to be reaped via `wait()` by its parent ([§35](./Section-35-Part5-Process-Lifecycle-Fork-Exec-Wait-Zombie-Orphan.md)), not killed.
 
 ## 8. Common Misconceptions
 
@@ -180,10 +180,10 @@ _What the interviewer is probing for:_ End-to-end ownership of signal handling a
 - A process's disposition toward any catchable signal is one of three things: default action, explicitly ignored, or a custom handler — "no code written" still means the default action applies, not immunity.
 - `kill`/`pkill`/`killall` all send signals (`SIGTERM` by default, `-9` for `SIGKILL`); `kill -l` lists every signal name/number; `pkill`/`killall` target by name/pattern instead of requiring a PID lookup first.
 - The graceful-shutdown pattern — `SIGTERM`, bounded wait, escalate to `SIGKILL` — is the same pattern systemd and Docker/Kubernetes use internally to stop services and containers, just with the grace period exposed as a configuration knob.
-- `kill -9` "not working" almost always means the target process is stuck in uninterruptible D-state (§33) waiting on a kernel-level I/O operation, not that the signal failed to deliver — diagnose via `ps`'s `STAT` column and fix the underlying I/O stall, not the kill command.
+- `kill -9` "not working" almost always means the target process is stuck in uninterruptible D-state ([§33](./Section-33-Part5-What-A-Process-Is.md)) waiting on a kernel-level I/O operation, not that the signal failed to deliver — diagnose via `ps`'s `STAT` column and fix the underlying I/O stall, not the kill command.
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §35's process lifecycle — a process can be interrupted by a signal at essentially any point along that lifecycle, and signals are the actual mechanism behind much of what looked like "the process just stopped" in §33 and §35's coverage of process states. It also connects back to §13's PID 1 coverage: systemd's role in propagating shutdown signals to every managed service during a system halt or reboot is this section's graceful-shutdown pattern (6) applied at the whole-system level. §37 (next) covers foreground/background job control, where Ctrl+C and Ctrl+Z are shown to be nothing more than the terminal driver translating keystrokes into exactly the signals covered here (`SIGINT`, `SIGTSTP`). Part 9's systemd deep dive (§65–§72) revisits `SIGTERM`-then-`SIGKILL` escalation as `TimeoutStopSec` and related unit-file settings, and Part 13's containers coverage applies the same pattern again at the Docker/Kubernetes layer.
+This section builds directly on [§35](./Section-35-Part5-Process-Lifecycle-Fork-Exec-Wait-Zombie-Orphan.md)'s process lifecycle — a process can be interrupted by a signal at essentially any point along that lifecycle, and signals are the actual mechanism behind much of what looked like "the process just stopped" in [§33](./Section-33-Part5-What-A-Process-Is.md) and [§35](./Section-35-Part5-Process-Lifecycle-Fork-Exec-Wait-Zombie-Orphan.md)'s coverage of process states. It also connects back to [§13](../Part2/Section-13-Part2-Init-Systems.md)'s PID 1 coverage: systemd's role in propagating shutdown signals to every managed service during a system halt or reboot is this section's graceful-shutdown pattern (6) applied at the whole-system level. [§37](./Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md) (next) covers foreground/background job control, where Ctrl+C and Ctrl+Z are shown to be nothing more than the terminal driver translating keystrokes into exactly the signals covered here (`SIGINT`, `SIGTSTP`). Part 9's systemd deep dive ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) revisits `SIGTERM`-then-`SIGKILL` escalation as `TimeoutStopSec` and related unit-file settings, and Part 13's containers coverage applies the same pattern again at the Docker/Kubernetes layer.
 
-**Next Section:** §37 — `Section-37-Part5-Foreground-Background-Jobs.md`
+**Next Section:** [§37](./Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md) — `Section-37-Part5-Foreground-Background-Jobs.md`

@@ -154,4 +154,4 @@ Created [https://www.googleapis.com/compute/v1/projects/my-project/regions/us-ce
 
 ## 12. Related Concepts
 
-VPC fundamentals and routing (Sections 19–20) that Cloud NAT and Interconnect/VPN attach to, firewall rules governing what traffic is permitted regardless of path (Section 21), Cloud DNS forwarding that rides over these hybrid links (Section 23), and hybrid/multi-cloud networking patterns that compose these building blocks end-to-end (Section 26).
+VPC fundamentals and routing (Sections 19–20) that Cloud NAT and Interconnect/VPN attach to, firewall rules governing what traffic is permitted regardless of path ([Section 21](./Section-21-Part3-Firewall-Rules.md)), Cloud DNS forwarding that rides over these hybrid links ([Section 23](./Section-23-Part3-Cloud-DNS.md)), and hybrid/multi-cloud networking patterns that compose these building blocks end-to-end ([Section 26](./Section-26-Part3-Hybrid-Multi-Cloud-Networking.md)).

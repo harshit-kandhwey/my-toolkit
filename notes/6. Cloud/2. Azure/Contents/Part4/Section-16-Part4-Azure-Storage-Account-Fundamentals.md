@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Applications need durable, scalable places to store many different shapes of data: unstructured files (images, videos, backups, logs), simple asynchronous messages between application components, lightweight structured/semi-structured data not requiring a full relational database, and traditional network file shares for legacy application compatibility. Building and operating this kind of storage infrastructure yourself — ensuring durability, availability, redundancy across failures, and scaling to handle large data volumes — is exactly the kind of undifferentiated operational burden cloud storage services exist to remove (echoing the general cloud value proposition from Section 1.2), letting applications simply call an API to durably store or retrieve data without managing any underlying storage hardware, replication logic, or capacity planning themselves.
+Applications need durable, scalable places to store many different shapes of data: unstructured files (images, videos, backups, logs), simple asynchronous messages between application components, lightweight structured/semi-structured data not requiring a full relational database, and traditional network file shares for legacy application compatibility. Building and operating this kind of storage infrastructure yourself — ensuring durability, availability, redundancy across failures, and scaling to handle large data volumes — is exactly the kind of undifferentiated operational burden cloud storage services exist to remove (echoing the general cloud value proposition from [Section 1](../Part1/Section-01-Part1-What-is-Azure-History-Evolution.md).2), letting applications simply call an API to durably store or retrieve data without managing any underlying storage hardware, replication logic, or capacity planning themselves.
 
 ## 3. Core Concepts
 
@@ -18,19 +18,19 @@ Every Storage Account has a globally unique name (unique across all of Azure, no
 
 ### 3.2 The Four Core Storage Services
 
-| Service           | Data Shape                                         | Primary Use Case                                                                                                                                                                  | Detailed Coverage                                                                                                             |
-| ----------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Blob Storage**  | Unstructured binary/object data (files)            | Images, videos, backups, logs, static website content, data lake storage                                                                                                          | Section 17                                                                                                                    |
-| **Queue Storage** | Simple text/JSON messages in a FIFO-ish queue      | Lightweight asynchronous messaging between application components                                                                                                                 | Referenced further in Part 8 alongside Service Bus                                                                            |
-| **Table Storage** | Simple key-value/NoSQL structured data             | Lightweight structured data not requiring a full database; largely superseded by Cosmos DB's Table API for new designs, though classic Table Storage remains available and in use | Not separately detailed in this roadmap beyond this section — see Section 30 (Cosmos DB) for the modern equivalent capability |
-| **Azure Files**   | Traditional network file shares (SMB/NFS protocol) | Lift-and-shift scenarios needing a traditional file share, shared configuration files across VMs                                                                                  | Section 19                                                                                                                    |
+| Service           | Data Shape                                         | Primary Use Case                                                                                                                                                                  | Detailed Coverage                                                                                                                                                       |
+| ----------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Blob Storage**  | Unstructured binary/object data (files)            | Images, videos, backups, logs, static website content, data lake storage                                                                                                          | [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md)                                                                                                              |
+| **Queue Storage** | Simple text/JSON messages in a FIFO-ish queue      | Lightweight asynchronous messaging between application components                                                                                                                 | Referenced further in Part 8 alongside Service Bus                                                                                                                      |
+| **Table Storage** | Simple key-value/NoSQL structured data             | Lightweight structured data not requiring a full database; largely superseded by Cosmos DB's Table API for new designs, though classic Table Storage remains available and in use | Not separately detailed in this roadmap beyond this section — see [Section 30](../Part6/Section-30-Part6-Cosmos-DB.md) (Cosmos DB) for the modern equivalent capability |
+| **Azure Files**   | Traditional network file shares (SMB/NFS protocol) | Lift-and-shift scenarios needing a traditional file share, shared configuration files across VMs                                                                                  | [Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md)                                                                                                           |
 
-⚠️ Table Storage and Azure's broader NoSQL story have evolved significantly — Cosmos DB (Section 30) now offers a Table API providing Table Storage-compatible access with additional capabilities (global distribution, more throughput options); for new designs requiring structured NoSQL storage, current Microsoft guidance should be checked on whether classic Table Storage or Cosmos DB's Table API is the currently recommended starting point.
+⚠️ Table Storage and Azure's broader NoSQL story have evolved significantly — Cosmos DB ([Section 30](../Part6/Section-30-Part6-Cosmos-DB.md)) now offers a Table API providing Table Storage-compatible access with additional capabilities (global distribution, more throughput options); for new designs requiring structured NoSQL storage, current Microsoft guidance should be checked on whether classic Table Storage or Cosmos DB's Table API is the currently recommended starting point.
 
 ### 3.3 Storage Account Performance Tiers
 
 - **Standard** — storage on magnetic/HDD-class underlying hardware (from the customer's perspective, an abstraction — the exact underlying hardware isn't directly exposed), suitable for the large majority of general-purpose storage needs, at lower cost than Premium.
-- **Premium** — storage backed by SSD-class underlying hardware, offering significantly higher throughput and lower, more consistent latency, at higher cost — typically used for Managed Disks requiring high IOPS (Section 18) or Blob workloads with demanding latency requirements.
+- **Premium** — storage backed by SSD-class underlying hardware, offering significantly higher throughput and lower, more consistent latency, at higher cost — typically used for Managed Disks requiring high IOPS ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md)) or Blob workloads with demanding latency requirements.
 
 ### 3.4 Storage Account Kinds
 
@@ -38,7 +38,7 @@ Azure Storage Accounts come in a few "kind" variants (e.g., general-purpose v2, 
 
 ### 3.5 Redundancy — Preview
 
-Every Storage Account has a configured **redundancy** option (LRS, ZRS, GRS, RA-GRS, and others) determining how many copies of data are kept and where — this is significant enough to warrant its own dedicated section (Section 20) and is only introduced here by name; the choice of redundancy directly affects durability guarantees, cost, and disaster-recovery posture.
+Every Storage Account has a configured **redundancy** option (LRS, ZRS, GRS, RA-GRS, and others) determining how many copies of data are kept and where — this is significant enough to warrant its own dedicated section ([Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)) and is only introduced here by name; the choice of redundancy directly affects durability guarantees, cost, and disaster-recovery posture.
 
 ## 4. Architecture Diagram
 
@@ -78,31 +78,31 @@ az storage account create \
   --min-tls-version TLS1_2
 ```
 
-- **Purpose:** Creates a modern general-purpose v2 Storage Account with Standard performance tier and locally-redundant storage (LRS, Section 20), enforcing a minimum TLS version for all connections.
+- **Purpose:** Creates a modern general-purpose v2 Storage Account with Standard performance tier and locally-redundant storage (LRS, [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)), enforcing a minimum TLS version for all connections.
 - **Important arguments explained individually:**
-  - `--sku` — combines performance tier and redundancy option in one value (`Standard_LRS` = Standard performance, Locally Redundant Storage); other combinations (e.g., `Standard_GRS`, `Premium_LRS`) are covered in Section 20.
+  - `--sku` — combines performance tier and redundancy option in one value (`Standard_LRS` = Standard performance, Locally Redundant Storage); other combinations (e.g., `Standard_GRS`, `Premium_LRS`) are covered in [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md).
   - `--kind` — `StorageV2` is the modern general-purpose kind supporting all four core services; verify this remains the current recommended default kind before use.
   - `--min-tls-version` — an explicit security hardening setting ensuring connections using outdated, insecure TLS versions are rejected; this should be set explicitly rather than relying on a platform default, since defaults can be more permissive than an organization's security baseline requires.
 - **Common error:** `StorageAccountAlreadyTaken` — storage account names are globally unique across all of Azure, so a seemingly available name might already be claimed by a different customer entirely; requires choosing a different, more specific name.
 
-**Retrieving access keys (relevant to the security discussion in Section 16.7):**
+**Retrieving access keys (relevant to the security discussion in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).7):**
 
 ```bash
 az storage account keys list --resource-group rg-myapp-prod --account-name stmyappdataprod
 ```
 
 - **Purpose:** Retrieves the account's shared access keys — long-lived credentials granting full access to every service within the Storage Account.
-- ⚠️ As discussed in Section 16.7, these account-level shared keys should generally be avoided in favor of Entra ID-based authentication (via Managed Identities, Section 9) or narrowly-scoped SAS tokens wherever possible, precisely because a leaked account key grants very broad access with no fine-grained scoping.
+- ⚠️ As discussed in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).7, these account-level shared keys should generally be avoided in favor of Entra ID-based authentication (via Managed Identities, [Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) or narrowly-scoped SAS tokens wherever possible, precisely because a leaked account key grants very broad access with no fine-grained scoping.
 
 ## 6. Production & Enterprise Usage
 
-Enterprises typically provision dedicated Storage Accounts per application or workload (rather than sharing one broad account across unrelated applications) both for clearer cost attribution and RBAC scoping (Section 8), and to avoid one workload's usage patterns (e.g., very high transaction volume) affecting another's performance or throttling limits, since certain limits apply at the account level. Enterprise governance commonly enforces baseline security settings (minimum TLS version, disabling public blob access by default, requiring Private Endpoints for sensitive data) via Azure Policy (Section 57) applied consistently across all Storage Accounts in a subscription or management group, rather than relying on each team to configure these settings correctly by hand every time.
+Enterprises typically provision dedicated Storage Accounts per application or workload (rather than sharing one broad account across unrelated applications) both for clearer cost attribution and RBAC scoping ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)), and to avoid one workload's usage patterns (e.g., very high transaction volume) affecting another's performance or throttling limits, since certain limits apply at the account level. Enterprise governance commonly enforces baseline security settings (minimum TLS version, disabling public blob access by default, requiring Private Endpoints for sensitive data) via Azure Policy ([Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md)) applied consistently across all Storage Accounts in a subscription or management group, rather than relying on each team to configure these settings correctly by hand every time.
 
 ## 7. Security Considerations
 
 - **Shared Access Keys** (retrieved via the command above) grant broad, largely unscoped access to everything in the Storage Account and don't expire on their own — leaking one is a serious security incident. Regenerating (rotating) these keys periodically, and preferring more scoped alternatives, is standard practice.
 - **Shared Access Signatures (SAS)** provide time-limited, narrowly-scoped access tokens (e.g., "read-only access to this one specific blob, expiring in one hour") without exposing the full account key — the preferred mechanism when a specific, limited, temporary access grant is needed, such as providing a client application temporary upload/download access to a specific blob.
-- **Entra ID-based (RBAC) access** — the modern recommended approach wherever feasible, allowing access to be granted to specific Managed Identities or users via the same RBAC mechanisms covered in Section 8, rather than relying on shared secrets at all.
+- **Entra ID-based (RBAC) access** — the modern recommended approach wherever feasible, allowing access to be granted to specific Managed Identities or users via the same RBAC mechanisms covered in [Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md), rather than relying on shared secrets at all.
 - **Public network access** should be disabled or restricted (via firewall rules or Private Endpoints, Part 5) for Storage Accounts holding sensitive data, rather than leaving them reachable from any internet address by default.
 
 ## 8. Performance Considerations
@@ -121,7 +121,7 @@ Storage Accounts emit metrics (request counts, latency, capacity used, availabil
 | Application receiving `503`/throttling errors under load | Storage Account-level scalability limits exceeded                                                       | Review current documented limits; consider splitting workload across multiple accounts or moving to Premium tier                                               |
 | Leaked/exposed access key discovered                     | Shared key committed to source control, logged, or otherwise exposed                                    | Immediately regenerate the affected key via `az storage account keys renew`, and migrate to SAS tokens or Entra ID-based access to reduce future exposure risk |
 
-## 11. Interview Questions — Section 16
+## 11. Interview Questions — [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md)
 
 ### 🎯 Beginner
 
@@ -147,10 +147,10 @@ _What the interviewer is probing:_ whether the candidate defaults to the princip
 ## 13. Key Takeaways
 
 - 🔑 A Storage Account is a globally-uniquely-named namespace hosting up to four core services (Blob, Queue, Table, File), with shared account-level configuration for redundancy, networking, and access control.
-- 🔑 Performance tiers (Standard/Premium) and redundancy options (covered fully in Section 20) are configured per Storage Account and significantly affect cost, latency, and durability characteristics.
+- 🔑 Performance tiers (Standard/Premium) and redundancy options (covered fully in [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)) are configured per Storage Account and significantly affect cost, latency, and durability characteristics.
 - 🔑 Access should prefer Entra ID-based RBAC or narrowly-scoped, time-limited SAS tokens over broad, long-lived shared account keys wherever feasible.
 - 🔑 Storage Accounts have documented account-level scalability limits that can necessitate splitting very high-throughput workloads across multiple accounts.
 
 ## 14. Related Concepts (Next Up)
 
-Section 17 goes deep on **Blob Storage** specifically — access tiers (Hot/Cool/Archive), lifecycle management policies, and detailed configuration — the most heavily used of the four core services just introduced, building directly on the Storage Account foundation covered in this section.
+[Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md) goes deep on **Blob Storage** specifically — access tiers (Hot/Cool/Archive), lifecycle management policies, and detailed configuration — the most heavily used of the four core services just introduced, building directly on the Storage Account foundation covered in this section.

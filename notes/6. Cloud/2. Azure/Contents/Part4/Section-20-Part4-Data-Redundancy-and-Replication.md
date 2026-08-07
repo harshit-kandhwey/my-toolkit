@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Storage hardware fails — individual disks fail regularly at scale, entire racks can lose power, data centers can experience broader outages, and in rare cases entire regions can become unavailable. Storing only a single copy of data on a single physical disk would mean any one of these failures could cause permanent data loss. Redundancy options exist to let customers choose, per Storage Account, exactly how much protection against which scale of failure they need — recognizing that not all data warrants the same (and increasingly costly) level of protection, and connecting directly back to the physical infrastructure concepts (data centers, Availability Zones, Region Pairs) introduced in Section 3.
+Storage hardware fails — individual disks fail regularly at scale, entire racks can lose power, data centers can experience broader outages, and in rare cases entire regions can become unavailable. Storing only a single copy of data on a single physical disk would mean any one of these failures could cause permanent data loss. Redundancy options exist to let customers choose, per Storage Account, exactly how much protection against which scale of failure they need — recognizing that not all data warrants the same (and increasingly costly) level of protection, and connecting directly back to the physical infrastructure concepts (data centers, Availability Zones, Region Pairs) introduced in [Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).
 
 ## 3. Core Redundancy Options
 
@@ -22,15 +22,15 @@ Storage hardware fails — individual disks fail regularly at scale, entire rack
 
 ### 3.2 ZRS (Zone-Redundant Storage)
 
-**Definition:** ZRS synchronously replicates data across three separate Availability Zones (Section 3.3.2) within the same region.
+**Definition:** ZRS synchronously replicates data across three separate Availability Zones ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2) within the same region.
 
 **Protection level:** Protects against the loss of an entire data center/Availability Zone, since replicas are physically separated. Does **not** protect against the loss of an entire region (all zones within that region failing or becoming unavailable simultaneously — a far rarer event, but not impossible).
 
-**When to use it:** Appropriate for data requiring higher durability and availability than LRS provides, in regions that support Availability Zones (verify zone support for the target region per Section 3.3.2), without the added cost and complexity of cross-region replication.
+**When to use it:** Appropriate for data requiring higher durability and availability than LRS provides, in regions that support Availability Zones (verify zone support for the target region per [Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2), without the added cost and complexity of cross-region replication.
 
 ### 3.3 GRS (Geo-Redundant Storage)
 
-**Definition:** GRS combines LRS (three synchronous copies in the primary region) with **asynchronous** replication of that data to a second, geographically distant paired region (Section 3.3.3), where it is also stored as three LRS copies.
+**Definition:** GRS combines LRS (three synchronous copies in the primary region) with **asynchronous** replication of that data to a second, geographically distant paired region ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.3), where it is also stored as three LRS copies.
 
 **Protection level:** Protects against the loss of the entire primary region. Because replication to the secondary region is **asynchronous**, there is a replication lag — recent writes to the primary region may not yet be reflected in the secondary region at the moment of a primary-region failure, meaning some very recent data could be lost in a true regional-disaster failover scenario (this potential data loss window is quantified by the **Recovery Point Objective**, a concept covered fully in Part 12's disaster recovery discussion).
 
@@ -40,7 +40,7 @@ Storage hardware fails — individual disks fail regularly at scale, entire rack
 
 **Definition:** RA-GRS extends GRS by additionally allowing **read access** to the secondary region's replicated data, even while the primary region is healthy and operating normally — rather than the secondary copy being purely a passive failover target only accessible after a failover event.
 
-**When to use it:** Appropriate when an application could benefit from reading from the geographically closer or currently-less-loaded region directly (for read-heavy, geographically distributed read scenarios), in addition to the disaster-recovery benefit GRS already provides — though application logic must account for the fact that data read from the secondary region may lag slightly behind the primary due to the same asynchronous replication characteristic described in Section 20.3.3.
+**When to use it:** Appropriate when an application could benefit from reading from the geographically closer or currently-less-loaded region directly (for read-heavy, geographically distributed read scenarios), in addition to the disaster-recovery benefit GRS already provides — though application logic must account for the fact that data read from the secondary region may lag slightly behind the primary due to the same asynchronous replication characteristic described in [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md).3.3.
 
 ### 3.5 Zone-Redundant + Geo-Redundant Combinations (GZRS/RA-GZRS)
 
@@ -91,7 +91,7 @@ az storage account create \
 
 - **Purpose:** Creates a Storage Account with Read-Access Geo-Redundant Storage, appropriate for data requiring both full regional-disaster protection and the ability to read from the secondary region directly.
 - **Important arguments explained individually:**
-  - `--sku` — the `Standard_RAGRS` value combines the Standard performance tier with the RA-GRS redundancy option, following the same combined-value pattern seen in Section 16.5's `Standard_LRS` example.
+  - `--sku` — the `Standard_RAGRS` value combines the Standard performance tier with the RA-GRS redundancy option, following the same combined-value pattern seen in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).5's `Standard_LRS` example.
 
 **Changing redundancy on an existing account (conceptual, not always instantaneous):**
 
@@ -106,11 +106,11 @@ az storage account update \
 
 ## 7. Production & Enterprise Usage
 
-Enterprise redundancy selection is a genuine cost-versus-risk decision made deliberately per workload, not a one-size-fits-all default: transient or easily-regenerable data (build caches, temporary processing artifacts) is commonly kept on LRS to minimize cost; production application data benefiting from zone-level resilience without cross-region complexity uses ZRS; data requiring formal disaster-recovery posture against a full regional outage (per an organization's defined Recovery Point Objective and Recovery Time Objective, Part 12) uses GRS or RA-GRS; and the highest-value, most critical data may warrant GZRS/RA-GZRS despite the added cost, reflecting a considered risk-tolerance decision made as part of the broader HA/DR strategy formalized in Part 12. This redundancy decision is also frequently documented and standardized via Azure Policy (Section 57), enforcing a minimum acceptable redundancy tier for Storage Accounts holding data of a certain sensitivity or criticality classification.
+Enterprise redundancy selection is a genuine cost-versus-risk decision made deliberately per workload, not a one-size-fits-all default: transient or easily-regenerable data (build caches, temporary processing artifacts) is commonly kept on LRS to minimize cost; production application data benefiting from zone-level resilience without cross-region complexity uses ZRS; data requiring formal disaster-recovery posture against a full regional outage (per an organization's defined Recovery Point Objective and Recovery Time Objective, Part 12) uses GRS or RA-GRS; and the highest-value, most critical data may warrant GZRS/RA-GZRS despite the added cost, reflecting a considered risk-tolerance decision made as part of the broader HA/DR strategy formalized in Part 12. This redundancy decision is also frequently documented and standardized via Azure Policy ([Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md)), enforcing a minimum acceptable redundancy tier for Storage Accounts holding data of a certain sensitivity or criticality classification.
 
 ## 8. Security Considerations
 
-Redundancy is a durability/availability control, not a security control in itself — data replicated to a secondary region under GRS/RA-GRS is still subject to the same encryption-at-rest and access-control requirements as the primary copy (Section 16.7, Section 18.3.4), and organizations with strict data-residency requirements (Section 3.6) must verify that a chosen redundancy option's secondary region doesn't violate those requirements — for example, GRS replicating data to a paired region outside a legally-mandated country boundary could itself be a compliance violation if not carefully checked against the specific region pairing involved.
+Redundancy is a durability/availability control, not a security control in itself — data replicated to a secondary region under GRS/RA-GRS is still subject to the same encryption-at-rest and access-control requirements as the primary copy ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).7, [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).3.4), and organizations with strict data-residency requirements ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).6) must verify that a chosen redundancy option's secondary region doesn't violate those requirements — for example, GRS replicating data to a paired region outside a legally-mandated country boundary could itself be a compliance violation if not carefully checked against the specific region pairing involved.
 
 ## 9. Troubleshooting
 
@@ -120,7 +120,7 @@ Redundancy is a durability/availability control, not a security control in itsel
 | Attempted redundancy change (e.g., LRS → ZRS) doesn't complete instantly          | Some redundancy transitions require a longer migration process rather than an immediate configuration change | Verify current supported transition paths and expected migration duration in official documentation before planning the change                                                     |
 | Data-residency compliance concern raised about GRS-replicated data                | Secondary (paired) region may fall outside a legally mandated geographic boundary                            | Verify the specific region pairing; consider ZRS (no cross-region replication) or a specifically compliant redundancy configuration if the pairing violates residency requirements |
 
-## 10. Interview Questions — Section 20
+## 10. Interview Questions — [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)
 
 ### 🎯 Intermediate
 
@@ -152,4 +152,4 @@ _What the interviewer is probing:_ whether the candidate treats redundancy selec
 
 ## 13. Related Concepts / Part 4 Wrap-Up
 
-This completes **Part 4 — Storage**, covering Storage Account fundamentals, Blob Storage, Managed Disks, Azure Files, and redundancy/replication options — the full foundational data-persistence layer referenced throughout Part 3's compute discussion. **Part 5 — Networking** begins next with Section 21, covering Virtual Network (VNet) fundamentals — the networking layer that connects and secures every compute and storage resource covered so far, and which has been referenced repeatedly throughout Parts 3 and 4 (VNet Integration for App Service, private networking for ACI and Storage Accounts) without yet being explained in depth.
+This completes **Part 4 — Storage**, covering Storage Account fundamentals, Blob Storage, Managed Disks, Azure Files, and redundancy/replication options — the full foundational data-persistence layer referenced throughout Part 3's compute discussion. **Part 5 — Networking** begins next with [Section 21](../Part5/Section-21-Part5-Virtual-Network-Fundamentals.md), covering Virtual Network (VNet) fundamentals — the networking layer that connects and secures every compute and storage resource covered so far, and which has been referenced repeatedly throughout Parts 3 and 4 (VNet Integration for App Service, private networking for ACI and Storage Accounts) without yet being explained in depth.

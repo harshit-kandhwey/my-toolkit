@@ -2,7 +2,7 @@
 
 ## 1. The Foundation: Every Command Returns an Exit Code
 
-§43 covered redirection and pipes — wiring file descriptors so data flows between commands and files. This section covers a different kind of wiring: deciding **whether** a command runs at all, based on whether the previous one succeeded or failed. That decision is only possible because every command that finishes on Linux — every single one, without exception — leaves behind a small integer called an **exit code** (also called an exit status or return code).
+[§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md) covered redirection and pipes — wiring file descriptors so data flows between commands and files. This section covers a different kind of wiring: deciding **whether** a command runs at all, based on whether the previous one succeeded or failed. That decision is only possible because every command that finishes on Linux — every single one, without exception — leaves behind a small integer called an **exit code** (also called an exit status or return code).
 
 The convention, universal across the entire ecosystem, is simple:
 
@@ -22,7 +22,7 @@ $ echo $?
 1
 ```
 
-Nothing in this section works without that concept — `&&`, `||`, and even `;` in more subtle ways are all just different policies for what to do with a command's exit code once it's known. **Full depth on exit codes** — conventions across tools, `exit` in scripts, checking `$?` deliberately, propagating a script's own exit code to its caller — is §45's job; this section needs only the concept above to make sense of the operators that follow.
+Nothing in this section works without that concept — `&&`, `||`, and even `;` in more subtle ways are all just different policies for what to do with a command's exit code once it's known. **Full depth on exit codes** — conventions across tools, `exit` in scripts, checking `$?` deliberately, propagating a script's own exit code to its caller — is [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)'s job; this section needs only the concept above to make sense of the operators that follow.
 
 > 💡 **Tip:** "Success" and "failure" here are about the process's own exit code, not about whether it produced output you expected. `grep` that finds zero matches exits `1` — that's success at the mechanical task of searching, encoded as "no match found" by convention, not a crash. Don't conflate "ran without error" with "did what I wanted."
 
@@ -80,7 +80,7 @@ The most common real-world use is a fallback or an error-reporting path — do t
 $ ping -c 1 8.8.8.8 || echo "network appears to be down"
 ```
 
-`||` is also how scripts commonly bail out cleanly on a failed step, using `exit` (§45 covers `exit` and exit-code semantics inside scripts in full) to stop the script rather than letting it barrel forward on a bad foundation:
+`||` is also how scripts commonly bail out cleanly on a failed step, using `exit` ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covers `exit` and exit-code semantics inside scripts in full) to stop the script rather than letting it barrel forward on a bad foundation:
 
 ```bash
 $ cd /some/required/directory || exit 1
@@ -96,7 +96,7 @@ These operators chain together freely, and the combination is where they earn th
 $ mkdir -p dir && cd dir || exit 1
 ```
 
-Read left to right: create the directory (and any missing parents, `-p`); if that succeeded, `cd` into it; if _either_ of those two steps failed, exit the script with status `1`. This single line encodes "do these two things in order, and bail out immediately if anything goes wrong" — a much more compact expression of the same intent as a multi-line `if` block, useful in ad hoc one-liners and short scripts alike (§46 covers the `if`/`else` alternative when the logic gets complex enough to need it).
+Read left to right: create the directory (and any missing parents, `-p`); if that succeeded, `cd` into it; if _either_ of those two steps failed, exit the script with status `1`. This single line encodes "do these two things in order, and bail out immediately if anything goes wrong" — a much more compact expression of the same intent as a multi-line `if` block, useful in ad hoc one-liners and short scripts alike ([§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md) covers the `if`/`else` alternative when the logic gets complex enough to need it).
 
 Another common shape checks a condition and reacts either way:
 
@@ -117,7 +117,7 @@ The one-liner in 5 looks, at a glance, like an if/else: "do X, and if X fails do
 >
 > Here `true` succeeds, so `false` runs (per `&&`) — and `false` fails, so `echo` also runs (per `||`), even though the first command in the chain never failed. Anyone reading this as "if true then false else echo" would wrongly conclude the `echo` branch only fires when `true` fails; it actually fires whenever the chain's last executed command failed, which `false` guaranteed here regardless of what came before it.
 
-The safe, unambiguous way to express genuine if/else logic is the real `if`/`else` construct (§46) once either branch could plausibly fail — reserve `&&`/`||` chaining for cases like §5's `mkdir -p dir && cd dir || exit 1`, where the fallback (`exit 1`) cannot itself fail in a way that matters.
+The safe, unambiguous way to express genuine if/else logic is the real `if`/`else` construct ([§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md)) once either branch could plausibly fail — reserve `&&`/`||` chaining for cases like [§5](../Part1/Section-05-Part1-Major-Distribution-Families.md)'s `mkdir -p dir && cd dir || exit 1`, where the fallback (`exit 1`) cannot itself fail in a way that matters.
 
 ## 7. Background Execution `&` as a Control Operator
 
@@ -128,7 +128,7 @@ $ long-running-backup.sh &
 [1] 8842
 ```
 
-The shell prints a job number and PID and gives the prompt straight back; the script keeps running detached from the interactive foreground. This is a brief tie-back rather than new depth — §37 (job control: `jobs`, `fg`, `bg`, `nohup`, `disown`) is where managing what happens to backgrounded and detached processes is covered properly. The relevant point for this section is narrower: `&` sits in the same syntactic family as `;`, `&&`, and `||` — all four are ways of telling the shell how one command relates to the next in a single line — even though only `&` changes _timing_ rather than _conditional execution_.
+The shell prints a job number and PID and gives the prompt straight back; the script keeps running detached from the interactive foreground. This is a brief tie-back rather than new depth — [§37](../Part5/Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md) (job control: `jobs`, `fg`, `bg`, `nohup`, `disown`) is where managing what happens to backgrounded and detached processes is covered properly. The relevant point for this section is narrower: `&` sits in the same syntactic family as `;`, `&&`, and `||` — all four are ways of telling the shell how one command relates to the next in a single line — even though only `&` changes _timing_ rather than _conditional execution_.
 
 ## 8. Grouping Commands: `()` Subshell vs. `{}` Current Shell
 
@@ -140,7 +140,7 @@ $ (cd /tmp && touch scratchfile) && echo "done, but still in original directory"
 $ { cd /tmp && touch scratchfile; } && echo "done, and now IN /tmp"
 ```
 
-- **`( ... )`** runs the enclosed commands in a **subshell** — a forked child shell (§34's fork model) with its own copy of the environment. A `cd` inside `()` does not affect the parent shell's working directory; once the subshell exits, the parent is exactly where it started.
+- **`( ... )`** runs the enclosed commands in a **subshell** — a forked child shell ([§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s fork model) with its own copy of the environment. A `cd` inside `()` does not affect the parent shell's working directory; once the subshell exits, the parent is exactly where it started.
 - **`{ ... }`** runs the enclosed commands in the **current shell**, no fork involved — a `cd` inside `{}` genuinely changes the parent shell's working directory. Note the syntactic quirks: `{}` needs a space after `{` and a semicolon (or newline) before the closing `}`, unlike `()`.
 
 Reach for `()` when isolation is the goal (temporarily changing directory or environment variables without affecting the calling shell); reach for `{}` when you specifically need the group's side effects — like a `cd` — to persist.
@@ -167,20 +167,20 @@ _What the interviewer is probing for:_ Recognizing that the safety of this patte
 _What the interviewer is probing for:_ Precise, step-by-step exit-code tracing rather than a hand-wavy "it's not really if/else" answer — this is the section's core gotcha and the interviewer wants to see it actually traced through.
 
 **🎯 Architect:** _"You're reviewing a deploy script full of chained `&&` and `||` one-liners with no `if` blocks at all. What do you look for, and when do you push back on that style?"_
-**Model answer:** I'd trace each chain the way I just did for `true && false || echo done` — for every `||` fallback, I'd ask "can the command immediately to its left fail for a reason other than the condition the author actually cares about?" Anywhere the answer is yes, that's a latent bug: the fallback will fire under conditions the author didn't intend, and worse, it'll usually look correct in casual testing because the common-case failure mode matches the intended one. I'd also check whether any chain silently swallows a real failure — for instance `step1 && step2` with no trailing `|| exit 1`, where a failed `step1` just causes `step2` to be skipped without the script itself reporting failure to its caller (its own exit code might still read `0` depending on what runs last). Chained operators are fine, and often clearer than a bloated if-block, for short, single-condition guards like `cd dir || exit 1` where the fallback truly can't fail in a confusing way. Once a chain has more than two operators or any step whose failure mode is ambiguous, I'd push for an explicit `if`/`else` (§46) precisely because deploy scripts are exactly the place where a silently-wrong fallback is expensive to discover.
+**Model answer:** I'd trace each chain the way I just did for `true && false || echo done` — for every `||` fallback, I'd ask "can the command immediately to its left fail for a reason other than the condition the author actually cares about?" Anywhere the answer is yes, that's a latent bug: the fallback will fire under conditions the author didn't intend, and worse, it'll usually look correct in casual testing because the common-case failure mode matches the intended one. I'd also check whether any chain silently swallows a real failure — for instance `step1 && step2` with no trailing `|| exit 1`, where a failed `step1` just causes `step2` to be skipped without the script itself reporting failure to its caller (its own exit code might still read `0` depending on what runs last). Chained operators are fine, and often clearer than a bloated if-block, for short, single-condition guards like `cd dir || exit 1` where the fallback truly can't fail in a confusing way. Once a chain has more than two operators or any step whose failure mode is ambiguous, I'd push for an explicit `if`/`else` ([§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md)) precisely because deploy scripts are exactly the place where a silently-wrong fallback is expensive to discover.
 _What the interviewer is probing for:_ Applying the precedence gotcha as a real code-review lens, not just as a party-trick example — and judgment about where terse chaining is appropriate versus where it's a liability in production automation.
 
 ## 11. Key Takeaways
 
-- Every command leaves an exit code — `0` for success, non-zero for failure — inspectable via `$?`; this is the mechanism every operator in this section acts on (full depth: §45).
+- Every command leaves an exit code — `0` for success, non-zero for failure — inspectable via `$?`; this is the mechanism every operator in this section acts on (full depth: [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)).
 - `;` sequences commands unconditionally, ignoring exit codes entirely.
 - `&&` runs the next command only if the previous one succeeded (short-circuit AND); `||` runs the next command only if the previous one failed (short-circuit OR).
-- `cmd1 && cmd2 || cmd3` is not a safe if/else — if `cmd2` also fails, `cmd3` runs too, because `||` reacts to the most recently executed command's exit status, not to whether `cmd1` specifically failed. Use `if`/`else` (§46) once either branch can plausibly fail.
-- `&` backgrounds a command and returns the prompt immediately — a control operator about timing rather than conditional execution; full job-control depth is §37.
+- `cmd1 && cmd2 || cmd3` is not a safe if/else — if `cmd2` also fails, `cmd3` runs too, because `||` reacts to the most recently executed command's exit status, not to whether `cmd1` specifically failed. Use `if`/`else` ([§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md)) once either branch can plausibly fail.
+- `&` backgrounds a command and returns the prompt immediately — a control operator about timing rather than conditional execution; full job-control depth is [§37](../Part5/Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md).
 - `()` groups commands in a forked subshell (changes like `cd` don't persist to the parent); `{}` groups commands in the current shell (changes do persist) — pick based on whether isolation or persistence of side effects is the goal.
 
 ## 12. Related Concepts & What's Next
 
-This section builds directly on §43's redirection and pipe mechanics, adding conditional and sequential control on top of the data-flow wiring already covered, and leans on the exit-code concept that §45 (Bash Scripting Fundamentals) develops in full depth — shebangs, script arguments, and deliberate exit-code handling inside scripts. §46 (Control Structures: if/else, case, for, while, until) is the natural next step once chained `&&`/`||` one-liners stop being expressive enough, and it resolves the exact ambiguity flagged in 6 with real, unambiguous branching syntax. **§45 is next**, picking up the exit-code thread this section only introduced at the concept level and turning it into full scripting fluency.
+This section builds directly on [§43](./Section-43-Part6-Redirection-Pipes-Stdin-Stdout-Stderr.md)'s redirection and pipe mechanics, adding conditional and sequential control on top of the data-flow wiring already covered, and leans on the exit-code concept that [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) (Bash Scripting Fundamentals) develops in full depth — shebangs, script arguments, and deliberate exit-code handling inside scripts. [§46](./Section-46-Part6-Control-Structures-If-Case-For-While-Until.md) (Control Structures: if/else, case, for, while, until) is the natural next step once chained `&&`/`||` one-liners stop being expressive enough, and it resolves the exact ambiguity flagged in 6 with real, unambiguous branching syntax. **[§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) is next**, picking up the exit-code thread this section only introduced at the concept level and turning it into full scripting fluency.
 
-**Next Section:** §45 — `Section-45-Part6-Bash-Scripting-Fundamentals.md`
+**Next Section:** [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) — `Section-45-Part6-Bash-Scripting-Fundamentals.md`

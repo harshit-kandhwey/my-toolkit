@@ -4,7 +4,7 @@
 
 **Plain language:** Site Reliability Engineering (SRE) is a way of running production systems that treats reliability itself as a measurable, budgeted feature — not an unlimited, unstated expectation — and applies software-engineering discipline (automation, data-driven decisions, blameless learning) to the job of keeping systems running. Incident response is the practiced, structured process a team follows the moment something breaks: detect it, contain it, fix it, and learn from it without pointing fingers.
 
-**Precise:** **SRE** is a discipline, originated at Google, that defines reliability targets via **Service Level Indicators (SLIs)** — quantitative measurements of a service's behavior — compared against **Service Level Objectives (SLOs)** — target thresholds for those indicators — with the allowable gap between an SLO and 100% forming an **error budget** that governs the trade-off between shipping new changes and investing in reliability work. **Incident response** on GCP combines Cloud Monitoring's alerting (Section 54) with automated first-response actions (often via Eventarc-triggered Workflows, Section 53) and a structured **postmortem** process that treats every significant incident as an input to systemic improvement rather than an event to be closed and forgotten.
+**Precise:** **SRE** is a discipline, originated at Google, that defines reliability targets via **Service Level Indicators (SLIs)** — quantitative measurements of a service's behavior — compared against **Service Level Objectives (SLOs)** — target thresholds for those indicators — with the allowable gap between an SLO and 100% forming an **error budget** that governs the trade-off between shipping new changes and investing in reliability work. **Incident response** on GCP combines Cloud Monitoring's alerting ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) with automated first-response actions (often via Eventarc-triggered Workflows, [Section 53](./Section-53-Part7-Eventarc-Workflows.md)) and a structured **postmortem** process that treats every significant incident as an input to systemic improvement rather than an event to be closed and forgotten.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -15,7 +15,7 @@ Without a formal reliability framework, two failure modes recur constantly in pr
 
 SRE solves the first by making reliability an explicit, negotiated number (the SLO) with a concrete consequence (the error budget) rather than an implicit, all-or-nothing expectation. It solves the second by institutionalizing blameless postmortems as a required output of significant incidents, converting operational pain into a durable backlog of reliability improvements.
 
-> 💡 **Cross-reference:** As introduced in Section 1, SRE is not an abstract industry framework GCP happens to support — it is the methodology Google itself developed internally to run its own planet-scale services (Search, Gmail, YouTube), the same lineage that produced Borg (Kubernetes' ancestor, also covered in Section 1). GCP's own Cloud Monitoring/Logging tooling (Section 54) is built by, and reflects the operational practices of, the same organization that originated the SRE discipline being applied here.
+> 💡 **Cross-reference:** As introduced in [Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md), SRE is not an abstract industry framework GCP happens to support — it is the methodology Google itself developed internally to run its own planet-scale services (Search, Gmail, YouTube), the same lineage that produced Borg (Kubernetes' ancestor, also covered in [Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)). GCP's own Cloud Monitoring/Logging tooling ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) is built by, and reflects the operational practices of, the same organization that originated the SRE discipline being applied here.
 
 ## 3. SLIs, SLOs, and Error Budgets
 
@@ -68,7 +68,7 @@ rollingPeriod: 2419200s
 
 ### 4.1 Detection → Automated First Response
 
-A mature GCP incident-response flow rarely stops at "alert fires, human investigates from a cold start." Alerting policies (Section 54) target a **Pub/Sub** notification channel in addition to a paging channel, letting an **Eventarc trigger** (Section 53) launch a **Workflows** execution that performs automated first-response steps before or in parallel with paging a human:
+A mature GCP incident-response flow rarely stops at "alert fires, human investigates from a cold start." Alerting policies ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) target a **Pub/Sub** notification channel in addition to a paging channel, letting an **Eventarc trigger** ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)) launch a **Workflows** execution that performs automated first-response steps before or in parallel with paging a human:
 
 ```
    Alerting Policy fires (burn-rate breach)
@@ -111,7 +111,7 @@ A **blameless postmortem**, written after any significant incident, documents th
 
 ## 7. Production & Enterprise Usage
 
-- **Error budget policies tied to release gates:** Enterprises commonly wire error-budget status directly into Cloud Deploy's `requireApproval` gates (Section 51) or CI policy, so a service that has exhausted its error budget automatically requires additional sign-off (or blocks non-critical releases outright) rather than relying on someone remembering to check a dashboard before shipping.
+- **Error budget policies tied to release gates:** Enterprises commonly wire error-budget status directly into Cloud Deploy's `requireApproval` gates ([Section 51](./Section-51-Part7-Cloud-Deploy-Continuous-Delivery.md)) or CI policy, so a service that has exhausted its error budget automatically requires additional sign-off (or blocks non-critical releases outright) rather than relying on someone remembering to check a dashboard before shipping.
 - **Runbooks linked directly from alerting policies:** Mature on-call setups attach a runbook URL to each alerting policy's documentation field, so the paged engineer's first action is a known, tested procedure rather than improvised investigation, especially valuable at 3 a.m. for an unfamiliar service.
 - **Postmortem action items tracked as first-class backlog work:** Rather than a postmortem document that's written once and archived, high-performing teams feed action items directly into the same sprint/backlog process as feature work, with leadership visibility into completion rates as a genuine reliability health signal.
 - **Multi-tier severity-based paging:** Large organizations map incident severity directly to escalation policy tiers (e.g., SEV1 pages a cross-functional incident commander rotation immediately; SEV4 creates a ticket reviewed next business day), preventing both under-reaction to real outages and alert fatigue from over-paging minor issues.
@@ -136,51 +136,51 @@ A **blameless postmortem**, written after any significant incident, documents th
 
 Part 7, DevOps & Automation, covered the full path from committing code to running a healthy production service, plus the reliability discipline that governs how teams operate that service:
 
-1. **Cloud Build & CI/CD** (Section 50) — triggers, `cloudbuild.yaml` steps, ephemeral build workers, native IAM-scoped service accounts replacing self-managed CI infrastructure.
-2. **Cloud Deploy** (Section 51) — `DeliveryPipeline`/`Target` promotion model, canary/standard rollout strategies, `requireApproval` gates, and rollback that never depends on rebuilding.
-3. **Terraform on GCP / Deployment Manager** (Section 52) — HCL Google provider fundamentals, GCS-backed remote state, modules, and Deployment Manager as GCP-native but largely legacy.
-4. **Eventarc & Workflows** (Section 53) — unified event routing from ~90+ sources (mostly via Cloud Audit Logs) and serverless, pay-per-step orchestration for HTTP/API-call-centric business logic.
-5. **Cloud Monitoring, Logging, Trace & Profiler** (Section 54) — metrics/dashboards/alerting/uptime checks, the Log Router and sinks, distributed tracing, and continuous code-level profiling.
+1. **Cloud Build & CI/CD** ([Section 50](./Section-50-Part7-Cloud-Build-CICD.md)) — triggers, `cloudbuild.yaml` steps, ephemeral build workers, native IAM-scoped service accounts replacing self-managed CI infrastructure.
+2. **Cloud Deploy** ([Section 51](./Section-51-Part7-Cloud-Deploy-Continuous-Delivery.md)) — `DeliveryPipeline`/`Target` promotion model, canary/standard rollout strategies, `requireApproval` gates, and rollback that never depends on rebuilding.
+3. **Terraform on GCP / Deployment Manager** ([Section 52](./Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)) — HCL Google provider fundamentals, GCS-backed remote state, modules, and Deployment Manager as GCP-native but largely legacy.
+4. **Eventarc & Workflows** ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)) — unified event routing from ~90+ sources (mostly via Cloud Audit Logs) and serverless, pay-per-step orchestration for HTTP/API-call-centric business logic.
+5. **Cloud Monitoring, Logging, Trace & Profiler** ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) — metrics/dashboards/alerting/uptime checks, the Log Router and sinks, distributed tracing, and continuous code-level profiling.
 6. **Incident Response & SRE Practices** (this section) — SLIs/SLOs/error budgets as the data-driven reliability framework, automated first-response via Eventarc/Workflows, and blameless postmortem culture.
 
 ## 11. Part 7 Interview Drill (Sections 50–54)
 
-**Q1 (Section 50):** _Why does a Cloud Build step running "as a service account" matter for security compared to a third-party CI tool with injected cloud credentials?_
+**Q1 ([Section 50](./Section-50-Part7-Cloud-Build-CICD.md)):** _Why does a Cloud Build step running "as a service account" matter for security compared to a third-party CI tool with injected cloud credentials?_
 **A:** Build steps inherit normal IAM permissions from their service account directly, scoped and auditable the same way any other GCP identity is, rather than requiring a separately managed, long-lived credential/secret to be generated and injected into an external tool — reducing both the credential-sprawl surface and the blast radius of a leaked build-tool credential.
 
-**Q2 (Section 51):** _What specific class of production incident does Cloud Deploy's "promote, never rebuild" model eliminate?_
+**Q2 ([Section 51](./Section-51-Part7-Cloud-Deploy-Continuous-Delivery.md)):** _What specific class of production incident does Cloud Deploy's "promote, never rebuild" model eliminate?_
 **A:** The "works in staging, breaks in prod" class of incident caused by a rebuild between environments picking up a different dependency version or base image — since Cloud Deploy promotes the exact validated artifact forward, this entire failure mode is structurally impossible.
 
-**Q3 (Section 52):** _Why is a Terraform state bucket considered one of the highest-value security targets in an IaC setup?_
+**Q3 ([Section 52](./Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)):** _Why is a Terraform state bucket considered one of the highest-value security targets in an IaC setup?_
 **A:** It can contain sensitive resource attribute values in plaintext and is the single source of truth mapping configuration to real infrastructure — both losing it and having it read/tampered with by an unauthorized party are severe, which is why it demands its own tightly scoped IAM and versioning.
 
-**Q4 (Section 53):** _Why must an Eventarc trigger's destination handle duplicate event delivery?_
+**Q4 ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)):** _Why must an Eventarc trigger's destination handle duplicate event delivery?_
 **A:** Eventarc delivers at-least-once, the same guarantee as the underlying Pub/Sub mechanism it's built on for audit-log and custom events, so destinations must be idempotent to avoid double-processing (e.g., double-loading the same file into BigQuery) on occasional redelivery.
 
-**Q5 (Section 54):** _Why are percentile latency metrics generally more useful than averages for catching user-facing slowness?_
+**Q5 ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)):** _Why are percentile latency metrics generally more useful than averages for catching user-facing slowness?_
 **A:** An average can look healthy even with a real subset of slow requests, because a large volume of fast requests mathematically absorbs a smaller number of very slow ones; percentile metrics (p95/p99) surface tail latency that averages hide, and tail latency is often exactly what frustrated users are experiencing.
 
-**Q6 (Section 54 / cross-section):** _How does Cloud Logging's default retention behavior create an audit-readiness risk if left unaddressed?_
+**Q6 ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md) / cross-section):** _How does Cloud Logging's default retention behavior create an audit-readiness risk if left unaddressed?_
 **A:** The default log bucket's retention window is finite; teams that assume logs are retained indefinitely without configuring an explicit sink to BigQuery/Cloud Storage or extending bucket retention can discover, often during an actual audit, that logs needed for a compliance investigation have already aged out and are unrecoverable.
 
 **Q7 (Sections 53 + 54 combined):** _Sketch, end to end, how a Monitoring alert can trigger automated remediation without any standing compute._
 **A:** An alerting policy's notification channel targets Pub/Sub; an Eventarc trigger on that Pub/Sub topic invokes a Workflows execution; the workflow calls relevant GCP API connectors (e.g., querying recent deploys, or directly reverting a risky config change) and can publish a follow-up message summarizing what it did — every component (Monitoring, Pub/Sub, Eventarc, Workflows) is serverless and billed per-use, so the entire detection-to-remediation chain has zero idle-capacity cost.
 
-**Q8 (Section 55):** _Why does a "blameless" postmortem produce more reliable systems over time than a blame-assigning one?_
+**Q8 ([Section 55](./Section-55-Part7-Incident-Response-SRE.md)):** _Why does a "blameless" postmortem produce more reliable systems over time than a blame-assigning one?_
 **A:** A blame-assigning culture discourages engineers from disclosing the full, honest timeline of what happened, out of self-protection, which starves the postmortem of exactly the systemic detail (a missing alert, an untested runbook, an unclear ownership boundary) needed to fix the actual underlying gap; blameless postmortems remove that disincentive, surfacing the process and systemic failures that, once fixed, prevent the same class of incident from recurring.
 
 ## 12. Key Takeaways 🔑
 
-- 🔑 SRE turns reliability into a measured, budgeted trade-off (SLI/SLO/error budget) rather than an implicit, unlimited expectation — directly tracing back to the SRE discipline Google itself originated (Section 1).
+- 🔑 SRE turns reliability into a measured, budgeted trade-off (SLI/SLO/error budget) rather than an implicit, unlimited expectation — directly tracing back to the SRE discipline Google itself originated ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)).
 - 🔑 An SLO is an internal engineering target, distinct from an external, contractual SLA, and is typically set stricter than any SLA to leave a safety margin.
-- 🔑 GCP's Eventarc/Workflows pairing (Section 53) turns Monitoring alerts (Section 54) into automated, context-gathering first responders, not just pages to a human starting cold.
+- 🔑 GCP's Eventarc/Workflows pairing ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)) turns Monitoring alerts ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) into automated, context-gathering first responders, not just pages to a human starting cold.
 - 🔑 Blameless postmortems, with tracked and completed action items, are what convert individual incidents into durable, systemic reliability improvements.
 - 🔑 Error budget exhaustion should map to a pre-agreed policy (slow down releases, prioritize reliability work) decided before a crisis, not negotiated emotionally during one.
 
 ## 13. Related Concepts
 
-Cloud Monitoring alerting and Cloud Logging as the detection and evidence layer (Section 54), Eventarc and Workflows as the automated-response layer (Section 53), Cloud Deploy's promotion/rollback model as a release-risk control feeding error-budget decisions (Section 51), Google's own SRE heritage and Borg lineage (Section 1), and the enterprise architecture and disaster-recovery patterns that Part 8 builds on top of this operational foundation (Section 56 onward).
+Cloud Monitoring alerting and Cloud Logging as the detection and evidence layer ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)), Eventarc and Workflows as the automated-response layer ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)), Cloud Deploy's promotion/rollback model as a release-risk control feeding error-budget decisions ([Section 51](./Section-51-Part7-Cloud-Deploy-Continuous-Delivery.md)), Google's own SRE heritage and Borg lineage ([Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md)), and the enterprise architecture and disaster-recovery patterns that Part 8 builds on top of this operational foundation ([Section 56](../Part8/Section-56-Part8-Enterprise-Architecture-Patterns.md) onward).
 
 ## 14. Transition to Part 8
 
-Part 7 closes the loop from "code committed" to "service running reliably in production," covering the full DevOps and operability toolchain — CI/CD (Sections 50–51), infrastructure as code (Section 52), event-driven automation (Section 53), observability (Section 54), and the SRE discipline governing how teams respond to and learn from failure (this section). **Part 8, Enterprise Architecture, Cost & DR**, builds directly on top of this foundation: Section 56 covers enterprise architecture patterns for combining these operationally mature services into resilient multi-region systems, Section 57 covers cost optimization and FinOps practices for managing spend across everything Parts 1–7 have introduced, and Section 58 covers disaster recovery and multi-region architecture — the natural next step once a service is not just reliably operated day-to-day (Part 7), but also architected to survive a regional-scale failure and stay within budget while doing so.
+Part 7 closes the loop from "code committed" to "service running reliably in production," covering the full DevOps and operability toolchain — CI/CD (Sections 50–51), infrastructure as code ([Section 52](./Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)), event-driven automation ([Section 53](./Section-53-Part7-Eventarc-Workflows.md)), observability ([Section 54](./Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)), and the SRE discipline governing how teams respond to and learn from failure (this section). **Part 8, Enterprise Architecture, Cost & DR**, builds directly on top of this foundation: [Section 56](../Part8/Section-56-Part8-Enterprise-Architecture-Patterns.md) covers enterprise architecture patterns for combining these operationally mature services into resilient multi-region systems, [Section 57](../Part8/Section-57-Part8-Cost-Optimization-FinOps.md) covers cost optimization and FinOps practices for managing spend across everything Parts 1–7 have introduced, and [Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md) covers disaster recovery and multi-region architecture — the natural next step once a service is not just reliably operated day-to-day (Part 7), but also architected to survive a regional-scale failure and stay within budget while doing so.

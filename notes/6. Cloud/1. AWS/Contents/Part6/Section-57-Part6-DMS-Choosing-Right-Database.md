@@ -130,6 +130,6 @@ Senior - Company has all data in one RDS instance (orders, sessions, historical 
 
 ## Related Concepts (forward links)
 
-- Part 6 Wrap-Up and comprehensive Database interview drill -> §58 (final section)
+- Part 6 Wrap-Up and comprehensive Database interview drill -> [§58](./Section-58-Part6-WrapUp-and-Interview-Drill.md) (final section)
 - ETL/ELT pipelines and Kinesis for data movement patterns beyond DMS -> Part 7
 - Migration strategies (the 6 Rs) at the full-application level -> Part 10

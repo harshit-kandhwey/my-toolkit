@@ -123,7 +123,7 @@ projects/my-project/.../orders_curated  orders_curated  TABLE
 ## 7. Production & Enterprise Usage
 
 - **Cross-team data discovery portal:** Large enterprises use Dataplex Catalog as the single, organization-wide search entry point for "does this data already exist," reducing duplicated data collection/ingestion efforts across teams that would otherwise not know about each other's datasets.
-- **Automated data quality gating:** Production pipelines commonly wire a Dataplex data quality check as a required, blocking step (often via a Cloud Composer task, Section 46) before promoting data from a raw zone to a curated zone, ensuring bad data can't silently propagate downstream to dashboards or ML training sets.
+- **Automated data quality gating:** Production pipelines commonly wire a Dataplex data quality check as a required, blocking step (often via a Cloud Composer task, [Section 46](./Section-46-Part6-Cloud-Composer-Workflow-Orchestration.md)) before promoting data from a raw zone to a curated zone, ensuring bad data can't silently propagate downstream to dashboards or ML training sets.
 - **Compliance-driven lineage audits:** Regulated industries (finance, healthcare) use Dataplex lineage to answer regulator or auditor questions about exactly which source systems and transformations fed into a specific reported figure, satisfying traceability requirements that manual documentation struggles to keep reliably up to date.
 
 ## 8. Common Misconceptions
@@ -151,4 +151,4 @@ projects/my-project/.../orders_curated  orders_curated  TABLE
 
 ## 11. Related Concepts
 
-BigQuery and Cloud Storage as the primary governed data stores (Section 44, Part 2 Section 11), Dataflow/Dataproc/Composer jobs as the lineage-tracked transformation steps (Sections 45–46), and IAM/Org Policy governance layers that Dataplex complements at the metadata level (Part 5).
+BigQuery and Cloud Storage as the primary governed data stores ([Section 44](./Section-44-Part6-BigQuery-Deep-Dive.md), [Section 11](../Part2/Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)), Dataflow/Dataproc/Composer jobs as the lineage-tracked transformation steps (Sections 45–46), and IAM/Org Policy governance layers that Dataplex complements at the metadata level (Part 5).

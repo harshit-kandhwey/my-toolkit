@@ -2,7 +2,7 @@
 
 ## 1. The Three Standard File Descriptors
 
-Every process on Linux starts life with three file descriptors already open, before it has done anything itself to open a single file. §40 introduced file descriptors in passing while explaining anonymous pipes; this section starts by naming the three that exist for every process, unconditionally:
+Every process on Linux starts life with three file descriptors already open, before it has done anything itself to open a single file. [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) introduced file descriptors in passing while explaining anonymous pipes; this section starts by naming the three that exist for every process, unconditionally:
 
 | FD  | Name                     | Default destination           |
 | --- | ------------------------ | ----------------------------- |
@@ -41,7 +41,7 @@ first line
 second line
 ```
 
-> ⚠️ **Warning:** `>` truncates the moment the shell opens the destination file — before the command that's supposedly generating the new content has even run. This means `sort out.txt > out.txt` is a real, common trap: the shell opens `out.txt` for writing (truncating it to empty) as part of setting up redirection, and only then execs `sort`, which now reads an already-empty file. The fix is never to redirect a command's output back into one of its own input files directly — write to a temporary file and `mv` it into place, or use a tool built for in-place editing (`sed -i`, covered in §48).
+> ⚠️ **Warning:** `>` truncates the moment the shell opens the destination file — before the command that's supposedly generating the new content has even run. This means `sort out.txt > out.txt` is a real, common trap: the shell opens `out.txt` for writing (truncating it to empty) as part of setting up redirection, and only then execs `sort`, which now reads an already-empty file. The fix is never to redirect a command's output back into one of its own input files directly — write to a temporary file and `mv` it into place, or use a tool built for in-place editing (`sed -i`, covered in [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)).
 
 ## 3. Input Redirection: `<`
 
@@ -56,18 +56,18 @@ Note the subtle difference between `wc -l < access.log` and `wc -l access.log`: 
 
 ## 4. The Pipe (`|`): Connecting Stdout to Stdin
 
-§40 introduced the pipe at the kernel level: a `|` between two commands creates an in-memory kernel buffer and wires the left-hand command's stdout (fd 1) to the right-hand command's stdin (fd 0), so bytes flow from one process to the other without ever touching disk. This section is the hands-on shell-level companion to that conceptual coverage — the same kernel object, now used deliberately as a daily tool.
+[§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) introduced the pipe at the kernel level: a `|` between two commands creates an in-memory kernel buffer and wires the left-hand command's stdout (fd 1) to the right-hand command's stdin (fd 0), so bytes flow from one process to the other without ever touching disk. This section is the hands-on shell-level companion to that conceptual coverage — the same kernel object, now used deliberately as a daily tool.
 
 ```bash
 $ ps aux | grep nginx | wc -l
 3
 ```
 
-Each `|` creates one pipe and starts both processes **concurrently** — `ps aux` doesn't have to finish before `grep` starts consuming its output; the two run side by side, throttled against each other by the pipe's buffer exactly as §40 described. A three-stage pipeline like the one above is really two pipes and three processes, all running at once, not a sequential batch of three separate steps.
+Each `|` creates one pipe and starts both processes **concurrently** — `ps aux` doesn't have to finish before `grep` starts consuming its output; the two run side by side, throttled against each other by the pipe's buffer exactly as [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) described. A three-stage pipeline like the one above is really two pipes and three processes, all running at once, not a sequential batch of three separate steps.
 
 **What flows through a pipe is only stdout, by default** — a command's stderr is _not_ connected to the next command's stdin unless explicitly redirected there (6 covers exactly this). This is why an error message from the first command in a pipeline still shows up on the terminal even while its normal output is being piped elsewhere — stdout went into the pipe, stderr stayed pointed at the terminal.
 
-> 💡 **Tip:** A pipeline's exit status, by default, is the exit status of its _last_ command — an error from an earlier stage in the pipeline is easy to miss silently (`grep nonexistent-pattern | wc -l` exits 0, from `wc`, even though `grep` "failed" to find a match). §44 covers control operators and exit-status chaining in depth; `bash`'s `set -o pipefail` (worth knowing exists now, covered fully later) changes this default so the pipeline's exit status reflects any failing stage, not just the last one.
+> 💡 **Tip:** A pipeline's exit status, by default, is the exit status of its _last_ command — an error from an earlier stage in the pipeline is easy to miss silently (`grep nonexistent-pattern | wc -l` exits 0, from `wc`, even though `grep` "failed" to find a match). [§44](./Section-44-Part6-Command-Chaining-Control-Operators.md) covers control operators and exit-status chaining in depth; `bash`'s `set -o pipefail` (worth knowing exists now, covered fully later) changes this default so the pipeline's exit status reflects any failing stage, not just the last one.
 
 ## 5. Redirecting Stderr: `2>` and `2>>`
 
@@ -132,7 +132,7 @@ $ command &> file.log
 $ command &>> file.log
 ```
 
-Because `&>` is a bash-specific extension, scripts intended to run under `/bin/sh` or that need portability across shells should prefer the explicit `> file 2>&1` form — §41 (this Part's shell-overview section) covers which constructs are bash-only versus POSIX-portable in more depth.
+Because `&>` is a bash-specific extension, scripts intended to run under `/bin/sh` or that need portability across shells should prefer the explicit `> file 2>&1` form — [§41](./Section-41-Part6-Shells-Overview-Configuration-Files.md) (this Part's shell-overview section) covers which constructs are bash-only versus POSIX-portable in more depth.
 
 ## 8. Discarding Output: `/dev/null`
 
@@ -142,7 +142,7 @@ Because `&>` is a bash-specific extension, scripts intended to run under `/bin/s
 $ noisy_command > /dev/null 2>&1
 ```
 
-This is common in cron jobs and automation (§37's coverage of scheduling) where a command's routine chatter isn't worth capturing but genuine failures might still need surfacing some other way (an explicit exit-code check, alerting, or redirecting only stderr somewhere meaningful while discarding stdout: `command > /dev/null` alone leaves stderr on the terminal or wherever it was already headed).
+This is common in cron jobs and automation ([§37](../Part5/Section-37-Part5-Foreground-Background-Jobs-Nohup-Disown-Screen-Tmux.md)'s coverage of scheduling) where a command's routine chatter isn't worth capturing but genuine failures might still need surfacing some other way (an explicit exit-code check, alerting, or redirecting only stderr somewhere meaningful while discarding stdout: `command > /dev/null` alone leaves stderr on the terminal or wherever it was already headed).
 
 > 💡 **Tip:** Reading from `/dev/null` is just as useful as writing to it — `command < /dev/null` gives a command an immediately-empty stdin, which is a reliable way to stop an interactive command from hanging while waiting for input it will never receive, particularly inside scripts or `cron` where nothing is attached to provide input at all.
 
@@ -172,7 +172,7 @@ Here the full build output is both logged in full to `build.log` and filtered li
 
 ## 10. Here-Documents and Here-Strings
 
-Two related constructs feed literal text into a command's stdin directly from the script, without a separate file — briefly worth knowing here even though full scripting depth is later (§45 onward).
+Two related constructs feed literal text into a command's stdin directly from the script, without a separate file — briefly worth knowing here even though full scripting depth is later ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) onward).
 
 A **here-document** (`<<`) feeds a multi-line block of text as stdin, terminated by a chosen delimiter word on its own line:
 
@@ -218,14 +218,14 @@ _What the interviewer is probing for:_ Real understanding of the left-to-right e
 _What the interviewer is probing for:_ Awareness that pipe exit-status semantics are a real production gotcha, not just how `|` moves bytes — and knowing the concrete fix (`pipefail`) rather than a vague "check for errors."
 
 **🎯 Architect:** _"You're writing a script that runs a noisy third-party tool in production automation. How do you handle its output so nothing important is lost, but logs stay usable?"_
-**Model answer:** I wouldn't blanket-discard everything to `/dev/null`, because that throws away exactly the diagnostic signal I'd need during an incident — but I also wouldn't let unfiltered noisy stdout pollute the operational log at full volume. I'd typically separate the streams deliberately: redirect stdout to a rotated log file for a full record (`> tool.log`), let stderr go to a separate error-specific log or straight to whatever the automation platform already captures as failure signal, and if I need to both watch progress live and retain a full transcript I'd use `tee` rather than choosing one or the other. If the tool's stdin needs to be non-interactive (common in cron or CI, §39), I'd explicitly redirect it from `/dev/null` so it can never hang waiting on input nobody's going to provide. And critically, I'd get the `2>&1` ordering right up front and verify it once by deliberately triggering both a success and a failure path in a non-production run — this is exactly the class of mistake (6) that looks correct on a quick read and only reveals itself when an actual error occurs and isn't where the runbook expects it to be.
+**Model answer:** I wouldn't blanket-discard everything to `/dev/null`, because that throws away exactly the diagnostic signal I'd need during an incident — but I also wouldn't let unfiltered noisy stdout pollute the operational log at full volume. I'd typically separate the streams deliberately: redirect stdout to a rotated log file for a full record (`> tool.log`), let stderr go to a separate error-specific log or straight to whatever the automation platform already captures as failure signal, and if I need to both watch progress live and retain a full transcript I'd use `tee` rather than choosing one or the other. If the tool's stdin needs to be non-interactive (common in cron or CI, [§39](../Part5/Section-39-Part5-Scheduling-Tasks-Cron-At-Systemd-Timers.md)), I'd explicitly redirect it from `/dev/null` so it can never hang waiting on input nobody's going to provide. And critically, I'd get the `2>&1` ordering right up front and verify it once by deliberately triggering both a success and a failure path in a non-production run — this is exactly the class of mistake (6) that looks correct on a quick read and only reveals itself when an actual error occurs and isn't where the runbook expects it to be.
 _What the interviewer is probing for:_ Production-mindedness around log usefulness versus noise, correct handling of the ordering gotcha under real stakes, and treating stdin/stdout/stderr as three independently-designed decisions rather than one blanket "redirect everything" choice.
 
 ## 13. Key Takeaways
 
 - Stdin (0), stdout (1), and stderr (2) are ordinary numbered file descriptors, open by default and pointed at the terminal — nothing about them is special beyond that convention, and any of the three can be redirected independently.
 - `>` overwrites, `>>` appends — for both stdout and, with the `2>`/`2>>` prefix, stderr; redirecting a command's output back into one of its own input files is a truncation trap to actively avoid.
-- `|` connects one process's stdout directly to the next's stdin via the same in-memory kernel pipe object §40 introduced conceptually — only stdout flows through by default, stderr does not, and both processes run concurrently rather than sequentially.
+- `|` connects one process's stdout directly to the next's stdin via the same in-memory kernel pipe object [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) introduced conceptually — only stdout flows through by default, stderr does not, and both processes run concurrently rather than sequentially.
 - `2>&1` copies fd 1's _current_ target onto fd 2 at the moment it's evaluated — a snapshot, not a persistent link — which is why redirection order (`> file 2>&1` vs. `2>&1 > file`) produces genuinely different results, a routinely misunderstood gotcha worth verifying deliberately rather than assuming.
 - `&>`/`&>>` are bash-specific shorthand for combining stdout and stderr in one step; prefer the explicit `> file 2>&1` form for POSIX-portable scripts.
 - `/dev/null` discards writes and yields immediate EOF on reads — useful both for silencing unwanted output and for giving a command a definite empty stdin so it can't hang waiting for input.
@@ -234,6 +234,6 @@ _What the interviewer is probing for:_ Production-mindedness around log usefulne
 
 ## 14. Related Concepts & What's Next
 
-This section is the hands-on shell-level continuation of §40's kernel-level pipe explanation (Part 5), and builds directly on §42's variable/expansion coverage — redirection targets and here-document/here-string content are frequently expanded values, not just literal filenames. §44 (next) covers command chaining and control operators (`&&`, `||`, `;`) — how multiple commands combine based on success/failure, a related but distinct question from how their input/output streams connect. §48's text-processing tools (`grep`, `sed`, `awk`) are, in practice, the most common things sitting on the receiving end of a pipe or redirected input built with the mechanics covered here.
+This section is the hands-on shell-level continuation of [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md)'s kernel-level pipe explanation (Part 5), and builds directly on [§42](./Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion-Command-Substitution.md)'s variable/expansion coverage — redirection targets and here-document/here-string content are frequently expanded values, not just literal filenames. [§44](./Section-44-Part6-Command-Chaining-Control-Operators.md) (next) covers command chaining and control operators (`&&`, `||`, `;`) — how multiple commands combine based on success/failure, a related but distinct question from how their input/output streams connect. [§48](./Section-48-Part6-Text-Processing-Tools-Grep-Sed-Awk.md)'s text-processing tools (`grep`, `sed`, `awk`) are, in practice, the most common things sitting on the receiving end of a pipe or redirected input built with the mechanics covered here.
 
-**Next Section:** §44 — `Section-44-Part6-Command-Chaining-Control-Operators.md`
+**Next Section:** [§44](./Section-44-Part6-Command-Chaining-Control-Operators.md) — `Section-44-Part6-Command-Chaining-Control-Operators.md`

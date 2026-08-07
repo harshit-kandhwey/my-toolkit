@@ -8,14 +8,14 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-§69-70 covered how metrics and logs are collected and queried — but collection and query capability alone is passive: someone has to actively look. For any system running continuously, especially outside business hours, passive observability isn't enough — you need something that actively watches on your behalf and reacts the moment a defined condition is met, whether that's paging an on-call engineer or automatically scaling out more capacity.
+[§69](./Section-69-Part8-CloudWatch-Fundamentals.md)-[§70](./Section-70-Part8-CloudWatch-Logs.md) covered how metrics and logs are collected and queried — but collection and query capability alone is passive: someone has to actively look. For any system running continuously, especially outside business hours, passive observability isn't enough — you need something that actively watches on your behalf and reacts the moment a defined condition is met, whether that's paging an on-call engineer or automatically scaling out more capacity.
 
-Alarms solve the "someone has to notice" problem by making metric-threshold monitoring itself an active, continuously-evaluated, stateful process integrated with notification (SNS, §61) and automated-action systems (Auto Scaling, Lambda remediation). Dashboards solve the "where do I look first during an incident" problem by providing a pre-built, curated visual summary rather than requiring someone to know which of potentially hundreds of available metrics matter most in a crisis.
+Alarms solve the "someone has to notice" problem by making metric-threshold monitoring itself an active, continuously-evaluated, stateful process integrated with notification (SNS, [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)) and automated-action systems (Auto Scaling, Lambda remediation). Dashboards solve the "where do I look first during an incident" problem by providing a pre-built, curated visual summary rather than requiring someone to know which of potentially hundreds of available metrics matter most in a crisis.
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudWatch Fundamentals** (§69) and **CloudWatch Logs** (§70): alarms watch metrics (including log-derived metric-filter metrics) directly.
-- **SNS** (§61): the most common alarm notification mechanism — CloudWatch Alarms → SNS → email/SMS/Lambda/PagerDuty integration is the standard AWS-native alerting pipeline referenced throughout Part 7.
+- **CloudWatch Fundamentals** ([§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) and **CloudWatch Logs** ([§70](./Section-70-Part8-CloudWatch-Logs.md)): alarms watch metrics (including log-derived metric-filter metrics) directly.
+- **SNS** ([§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)): the most common alarm notification mechanism — CloudWatch Alarms → SNS → email/SMS/Lambda/PagerDuty integration is the standard AWS-native alerting pipeline referenced throughout Part 7.
 
 ## 4. Internal Working
 
@@ -23,7 +23,7 @@ Alarms solve the "someone has to notice" problem by making metric-threshold moni
 - The alarm's **state** is one of `OK` (condition not met), `ALARM` (condition met), or `INSUFFICIENT_DATA` (not enough data points yet to evaluate, e.g., for a brand-new metric or one that reports infrequently) — and actions are configured to fire specifically on **state transitions** (e.g., OK→ALARM), not on every evaluation, avoiding repeated re-notification for a condition that's already been alerted on.
 - **Composite alarms** combine multiple existing alarms using AND/OR/NOT logic into a single higher-level alarm — useful for reducing alert noise by requiring multiple underlying conditions to align before triggering a single, more meaningful notification (e.g., "only page if both error rate AND latency are elevated simultaneously, since either alone might be noise").
 - **Anomaly detection alarms** use a statistical model (rather than a fixed static threshold) that learns a metric's normal expected range based on historical patterns (including daily/weekly seasonality) and alarms when the metric deviates significantly from that learned band — useful for metrics with naturally variable, cyclical normal behavior (e.g., traffic that's naturally higher on weekday afternoons) where a single fixed threshold would either be too sensitive at low-traffic times or too insensitive at high-traffic times.
-- A **"dead man's switch"** pattern (referenced in §69) uses an alarm evaluating `TreatMissingData` behavior specifically — configuring the alarm to treat missing data points as breaching (rather than the default of ignoring/maintaining prior state) so that a metric that simply stops reporting (e.g., a heartbeat metric from a critical background process) triggers an alarm, not silence.
+- A **"dead man's switch"** pattern (referenced in [§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) uses an alarm evaluating `TreatMissingData` behavior specifically — configuring the alarm to treat missing data points as breaching (rather than the default of ignoring/maintaining prior state) so that a metric that simply stops reporting (e.g., a heartbeat metric from a critical background process) triggers an alarm, not silence.
 
 ```
 Metric Data --> Alarm Evaluation (period x evaluation count vs. threshold)
@@ -97,10 +97,10 @@ Metric Data --> Alarm Evaluation (period x evaluation count vs. threshold)
     --treat-missing-data notBreaching
   ```
   **Expected output:** (empty on success)
-- **Important arguments:** `--evaluation-periods 2` combined with `--period 300` means the alarm requires the condition to hold for 2 consecutive 5-minute windows (10 minutes total) before transitioning to ALARM — a deliberate noise-reduction choice, directly implementing the §59 recommendation to alarm on `ApproximateAgeOfOldestMessage`.
+- **Important arguments:** `--evaluation-periods 2` combined with `--period 300` means the alarm requires the condition to hold for 2 consecutive 5-minute windows (10 minutes total) before transitioning to ALARM — a deliberate noise-reduction choice, directly implementing the [§59](../Part7/Section-59-Part7-SQS-Fundamentals.md) recommendation to alarm on `ApproximateAgeOfOldestMessage`.
 - **Production usage:** almost universally defined via CloudFormation/Terraform alongside the resource being monitored, so alarm coverage is versioned and reviewable, and new resources don't silently ship without corresponding alarms.
 - **Common errors:** referencing a metric namespace/name/dimension combination that doesn't actually exist yet (e.g., alarming on a custom metric before the application has ever published it) results in the alarm sitting in `INSUFFICIENT_DATA` indefinitely, not an error — a common source of "why isn't this alarm working" confusion.
-- **Security impact:** requires `cloudwatch:PutMetricAlarm`; the SNS topic ARN referenced must itself permit CloudWatch to publish to it (an SNS topic policy consideration, cross-reference §61).
+- **Security impact:** requires `cloudwatch:PutMetricAlarm`; the SNS topic ARN referenced must itself permit CloudWatch to publish to it (an SNS topic policy consideration, cross-reference [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)).
 
 ### `aws cloudwatch put-composite-alarm`
 
@@ -189,7 +189,7 @@ This demonstrates the metric-math-expression alarm pattern (computing an error _
 
 ## 11. Security Considerations
 
-- Alarm actions publishing to SNS topics need the SNS topic policy to actually permit CloudWatch to publish (cross-reference §61) — a common configuration gap resulting in silently non-functional alarms.
+- Alarm actions publishing to SNS topics need the SNS topic policy to actually permit CloudWatch to publish (cross-reference [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)) — a common configuration gap resulting in silently non-functional alarms.
 - Dashboards can inadvertently surface sensitive business metrics (revenue, user counts, error details) to anyone with viewer access — dashboard sharing/access should be scoped deliberately in sensitive environments.
 
 ## 12. Performance Considerations
@@ -204,12 +204,12 @@ This demonstrates the metric-math-expression alarm pattern (computing an error _
 
 ## 14. Troubleshooting
 
-| Symptom                                                         | Likely Root Cause                                                                                                               | Fix                                                                                                        |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Alarm never leaves `INSUFFICIENT_DATA`                          | Metric isn't actually being published (wrong namespace/dimensions, or the source genuinely never emits it)                      | Verify with `list-metrics` (§69) that the metric exists as expected                                        |
-| Alarm transitions to ALARM but no notification received         | SNS topic policy doesn't permit CloudWatch to publish, or the subscriber (email/SQS) itself isn't properly confirmed/configured | Verify the SNS topic policy and subscription status (cross-reference §61 troubleshooting)                  |
-| Alarm fires on every minor, transient blip                      | Evaluation periods set too sensitively (e.g., "1 out of 1")                                                                     | Increase the number of evaluation periods required, or the period length, per the intended noise tolerance |
-| Composite alarm never triggers despite underlying alarms firing | Alarm rule expression syntax error, or referencing a misspelled/nonexistent underlying alarm name                               | Verify the alarm-rule expression's alarm names exactly match existing alarms                               |
+| Symptom                                                         | Likely Root Cause                                                                                                               | Fix                                                                                                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alarm never leaves `INSUFFICIENT_DATA`                          | Metric isn't actually being published (wrong namespace/dimensions, or the source genuinely never emits it)                      | Verify with `list-metrics` ([§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) that the metric exists as expected                           |
+| Alarm transitions to ALARM but no notification received         | SNS topic policy doesn't permit CloudWatch to publish, or the subscriber (email/SQS) itself isn't properly confirmed/configured | Verify the SNS topic policy and subscription status (cross-reference [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md) troubleshooting) |
+| Alarm fires on every minor, transient blip                      | Evaluation periods set too sensitively (e.g., "1 out of 1")                                                                     | Increase the number of evaluation periods required, or the period length, per the intended noise tolerance                                     |
+| Composite alarm never triggers despite underlying alarms firing | Alarm rule expression syntax error, or referencing a misspelled/nonexistent underlying alarm name                               | Verify the alarm-rule expression's alarm names exactly match existing alarms                                                                   |
 
 ## 15. Best Practices
 
@@ -255,7 +255,7 @@ This demonstrates the metric-math-expression alarm pattern (computing an error _
 
 ## 20. Related Concepts
 
-- **CloudWatch Fundamentals / Logs** (what alarms watch) → §69-70.
-- **SNS** (the standard alarm notification mechanism) → §61.
-- **X-Ray** (for tracing _why_ a specific request was slow/erroring, complementing alarms' _that something is wrong_ signal) → next section, §72.
+- **CloudWatch Fundamentals / Logs** (what alarms watch) → [§69](./Section-69-Part8-CloudWatch-Fundamentals.md)-[§70](./Section-70-Part8-CloudWatch-Logs.md).
+- **SNS** (the standard alarm notification mechanism) → [§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md).
+- **X-Ray** (for tracing _why_ a specific request was slow/erroring, complementing alarms' _that something is wrong_ signal) → next section, [§72](./Section-72-Part8-XRay-Distributed-Tracing.md).
 - **EC2 Auto Scaling** (a non-notification alarm action use case) — referenced here as a forward pointer for anyone extending beyond this roadmap.

@@ -10,7 +10,7 @@
 
 Running Kubernetes yourself means operating the control plane: managing `etcd` (a notoriously operationally delicate distributed datastore), patching and upgrading API servers with zero downtime, securing access to it, and scaling it as cluster size grows — all before you've deployed a single application workload. This operational burden is a major reason organizations historically avoided Kubernetes or hired dedicated platform teams just to run it.
 
-GKE removes this burden entirely for the control plane: Google provisions, patches, secures, backs up, and scales the control plane, and — depending on the cluster mode chosen — even provides an SLA on control-plane uptime. Customers focus on node pools (where their workloads actually run) and, in **Autopilot** mode (Section 32), not even that.
+GKE removes this burden entirely for the control plane: Google provisions, patches, secures, backs up, and scales the control plane, and — depending on the cluster mode chosen — even provides an SLA on control-plane uptime. Customers focus on node pools (where their workloads actually run) and, in **Autopilot** mode ([Section 32](./Section-32-Part4-GKE-Autopilot-vs-Standard.md)), not even that.
 
 ## 3. Control Plane Components (Fully Managed by Google)
 
@@ -28,7 +28,7 @@ On GKE, all four run on infrastructure you never see or manage directly — no V
 A **node pool** is a group of nodes within a cluster that share the same configuration — machine type, disk type/size, OS image, labels, taints, and (optionally) whether they use Spot/Preemptible VMs. A single cluster can have multiple node pools, letting you mix machine shapes within one cluster (e.g., a general-purpose pool and a separate GPU-equipped pool for ML workloads).
 
 - Nodes are ordinary Compute Engine VM instances under the hood, running `kubelet` (the per-node Kubernetes agent) and a container runtime (`containerd`).
-- Node pools can be resized manually, or automatically via the **Cluster Autoscaler** and **node auto-provisioning** (both covered in depth in Section 34).
+- Node pools can be resized manually, or automatically via the **Cluster Autoscaler** and **node auto-provisioning** (both covered in depth in [Section 34](./Section-34-Part4-GKE-Operations-Scaling-Upgrades.md)).
 - Each node pool can be pinned to specific zones, enabling fine control over where compute actually runs within a regional cluster.
 
 ## 5. Cluster Types: Zonal vs. Regional
@@ -51,7 +51,7 @@ GKE clusters subscribe to a **release channel**, which governs how quickly the c
 | **Regular** | Default channel; versions have had moderate real-world soak time before promotion      | Most production workloads — a balance of reasonably current versions and stability.                                           |
 | **Stable**  | Versions have had the longest soak time across Google's fleet before promotion         | Risk-averse production workloads prioritizing maximum stability over currency.                                                |
 
-Clusters not on a release channel ("static" version) require the operator to manually select and manage every version upgrade — Google explicitly recommends release channels for virtually all clusters, since they also gate **automatic upgrades** (Section 34) to versions Google has already validated for that channel.
+Clusters not on a release channel ("static" version) require the operator to manually select and manage every version upgrade — Google explicitly recommends release channels for virtually all clusters, since they also gate **automatic upgrades** ([Section 34](./Section-34-Part4-GKE-Operations-Scaling-Upgrades.md)) to versions Google has already validated for that channel.
 
 ## 7. Architecture Diagram
 
@@ -83,13 +83,13 @@ Clusters not on a release channel ("static" version) require the operator to man
 
 ## 8. Comparison: GKE vs. AWS EKS vs. Azure AKS Control Plane Models
 
-| Aspect                          | GKE                                                                                             | AWS EKS                                                                       | Azure AKS                                                                                                           |
-| ------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Control plane cost              | Charged per cluster (with a per-cluster free tier historically offered; verify current pricing) | Charged per cluster-hour                                                      | No charge for the Standard control plane tier (a paid "Uptime SLA"/premium tier exists for stronger SLA guarantees) |
-| Control plane HA model          | Regional clusters replicate across 3 zones by default option                                    | Control plane is multi-AZ by design within a region automatically             | Multi-zone control plane where region supports Availability Zones                                                   |
-| Release cadence control         | Explicit release channels (Rapid/Regular/Stable)                                                | Manual version selection per cluster, with defined standard support windows   | Manual version selection, with an optional auto-upgrade channel setting                                             |
-| Fully "serverless" node option  | Autopilot (Section 32) — no node management at all                                              | Fargate profiles for EKS — serverless pods, no node management for those pods | Azure Container Instances (ACI) virtual nodes / AKS "serverless" via automatic mode features                        |
-| Upstream Kubernetes conformance | Certified conformant; typically fastest to GA new minor versions                                | Certified conformant                                                          | Certified conformant                                                                                                |
+| Aspect                          | GKE                                                                                                   | AWS EKS                                                                       | Azure AKS                                                                                                           |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Control plane cost              | Charged per cluster (with a per-cluster free tier historically offered; verify current pricing)       | Charged per cluster-hour                                                      | No charge for the Standard control plane tier (a paid "Uptime SLA"/premium tier exists for stronger SLA guarantees) |
+| Control plane HA model          | Regional clusters replicate across 3 zones by default option                                          | Control plane is multi-AZ by design within a region automatically             | Multi-zone control plane where region supports Availability Zones                                                   |
+| Release cadence control         | Explicit release channels (Rapid/Regular/Stable)                                                      | Manual version selection per cluster, with defined standard support windows   | Manual version selection, with an optional auto-upgrade channel setting                                             |
+| Fully "serverless" node option  | Autopilot ([Section 32](./Section-32-Part4-GKE-Autopilot-vs-Standard.md)) — no node management at all | Fargate profiles for EKS — serverless pods, no node management for those pods | Azure Container Instances (ACI) virtual nodes / AKS "serverless" via automatic mode features                        |
+| Upstream Kubernetes conformance | Certified conformant; typically fastest to GA new minor versions                                      | Certified conformant                                                          | Certified conformant                                                                                                |
 
 ## 9. Hands-On Example: Creating a Regional Cluster
 
@@ -139,7 +139,7 @@ gke-my-cluster-default-pool-zzzz-zzzz      Ready    <none>   2m    v1.29.x-gke.x
 ## 11. Common Misconceptions
 
 - **Misconception:** "A multi-zonal cluster and a regional cluster provide the same availability." A multi-zonal cluster spreads nodes across zones but keeps a single control-plane replica in one zone; only a regional cluster replicates the control plane itself across zones, which is what protects against a control-plane-hosting zone outage.
-- **Misconception:** "GKE nodes are fully managed like the control plane." Node pools (in Standard mode) are Compute Engine VMs you are responsible for sizing, and which incur standard Compute Engine billing; only the control plane is fully Google-managed in Standard mode. Autopilot (Section 32) changes this trade-off substantially.
+- **Misconception:** "GKE nodes are fully managed like the control plane." Node pools (in Standard mode) are Compute Engine VMs you are responsible for sizing, and which incur standard Compute Engine billing; only the control plane is fully Google-managed in Standard mode. Autopilot ([Section 32](./Section-32-Part4-GKE-Autopilot-vs-Standard.md)) changes this trade-off substantially.
 
 ## 12. Interview Questions
 
@@ -156,9 +156,9 @@ gke-my-cluster-default-pool-zzzz-zzzz      Ready    <none>   2m    v1.29.x-gke.x
 
 - 🔑 GKE splits responsibility into a fully Google-managed control plane and customer-managed node pools (Compute Engine VMs), removing the control-plane operational burden entirely.
 - 🔑 Regional clusters replicate the control plane across 3 zones; zonal clusters keep a single control-plane replica regardless of how nodes are spread — this distinction, not just node placement, determines control-plane availability.
-- 🔑 Release channels (Rapid/Regular/Stable) trade off version currency against stability and gate automatic upgrade behavior (Section 34); production workloads default to Regular or Stable.
+- 🔑 Release channels (Rapid/Regular/Stable) trade off version currency against stability and gate automatic upgrade behavior ([Section 34](./Section-34-Part4-GKE-Operations-Scaling-Upgrades.md)); production workloads default to Regular or Stable.
 - 🔑 Multiple node pools within one cluster let teams mix machine shapes (general-purpose, GPU, Spot) with independent scaling and scheduling rules.
 
 ## 14. Related Concepts
 
-Container fundamentals and the Borg/Kubernetes lineage (Section 28), GKE networking and storage (Section 31), Autopilot vs. Standard mode (Section 32), cluster upgrades and autoscaling (Section 34), and the GCP vs. AWS vs. Azure comparison (Section 82) all build directly on the architecture introduced here.
+Container fundamentals and the Borg/Kubernetes lineage ([Section 28](./Section-28-Part4-Container-Fundamentals-Recap-on-GCP.md)), GKE networking and storage ([Section 31](./Section-31-Part4-GKE-Networking-and-Storage.md)), Autopilot vs. Standard mode ([Section 32](./Section-32-Part4-GKE-Autopilot-vs-Standard.md)), cluster upgrades and autoscaling ([Section 34](./Section-34-Part4-GKE-Operations-Scaling-Upgrades.md)), and the GCP vs. AWS vs. Azure comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all build directly on the architecture introduced here.

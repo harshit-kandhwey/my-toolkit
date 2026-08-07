@@ -2,9 +2,9 @@
 
 ## 1. Overview: Why the PV/VG/LV Layer Pays Off
 
-§73 introduced LVM's three-layer abstraction — Physical Volume, Volume Group, Logical Volume — and closed by promising that the payoff for that extra layer of complexity shows up here. Three capabilities exist specifically because storage was decoupled from physical boundaries: **online resizing** without unmounting or migrating data, **snapshots** that capture a point-in-time state cheaply, and **thin provisioning** that lets storage be allocated ahead of when it's physically backed. None of these are possible with a plain, non-LVM partition.
+[§73](./Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md) introduced LVM's three-layer abstraction — Physical Volume, Volume Group, Logical Volume — and closed by promising that the payoff for that extra layer of complexity shows up here. Three capabilities exist specifically because storage was decoupled from physical boundaries: **online resizing** without unmounting or migrating data, **snapshots** that capture a point-in-time state cheaply, and **thin provisioning** that lets storage be allocated ahead of when it's physically backed. None of these are possible with a plain, non-LVM partition.
 
-A recurring theme across all three: LVM operates at the **block-device level**, while the filesystem sitting on top of an LV (ext4, XFS — §18) is a separate layer with its own size and its own tools. Resizing the LV and resizing the filesystem on it are two distinct operations, and conflating them is the single most common mistake in this area.
+A recurring theme across all three: LVM operates at the **block-device level**, while the filesystem sitting on top of an LV (ext4, XFS — [§18](../Part3/Section-18-Part3-Filesystem-Types.md)) is a separate layer with its own size and its own tools. Resizing the LV and resizing the filesystem on it are two distinct operations, and conflating them is the single most common mistake in this area.
 
 ## 2. Growing a Logical Volume: `lvextend`
 
@@ -59,7 +59,7 @@ lvreduce -L 40G /dev/data_vg/app_lv
 mount /dev/data_vg/app_lv /mnt/app_data
 ```
 
-**XFS cannot shrink, period.** There is no `xfs_shrink` counterpart to `xfs_growfs` — XFS's on-disk structures are not designed to support shrinking, and the only way to reduce an XFS filesystem's effective size is to back up the data, recreate a smaller filesystem, and restore. This is a real, frequently-tested design limitation worth internalizing on its own (§76 covers filesystem creation/repair tooling in full and reinforces this same point from the creation side).
+**XFS cannot shrink, period.** There is no `xfs_shrink` counterpart to `xfs_growfs` — XFS's on-disk structures are not designed to support shrinking, and the only way to reduce an XFS filesystem's effective size is to back up the data, recreate a smaller filesystem, and restore. This is a real, frequently-tested design limitation worth internalizing on its own ([§76](./Section-76-Part10-Filesystem-Creation-Checking-Repair.md) covers filesystem creation/repair tooling in full and reinforces this same point from the creation side).
 
 ## 4. LVM Snapshots: Copy-on-Write Point-in-Time Capture
 
@@ -112,7 +112,7 @@ lvcreate -V 100G -T data_vg/thin_pool -n thin_lv3
 lvs -o+data_percent,metadata_percent data_vg/thin_pool
 ```
 
-> ⚠️ **Warning:** Monitoring thin pool usage is a real, ongoing operational responsibility, not a set-and-forget configuration choice — an overcommitted pool that quietly crosses 100% actual usage doesn't just affect the LV that pushed it over; it can cause write failures across every thin LV sharing that pool simultaneously. Automated alerting on pool usage thresholds (commonly 80%, 90%) belongs in the same monitoring baseline as disk-usage alerting on plain filesystems (§80s, Part 11) — treating thin pool capacity as "just LVM configuration, set once" is how thin-provisioned environments end up with a fleet-wide outage instead of one host running out of disk.
+> ⚠️ **Warning:** Monitoring thin pool usage is a real, ongoing operational responsibility, not a set-and-forget configuration choice — an overcommitted pool that quietly crosses 100% actual usage doesn't just affect the LV that pushed it over; it can cause write failures across every thin LV sharing that pool simultaneously. Automated alerting on pool usage thresholds (commonly 80%, 90%) belongs in the same monitoring baseline as disk-usage alerting on plain filesystems ([§80](../Part11/Section-80-Part11-Performance-Fundamentals-Unified-Model.md)s, Part 11) — treating thin pool capacity as "just LVM configuration, set once" is how thin-provisioned environments end up with a fleet-wide outage instead of one host running out of disk.
 
 ## 6. Common Misconceptions
 
@@ -148,6 +148,6 @@ _What the interviewer is probing for:_ Recognizing that thin provisioning's risk
 
 ## 9. Related Concepts & What's Next
 
-This section builds directly on §73's PV/VG/LV model — every operation here (`lvextend`, `lvcreate -s`, thin pools) is a Logical Volume operation, unchanged at the PV/VG layer. It anticipates §76's filesystem-creation-and-repair depth, particularly the XFS-can't-shrink limitation, which §76 reinforces from the creation and repair angle rather than the resizing angle covered here. §18 (Part 3) remains the reference for filesystem type characteristics generally. §75 shifts to RAID and `mdadm` — a related but distinct storage-resilience mechanism that, unlike LVM, is specifically about surviving a disk failure rather than flexible allocation.
+This section builds directly on [§73](./Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)'s PV/VG/LV model — every operation here (`lvextend`, `lvcreate -s`, thin pools) is a Logical Volume operation, unchanged at the PV/VG layer. It anticipates [§76](./Section-76-Part10-Filesystem-Creation-Checking-Repair.md)'s filesystem-creation-and-repair depth, particularly the XFS-can't-shrink limitation, which [§76](./Section-76-Part10-Filesystem-Creation-Checking-Repair.md) reinforces from the creation and repair angle rather than the resizing angle covered here. [§18](../Part3/Section-18-Part3-Filesystem-Types.md) remains the reference for filesystem type characteristics generally. [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) shifts to RAID and `mdadm` — a related but distinct storage-resilience mechanism that, unlike LVM, is specifically about surviving a disk failure rather than flexible allocation.
 
-**Next Section:** §75 — `Section-75-Part10-RAID-Concepts-Mdadm.md`
+**Next Section:** [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md) — `Section-75-Part10-RAID-Concepts-Mdadm.md`

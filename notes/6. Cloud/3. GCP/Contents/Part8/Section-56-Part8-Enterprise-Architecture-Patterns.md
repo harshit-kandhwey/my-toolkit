@@ -70,7 +70,7 @@ The classic **n-tier** pattern separates a system into layers, each independentl
 └───────────────────────────┘
 ```
 
-- **Presentation/edge tier:** Global External Application Load Balancer, optionally fronted by Cloud CDN for static assets and Cloud Armor for WAF/DDoS protection (Section 22 covers load balancing in depth).
+- **Presentation/edge tier:** Global External Application Load Balancer, optionally fronted by Cloud CDN for static assets and Cloud Armor for WAF/DDoS protection ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md) covers load balancing in depth).
 - **Application tier:** Stateless compute — either a regional Managed Instance Group of Compute Engine VMs (autoscaled, spread across zones) or a GKE Deployment (autoscaled pods across node pools). Statelessness here is what makes horizontal autoscaling and zone/region failover possible without session-affinity complications.
 - **Data tier:** Cloud SQL for single-region relational workloads with standard availability needs, or Cloud Spanner where horizontal scale and multi-region strong consistency are required. Each tier scales and fails over independently — a spike in application traffic doesn't require touching the database tier, and a database failover doesn't require redeploying application code.
 
@@ -78,9 +78,9 @@ The classic **n-tier** pattern separates a system into layers, each independentl
 
 Rather than services calling each other directly (tight coupling), an **event-driven architecture** has services publish events describing "what happened," and other services react asynchronously:
 
-- **Pub/Sub** (Section 45) is the durable, at-least-once messaging backbone — producers publish events to a topic without knowing who (if anyone) is listening.
-- **Eventarc** (Section 53) standardizes how events from over 130 GCP sources (Cloud Storage object changes, Firestore writes, Cloud Audit Logs, custom application events) get routed as CloudEvents-formatted messages to subscribers, removing the need for each service to hand-roll its own event plumbing.
-- **Cloud Run** (Section 7) is the most common event _consumer_ — Eventarc triggers invoke a Cloud Run service per matching event, and Cloud Run scales the number of running instances (including to zero when idle) to match event volume automatically.
+- **Pub/Sub** ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)) is the durable, at-least-once messaging backbone — producers publish events to a topic without knowing who (if anyone) is listening.
+- **Eventarc** ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)) standardizes how events from over 130 GCP sources (Cloud Storage object changes, Firestore writes, Cloud Audit Logs, custom application events) get routed as CloudEvents-formatted messages to subscribers, removing the need for each service to hand-roll its own event plumbing.
+- **Cloud Run** ([Section 7](../Part1/Section-07-Part1-Cloud-Run.md)) is the most common event _consumer_ — Eventarc triggers invoke a Cloud Run service per matching event, and Cloud Run scales the number of running instances (including to zero when idle) to match event volume automatically.
 
 ```
  Cloud Storage        Firestore           Custom App
@@ -102,13 +102,13 @@ This pattern decouples producers from consumers entirely: a new consumer can be 
 
 Unlike AWS, which markets a single trademarked "AWS Well-Architected Framework" with six named pillars, Google publishes a functionally equivalent but distinctly branded **Google Cloud Architecture Framework**, organized around similar quality pillars:
 
-| Pillar                                | Focus                                                                                                                            |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Operational excellence**            | Automating deployment and operations (Section 50–51), observability (Section 54), incident response (Section 55).                |
-| **Security, privacy, and compliance** | IAM least privilege (Section 35), org policies (Section 37), VPC Service Controls (Section 41), compliance mapping (Section 40). |
-| **Reliability**                       | Multi-zone/multi-region resilience (this section, Section 58), SLOs and error budgets (Section 55).                              |
-| **Cost optimization**                 | Rightsizing, discounts, budgets — covered in full in Section 57.                                                                 |
-| **Performance optimization**          | Choosing the right compute/storage/network tier for the workload's latency and throughput needs (Section 10, Section 18).        |
+| Pillar                                | Focus                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Operational excellence**            | Automating deployment and operations ([Section 50](../Part7/Section-50-Part7-Cloud-Build-CICD.md)–[Section 51](../Part7/Section-51-Part7-Cloud-Deploy-Continuous-Delivery.md)), observability ([Section 54](../Part7/Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)), incident response ([Section 55](../Part7/Section-55-Part7-Incident-Response-SRE.md)). |
+| **Security, privacy, and compliance** | IAM least privilege ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), org policies ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)), VPC Service Controls ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)), compliance mapping ([Section 40](../Part5/Section-40-Part5-Compliance-Governance.md)). |
+| **Reliability**                       | Multi-zone/multi-region resilience (this section, [Section 58](./Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), SLOs and error budgets ([Section 55](../Part7/Section-55-Part7-Incident-Response-SRE.md)).                                                                                                                                            |
+| **Cost optimization**                 | Rightsizing, discounts, budgets — covered in full in [Section 57](./Section-57-Part8-Cost-Optimization-FinOps.md).                                                                                                                                                                                                                                                        |
+| **Performance optimization**          | Choosing the right compute/storage/network tier for the workload's latency and throughput needs ([Section 10](../Part1/Section-10-Part1-Compute-Decision-Matrix.md), [Section 18](../Part2/Section-18-Part2-Storage-DB-Decision-Matrix.md)).                                                                                                                              |
 
 > ⚠️ **Accuracy note:** GCP does not have a single trademarked framework name identical to "AWS Well-Architected Framework" — the equivalent Google documentation set is titled the **Google Cloud Architecture Framework**, and its pillar list and internal structure have evolved over time (for example, some versions fold "sustainability" in as a cross-cutting theme rather than a standalone pillar). Verify the current pillar list against Google's live documentation before quoting exact pillar names in a formal setting, since this is a documentation set Google actively revises.
 
@@ -152,4 +152,4 @@ Unlike AWS, which markets a single trademarked "AWS Well-Architected Framework" 
 
 ## 12. Related Concepts
 
-Cloud Load Balancing (Section 22), Pub/Sub and Dataflow (Section 45), Eventarc and Workflows (Section 53), cost optimization pillar in depth (Section 57), disaster recovery and multi-region architecture (Section 58), and the consolidated GCP vs AWS vs Azure comparison (Section 82) all extend the patterns introduced here.
+Cloud Load Balancing ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)), Pub/Sub and Dataflow ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)), Eventarc and Workflows ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)), cost optimization pillar in depth ([Section 57](./Section-57-Part8-Cost-Optimization-FinOps.md)), disaster recovery and multi-region architecture ([Section 58](./Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), and the consolidated GCP vs AWS vs Azure comparison ([Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md)) all extend the patterns introduced here.

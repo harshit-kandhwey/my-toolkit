@@ -98,7 +98,7 @@ Part of Systems Manager (full depth Part 8) — a hierarchical, general-purpose 
 
 ## 7. Production & Enterprise Usage
 
-- **CI/CD integration:** pipelines using OIDC federation (Section 3 §10) retrieve deployment secrets from Secrets Manager/Parameter Store instead of static CI/CD secrets — fully credential-hardcoding-free deployment.
+- **CI/CD integration:** pipelines using OIDC federation (Section 3 [§10](./Section-10-Part2-IAM-Policy-Evaluation-Logic.md)) retrieve deployment secrets from Secrets Manager/Parameter Store instead of static CI/CD secrets — fully credential-hardcoding-free deployment.
 - **Multi-environment configuration:** Parameter Store hierarchical paths per environment (`/myapp/dev/`, `/myapp/staging/`, `/myapp/production/`), IAM scoped per environment role to its own path.
 - **Database credential rotation at scale:** enterprises with many databases rely on Secrets Manager's native rotation templates because manual rotation doesn't scale — worth the cost for the operational risk removed.
 - **Secrets replication:** Secrets Manager supports multi-region secret replication (mirrors KMS multi-region keys) for DR requirements (Part 10).
@@ -176,4 +176,4 @@ Part of Systems Manager (full depth Part 8) — a hierarchical, general-purpose 
 
 - Systems Manager's broader capabilities (Session Manager, Automation, Patch Manager) → Part 8
 - RDS/Aurora-specific rotation integration → Part 6
-- Threat detection against everything built so far → §16 (next)
+- Threat detection against everything built so far → [§16](./Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md) (next)

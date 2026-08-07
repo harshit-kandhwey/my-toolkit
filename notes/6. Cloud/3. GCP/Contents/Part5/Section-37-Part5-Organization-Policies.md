@@ -4,7 +4,7 @@
 
 **Plain language:** Organization Policies are company-wide guardrails that say "this action is not allowed here, no matter who is asking or what IAM role they hold." They don't grant anyone access — they restrict what's possible in the first place.
 
-**Precise:** The **Organization Policy Service** lets administrators define **constraints** — restrictions on specific configurable behaviors of GCP resources (e.g., "VMs may not have external IPs," "resources may only be created in these regions") — and attach them at any node in the resource hierarchy (Section 3). Unlike IAM, which grants permissions, Organization Policies restrict what is _allowed to happen at all_, evaluated independently of and prior to whether a principal's IAM permissions would otherwise permit the action.
+**Precise:** The **Organization Policy Service** lets administrators define **constraints** — restrictions on specific configurable behaviors of GCP resources (e.g., "VMs may not have external IPs," "resources may only be created in these regions") — and attach them at any node in the resource hierarchy ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md)). Unlike IAM, which grants permissions, Organization Policies restrict what is _allowed to happen at all_, evaluated independently of and prior to whether a principal's IAM permissions would otherwise permit the action.
 
 ## 2. Why It Exists
 
@@ -33,9 +33,9 @@ Like IAM, Organization Policies attached at a higher node are inherited by defau
 
 ### 3.4 Common Constraints in Practice
 
-- **`compute.vmExternalIpAccess`** — restricts which VMs (by name pattern or "none") may have external IP addresses, a common guardrail to force all egress through a NAT gateway (Section 24) instead of direct public IPs.
+- **`compute.vmExternalIpAccess`** — restricts which VMs (by name pattern or "none") may have external IP addresses, a common guardrail to force all egress through a NAT gateway ([Section 24](../Part3/Section-24-Part3-Cloud-NAT-Interconnect-VPN.md)) instead of direct public IPs.
 - **`gcp.resourceLocations`** — restricts which regions/multi-regions resources may be created in, enforcing data residency (e.g., `in:eu-locations`).
-- **`iam.disableServiceAccountKeyCreation`** — blocks creation of new service account keys org-wide, forcing teams onto short-lived credentials (Section 36).
+- **`iam.disableServiceAccountKeyCreation`** — blocks creation of new service account keys org-wide, forcing teams onto short-lived credentials ([Section 36](./Section-36-Part5-Service-Accounts.md)).
 - **`sql.restrictPublicIp`** — prevents Cloud SQL instances from being assigned a public IP.
 - **`iam.allowedPolicyMemberDomains`** — restricts IAM bindings to only principals from specified domains, preventing accidental grants to external Gmail accounts.
 - **`compute.requireOsLogin`** — enforces OS Login (IAM-governed SSH access) instead of manually managed SSH keys on VM metadata.
@@ -125,15 +125,15 @@ spec:
 
 ## 7. Production & Enterprise Usage
 
-- **Landing zone baseline policies at the Organization root.** Enterprises attach a standard set of non-overridable constraints (no external IPs by default, disable SA key creation, restrict resource locations, require OS Login) at the Organization node as part of the landing zone (Section 59), so every new project inherits secure defaults automatically.
+- **Landing zone baseline policies at the Organization root.** Enterprises attach a standard set of non-overridable constraints (no external IPs by default, disable SA key creation, restrict resource locations, require OS Login) at the Organization node as part of the landing zone ([Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)), so every new project inherits secure defaults automatically.
 - **Deliberate, documented override points.** Where a Folder genuinely needs an exception (e.g., a public-facing load balancer's VM legitimately needing an external IP), the override is scoped as narrowly as possible and documented, rather than relaxing the constraint broadly at the Organization level.
-- **Dry-run before full enforcement.** For constraints with wide potential blast radius, teams enable "dry-run" evaluation first (where supported) or a phased Folder-by-Folder rollout, reviewing Cloud Audit Logs (Section 40) for what _would_ have been blocked, before flipping to full enforcement to avoid unexpectedly breaking existing workloads.
+- **Dry-run before full enforcement.** For constraints with wide potential blast radius, teams enable "dry-run" evaluation first (where supported) or a phased Folder-by-Folder rollout, reviewing Cloud Audit Logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)) for what _would_ have been blocked, before flipping to full enforcement to avoid unexpectedly breaking existing workloads.
 
 ## 8. Common Misconceptions
 
 - **Misconception:** "Organization Policies and IAM Deny policies do the same thing." Organization Policies restrict resource _configuration/behavior_ (e.g., which regions, whether external IPs are allowed) — they are unaware of principals. IAM Deny policies restrict specific _principals_ from specific _permissions_, regardless of resource configuration. They're complementary, not interchangeable.
 - **Misconception:** "Every Organization Policy constraint can be overridden lower in the hierarchy." Whether override is even possible is determined by the constraint's own definition — some constraints are explicitly designed to never allow a lower-level exception, precisely for security-critical settings.
-- **Misconception:** "Setting an Organization Policy retroactively fixes existing non-compliant resources." Most constraints only prevent _new_ non-compliant configurations from being created; they do not automatically modify or delete resources that were already non-compliant before the policy was enforced — remediation of existing resources is a separate, manual or automated (Section 55) task.
+- **Misconception:** "Setting an Organization Policy retroactively fixes existing non-compliant resources." Most constraints only prevent _new_ non-compliant configurations from being created; they do not automatically modify or delete resources that were already non-compliant before the policy was enforced — remediation of existing resources is a separate, manual or automated ([Section 55](../Part7/Section-55-Part7-Incident-Response-SRE.md)) task.
 
 ## 9. Interview Questions
 
@@ -144,7 +144,7 @@ spec:
 **Model answer:** Check whether the `compute.vmExternalIpAccess` constraint permits override at a lower level; if it does, attach a more permissive policy at the specific Project (or narrowly scoped Folder) that needs the exception, rather than relaxing the Organization-level policy for everyone. This keeps the secure default in place org-wide while allowing a documented, narrowly scoped exception exactly where it's needed.
 
 **🎯 Senior/Architect:** _Design an Organization Policy strategy for a multinational company that must keep EU customer data in the EU, avoid publicly exposed VMs and databases, and still allow a sandbox environment for experimentation with fewer restrictions._
-**Model answer:** At the Organization root, I'd enforce `gcp.resourceLocations` restricted to EU locations for the folders holding EU customer-data workloads, `compute.vmExternalIpAccess` denying external IPs by default, `sql.restrictPublicIp` enforced, and `iam.disableServiceAccountKeyCreation` enforced non-overridably, since key hygiene should never be relaxed for any team. I'd structure the hierarchy so a distinct "Sandbox" Folder sits outside the EU-data folders' scope, with its own less restrictive `gcp.resourceLocations` policy (e.g., allowing US regions for lower-latency experimentation) explicitly permitted as an override at that Folder only — while still inheriting the non-overridable constraints like key-creation restriction from the Organization. I'd validate this design with dry-run evaluation before full enforcement, and continuously monitor Cloud Audit Logs for `Policy Denied` events (Section 40) to catch both legitimate exception requests and attempted policy violations.
+**Model answer:** At the Organization root, I'd enforce `gcp.resourceLocations` restricted to EU locations for the folders holding EU customer-data workloads, `compute.vmExternalIpAccess` denying external IPs by default, `sql.restrictPublicIp` enforced, and `iam.disableServiceAccountKeyCreation` enforced non-overridably, since key hygiene should never be relaxed for any team. I'd structure the hierarchy so a distinct "Sandbox" Folder sits outside the EU-data folders' scope, with its own less restrictive `gcp.resourceLocations` policy (e.g., allowing US regions for lower-latency experimentation) explicitly permitted as an override at that Folder only — while still inheriting the non-overridable constraints like key-creation restriction from the Organization. I'd validate this design with dry-run evaluation before full enforcement, and continuously monitor Cloud Audit Logs for `Policy Denied` events ([Section 40](./Section-40-Part5-Compliance-Governance.md)) to catch both legitimate exception requests and attempted policy violations.
 
 ## 🔑 Key Takeaways
 
@@ -156,4 +156,4 @@ spec:
 
 ## Related Concepts
 
-Resource hierarchy and policy inheritance (Section 3), IAM Fundamentals and IAM Deny policies (Section 35), Service Accounts (Section 36), Compliance & Governance / Cloud Audit Logs (Section 40), VPC Service Controls (Section 41), and Landing Zone Architecture / Org Policy Hierarchy Deep Dive (Sections 59–60) all build directly on the Organization Policy model introduced here.
+Resource hierarchy and policy inheritance ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md)), IAM Fundamentals and IAM Deny policies ([Section 35](./Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), Service Accounts ([Section 36](./Section-36-Part5-Service-Accounts.md)), Compliance & Governance / Cloud Audit Logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)), VPC Service Controls ([Section 41](./Section-41-Part5-VPC-Service-Controls.md)), and Landing Zone Architecture / Org Policy Hierarchy Deep Dive (Sections 59–60) all build directly on the Organization Policy model introduced here.

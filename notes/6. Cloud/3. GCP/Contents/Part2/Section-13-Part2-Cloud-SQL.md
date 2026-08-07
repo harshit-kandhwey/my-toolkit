@@ -114,12 +114,12 @@ Created instance [prod-db-restored].
 - **Private IP + VPC peering:** Production Cloud SQL instances are typically configured with private IP only (no public IP), reachable via VPC peering or Private Service Connect, minimizing internet exposure.
 - **Connection pooling at scale:** High-connection-count applications pair Cloud SQL with a pooler (e.g., PgBouncer for PostgreSQL) since Cloud SQL instances have finite max-connection limits tied to instance size.
 - **Automated maintenance windows:** Enterprises pin maintenance windows to low-traffic periods and use maintenance update tracks (stable vs. canary) to control when engine patches are applied.
-- **Terraform-managed instances:** Instance tier, HA configuration, backup windows, and IAM database authentication are typically defined as code for repeatability across environments (Section 52).
+- **Terraform-managed instances:** Instance tier, HA configuration, backup windows, and IAM database authentication are typically defined as code for repeatability across environments ([Section 52](../Part7/Section-52-Part7-Terraform-on-GCP-Deployment-Manager.md)).
 
 ## 8. Common Misconceptions
 
 - **Misconception:** "A read replica can be promoted automatically on primary failure, just like the HA standby." Read replica promotion to become a new primary is a manual (or separately scripted) action — only the dedicated HA standby fails over automatically.
-- **Misconception:** "Cloud SQL scales horizontally like a NoSQL database." Cloud SQL scales vertically (larger instance tiers) and via read replicas for read traffic, but write throughput is still bound to a single primary instance — genuine horizontal write scaling requires Cloud Spanner (Section 14) instead.
+- **Misconception:** "Cloud SQL scales horizontally like a NoSQL database." Cloud SQL scales vertically (larger instance tiers) and via read replicas for read traffic, but write throughput is still bound to a single primary instance — genuine horizontal write scaling requires Cloud Spanner ([Section 14](./Section-14-Part2-Cloud-Spanner.md)) instead.
 
 ## 9. Interview Questions
 
@@ -138,8 +138,8 @@ Created instance [prod-db-restored].
 - 🔑 HA (regional) uses a synchronous standby in a second zone for automatic failover; read replicas are a separate, asynchronous, always-queryable mechanism for read scaling.
 - 🔑 Point-in-time recovery relies on transaction log retention, enabling restoration to any specific second within the retention window, not just to the last backup.
 - 🔑 The Cloud SQL Auth Proxy removes the need for static IP allowlisting by authenticating via IAM and tunneling the connection.
-- 🔑 Cloud SQL scales vertically and via read replicas; genuine horizontal write scaling requires Cloud Spanner (Section 14).
+- 🔑 Cloud SQL scales vertically and via read replicas; genuine horizontal write scaling requires Cloud Spanner ([Section 14](./Section-14-Part2-Cloud-Spanner.md)).
 
 ## 11. Related Concepts
 
-Cloud Spanner for horizontally scalable relational needs (Section 14), Persistent Disks underlying Cloud SQL storage (Section 12), Cloud SQL Auth Proxy's reliance on IAM (Section 35/36), disaster recovery patterns (Section 58), and the AWS RDS/Azure SQL Database comparison in this section and Section 82.
+Cloud Spanner for horizontally scalable relational needs ([Section 14](./Section-14-Part2-Cloud-Spanner.md)), Persistent Disks underlying Cloud SQL storage ([Section 12](./Section-12-Part2-Persistent-Disks-and-Filestore.md)), Cloud SQL Auth Proxy's reliance on IAM ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)/36), disaster recovery patterns ([Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), and the AWS RDS/Azure SQL Database comparison in this section and [Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md).

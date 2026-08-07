@@ -4,11 +4,11 @@
 
 **Plain language:** Azure Files provides network file shares in the cloud that work like a traditional shared drive — multiple machines can connect to the same share at once over standard SMB or NFS protocols, unlike a Managed Disk which only attaches to one VM at a time.
 
-**Precise definition:** Azure Files is a fully managed file-share service, hosted under a Storage Account (Section 16), providing SMB and NFS protocol access to shared file storage that can be mounted concurrently by multiple clients (VMs, on-premises servers, containers), with Azure File Sync extending this to cache and synchronize Azure file shares with on-premises Windows Servers.
+**Precise definition:** Azure Files is a fully managed file-share service, hosted under a Storage Account ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md)), providing SMB and NFS protocol access to shared file storage that can be mounted concurrently by multiple clients (VMs, on-premises servers, containers), with Azure File Sync extending this to cache and synchronize Azure file shares with on-premises Windows Servers.
 
 ## 2. Why It Exists / Problem It Solves
 
-Many existing applications and workflows depend on a traditional, concurrently-shared network file system (a "shared drive") rather than object storage (Blob, Section 17) or VM-attached block storage (Managed Disks, Section 18) — legacy applications expecting a mapped drive letter, multiple VMs needing simultaneous read/write access to the same configuration or data files, or on-premises file servers whose capacity or resilience needs to be extended into the cloud without a full re-architecture. Azure Files exists to support these traditional file-sharing patterns natively, and Azure File Sync exists specifically to bridge existing on-premises file servers with cloud storage, allowing organizations to extend on-premises file infrastructure into Azure incrementally rather than requiring an all-or-nothing migration.
+Many existing applications and workflows depend on a traditional, concurrently-shared network file system (a "shared drive") rather than object storage (Blob, [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md)) or VM-attached block storage (Managed Disks, [Section 18](./Section-18-Part4-Azure-Managed-Disks.md)) — legacy applications expecting a mapped drive letter, multiple VMs needing simultaneous read/write access to the same configuration or data files, or on-premises file servers whose capacity or resilience needs to be extended into the cloud without a full re-architecture. Azure Files exists to support these traditional file-sharing patterns natively, and Azure File Sync exists specifically to bridge existing on-premises file servers with cloud storage, allowing organizations to extend on-premises file infrastructure into Azure incrementally rather than requiring an all-or-nothing migration.
 
 ## 3. Core Concepts
 
@@ -21,7 +21,7 @@ Many existing applications and workflows depend on a traditional, concurrently-s
 
 ### 3.2 Performance Tiers
 
-Similar in concept to Blob Storage's access tiers (Section 17.3.3) but distinct in mechanism, Azure Files offers tiers balancing cost against performance:
+Similar in concept to Blob Storage's access tiers ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.3) but distinct in mechanism, Azure Files offers tiers balancing cost against performance:
 
 - **Transaction Optimized** — for workloads with high transaction volume relative to storage capacity.
 - **Hot** — for actively used, general-purpose file share workloads.
@@ -81,11 +81,11 @@ sudo mount -t cifs //stmyappfiles.file.core.windows.net/companyshare /mnt/compan
 - **Important arguments explained individually:**
   - `--quota` — the maximum size of the share in GB; unlike Blob Storage's effectively unlimited scale within a container, a file share has an explicit provisioned/maximum quota that should be sized deliberately.
   - `--enabled-protocols` — specifies SMB (or NFS, though a share is generally restricted to one protocol type depending on the underlying performance tier and configuration) — verify current protocol-selection constraints against documentation.
-- **Security note:** The illustrative mount command uses a storage account key directly, which, per the security guidance in Section 16.7, should be replaced with Entra ID-based/Active Directory-based authentication (Section 19.3.4) in production wherever feasible, rather than embedding a shared key in mount configuration.
+- **Security note:** The illustrative mount command uses a storage account key directly, which, per the security guidance in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).7, should be replaced with Entra ID-based/Active Directory-based authentication ([Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).3.4) in production wherever feasible, rather than embedding a shared key in mount configuration.
 
 ## 6. Production & Enterprise Usage
 
-Enterprises use Azure Files directly (mounted by cloud-hosted VMs or App Service, Section 13.3.5's VNet integration relevant here for private access) for scenarios genuinely requiring concurrent shared file access — shared configuration files across a VM Scale Set (Section 12), for instance, or lift-and-shift of an application originally designed around a traditional network file share. Azure File Sync is used specifically as a bridging/hybrid strategy: organizations with substantial existing on-premises file server investment use it to extend capacity, gain cloud-based backup/DR for that data, and begin a gradual migration path, without requiring every consuming application or user to be immediately redirected to cloud-native access. This hybrid pattern connects directly to the hybrid cloud deployment model concepts introduced in Section 2.8.
+Enterprises use Azure Files directly (mounted by cloud-hosted VMs or App Service, [Section 13](../Part3/Section-13-Part3-Azure-App-Service.md).3.5's VNet integration relevant here for private access) for scenarios genuinely requiring concurrent shared file access — shared configuration files across a VM Scale Set ([Section 12](../Part3/Section-12-Part3-VM-Scale-Sets.md)), for instance, or lift-and-shift of an application originally designed around a traditional network file share. Azure File Sync is used specifically as a bridging/hybrid strategy: organizations with substantial existing on-premises file server investment use it to extend capacity, gain cloud-based backup/DR for that data, and begin a gradual migration path, without requiring every consuming application or user to be immediately redirected to cloud-native access. This hybrid pattern connects directly to the hybrid cloud deployment model concepts introduced in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).8.
 
 ## 7. Security Considerations
 
@@ -95,7 +95,7 @@ Enterprises use Azure Files directly (mounted by cloud-hosted VMs or App Service
 
 ## 8. Performance Considerations
 
-File share performance (IOPS, throughput, latency) depends on the selected tier (Section 19.3.2), similar in principle to the disk performance tier considerations covered in Section 18.8 — Premium tier is appropriate for genuinely performance-sensitive workloads, while Transaction Optimized, Hot, or Cool tiers suit progressively less performance-sensitive, more cost-sensitive use cases.
+File share performance (IOPS, throughput, latency) depends on the selected tier ([Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).3.2), similar in principle to the disk performance tier considerations covered in [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).8 — Premium tier is appropriate for genuinely performance-sensitive workloads, while Transaction Optimized, Hot, or Cool tiers suit progressively less performance-sensitive, more cost-sensitive use cases.
 
 ## 9. Monitoring
 
@@ -109,7 +109,7 @@ Azure Files metrics (available capacity/quota utilization, transaction counts, l
 | On-premises users report a file appears "not yet available" or slow to open | Azure File Sync cloud tiering — the file's content is only a cloud-stored stub locally, requiring on-demand retrieval | Expected behavior for infrequently accessed tiered files; if unacceptable for specific frequently-needed files, adjust cloud tiering policy/thresholds to keep them cached locally |
 | File share running out of provisioned quota                                 | Quota set too conservatively relative to actual data growth                                                           | Increase the share's quota (`az storage share-rm update --quota`) proactively based on monitored capacity trends                                                                   |
 
-## 11. Interview Questions — Section 19
+## 11. Interview Questions — [Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md)
 
 ### 🎯 Intermediate
 
@@ -137,33 +137,33 @@ _What the interviewer is probing:_ understanding of Azure File Sync specifically
 - 🔑 Azure Files provides SMB/NFS-based network file shares supporting concurrent multi-client access, distinct from Managed Disks' single-VM-attached block storage model.
 - 🔑 Azure File Sync bridges on-premises Windows Servers with Azure file shares, with cloud tiering allowing on-premises capacity to be transparently extended via cloud-stored content and local stubs.
 - 🔑 Identity-based (AD/Entra ID) authentication should be preferred over Storage Account key-based access for production SMB share access.
-- 🔑 Azure Files/File Sync represents a hybrid cloud pattern (Section 2.8), enabling incremental, low-disruption modernization of existing on-premises file infrastructure.
+- 🔑 Azure Files/File Sync represents a hybrid cloud pattern ([Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).8), enabling incremental, low-disruption modernization of existing on-premises file infrastructure.
 
 ## 14. File Share Data Protection: Soft Delete and Share Snapshots
 
 ### 14.1 Why This Extends Beyond What Blob Storage and Managed Disks Already Cover
 
-Section 17.14 covered Blob Storage's data-protection mechanisms (versioning, soft delete, PITR, object replication), and Section 18.14 covered Managed Disk snapshots. Azure Files, despite being hosted under the same Storage Account umbrella as Blob Storage (Section 16), has its **own distinct** data-protection mechanisms rather than directly inheriting Blob Storage's — this is a genuine, easy-to-assume-incorrectly gap: enabling Blob soft delete on a Storage Account does **not** automatically protect the File shares hosted in that same account.
+[Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).14 covered Blob Storage's data-protection mechanisms (versioning, soft delete, PITR, object replication), and [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14 covered Managed Disk snapshots. Azure Files, despite being hosted under the same Storage Account umbrella as Blob Storage ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md)), has its **own distinct** data-protection mechanisms rather than directly inheriting Blob Storage's — this is a genuine, easy-to-assume-incorrectly gap: enabling Blob soft delete on a Storage Account does **not** automatically protect the File shares hosted in that same account.
 
 ### 14.2 Share-Level Soft Delete
 
-**Definition:** **Share Soft Delete**, when enabled on a Storage Account, retains a deleted file share (and its full contents) in a recoverable state for a configured retention period (commonly configurable up to 365 days) before permanent removal — directly analogous in purpose to Blob Storage's Soft Delete (Section 17.14.3), but operating at the file-share level rather than the individual-blob level, and configured as its own distinct setting.
+**Definition:** **Share Soft Delete**, when enabled on a Storage Account, retains a deleted file share (and its full contents) in a recoverable state for a configured retention period (commonly configurable up to 365 days) before permanent removal — directly analogous in purpose to Blob Storage's Soft Delete ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).14.3), but operating at the file-share level rather than the individual-blob level, and configured as its own distinct setting.
 
 **Why it matters:** Protects against accidental deletion of an entire file share (a genuinely common mistake — deleting the wrong share, or a script targeting the wrong share name) — without it enabled, a deleted share and all its contents are immediately and permanently gone, with no recovery path.
 
-⚠️ Share Soft Delete protects the **share itself** from deletion — it is a distinct setting from any individual-file-level protection within a still-existing share, which is where Share Snapshots (Section 19.14.3) come in.
+⚠️ Share Soft Delete protects the **share itself** from deletion — it is a distinct setting from any individual-file-level protection within a still-existing share, which is where Share Snapshots ([Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).14.3) come in.
 
 ### 14.3 Share Snapshots
 
-**Definition:** A **Share Snapshot** is a read-only, point-in-time copy of an entire file share's contents at the moment the snapshot was taken, similar in concept to Managed Disk snapshots (Section 18.14.2) but operating on a file share's full directory/file structure rather than a block-storage disk.
+**Definition:** A **Share Snapshot** is a read-only, point-in-time copy of an entire file share's contents at the moment the snapshot was taken, similar in concept to Managed Disk snapshots ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14.2) but operating on a file share's full directory/file structure rather than a block-storage disk.
 
-**Incremental nature:** Like Managed Disk incremental snapshots (Section 18.14.3), share snapshots only store the data that has changed since the previous snapshot, making a recurring snapshot schedule (e.g., hourly or daily) practical and cost-effective rather than requiring a full copy of the share's entire contents on every snapshot.
+**Incremental nature:** Like Managed Disk incremental snapshots ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14.3), share snapshots only store the data that has changed since the previous snapshot, making a recurring snapshot schedule (e.g., hourly or daily) practical and cost-effective rather than requiring a full copy of the share's entire contents on every snapshot.
 
 **Common use cases:**
 
 - **Recovering an individual accidentally-deleted or -modified file** — a user or application accidentally deletes or overwrites a specific file within an otherwise-intact share; a recent share snapshot allows browsing and restoring that specific file's prior content, without needing to restore the entire share.
 - **Point-in-time recovery for the whole share** — reverting the entire share's contents to a prior snapshot if a broader issue (a faulty sync job, a ransomware-style event affecting many files) affected many files across the share simultaneously.
-- **Azure File Sync integration** — for shares used with Azure File Sync (Section 19.3.3), share snapshots provide a recovery mechanism operating alongside the sync relationship, protecting the cloud-side authoritative copy that on-premises servers synchronize against.
+- **Azure File Sync integration** — for shares used with Azure File Sync ([Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).3.3), share snapshots provide a recovery mechanism operating alongside the sync relationship, protecting the cloud-side authoritative copy that on-premises servers synchronize against.
 
 ### 14.4 Configuration Example
 
@@ -179,10 +179,10 @@ az storage share snapshot \
   --name companyshare
 ```
 
-- **Purpose:** Enables Share Soft Delete with a 30-day retention window on the Storage Account (protecting against whole-share deletion), then takes a manual share snapshot of the specific share created in Section 19.5's example (protecting against individual file-level loss or corruption within the share).
-- **Production usage note:** For a recurring protection strategy rather than one-off manual snapshots, share snapshots are typically scheduled via Azure Backup's file share backup capability (which manages the snapshot schedule and retention policy centrally, similar in spirit to how Azure Backup manages VM disk backups, Section 11.15.2) rather than relying on manually-triggered ad hoc snapshots for ongoing production protection.
+- **Purpose:** Enables Share Soft Delete with a 30-day retention window on the Storage Account (protecting against whole-share deletion), then takes a manual share snapshot of the specific share created in [Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).5's example (protecting against individual file-level loss or corruption within the share).
+- **Production usage note:** For a recurring protection strategy rather than one-off manual snapshots, share snapshots are typically scheduled via Azure Backup's file share backup capability (which manages the snapshot schedule and retention policy centrally, similar in spirit to how Azure Backup manages VM disk backups, [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).15.2) rather than relying on manually-triggered ad hoc snapshots for ongoing production protection.
 
-### 14.5 Interview Questions — Section 19.14
+### 14.5 Interview Questions — [Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).14
 
 **🎯 Intermediate**
 **Q: If Blob Storage Soft Delete is already enabled on a Storage Account, are the Azure File shares in that same account also protected against accidental deletion?**
@@ -198,12 +198,12 @@ _Model answer:_ Since the share itself wasn't deleted (only one file within it),
 
 _What the interviewer is probing:_ whether the candidate correctly distinguishes when Share Soft Delete (whole-share deletion) is the relevant tool versus when Share Snapshots (individual file recovery within an intact share) are the relevant tool — a specific, scenario-driven test of understanding rather than just naming both features abstractly.
 
-### 14.6 Key Takeaways — Section 19.14
+### 14.6 Key Takeaways — [Section 19](./Section-19-Part4-Azure-Files-and-File-Sync.md).14
 
 - 🔑 Azure Files has its own distinct data-protection mechanisms (Share Soft Delete, Share Snapshots) — these are separate settings from Blob Storage's equivalent features, even within the same Storage Account, and must be configured independently.
 - 🔑 Share Soft Delete protects against accidental deletion of an entire share; Share Snapshots protect against loss or corruption of individual files within an otherwise-intact share — choosing the right recovery tool depends on which of these two scenarios actually occurred.
-- 🔑 Share Snapshots are incremental (like Managed Disk snapshots, Section 18.14.3), making a recurring snapshot schedule practical; production shares should generally use Azure Backup's file share backup capability for centrally-managed, scheduled protection rather than relying only on manual ad hoc snapshots.
+- 🔑 Share Snapshots are incremental (like Managed Disk snapshots, [Section 18](./Section-18-Part4-Azure-Managed-Disks.md).14.3), making a recurring snapshot schedule practical; production shares should generally use Azure Backup's file share backup capability for centrally-managed, scheduled protection rather than relying only on manual ad hoc snapshots.
 
 ## 15. Related Concepts / Part 4 Wrap-Up
 
-This completes the core file-and-block storage services within Part 4. Section 20 covers **Data Redundancy & Replication (LRS/ZRS/GRS/RA-GRS)** — the redundancy configuration referenced by name throughout this Part (Sections 16, 17, 18) but not yet explained in depth, determining how many copies of data across Blob, File, and Disk storage are kept and where, directly connecting back to the Availability Zone and Region Pair concepts from Section 3.
+This completes the core file-and-block storage services within Part 4. [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md) covers **Data Redundancy & Replication (LRS/ZRS/GRS/RA-GRS)** — the redundancy configuration referenced by name throughout this Part (Sections 16, 17, 18) but not yet explained in depth, determining how many copies of data across Blob, File, and Disk storage are kept and where, directly connecting back to the Availability Zone and Region Pair concepts from [Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).

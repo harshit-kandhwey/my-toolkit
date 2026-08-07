@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** Both Load Balancer and Application Gateway distribute incoming traffic across multiple backend instances (like VMs in a Scale Set, Section 12) — but Load Balancer works at a lower, simpler network level (just IP addresses and ports), while Application Gateway understands actual web traffic (URLs, headers, cookies) and can make smarter, content-aware routing decisions.
+**Plain language:** Both Load Balancer and Application Gateway distribute incoming traffic across multiple backend instances (like VMs in a Scale Set, [Section 12](../Part3/Section-12-Part3-VM-Scale-Sets.md)) — but Load Balancer works at a lower, simpler network level (just IP addresses and ports), while Application Gateway understands actual web traffic (URLs, headers, cookies) and can make smarter, content-aware routing decisions.
 
 **Precise definition:** **Azure Load Balancer** is a Layer 4 (Transport layer, in OSI model terms) load balancer, distributing TCP/UDP traffic across backend instances based on IP address and port information alone, with no visibility into the content of the traffic itself. **Azure Application Gateway** is a Layer 7 (Application layer) load balancer specifically for HTTP/HTTPS traffic, capable of routing decisions based on URL path, host header, and other application-level content, and bundling additional web-specific capabilities like a Web Application Firewall (WAF) and SSL/TLS termination.
 
 ## 2. Why It Exists / Problem It Solves
 
-A single VM or App Service instance is both a single point of failure and a capacity ceiling; VM Scale Sets (Section 12) and multi-instance App Service deployments solve the "multiple instances" side of this, but something must still receive incoming traffic and distribute it across those instances — a client can't reasonably be expected to know about and directly address every individual backend instance itself, especially as instances are added/removed by autoscaling. Load Balancer and Application Gateway both solve this "distribute traffic across many backends" problem, but at different levels of traffic awareness: Load Balancer solves it generically for any TCP/UDP-based protocol without needing to understand what's actually being transmitted, while Application Gateway solves it specifically for HTTP/HTTPS web traffic, where deeper understanding of the request's actual content (not just its destination IP and port) enables smarter routing and additional web-specific security capabilities.
+A single VM or App Service instance is both a single point of failure and a capacity ceiling; VM Scale Sets ([Section 12](../Part3/Section-12-Part3-VM-Scale-Sets.md)) and multi-instance App Service deployments solve the "multiple instances" side of this, but something must still receive incoming traffic and distribute it across those instances — a client can't reasonably be expected to know about and directly address every individual backend instance itself, especially as instances are added/removed by autoscaling. Load Balancer and Application Gateway both solve this "distribute traffic across many backends" problem, but at different levels of traffic awareness: Load Balancer solves it generically for any TCP/UDP-based protocol without needing to understand what's actually being transmitted, while Application Gateway solves it specifically for HTTP/HTTPS web traffic, where deeper understanding of the request's actual content (not just its destination IP and port) enables smarter routing and additional web-specific security capabilities.
 
 ## 3. Azure Load Balancer (Layer 4)
 
@@ -48,7 +48,7 @@ Application Gateway offers an integrated **Web Application Firewall (WAF)** SKU 
 
 ### 4.4 Autoscaling
 
-Application Gateway (specifically its v2 SKU — ⚠️ verify current SKU/version naming against documentation) supports autoscaling of the gateway itself, automatically adjusting its own capacity to handle traffic volume, similar in concept to the compute autoscaling covered in Section 12.3.2, but applied to the gateway/load-balancing layer itself rather than backend compute instances.
+Application Gateway (specifically its v2 SKU — ⚠️ verify current SKU/version naming against documentation) supports autoscaling of the gateway itself, automatically adjusting its own capacity to handle traffic volume, similar in concept to the compute autoscaling covered in [Section 12](../Part3/Section-12-Part3-VM-Scale-Sets.md).3.2, but applied to the gateway/load-balancing layer itself rather than backend compute instances.
 
 ## 5. Comparison Matrix
 
@@ -119,7 +119,7 @@ az network lb rule create \
 
 - **Purpose:** Creates an internal (private frontend, within `snet-backend`) Standard Load Balancer, a TCP health probe checking port 80, and a rule distributing incoming port-80 traffic to the backend pool, following the internal Layer-4 distribution pattern shown in the architecture diagram.
 - **Important arguments explained individually:**
-  - `--probe-name` (referenced in the rule) — the health probe determines which backend instances actually receive traffic; an instance failing the probe is automatically excluded until it recovers, directly implementing the health-check behavior described in Section 24.3.1.
+  - `--probe-name` (referenced in the rule) — the health probe determines which backend instances actually receive traffic; an instance failing the probe is automatically excluded until it recovers, directly implementing the health-check behavior described in [Section 24](./Section-24-Part5-Load-Balancer-vs-Application-Gateway.md).3.1.
 
 **Creating an Application Gateway with path-based routing (conceptual, abbreviated for clarity):**
 
@@ -135,12 +135,12 @@ az network application-gateway create \
   --servers <backend-pool-ip-or-fqdn-list>
 ```
 
-- **Purpose:** Creates a v2 SKU (supporting autoscaling, per Section 24.4.4) Application Gateway with a public frontend, in its own dedicated subnet — Application Gateway requires a dedicated subnet not shared with other resource types, a specific Azure networking requirement worth remembering.
+- **Purpose:** Creates a v2 SKU (supporting autoscaling, per [Section 24](./Section-24-Part5-Load-Balancer-vs-Application-Gateway.md).4.4) Application Gateway with a public frontend, in its own dedicated subnet — Application Gateway requires a dedicated subnet not shared with other resource types, a specific Azure networking requirement worth remembering.
 - ⚠️ Full path-based routing and WAF configuration require additional, more detailed configuration beyond this illustrative creation command (routing rules, listeners, and WAF policy definitions) — verify exact current command syntax and required sub-resource configuration against official documentation before building a complete production Application Gateway deployment.
 
 ## 8. Production & Enterprise Usage
 
-Enterprises commonly use both together in the same architecture, as shown in Section 24.6's diagram: Application Gateway (with WAF) as the public-facing entry point for web/API traffic, handling SSL termination, content-aware routing across multiple backend services, and web application security filtering; and internal Load Balancers for simpler, private, Layer 4 distribution between internal application tiers where content-aware routing isn't needed and the simplicity/lower overhead of Layer 4 distribution is preferable. For multi-region deployments needing global traffic distribution rather than distribution within a single region, Azure Front Door (Section 25, covered next) sits at an even higher, global layer above both of these regional load-balancing mechanisms.
+Enterprises commonly use both together in the same architecture, as shown in [Section 24](./Section-24-Part5-Load-Balancer-vs-Application-Gateway.md).6's diagram: Application Gateway (with WAF) as the public-facing entry point for web/API traffic, handling SSL termination, content-aware routing across multiple backend services, and web application security filtering; and internal Load Balancers for simpler, private, Layer 4 distribution between internal application tiers where content-aware routing isn't needed and the simplicity/lower overhead of Layer 4 distribution is preferable. For multi-region deployments needing global traffic distribution rather than distribution within a single region, Azure Front Door ([Section 25](./Section-25-Part5-Azure-Front-Door-and-CDN.md), covered next) sits at an even higher, global layer above both of these regional load-balancing mechanisms.
 
 ## 9. Security Considerations
 
@@ -149,7 +149,7 @@ Enterprises commonly use both together in the same architecture, as shown in Sec
 
 ## 10. Performance Considerations
 
-Application Gateway's content inspection (path/header evaluation, WAF rule matching) introduces marginally more processing overhead per request than Load Balancer's simple IP/port-based distribution, though this overhead is generally negligible relative to typical web application response times; Application Gateway v2's autoscaling (Section 24.4.4) helps ensure the gateway layer itself doesn't become a bottleneck as traffic volume grows.
+Application Gateway's content inspection (path/header evaluation, WAF rule matching) introduces marginally more processing overhead per request than Load Balancer's simple IP/port-based distribution, though this overhead is generally negligible relative to typical web application response times; Application Gateway v2's autoscaling ([Section 24](./Section-24-Part5-Load-Balancer-vs-Application-Gateway.md).4.4) helps ensure the gateway layer itself doesn't become a bottleneck as traffic volume grows.
 
 ## 11. Monitoring
 
@@ -163,7 +163,7 @@ Both services integrate with Azure Monitor (Part 10); Application Gateway additi
 | Application Gateway returns errors for legitimate requests after enabling WAF | WAF rules flagging legitimate traffic as malicious (false positive)              | Review WAF logs for the specific triggered rule; tune or exclude the specific rule if it's producing false positives, after careful review |
 | Path-based routing not directing traffic to the expected backend pool         | Routing rule/listener path pattern misconfigured, or rule evaluation order issue | Review the Application Gateway's routing rules and listener configuration for correct path patterns and precedence                         |
 
-## 13. Interview Questions — Section 24
+## 13. Interview Questions — [Section 24](./Section-24-Part5-Load-Balancer-vs-Application-Gateway.md)
 
 ### 🎯 Beginner
 
@@ -177,7 +177,7 @@ _What the interviewer is probing:_ the fundamental OSI-layer distinction, which 
 
 **Q: Design the load-balancing and security layer for a public-facing e-commerce web application with a separate internal API for order processing that should never be directly internet-accessible.**
 
-_Model answer:_ I'd place Application Gateway at the public edge, with a WAF policy in Prevention mode protecting against common web attacks, terminating SSL/TLS for the public-facing traffic, and using path-based routing if the web frontend and any public-facing API endpoints are served from the same domain but need to reach different backend pools. The web frontend backend pool would sit behind this Application Gateway. For the internal order-processing API, which should never be directly internet-accessible, I'd deploy it in a separate, non-internet-exposed subnet, fronted by an internal (private-frontend) Load Balancer for simple, low-overhead Layer 4 distribution across its instances — since this internal traffic doesn't need content-aware routing or a WAF, Layer 4 distribution is both sufficient and appropriately simpler/lower-latency than routing internal traffic through a second Application Gateway unnecessarily. NSGs (Section 22) on the internal API's subnet would further restrict inbound access to only the web frontend's subnet, ensuring the order-processing API is reachable only through the intended path, layering network-level access control on top of the load-balancing topology itself.
+_Model answer:_ I'd place Application Gateway at the public edge, with a WAF policy in Prevention mode protecting against common web attacks, terminating SSL/TLS for the public-facing traffic, and using path-based routing if the web frontend and any public-facing API endpoints are served from the same domain but need to reach different backend pools. The web frontend backend pool would sit behind this Application Gateway. For the internal order-processing API, which should never be directly internet-accessible, I'd deploy it in a separate, non-internet-exposed subnet, fronted by an internal (private-frontend) Load Balancer for simple, low-overhead Layer 4 distribution across its instances — since this internal traffic doesn't need content-aware routing or a WAF, Layer 4 distribution is both sufficient and appropriately simpler/lower-latency than routing internal traffic through a second Application Gateway unnecessarily. NSGs ([Section 22](./Section-22-Part5-NSGs-and-Route-Tables.md)) on the internal API's subnet would further restrict inbound access to only the web frontend's subnet, ensuring the order-processing API is reachable only through the intended path, layering network-level access control on top of the load-balancing topology itself.
 
 _What the interviewer is probing:_ whether the candidate can correctly match each traffic pattern (public web-facing vs. internal service-to-service) to the appropriately-scoped load-balancing tool, rather than defaulting to Application Gateway everywhere out of unfamiliarity with when simpler Layer 4 distribution is the better fit.
 
@@ -195,4 +195,4 @@ _What the interviewer is probing:_ whether the candidate can correctly match eac
 
 ## 16. Related Concepts (Next Up)
 
-Section 25 covers **Azure Front Door & CDN** — extending traffic distribution and content delivery beyond a single region to a global scale, sitting above both Load Balancer and Application Gateway in the traffic path for architectures spanning multiple Azure regions, and introducing the Edge/PoP network concept first mentioned in Section 3.3.5.
+[Section 25](./Section-25-Part5-Azure-Front-Door-and-CDN.md) covers **Azure Front Door & CDN** — extending traffic distribution and content delivery beyond a single region to a global scale, sitting above both Load Balancer and Application Gateway in the traffic path for architectures spanning multiple Azure regions, and introducing the Edge/PoP network concept first mentioned in [Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.5.

@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** CloudWatch Logs is where the actual text output of your applications and AWS services — the print statements, error stack traces, request logs — gets collected, stored, and made searchable. Where CloudWatch metrics (§69) tell you _that_ something is wrong (error count spiked), CloudWatch Logs tells you _what exactly happened_ (the specific error message and stack trace for each failed request).
+**Plain language:** CloudWatch Logs is where the actual text output of your applications and AWS services — the print statements, error stack traces, request logs — gets collected, stored, and made searchable. Where CloudWatch metrics ([§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) tell you _that_ something is wrong (error count spiked), CloudWatch Logs tells you _what exactly happened_ (the specific error message and stack trace for each failed request).
 
 **Precise definition:** CloudWatch Logs is a log management service that collects, stores, and enables querying of log data from AWS services (Lambda, ECS, VPC Flow Logs, RDS, and many others) and custom applications, organizing data into log groups and log streams, with retention policies, subscription-based real-time processing, and a purpose-built query language (CloudWatch Logs Insights) for ad hoc and structured log analysis.
 
 ## 2. Why It Exists / Problem It Solves
 
-Metrics (§69) are numbers — excellent for detecting _that_ an anomaly occurred (error rate jumped from 0.1% to 15%) but fundamentally incapable of explaining _why_ on their own. Answering "why did errors spike" requires the actual textual detail of what happened during those failed requests — the specific exception message, the request parameters, the stack trace. Without centralized log collection, that detail would live scattered across individual server filesystems or container instances, disappearing the moment an EC2 instance terminates or an ECS task cycles, and requiring manual SSH/exec access to even look at during an incident — completely impractical for ephemeral compute (Lambda, Fargate) that may not even exist anymore by the time you go looking.
+Metrics ([§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) are numbers — excellent for detecting _that_ an anomaly occurred (error rate jumped from 0.1% to 15%) but fundamentally incapable of explaining _why_ on their own. Answering "why did errors spike" requires the actual textual detail of what happened during those failed requests — the specific exception message, the request parameters, the stack trace. Without centralized log collection, that detail would live scattered across individual server filesystems or container instances, disappearing the moment an EC2 instance terminates or an ECS task cycles, and requiring manual SSH/exec access to even look at during an incident — completely impractical for ephemeral compute (Lambda, Fargate) that may not even exist anymore by the time you go looking.
 
 CloudWatch Logs solves this by being the **durable, centralized, queryable destination** for log output that would otherwise be ephemeral and scattered, with native, often-zero-configuration integration from most AWS compute services (Lambda automatically sends function output to CloudWatch Logs, for example).
 
@@ -16,9 +16,9 @@ CloudWatch Logs solves this by being the **durable, centralized, queryable desti
 
 ## 3. Prerequisites and Dependencies
 
-- **CloudWatch Fundamentals** (§69): logs and metrics are complementary pillars of the same CloudWatch service; log-based metrics (covered below) explicitly bridge the two.
-- **Lambda** (§25): the single most common source of CloudWatch Logs data in serverless architectures, with automatic, zero-configuration log delivery.
-- **IAM** (§9-11): both writing to and reading from CloudWatch Logs are IAM-governed actions.
+- **CloudWatch Fundamentals** ([§69](./Section-69-Part8-CloudWatch-Fundamentals.md)): logs and metrics are complementary pillars of the same CloudWatch service; log-based metrics (covered below) explicitly bridge the two.
+- **Lambda** ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)): the single most common source of CloudWatch Logs data in serverless architectures, with automatic, zero-configuration log delivery.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): both writing to and reading from CloudWatch Logs are IAM-governed actions.
 
 ## 4. Internal Working
 
@@ -27,7 +27,7 @@ CloudWatch Logs solves this by being the **durable, centralized, queryable desti
 - **Retention** is configured per log group (from 1 day up to indefinite/"never expire") — critically, **CloudWatch Logs' default retention is indefinite (never expire)** unless explicitly configured otherwise, a detail with direct storage-cost implications at scale that's frequently overlooked.
 - **CloudWatch Logs Insights** is a purpose-built query language (not SQL, though SQL-like in spirit) for searching, filtering, and aggregating log data across one or more log groups — supporting parsing unstructured text, extracting fields, filtering, aggregating (counts, sums, percentiles), and sorting, executed against the raw log data without requiring you to pre-define a schema.
 - **Metric filters** let you define a pattern to match against incoming log events and automatically increment a CloudWatch metric each time a match occurs — this is the mechanism that turns "an ERROR line appeared in the logs" into an actual queryable, alarmable CloudWatch metric, bridging logs and metrics.
-- **Subscription filters** allow near-real-time streaming of matching log events out of CloudWatch Logs to a destination — commonly Kinesis Data Streams (§64), Lambda, or Firehose (§65) — enabling custom real-time log processing pipelines (e.g., streaming logs to a third-party SIEM tool, or triggering an automated response to a specific log pattern).
+- **Subscription filters** allow near-real-time streaming of matching log events out of CloudWatch Logs to a destination — commonly Kinesis Data Streams ([§64](../Part7/Section-64-Part7-Kinesis-Data-Streams.md)), Lambda, or Firehose ([§65](../Part7/Section-65-Part7-Kinesis-Data-Firehose.md)) — enabling custom real-time log processing pipelines (e.g., streaming logs to a third-party SIEM tool, or triggering an automated response to a specific log pattern).
 
 ```
 Application/Lambda --> PutLogEvents --> Log Stream --> Log Group (retention policy)
@@ -41,16 +41,16 @@ Application/Lambda --> PutLogEvents --> Log Stream --> Log Group (retention poli
 
 ## 5. Architecture & Components
 
-| Component                    | Explanation                                                                                                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Log Group**                | The named top-level container for related log streams, typically one per application/service; retention is configured here.                                          |
-| **Log Stream**               | A sequence of log events from a single source (one Lambda execution environment, one EC2 instance/log file).                                                         |
-| **Log Event**                | A single timestamped log entry.                                                                                                                                      |
-| **Retention Policy**         | Per-log-group setting controlling how long events are kept before automatic deletion (default: never expire).                                                        |
-| **Metric Filter**            | A pattern matched against incoming log events that increments a CloudWatch metric on each match — bridges logs to the metric/alarm system.                           |
-| **Subscription Filter**      | Real-time streaming of matching log events to Kinesis, Lambda, or Firehose for custom downstream processing.                                                         |
-| **CloudWatch Logs Insights** | The query language/engine for ad hoc search, filtering, parsing, and aggregation across log groups.                                                                  |
-| **CloudWatch Agent**         | (Also relevant here, from §69) — collects and forwards custom application log files from EC2/on-premises servers that don't natively integrate with CloudWatch Logs. |
+| Component                    | Explanation                                                                                                                                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Log Group**                | The named top-level container for related log streams, typically one per application/service; retention is configured here.                                                                                           |
+| **Log Stream**               | A sequence of log events from a single source (one Lambda execution environment, one EC2 instance/log file).                                                                                                          |
+| **Log Event**                | A single timestamped log entry.                                                                                                                                                                                       |
+| **Retention Policy**         | Per-log-group setting controlling how long events are kept before automatic deletion (default: never expire).                                                                                                         |
+| **Metric Filter**            | A pattern matched against incoming log events that increments a CloudWatch metric on each match — bridges logs to the metric/alarm system.                                                                            |
+| **Subscription Filter**      | Real-time streaming of matching log events to Kinesis, Lambda, or Firehose for custom downstream processing.                                                                                                          |
+| **CloudWatch Logs Insights** | The query language/engine for ad hoc search, filtering, parsing, and aggregation across log groups.                                                                                                                   |
+| **CloudWatch Agent**         | (Also relevant here, from [§69](./Section-69-Part8-CloudWatch-Fundamentals.md)) — collects and forwards custom application log files from EC2/on-premises servers that don't natively integrate with CloudWatch Logs. |
 
 ## 6. Lifecycle / Workflow
 
@@ -192,7 +192,7 @@ The `defaultValue: 0` ensures the metric reports zero (rather than simply not ex
 - **Startups** commonly rely on Lambda's automatic log delivery and ad hoc Logs Insights queries during debugging, often without much retention or metric-filter investment initially.
 - **Enterprises** build extensive logging standards (structured JSON logging with consistent field names across services, enabling reliable Logs Insights `parse`/`stats` queries across many different applications), retention policies aligned with compliance requirements (some industries mandate specific minimum log retention periods), and subscription filters streaming logs to centralized SIEM/security tooling or long-term archival pipelines (often via Kinesis/Firehose to S3, directly reusing the Part 7 streaming patterns).
 - **Cost governance** around log retention is a real, recurring enterprise concern — auditing log groups for unset (indefinite) retention and unnecessarily verbose debug-level logging left on in production is a common cost-optimization exercise.
-- Centralized, cross-account log aggregation (subscription filters or CloudWatch Logs' cross-account log data sharing features) lets large organizations funnel logs from many AWS accounts into a central security/observability account, mirroring the same hub-and-spoke pattern seen with EventBridge (§62) and CloudTrail (later, §73).
+- Centralized, cross-account log aggregation (subscription filters or CloudWatch Logs' cross-account log data sharing features) lets large organizations funnel logs from many AWS accounts into a central security/observability account, mirroring the same hub-and-spoke pattern seen with EventBridge ([§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md)) and CloudTrail (later, [§73](./Section-73-Part8-CloudTrail-Audit-Governance.md)).
 
 ## 11. Security Considerations
 
@@ -211,7 +211,7 @@ The `defaultValue: 0` ensures the metric reports zero (rather than simply not ex
 | Signal                                                | What it tells you                                                                                                                                                                                           |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IncomingLogEvents` / `IncomingBytes` (per log group) | Log ingestion volume — useful for cost monitoring and detecting abnormal logging volume spikes (which themselves can indicate an application problem, e.g., an error loop generating excessive log output). |
-| Metric-filter-derived custom metrics                  | Turn specific known log patterns into alarmable signals, as shown in §9.                                                                                                                                    |
+| Metric-filter-derived custom metrics                  | Turn specific known log patterns into alarmable signals, as shown in [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md).                                                                                  |
 | Logs Insights query performance/data-scanned          | Indirect cost signal — very large scans on recurring/scheduled queries are worth optimizing.                                                                                                                |
 
 ## 14. Troubleshooting
@@ -267,7 +267,7 @@ The `defaultValue: 0` ensures the metric reports zero (rather than simply not ex
 
 ## 20. Related Concepts
 
-- **CloudWatch Fundamentals** (metrics, the complementary pillar) → §69.
-- **CloudWatch Alarms & Dashboards** (acting on metric-filter-derived and native metrics) → next section, §71.
-- **Kinesis Data Streams / Firehose** (common subscription filter destinations for real-time log processing) → §64-65.
-- **CloudTrail** (a distinct, specifically API-activity-focused logging service, often confused with general CloudWatch Logs) → §73.
+- **CloudWatch Fundamentals** (metrics, the complementary pillar) → [§69](./Section-69-Part8-CloudWatch-Fundamentals.md).
+- **CloudWatch Alarms & Dashboards** (acting on metric-filter-derived and native metrics) → next section, [§71](./Section-71-Part8-CloudWatch-Alarms-Dashboards.md).
+- **Kinesis Data Streams / Firehose** (common subscription filter destinations for real-time log processing) → [§64](../Part7/Section-64-Part7-Kinesis-Data-Streams.md)-[§65](../Part7/Section-65-Part7-Kinesis-Data-Firehose.md).
+- **CloudTrail** (a distinct, specifically API-activity-focused logging service, often confused with general CloudWatch Logs) → [§73](./Section-73-Part8-CloudTrail-Audit-Governance.md).

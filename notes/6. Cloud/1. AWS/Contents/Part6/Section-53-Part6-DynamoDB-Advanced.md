@@ -166,6 +166,6 @@ Senior - Design DynamoDB for a global multiplayer game: real-time leaderboard, l
 
 ## Related Concepts (forward links)
 
-- ElastiCache - general-purpose caching for RDS/Aurora and other workloads -> §54
+- ElastiCache - general-purpose caching for RDS/Aurora and other workloads -> [§54](./Section-54-Part6-ElastiCache-Redis-Memcached.md)
 - Kinesis Data Streams for broader-scale stream processing beyond native DynamoDB Streams -> Part 7
-- Choosing between RDS/Aurora and DynamoDB, and DMS for migration -> §57
+- Choosing between RDS/Aurora and DynamoDB, and DMS for migration -> [§57](./Section-57-Part6-DMS-Choosing-Right-Database.md)

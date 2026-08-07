@@ -2,14 +2,14 @@
 
 ## 1. Definition
 
-**Plain language:** Section 37 introduced Organization Policy as the mechanism for setting hard resource-configuration constraints (like "no external IPs on VMs") across an org. This section is about the harder, more realistic problem: how do you design a _coherent set_ of these constraints across dozens of folders representing production, non-production, and sandbox environments, so each gets exactly the right level of strictness without engineers fighting the policy engine every day?
+**Plain language:** [Section 37](../Part5/Section-37-Part5-Organization-Policies.md) introduced Organization Policy as the mechanism for setting hard resource-configuration constraints (like "no external IPs on VMs") across an org. This section is about the harder, more realistic problem: how do you design a _coherent set_ of these constraints across dozens of folders representing production, non-production, and sandbox environments, so each gets exactly the right level of strictness without engineers fighting the policy engine every day?
 
 **Precise:** An Organization Policy _hierarchy strategy_ is the deliberate design of which constraints are set at the organization root (an unconditional floor for every resource in the org), which are set at intermediate folders (tailored to that folder's risk profile), and which are deliberately left more permissive or explicitly excepted at specific folders or projects — combined with a documented process for requesting and reviewing exceptions.
 
 ## 2. Why It Exists / Problem It Solves
 
-- Section 37 established _what_ an Organization Policy constraint is and _how_ inheritance and enforcement work mechanically. It did not address the organizational design problem: a single, uniform policy set applied identically everywhere is either too loose (production ends up as permissive as sandbox) or too strict (sandbox experimentation becomes as locked-down as production, killing developer velocity).
-- Enterprises solve this by mapping their folder structure (Section 3, Section 59) to distinct risk tiers — typically production, non-production, and sandbox — and deliberately setting different constraint values, or different constraint _presence_, at each tier.
+- [Section 37](../Part5/Section-37-Part5-Organization-Policies.md) established _what_ an Organization Policy constraint is and _how_ inheritance and enforcement work mechanically. It did not address the organizational design problem: a single, uniform policy set applied identically everywhere is either too loose (production ends up as permissive as sandbox) or too strict (sandbox experimentation becomes as locked-down as production, killing developer velocity).
+- Enterprises solve this by mapping their folder structure ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md), [Section 59](./Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)) to distinct risk tiers — typically production, non-production, and sandbox — and deliberately setting different constraint values, or different constraint _presence_, at each tier.
 - Getting this wrong in either direction has a real cost: overly strict sandbox policy drives engineers to work around the sanctioned environment entirely (shadow IT within the same org); overly loose production policy leaves genuine security gaps that only surface during an incident or audit.
 
 ## 3. Designing a Multi-Tier Policy Strategy
@@ -24,7 +24,7 @@
 
 ### 3.2 Inheritance and the "Effective Policy"
 
-- Constraints set at the organization node apply to every folder and project beneath it by default (Section 37). A constraint set again at a lower folder either **merges** with the parent value (for `listConstraint` types, if merge is allowed) or **overrides** it, depending on the constraint's configured inheritance behavior.
+- Constraints set at the organization node apply to every folder and project beneath it by default ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)). A constraint set again at a lower folder either **merges** with the parent value (for `listConstraint` types, if merge is allowed) or **overrides** it, depending on the constraint's configured inheritance behavior.
 - The **effective policy** for any given project is the union of every constraint set at every ancestor node (org → folder → sub-folder → project), resolved according to each constraint's merge/override rules — this is why designing policy top-down, one layer at a time, and testing the _effective_ policy at the leaf project is essential; reasoning about any single node's policy file in isolation is not sufficient.
 - A small number of constraints support `inheritFromParent: false` combined with an explicit reset, letting a folder deliberately start from a clean slate rather than merging with its parent — used sparingly, since it breaks the "floor never gets weaker going down the tree" guarantee that most enterprises want to preserve.
 
@@ -35,15 +35,15 @@
 
 ## 4. Common Enterprise-Scale Constraints
 
-| Constraint                             | Purpose                                                                                                                                           | Typical Tier Applied                                                                       |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `compute.vmExternalIpAccess`           | Restrict which VMs (by resource, or deny all) may have external IPs, forcing traffic through NAT/load balancers/VPN instead.                      | Org-wide floor; production denies all, sandbox may allow a short explicit list.            |
-| `gcp.resourceLocations`                | Restrict which regions/multi-regions resources may be created in, enforcing data residency.                                                       | Org-wide floor, near-universal.                                                            |
-| `compute.requireOsLogin`               | Require OS Login (Section 42-adjacent identity-based SSH access) rather than metadata-based SSH keys, centralizing SSH access through IAM.        | Org-wide floor.                                                                            |
-| `iam.disableServiceAccountKeyCreation` | Block creation of long-lived, downloadable service account keys, pushing teams toward Workload Identity and short-lived credentials (Section 36). | Org-wide floor, with narrow, time-boxed exceptions for legacy workloads.                   |
-| `compute.restrictSharedVpcSubnetworks` | Limit which Shared VPC subnets a service project may attach to (Section 62).                                                                      | Set per-folder, aligned to which host project/subnet a business unit is authorized to use. |
-| `iam.allowedPolicyMemberDomains`       | Restrict IAM bindings to principals from approved domains/organizations, preventing accidental grants to external Gmail accounts.                 | Org-wide floor.                                                                            |
-| `compute.skipDefaultNetworkCreation`   | Prevent the legacy auto-mode default VPC from being created in new projects, forcing deliberate Shared VPC attachment instead.                    | Org-wide floor, essential in a landing zone using Shared VPC exclusively.                  |
+| Constraint                             | Purpose                                                                                                                                                                                              | Typical Tier Applied                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `compute.vmExternalIpAccess`           | Restrict which VMs (by resource, or deny all) may have external IPs, forcing traffic through NAT/load balancers/VPN instead.                                                                         | Org-wide floor; production denies all, sandbox may allow a short explicit list.            |
+| `gcp.resourceLocations`                | Restrict which regions/multi-regions resources may be created in, enforcing data residency.                                                                                                          | Org-wide floor, near-universal.                                                            |
+| `compute.requireOsLogin`               | Require OS Login ([Section 42](../Part5/Section-42-Part5-Cloud-Identity-BeyondCorp.md)-adjacent identity-based SSH access) rather than metadata-based SSH keys, centralizing SSH access through IAM. | Org-wide floor.                                                                            |
+| `iam.disableServiceAccountKeyCreation` | Block creation of long-lived, downloadable service account keys, pushing teams toward Workload Identity and short-lived credentials ([Section 36](../Part5/Section-36-Part5-Service-Accounts.md)).   | Org-wide floor, with narrow, time-boxed exceptions for legacy workloads.                   |
+| `compute.restrictSharedVpcSubnetworks` | Limit which Shared VPC subnets a service project may attach to ([Section 62](./Section-62-Part9-Shared-VPC-at-Scale.md)).                                                                            | Set per-folder, aligned to which host project/subnet a business unit is authorized to use. |
+| `iam.allowedPolicyMemberDomains`       | Restrict IAM bindings to principals from approved domains/organizations, preventing accidental grants to external Gmail accounts.                                                                    | Org-wide floor.                                                                            |
+| `compute.skipDefaultNetworkCreation`   | Prevent the legacy auto-mode default VPC from being created in new projects, forcing deliberate Shared VPC attachment instead.                                                                       | Org-wide floor, essential in a landing zone using Shared VPC exclusively.                  |
 
 ## 5. Architecture Diagram: Policy Strictness by Folder Tier
 
@@ -113,7 +113,7 @@ updateTime: '2026-07-25T10:00:00Z'
 
 ## 7. Production & Enterprise Usage
 
-- Enterprises typically version-control every Organization Policy as YAML alongside the landing zone Terraform (Section 59), applying changes through the same CI/CD pipeline as any other infrastructure change, with policy changes at the org or production-folder level requiring an additional security-team review step.
+- Enterprises typically version-control every Organization Policy as YAML alongside the landing zone Terraform ([Section 59](./Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)), applying changes through the same CI/CD pipeline as any other infrastructure change, with policy changes at the org or production-folder level requiring an additional security-team review step.
 - A periodic (commonly quarterly) audit of every active exception — checking whether its documented expiry has passed and whether its justification still holds — is standard practice at organizations with mature governance; stale, forgotten exceptions are one of the most common real-world audit findings.
 - Policy Analyzer (part of Cloud Asset Inventory) is commonly used to answer "which constraint values actually apply to project X and why" across a large hierarchy, complementing the CLI-based `--effective` check shown above for ad hoc investigation.
 
@@ -143,4 +143,4 @@ updateTime: '2026-07-25T10:00:00Z'
 
 ## 11. Related Concepts
 
-Organization Policy fundamentals (Section 37), resource hierarchy design (Section 3), the broader landing zone this policy strategy is embedded in (Section 59), Shared VPC subnet restriction (Sections 25, 62), service account key restrictions (Section 36), and Cloud Asset Inventory / Policy Analyzer (touched on in Section 40) all connect directly to the concepts in this section.
+Organization Policy fundamentals ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)), resource hierarchy design ([Section 3](../Part1/Section-03-Part1-Resource-Hierarchy.md)), the broader landing zone this policy strategy is embedded in ([Section 59](./Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)), Shared VPC subnet restriction (Sections 25, 62), service account key restrictions ([Section 36](../Part5/Section-36-Part5-Service-Accounts.md)), and Cloud Asset Inventory / Policy Analyzer (touched on in [Section 40](../Part5/Section-40-Part5-Compliance-Governance.md)) all connect directly to the concepts in this section.

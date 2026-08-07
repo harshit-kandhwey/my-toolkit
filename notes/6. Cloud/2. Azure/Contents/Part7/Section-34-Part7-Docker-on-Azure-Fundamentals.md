@@ -1,14 +1,14 @@
 # Section 34 — Docker on Azure Fundamentals
 
-**Part 7: Containers & Orchestration | Section 34 of 70**
-**Prerequisites:** Section 1 (What is Azure), Section 11 (Azure Virtual Machines), Section 13 (Azure App Service), Section 15 (Azure Container Instances)
-**Leads into:** Section 35 (Azure Container Registry), Section 36–38 (Azure Kubernetes Service)
+**Part 7: Containers & Orchestration | [Section 34](./Section-34-Part7-Docker-on-Azure-Fundamentals.md) of 70**
+**Prerequisites:** [Section 1](../Part1/Section-01-Part1-What-is-Azure-History-Evolution.md) (What is Azure), [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md) (Azure Virtual Machines), [Section 13](../Part3/Section-13-Part3-Azure-App-Service.md) (Azure App Service), [Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md) (Azure Container Instances)
+**Leads into:** [Section 35](./Section-35-Part7-Azure-Container-Registry.md) (Azure Container Registry), [Section 36](./Section-36-Part7-AKS-Architecture.md)–[Section 38](./Section-38-Part7-AKS-Production-Operations.md) (Azure Kubernetes Service)
 
 ---
 
 ## 1. Introduction and Scope
 
-This section builds the container fundamentals required before working with Azure's container services: Azure Container Registry (ACR), Azure Container Instances (ACI, already covered operationally in Section 15 but revisited here from the image/runtime perspective), Azure App Service for Containers, and Azure Kubernetes Service (AKS). Every Azure container service ultimately runs OCI-compliant container images produced by, or compatible with, Docker tooling. Without a solid grounding in what a container actually is and how Docker builds, stores, and runs one, the Azure-specific services in the rest of Part 7 and Part 8 cannot be understood at more than a surface level.
+This section builds the container fundamentals required before working with Azure's container services: Azure Container Registry (ACR), Azure Container Instances (ACI, already covered operationally in [Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md) but revisited here from the image/runtime perspective), Azure App Service for Containers, and Azure Kubernetes Service (AKS). Every Azure container service ultimately runs OCI-compliant container images produced by, or compatible with, Docker tooling. Without a solid grounding in what a container actually is and how Docker builds, stores, and runs one, the Azure-specific services in the rest of Part 7 and Part 8 cannot be understood at more than a surface level.
 
 🔑 **Key Takeaway:** Docker is not an Azure product. It is the de facto standard tooling and image format (via the Open Container Initiative, OCI) that nearly every Azure container service consumes. Learning Docker here is a prerequisite investment, not a detour.
 
@@ -47,33 +47,33 @@ Docker's core insight was that most of the isolation benefit of a VM can be achi
 - **2013:** Docker, Inc. (originally dotCloud) releases Docker as open source, popularizing containers for application delivery.
 - **2015:** The **Open Container Initiative (OCI)** is founded by Docker and other industry players under the Linux Foundation, to standardize the container image format and runtime specification so that no single vendor controls the ecosystem. This matters directly for Azure: AKS, ACI, and ACR all operate on OCI-compliant images and runtimes, not on a Docker-specific format.
 - **2017:** Docker donates its container runtime component (`containerd`) to the Cloud Native Computing Foundation (CNCF). `containerd` becomes the runtime used underneath Kubernetes (and therefore AKS) rather than the full Docker Engine.
-- **2020–2022:** Kubernetes deprecates and removes direct "dockershim" support, moving to the Container Runtime Interface (CRI) and runtimes such as `containerd` directly. **This is why modern AKS node pools run `containerd` as the container runtime, not "Docker" in the historical sense** — a detail covered in depth in Section 36.
+- **2020–2022:** Kubernetes deprecates and removes direct "dockershim" support, moving to the Container Runtime Interface (CRI) and runtimes such as `containerd` directly. **This is why modern AKS node pools run `containerd` as the container runtime, not "Docker" in the historical sense** — a detail covered in depth in [Section 36](./Section-36-Part7-AKS-Architecture.md).
 - **Present day:** "Docker" commonly refers to the Docker CLI/Engine used for local development and image building, while production container platforms (including AKS) typically run OCI images via `containerd` and `runc` directly, without the full Docker Engine installed on the node.
 
 ⚠️ **Warning:** A common point of confusion, including in interviews, is believing that Kubernetes (and therefore AKS) "runs Docker." As of the versions in common use today, AKS nodes run `containerd` as the CRI-compliant runtime. Docker Engine is typically only used on developer workstations and CI build agents to _build_ the image; the image itself, once built, is a standard OCI artifact that any compliant runtime — including `containerd` — can run without Docker being present at runtime.
 
 ### 2.5 Terminology (Every Term Defined)
 
-| Term                                | Definition                                                                                                                                                                                                                                                                         |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Container**                       | A running instance of an image: an isolated process (or group of processes) with its own filesystem, network interfaces, and process namespace, sharing the host kernel.                                                                                                           |
-| **Image**                           | A read-only, layered template used to create containers. Contains application code, runtime, libraries, and metadata (entrypoint, exposed ports, environment defaults).                                                                                                            |
-| **Dockerfile**                      | A text file containing instructions that Docker reads to build an image, layer by layer.                                                                                                                                                                                           |
-| **Layer**                           | An immutable, content-addressed filesystem diff produced by one Dockerfile instruction (mainly `RUN`, `COPY`, `ADD`). Images are stacks of layers.                                                                                                                                 |
-| **Registry**                        | A storage and distribution service for images (e.g., Docker Hub, Azure Container Registry). Organized into repositories and tags.                                                                                                                                                  |
-| **Repository**                      | A named collection of related image versions in a registry (e.g., `myapp`), distinguished by tags (e.g., `myapp:1.0`, `myapp:latest`).                                                                                                                                             |
-| **Tag**                             | A human-readable label pointing to a specific image digest within a repository (e.g., `1.0`, `latest`, `sha256:...`).                                                                                                                                                              |
-| **Docker Engine**                   | The client-server application that builds and runs containers, composed of the Docker daemon (`dockerd`), a REST API, and the `docker` CLI.                                                                                                                                        |
-| **`containerd`**                    | A CNCF container runtime that manages the container lifecycle (image transfer, storage, execution, supervision) on a host; used by Docker Engine internally and directly by Kubernetes/AKS.                                                                                        |
-| **`runc`**                          | A low-level, OCI-compliant CLI tool that actually creates and runs containers using kernel primitives (namespaces, cgroups); invoked by `containerd`.                                                                                                                              |
-| **OCI (Open Container Initiative)** | The Linux Foundation project defining open standards for container **images** (OCI Image Spec) and **runtimes** (OCI Runtime Spec), ensuring portability across tools and vendors.                                                                                                 |
-| **Namespace (kernel feature)**      | A Linux kernel feature that isolates a specific type of system resource (process IDs, network interfaces, mount points, etc.) so that a container sees only its own isolated view. Not to be confused with a Kubernetes namespace.                                                 |
-| **cgroups (control groups)**        | A Linux kernel feature that limits and accounts for resource usage (CPU, memory, I/O) of a process group, preventing one container from starving others on the same host.                                                                                                          |
-| **Base image**                      | The starting image referenced in a Dockerfile's `FROM` instruction (e.g., `ubuntu:22.04`, `mcr.microsoft.com/dotnet/aspnet:8.0`).                                                                                                                                                  |
-| **Multi-stage build**               | A Dockerfile pattern using multiple `FROM` instructions to separate build-time dependencies from the final runtime image, reducing final image size (covered fully as its own roadmap section later in Part 7's Azure-specific build patterns and referenced again in Section 35). |
-| **Volume**                          | Docker-managed persistent storage that exists outside a container's writable layer, surviving container removal.                                                                                                                                                                   |
-| **Bind mount**                      | A host filesystem path mapped directly into a container, used mainly in local development.                                                                                                                                                                                         |
-| **Orchestrator**                    | A system (e.g., Kubernetes/AKS) that manages the lifecycle of many containers across many hosts: scheduling, scaling, self-healing, networking, and service discovery.                                                                                                             |
+| Term                                | Definition                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Container**                       | A running instance of an image: an isolated process (or group of processes) with its own filesystem, network interfaces, and process namespace, sharing the host kernel.                                                                                                                                                             |
+| **Image**                           | A read-only, layered template used to create containers. Contains application code, runtime, libraries, and metadata (entrypoint, exposed ports, environment defaults).                                                                                                                                                              |
+| **Dockerfile**                      | A text file containing instructions that Docker reads to build an image, layer by layer.                                                                                                                                                                                                                                             |
+| **Layer**                           | An immutable, content-addressed filesystem diff produced by one Dockerfile instruction (mainly `RUN`, `COPY`, `ADD`). Images are stacks of layers.                                                                                                                                                                                   |
+| **Registry**                        | A storage and distribution service for images (e.g., Docker Hub, Azure Container Registry). Organized into repositories and tags.                                                                                                                                                                                                    |
+| **Repository**                      | A named collection of related image versions in a registry (e.g., `myapp`), distinguished by tags (e.g., `myapp:1.0`, `myapp:latest`).                                                                                                                                                                                               |
+| **Tag**                             | A human-readable label pointing to a specific image digest within a repository (e.g., `1.0`, `latest`, `sha256:...`).                                                                                                                                                                                                                |
+| **Docker Engine**                   | The client-server application that builds and runs containers, composed of the Docker daemon (`dockerd`), a REST API, and the `docker` CLI.                                                                                                                                                                                          |
+| **`containerd`**                    | A CNCF container runtime that manages the container lifecycle (image transfer, storage, execution, supervision) on a host; used by Docker Engine internally and directly by Kubernetes/AKS.                                                                                                                                          |
+| **`runc`**                          | A low-level, OCI-compliant CLI tool that actually creates and runs containers using kernel primitives (namespaces, cgroups); invoked by `containerd`.                                                                                                                                                                                |
+| **OCI (Open Container Initiative)** | The Linux Foundation project defining open standards for container **images** (OCI Image Spec) and **runtimes** (OCI Runtime Spec), ensuring portability across tools and vendors.                                                                                                                                                   |
+| **Namespace (kernel feature)**      | A Linux kernel feature that isolates a specific type of system resource (process IDs, network interfaces, mount points, etc.) so that a container sees only its own isolated view. Not to be confused with a Kubernetes namespace.                                                                                                   |
+| **cgroups (control groups)**        | A Linux kernel feature that limits and accounts for resource usage (CPU, memory, I/O) of a process group, preventing one container from starving others on the same host.                                                                                                                                                            |
+| **Base image**                      | The starting image referenced in a Dockerfile's `FROM` instruction (e.g., `ubuntu:22.04`, `mcr.microsoft.com/dotnet/aspnet:8.0`).                                                                                                                                                                                                    |
+| **Multi-stage build**               | A Dockerfile pattern using multiple `FROM` instructions to separate build-time dependencies from the final runtime image, reducing final image size (covered fully as its own roadmap section later in Part 7's Azure-specific build patterns and referenced again in [Section 35](./Section-35-Part7-Azure-Container-Registry.md)). |
+| **Volume**                          | Docker-managed persistent storage that exists outside a container's writable layer, surviving container removal.                                                                                                                                                                                                                     |
+| **Bind mount**                      | A host filesystem path mapped directly into a container, used mainly in local development.                                                                                                                                                                                                                                           |
+| **Orchestrator**                    | A system (e.g., Kubernetes/AKS) that manages the lifecycle of many containers across many hosts: scheduling, scaling, self-healing, networking, and service discovery.                                                                                                                                                               |
 
 ### 2.6 Modern Use Cases and Industry Adoption
 
@@ -85,7 +85,7 @@ Docker's core insight was that most of the isolation benefit of a VM can be achi
 ### 2.7 Prerequisites for This Section
 
 - Comfort with Linux command-line basics (helpful but not mandatory; Windows containers exist but this section, like most enterprise Azure container workloads, focuses primarily on Linux containers, which represent the overwhelming majority of Azure container workloads).
-- A conceptual understanding of what a virtual machine is (Section 11) to contrast against containers in 34.3.
+- A conceptual understanding of what a virtual machine is ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md)) to contrast against containers in 34.3.
 - No prior container experience is assumed beyond that.
 
 ---
@@ -94,7 +94,7 @@ Docker's core insight was that most of the isolation benefit of a VM can be achi
 
 ### 3.1 Definition
 
-A **virtual machine** virtualizes hardware: a hypervisor (Section 11 covered Azure's use of Hyper-V-based virtualization) presents virtual hardware to a full guest operating system, which boots its own kernel independently of the host.
+A **virtual machine** virtualizes hardware: a hypervisor ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md) covered Azure's use of Hyper-V-based virtualization) presents virtual hardware to a full guest operating system, which boots its own kernel independently of the host.
 
 A **container** virtualizes the operating system: all containers on a host share that host's single kernel, and are isolated from one another using kernel namespaces and cgroups rather than a hypervisor.
 
@@ -111,7 +111,7 @@ A **container** virtualizes the operating system: all containers on a host share
 | Security isolation strength | Strong (separate kernel = smaller shared attack surface) | Weaker by default (shared kernel = a kernel-level vulnerability can affect all containers); mitigated with hardening (34.9)          |
 | Primary Azure examples      | Azure VMs, VM Scale Sets                                 | ACI, AKS nodes' workloads, App Service containers                                                                                    |
 
-💡 **Tip:** In production Azure architectures, these are not competing choices — they are layered. AKS nodes, for example, **are themselves Azure VMs** (Section 11 concepts apply directly), and each node then runs many containers on top of that VM's single Linux kernel. Understanding both layers is essential for capacity planning and troubleshooting in Sections 36–38.
+💡 **Tip:** In production Azure architectures, these are not competing choices — they are layered. AKS nodes, for example, **are themselves Azure VMs** ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md) concepts apply directly), and each node then runs many containers on top of that VM's single Linux kernel. Understanding both layers is essential for capacity planning and troubleshooting in Sections 36–38.
 
 ### 3.3 Why This Matters for Interviews
 
@@ -189,7 +189,7 @@ _Model answer:_ Kubernetes only requires a CRI (Container Runtime Interface)-com
 _What the interviewer is probing:_ current, accurate knowledge of the container ecosystem rather than outdated "Kubernetes runs Docker" assumptions — a frequent gap even among experienced candidates.
 
 **Architect:** "A security team asks why a compromised container could potentially affect other containers on the same AKS node. Explain the underlying risk in architectural terms."
-_Model answer:_ All containers on a node share one kernel. Namespaces and cgroups provide strong logical isolation but are not as strong a security boundary as a hypervisor's hardware-level isolation between VMs, because a kernel vulnerability or misconfiguration (e.g., an overly permissive `securityContext`, a container running as root without dropped capabilities, or a container escape exploit) can potentially allow a process to affect the shared kernel and thus other containers. This is why node-level hardening, non-root containers, read-only root filesystems, dropped Linux capabilities, and considering gVisor/Kata Containers or dedicated node pools for untrusted workloads are relevant mitigations (expanded further in Section 37's AKS security coverage).
+_Model answer:_ All containers on a node share one kernel. Namespaces and cgroups provide strong logical isolation but are not as strong a security boundary as a hypervisor's hardware-level isolation between VMs, because a kernel vulnerability or misconfiguration (e.g., an overly permissive `securityContext`, a container running as root without dropped capabilities, or a container escape exploit) can potentially allow a process to affect the shared kernel and thus other containers. This is why node-level hardening, non-root containers, read-only root filesystems, dropped Linux capabilities, and considering gVisor/Kata Containers or dedicated node pools for untrusted workloads are relevant mitigations (expanded further in [Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md)'s AKS security coverage).
 _What the interviewer is probing:_ whether the candidate can reason about the security implications of the shared-kernel model at a systems level, not just recite that "containers are isolated."
 
 ### 4.6 Key Takeaways
@@ -235,7 +235,7 @@ An image reference has the form:
 Examples:
 
 - `nginx:1.27` — official image, implicit Docker Hub registry, repository `nginx`, tag `1.27`.
-- `myregistry.azurecr.io/webapp:2026.07.24` — an Azure Container Registry (`myregistry.azurecr.io`, covered fully in Section 35), repository `webapp`, tag matching a date-based release convention.
+- `myregistry.azurecr.io/webapp:2026.07.24` — an Azure Container Registry (`myregistry.azurecr.io`, covered fully in [Section 35](./Section-35-Part7-Azure-Container-Registry.md)), repository `webapp`, tag matching a date-based release convention.
 - `myregistry.azurecr.io/webapp@sha256:3fbb...` — pinning to an exact immutable digest rather than a mutable tag, the strongly recommended approach for production deployments (34.5.6).
 
 ⚠️ **Warning:** Tags are mutable pointers, not immutable identifiers. `latest` in particular is a convention, not a guarantee — nothing prevents someone from pushing a completely different image under the tag `latest` or even `1.27`. Only the **digest** (`sha256:...`) is truly immutable.
@@ -255,8 +255,8 @@ Examples:
   ```
   Expected output includes per-layer download progress lines ending in `Status: Downloaded newer image for mcr.microsoft.com/dotnet/aspnet:8.0`.
 - **Production usage:** CI/CD agents pull a pinned base image digest at build time to guarantee reproducible builds rather than trusting a mutable tag.
-- **Common errors:** `unauthorized: authentication required` (missing registry login — see `docker login` and Section 35's ACR authentication coverage); `manifest unknown` (tag or platform variant does not exist in the registry).
-- **Security impact:** pulling from unverified public registries risks supply-chain compromise (typosquatted image names, compromised maintainer accounts). Enterprise practice is to pull only from an approved private registry such as ACR, optionally with content trust/image signing (touched on in 34.9, expanded in Section 35).
+- **Common errors:** `unauthorized: authentication required` (missing registry login — see `docker login` and [Section 35](./Section-35-Part7-Azure-Container-Registry.md)'s ACR authentication coverage); `manifest unknown` (tag or platform variant does not exist in the registry).
+- **Security impact:** pulling from unverified public registries risks supply-chain compromise (typosquatted image names, compromised maintainer accounts). Enterprise practice is to pull only from an approved private registry such as ACR, optionally with content trust/image signing (touched on in 34.9, expanded in [Section 35](./Section-35-Part7-Azure-Container-Registry.md)).
 - **Performance impact:** layer caching means repeated pulls of the same base image across many builds/hosts only transfer new layers, not the whole image.
 
 #### `docker build`
@@ -288,8 +288,8 @@ Examples:
   docker push myregistry.azurecr.io/webapp:1.0
   ```
 - **Production usage:** typically the final step of a CI pipeline stage, immediately followed by a deployment step that instructs the target Azure service (AKS, App Service, ACI, Container Apps) to pull the new tag or digest.
-- **Common errors:** `denied: requested access to the resource is denied` — insufficient RBAC/registry permissions; in Azure this maps directly to the AcrPush role covered in Section 35.
-- **Security impact:** push access should be restricted to CI identities (ideally via a Managed Identity or Service Principal, Section 9) rather than shared human credentials.
+- **Common errors:** `denied: requested access to the resource is denied` — insufficient RBAC/registry permissions; in Azure this maps directly to the AcrPush role covered in [Section 35](./Section-35-Part7-Azure-Container-Registry.md).
+- **Security impact:** push access should be restricted to CI identities (ideally via a Managed Identity or Service Principal, [Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) rather than shared human credentials.
 
 #### `docker images` / `docker image ls`
 
@@ -309,13 +309,13 @@ Examples:
 
 - **Digest pinning:** production deployment manifests (Kubernetes YAML, ARM/Bicep templates) should reference images by immutable digest (`@sha256:...`) rather than a mutable tag, guaranteeing that a rollback or redeploy always retrieves byte-identical content — this is a widely accepted best practice, not merely an opinion.
 - **Image provenance and signing:** enterprises increasingly require cryptographic signing of images (e.g., via Notary/Cosign integrated with ACR) so that deployment targets can verify an image was built by an authorized pipeline and has not been tampered with in transit or at rest.
-- **Immutable tags in ACR:** Azure Container Registry supports marking specific tags as immutable, preventing accidental or malicious overwrite of a released version — a governance control referenced again in Section 35.
+- **Immutable tags in ACR:** Azure Container Registry supports marking specific tags as immutable, preventing accidental or malicious overwrite of a released version — a governance control referenced again in [Section 35](./Section-35-Part7-Azure-Container-Registry.md).
 
 ### 5.7 Security Considerations
 
 - Always use minimal base images (`-slim`, `-alpine`, or distroless variants) to shrink the attack surface — fewer installed packages means fewer potential CVEs.
 - Regularly rebuild images even without application code changes, to pick up base-image security patches (`--no-cache` builds on a schedule, or automated dependency/base-image update tooling).
-- Scan images for known vulnerabilities before deployment (Microsoft Defender for Cloud's container image scanning, covered in Section 55, integrates directly with ACR for this purpose).
+- Scan images for known vulnerabilities before deployment (Microsoft Defender for Cloud's container image scanning, covered in [Section 55](../Part11/Section-55-Part11-Microsoft-Defender-for-Cloud.md), integrates directly with ACR for this purpose).
 
 ### 5.8 Performance Considerations
 
@@ -336,7 +336,7 @@ _Model answer:_ An image is an immutable, read-only template — layers of files
 _Model answer:_ Tags are mutable pointers that can be reassigned to different image content at any time, either intentionally (a new release reusing `latest`) or accidentally. A digest is a cryptographic hash of the image manifest and is immutable by construction — the same digest always resolves to exactly the same bytes. Pinning by digest guarantees reproducible deployments and reliable rollbacks, which tags alone cannot guarantee.
 
 **FAANG-style / Scenario:** "Your team's CI pipeline builds and pushes an image tagged `myapp:v2.3` to ACR. Two weeks later, a production incident occurs, and you need to redeploy exactly what was running last Tuesday. How do you guarantee you get the exact same image, and what would you change about the deployment pipeline going forward to make this reliable by default?"
-_Model answer:_ If the deployment only ever referenced the mutable tag `myapp:v2.3`, and that tag was later overwritten by a subsequent build reusing the same version string, there is no guarantee the current `v2.3` tag still points at what ran last Tuesday. The reliable fix going forward is for the deployment pipeline to record and deploy by the immutable digest returned at push time (captured as a pipeline artifact/output), and, where the registry supports it, to mark released tags immutable (ACR's tag immutability feature, Section 35) to prevent overwrite in the first place. For the immediate incident, if the exact digest from that Tuesday build was not recorded anywhere (build logs, deployment history, GitOps commit), it may be unrecoverable — which is itself the lesson to escalate: deployment records must capture digests, not just tags.
+_Model answer:_ If the deployment only ever referenced the mutable tag `myapp:v2.3`, and that tag was later overwritten by a subsequent build reusing the same version string, there is no guarantee the current `v2.3` tag still points at what ran last Tuesday. The reliable fix going forward is for the deployment pipeline to record and deploy by the immutable digest returned at push time (captured as a pipeline artifact/output), and, where the registry supports it, to mark released tags immutable (ACR's tag immutability feature, [Section 35](./Section-35-Part7-Azure-Container-Registry.md)) to prevent overwrite in the first place. For the immediate incident, if the exact digest from that Tuesday build was not recorded anywhere (build logs, deployment history, GitOps commit), it may be unrecoverable — which is itself the lesson to escalate: deployment records must capture digests, not just tags.
 _What the interviewer is probing:_ real production incident-response thinking, not just textbook recall — recognizing that the fix is both immediate (find the record) and systemic (change the pipeline).
 
 ---
@@ -354,7 +354,7 @@ A **Dockerfile** is a plain-text, declarative script of instructions that `docke
 - **Purpose:** sets the base image the new image builds on top of; must be the first instruction (aside from optional `ARG` before it for parameterizing the base image itself).
 - **Syntax:** `FROM <image>[:<tag>|@<digest>] [AS <stage-name>]`
 - **Example:** `FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime`
-- **Production usage:** enterprises frequently mandate approved internal base images (mirrored into ACR from Microsoft's MCR or vetted vendors) rather than pulling directly from arbitrary public registries, for supply-chain control (expanded in Section 35 and Section 58).
+- **Production usage:** enterprises frequently mandate approved internal base images (mirrored into ACR from Microsoft's MCR or vetted vendors) rather than pulling directly from arbitrary public registries, for supply-chain control (expanded in [Section 35](./Section-35-Part7-Azure-Container-Registry.md) and [Section 58](../Part11/Section-58-Part11-Compliance-Encryption.md)).
 - **Common mistake:** using an unpinned `latest` base tag, causing unreproducible builds where the same Dockerfile produces different results on different days as the upstream `latest` moves.
 
 #### `RUN`
@@ -382,7 +382,7 @@ A **Dockerfile** is a plain-text, declarative script of instructions that `docke
 
 - **Purpose:** sets an environment variable available both during subsequent build steps and at container runtime (unlike `ARG`, which is build-time only).
 - **Syntax:** `ENV KEY=value`
-- **Security note:** never place secrets (connection strings, API keys) in `ENV` instructions — they become permanently visible in `docker history` and the image manifest. Use Azure Key Vault references, Kubernetes Secrets, or App Service application settings injected at runtime instead (expanded in Section 56).
+- **Security note:** never place secrets (connection strings, API keys) in `ENV` instructions — they become permanently visible in `docker history` and the image manifest. Use Azure Key Vault references, Kubernetes Secrets, or App Service application settings injected at runtime instead (expanded in [Section 56](../Part11/Section-56-Part11-Key-Vault.md)).
 
 #### `EXPOSE`
 
@@ -394,7 +394,7 @@ A **Dockerfile** is a plain-text, declarative script of instructions that `docke
 
 - **Purpose:** sets the user (and optionally group) that subsequent instructions and the final container process run as, instead of the default `root`.
 - **Syntax:** `USER <user>[:<group>]`
-- **Security impact:** critical hardening control — running as root inside a container means a container-escape vulnerability grants root on the host's kernel context; running as a non-root user significantly narrows that blast radius (expanded in 34.9 and Section 55).
+- **Security impact:** critical hardening control — running as root inside a container means a container-escape vulnerability grants root on the host's kernel context; running as a non-root user significantly narrows that blast radius (expanded in 34.9 and [Section 55](../Part11/Section-55-Part11-Microsoft-Defender-for-Cloud.md)).
 
 #### `ENTRYPOINT` and `CMD`
 
@@ -406,7 +406,7 @@ A **Dockerfile** is a plain-text, declarative script of instructions that `docke
 
 - **Purpose:** defines a command Docker runs periodically to determine whether the container is healthy, surfaced in `docker ps` status and usable by orchestrators.
 - **Syntax:** `HEALTHCHECK [--interval=30s --timeout=3s --retries=3] CMD <command>`
-- **Production note:** in AKS, Kubernetes has its own liveness/readiness probe mechanism (Section 37) which is generally preferred over the Dockerfile `HEALTHCHECK` for orchestrated workloads, but `HEALTHCHECK` remains valuable for standalone Docker usage (e.g., ACI, App Service containers) where no external orchestrator is present.
+- **Production note:** in AKS, Kubernetes has its own liveness/readiness probe mechanism ([Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md)) which is generally preferred over the Dockerfile `HEALTHCHECK` for orchestrated workloads, but `HEALTHCHECK` remains valuable for standalone Docker usage (e.g., ACI, App Service containers) where no external orchestrator is present.
 
 ### 6.3 Complete Hands-On Example
 
@@ -512,7 +512,7 @@ A running (or stopped, but not yet removed) instance of an image, with its own w
   ```bash
   docker run -d --name webapp -p 8080:8080 -e ASPNETCORE_ENVIRONMENT=Production myregistry.azurecr.io/webapp:1.0
   ```
-- **Common errors:** `port is already allocated` (host port conflict); `Error response from daemon: pull access denied` (not authenticated to the registry — see Section 35's ACR authentication).
+- **Common errors:** `port is already allocated` (host port conflict); `Error response from daemon: pull access denied` (not authenticated to the registry — see [Section 35](./Section-35-Part7-Azure-Container-Registry.md)'s ACR authentication).
 - **Exit codes:** the container's own process exit code is surfaced via `docker inspect` / `docker wait`; exit code `0` indicates a clean exit, non-zero indicates the application process itself failed, and `137` specifically indicates the process was killed by SIGKILL (commonly from an out-of-memory cgroup kill or `docker stop` timeout expiry).
 
 #### `docker ps`
@@ -526,20 +526,20 @@ A running (or stopped, but not yet removed) instance of an image, with its own w
 - **Purpose:** retrieves the stdout/stderr output stream captured from a container's main process.
 - **Syntax:** `docker logs [OPTIONS] CONTAINER`
 - **Key options:** `-f, --follow` (stream continuously, like `tail -f`); `--since`, `--until` (time-bounded log retrieval); `--tail N` (last N lines).
-- **Production usage:** in Azure, this local logging model is superseded by centralized logging once containers run on ACI, App Service, or AKS — Azure Monitor / Log Analytics (Section 50–51) aggregates the same stdout/stderr stream across all instances, which is why applications should always log to stdout/stderr rather than writing to local files inside the container.
+- **Production usage:** in Azure, this local logging model is superseded by centralized logging once containers run on ACI, App Service, or AKS — Azure Monitor / Log Analytics ([Section 50](../Part10/Section-50-Part10-Azure-Monitor-Fundamentals.md)–[Section 51](../Part10/Section-51-Part10-Log-Analytics-KQL.md)) aggregates the same stdout/stderr stream across all instances, which is why applications should always log to stdout/stderr rather than writing to local files inside the container.
 
 #### `docker exec`
 
 - **Purpose:** runs an additional command inside an already-running container, most commonly for interactive debugging.
 - **Syntax:** `docker exec [OPTIONS] CONTAINER COMMAND`
 - **Practical example:** `docker exec -it webapp /bin/sh` opens an interactive shell inside the running container.
-- **Security note:** `docker exec` access is equivalent to significant control over that container's process namespace; in production Azure environments this maps to `kubectl exec` RBAC restrictions covered in Section 37.
+- **Security note:** `docker exec` access is equivalent to significant control over that container's process namespace; in production Azure environments this maps to `kubectl exec` RBAC restrictions covered in [Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md).
 
 #### `docker stop` / `docker kill`
 
 - **Purpose:** `docker stop` sends SIGTERM, waits a grace period (default 10 seconds), then sends SIGKILL if the process has not exited; `docker kill` sends SIGKILL (or a specified signal) immediately.
 - **Syntax:** `docker stop [-t SECONDS] CONTAINER` / `docker kill [-s SIGNAL] CONTAINER`
-- **Relevance:** the grace period behavior directly parallels Kubernetes' pod `terminationGracePeriodSeconds` (Section 37) — understanding this at the Docker level transfers directly.
+- **Relevance:** the grace period behavior directly parallels Kubernetes' pod `terminationGracePeriodSeconds` ([Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md)) — understanding this at the Docker level transfers directly.
 
 #### `docker rm`
 
@@ -556,17 +556,17 @@ A running (or stopped, but not yet removed) instance of an image, with its own w
 
 - `--memory` and `--memory-swap` set a hard memory ceiling enforced by the cgroup; exceeding it triggers the kernel's OOM killer against that container's process specifically, not the host.
 - `--cpus` sets a fractional CPU limit (e.g., `--cpus=0.5` allows up to half a CPU core's worth of time).
-- These map directly to Kubernetes pod resource `limits`/`requests` (Section 37) and to ACI's per-container-group CPU/memory allocation (Section 15) — the underlying cgroup mechanism is identical across all of these Azure services.
+- These map directly to Kubernetes pod resource `limits`/`requests` ([Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md)) and to ACI's per-container-group CPU/memory allocation ([Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md)) — the underlying cgroup mechanism is identical across all of these Azure services.
 
 ### 7.4 Troubleshooting Common Container Issues
 
-| Symptom                                                                             | Likely Cause                                                                                                                                                                                                                  | Diagnostic Step                                                                                                                        |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Container exits immediately after `docker run`                                      | Main process completes and exits (containers stop when PID 1 exits); often a misconfigured `CMD`/`ENTRYPOINT`, or the app crashing on startup                                                                                 | `docker logs <container>` to see the crash output; `docker ps -a` to see exit code                                                     |
-| Container exits with code 137                                                       | OOM-killed by cgroup memory limit, or killed by `docker stop` timing out and escalating to SIGKILL                                                                                                                            | `docker inspect` for `OOMKilled: true`; review `--memory` limit vs actual usage                                                        |
-| "Cannot connect" to a published port                                                | Port not actually published (`-p` missing or wrong mapping), application listening on `127.0.0.1` inside the container instead of `0.0.0.0` (binding only to loopback makes it unreachable even with correct port publishing) | `docker port <container>`; verify the app's bind address in its own configuration                                                      |
-| Image builds successfully but runtime fails with "file not found" for an executable | Multi-stage build copied from the wrong stage, or a runtime dependency present in the build stage was never installed in the final runtime stage                                                                              | Compare `COPY --from=` stage references; verify runtime-stage base image includes required shared libraries                            |
-| Very slow builds in CI despite a small Dockerfile                                   | Poor layer-cache ordering (34.6.5), or CI runner not persisting Docker's build cache between runs                                                                                                                             | Reorder instructions; configure CI to reuse a build cache (e.g., BuildKit cache export, or ACR Tasks' cache-from behavior, Section 35) |
+| Symptom                                                                             | Likely Cause                                                                                                                                                                                                                  | Diagnostic Step                                                                                                                                                                          |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Container exits immediately after `docker run`                                      | Main process completes and exits (containers stop when PID 1 exits); often a misconfigured `CMD`/`ENTRYPOINT`, or the app crashing on startup                                                                                 | `docker logs <container>` to see the crash output; `docker ps -a` to see exit code                                                                                                       |
+| Container exits with code 137                                                       | OOM-killed by cgroup memory limit, or killed by `docker stop` timing out and escalating to SIGKILL                                                                                                                            | `docker inspect` for `OOMKilled: true`; review `--memory` limit vs actual usage                                                                                                          |
+| "Cannot connect" to a published port                                                | Port not actually published (`-p` missing or wrong mapping), application listening on `127.0.0.1` inside the container instead of `0.0.0.0` (binding only to loopback makes it unreachable even with correct port publishing) | `docker port <container>`; verify the app's bind address in its own configuration                                                                                                        |
+| Image builds successfully but runtime fails with "file not found" for an executable | Multi-stage build copied from the wrong stage, or a runtime dependency present in the build stage was never installed in the final runtime stage                                                                              | Compare `COPY --from=` stage references; verify runtime-stage base image includes required shared libraries                                                                              |
+| Very slow builds in CI despite a small Dockerfile                                   | Poor layer-cache ordering (34.6.5), or CI runner not persisting Docker's build cache between runs                                                                                                                             | Reorder instructions; configure CI to reuse a build cache (e.g., BuildKit cache export, or ACR Tasks' cache-from behavior, [Section 35](./Section-35-Part7-Azure-Container-Registry.md)) |
 
 ### 7.5 Key Takeaways
 
@@ -613,7 +613,7 @@ volumes:
 
 ### 8.4 Relationship to Azure
 
-⚠️ **Warning:** Docker Compose is a local/dev-oriented tool. It is **not** how Azure runs multi-container production workloads at scale — that role belongs to Azure Kubernetes Service (Sections 36–38) or Azure Container Apps, both of which have their own (more capable) mechanisms for service discovery, scaling, and networking. However, Azure Container Instances does support deploying a **container group** defined via a YAML file with a structure conceptually similar to Compose (multiple containers sharing a network namespace), and some Azure Container Apps tooling accepts Compose files as a translation input for simple cases — but production Kubernetes manifests are not a Compose file and require the distinct concepts taught in Section 37.
+⚠️ **Warning:** Docker Compose is a local/dev-oriented tool. It is **not** how Azure runs multi-container production workloads at scale — that role belongs to Azure Kubernetes Service (Sections 36–38) or Azure Container Apps, both of which have their own (more capable) mechanisms for service discovery, scaling, and networking. However, Azure Container Instances does support deploying a **container group** defined via a YAML file with a structure conceptually similar to Compose (multiple containers sharing a network namespace), and some Azure Container Apps tooling accepts Compose files as a translation input for simple cases — but production Kubernetes manifests are not a Compose file and require the distinct concepts taught in [Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md).
 
 ### 8.5 Key Takeaways
 
@@ -629,7 +629,7 @@ volumes:
 - **Minimize base image surface:** fewer installed packages means fewer CVEs to track and patch; `-slim`, `-alpine`, or distroless base images are widely recommended for production.
 - **Drop unnecessary Linux capabilities:** by default, Docker grants containers a reduced-but-still-broad set of Linux capabilities; production hardening typically drops all capabilities and adds back only the specific ones required (`--cap-drop=ALL --cap-add=NET_BIND_SERVICE`, for example).
 - **Read-only root filesystem where possible:** `--read-only` prevents runtime writes to the container's filesystem outside explicitly mounted writable volumes, limiting the damage an attacker who gains code execution can do (e.g., cannot drop a persistent backdoor binary into the image layer).
-- **Scan images before deployment:** vulnerability scanning (integrated with ACR and Microsoft Defender for Cloud, Section 55) should be a required CI/CD gate, not an optional afterthought.
+- **Scan images before deployment:** vulnerability scanning (integrated with ACR and Microsoft Defender for Cloud, [Section 55](../Part11/Section-55-Part11-Microsoft-Defender-for-Cloud.md)) should be a required CI/CD gate, not an optional afterthought.
 - **Avoid privileged mode:** `--privileged` disables almost all container isolation and should essentially never be used for application workloads; legitimate uses are rare and specialized (e.g., certain low-level infrastructure tooling).
 - **Registry trust:** pull only from registries under organizational control or explicitly vetted (ACR with content trust, or verified publishers on Microsoft Container Registry/MCR), never arbitrary public registries for production workloads.
 
@@ -645,12 +645,12 @@ By default, all data written inside a container's writable layer is lost when th
 
 ### 10.2 Volumes vs. Bind Mounts
 
-| Aspect          | Named Volume                                                                                 | Bind Mount                                                                      |
-| --------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Managed by      | Docker (`docker volume create`)                                                              | The host filesystem directly (path exists independent of Docker)                |
-| Typical use     | Production-style persistent data (databases, uploaded files)                                 | Local development (mounting live source code into a container for hot-reload)   |
-| Portability     | Portable across hosts with the same Docker setup; abstracted from host filesystem specifics  | Tied to a specific host path; not portable                                      |
-| Azure relevance | Conceptually parallels Kubernetes PersistentVolumes backed by Azure Disks/Files (Section 37) | Rarely used directly in Azure production; primarily a local-development pattern |
+| Aspect          | Named Volume                                                                                                                                          | Bind Mount                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Managed by      | Docker (`docker volume create`)                                                                                                                       | The host filesystem directly (path exists independent of Docker)                |
+| Typical use     | Production-style persistent data (databases, uploaded files)                                                                                          | Local development (mounting live source code into a container for hot-reload)   |
+| Portability     | Portable across hosts with the same Docker setup; abstracted from host filesystem specifics                                                           | Tied to a specific host path; not portable                                      |
+| Azure relevance | Conceptually parallels Kubernetes PersistentVolumes backed by Azure Disks/Files ([Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md)) | Rarely used directly in Azure production; primarily a local-development pattern |
 
 ### 10.3 Example
 
@@ -661,7 +661,7 @@ docker run -d -v app-data:/var/lib/app/data myregistry.azurecr.io/webapp:1.0
 
 ### 10.4 Relevance to Azure
 
-This section intentionally stays at Docker-level fundamentals. When containers move to AKS, "volumes" become **PersistentVolumes** and **PersistentVolumeClaims**, typically backed by Azure Disks (single-node read-write) or Azure Files (multi-node read-write-many) — both already covered in depth in Sections 18–19, and revisited from the Kubernetes storage-class perspective in Section 37.
+This section intentionally stays at Docker-level fundamentals. When containers move to AKS, "volumes" become **PersistentVolumes** and **PersistentVolumeClaims**, typically backed by Azure Disks (single-node read-write) or Azure Files (multi-node read-write-many) — both already covered in depth in Sections 18–19, and revisited from the Kubernetes storage-class perspective in [Section 37](./Section-37-Part7-AKS-Networking-Scaling-Security.md).
 
 ---
 
@@ -671,20 +671,20 @@ This subsection is an orientation map for the rest of Part 7 and Part 8 — a co
 
 ### 11.1 Comparison of Azure Container Hosting Options
 
-| Azure Service                                                     | Model                                                                                                                    | Orchestration                                                                                | Typical Fit                                                                                                                                       | Roadmap Section                                                                                                                   |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Azure VM with Docker installed**                                | You manage the VM, the Docker Engine, and everything above it                                                            | None (manual, or self-managed via Compose/scripts)                                           | Legacy lift-and-shift, full control scenarios, or learning/dev sandboxes                                                                          | Section 11 (VM fundamentals) + this section                                                                                       |
-| **Azure Container Instances (ACI)**                               | Serverless single container or a small container group; no VM management                                                 | None (Azure schedules on hidden infrastructure)                                              | Simple, short-lived, or bursty single/few-container workloads; CI/CD job runners; batch tasks                                                     | Section 15                                                                                                                        |
-| **Azure App Service (custom container / Web App for Containers)** | PaaS web app backed by a container image instead of the built-in language runtime                                        | Platform-managed scaling of a single app                                                     | Web applications and APIs wanting PaaS convenience (deployment slots, custom domains, easy scaling) with the packaging flexibility of a container | Section 13                                                                                                                        |
-| **Azure Container Apps**                                          | Managed serverless container platform built on Kubernetes/KEDA/Dapr under the hood, without exposing Kubernetes directly | Platform-managed (built on Kubernetes primitives internally, abstracted away)                | Microservices needing scale-to-zero, event-driven scaling, and simpler operations than raw AKS                                                    | Not yet in roadmap as its own section — introduced in Section 40/40 context; candidate for a future roadmap addition if requested |
-| **Azure Kubernetes Service (AKS)**                                | Full managed Kubernetes control plane; you manage node pools and workload manifests                                      | Full Kubernetes orchestration (scheduling, self-healing, service discovery, rolling updates) | Complex microservice architectures needing fine-grained control, multi-team platforms, workloads requiring specific Kubernetes ecosystem tooling  | Sections 36–38                                                                                                                    |
-| **Azure Functions (custom container)**                            | Serverless function execution using a container image instead of the built-in deployment package                         | Platform-managed                                                                             | Event-driven functions that need custom runtime/dependencies beyond what built-in Functions stacks support                                        | Section 14 covers Functions generally; custom-container specifics are part of Section 40's deeper dive                            |
+| Azure Service                                                     | Model                                                                                                                    | Orchestration                                                                                | Typical Fit                                                                                                                                       | Roadmap Section                                                                                                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Azure VM with Docker installed**                                | You manage the VM, the Docker Engine, and everything above it                                                            | None (manual, or self-managed via Compose/scripts)                                           | Legacy lift-and-shift, full control scenarios, or learning/dev sandboxes                                                                          | [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md) (VM fundamentals) + this section                                                                                                               |
+| **Azure Container Instances (ACI)**                               | Serverless single container or a small container group; no VM management                                                 | None (Azure schedules on hidden infrastructure)                                              | Simple, short-lived, or bursty single/few-container workloads; CI/CD job runners; batch tasks                                                     | [Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md)                                                                                                                                             |
+| **Azure App Service (custom container / Web App for Containers)** | PaaS web app backed by a container image instead of the built-in language runtime                                        | Platform-managed scaling of a single app                                                     | Web applications and APIs wanting PaaS convenience (deployment slots, custom domains, easy scaling) with the packaging flexibility of a container | [Section 13](../Part3/Section-13-Part3-Azure-App-Service.md)                                                                                                                                                     |
+| **Azure Container Apps**                                          | Managed serverless container platform built on Kubernetes/KEDA/Dapr under the hood, without exposing Kubernetes directly | Platform-managed (built on Kubernetes primitives internally, abstracted away)                | Microservices needing scale-to-zero, event-driven scaling, and simpler operations than raw AKS                                                    | Not yet in roadmap as its own section — introduced in [Section 40](../Part8/Section-40-Part8-Azure-Functions-Deep-Dive.md)/40 context; candidate for a future roadmap addition if requested                      |
+| **Azure Kubernetes Service (AKS)**                                | Full managed Kubernetes control plane; you manage node pools and workload manifests                                      | Full Kubernetes orchestration (scheduling, self-healing, service discovery, rolling updates) | Complex microservice architectures needing fine-grained control, multi-team platforms, workloads requiring specific Kubernetes ecosystem tooling  | Sections 36–38                                                                                                                                                                                                   |
+| **Azure Functions (custom container)**                            | Serverless function execution using a container image instead of the built-in deployment package                         | Platform-managed                                                                             | Event-driven functions that need custom runtime/dependencies beyond what built-in Functions stacks support                                        | [Section 14](../Part3/Section-14-Part3-Azure-Functions.md) covers Functions generally; custom-container specifics are part of [Section 40](../Part8/Section-40-Part8-Azure-Functions-Deep-Dive.md)'s deeper dive |
 
 💡 **Tip:** A recurring interview and architecture-decision pattern is choosing between these options along two axes: **how much orchestration control is needed** (none → full Kubernetes) and **how much operational overhead the team is willing to own** (fully managed PaaS/serverless → full self-managed Kubernetes node pools). ACI and Container Apps sit at the low-overhead end; AKS sits at the high-control, high-capability, higher-overhead end; App Service containers and VM-hosted Docker sit in between along different dimensions.
 
 ### 11.2 Docker on an Azure VM (Hands-On Orientation)
 
-Since Docker itself does not require any Azure-specific installation steps beyond standard Linux package installation, running Docker on an Azure VM uses the exact same Docker Engine install and CLI workflow as any Linux server, layered on top of the VM concepts from Section 11:
+Since Docker itself does not require any Azure-specific installation steps beyond standard Linux package installation, running Docker on an Azure VM uses the exact same Docker Engine install and CLI workflow as any Linux server, layered on top of the VM concepts from [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md):
 
 ```bash
 # On an Azure Linux VM (Ubuntu example)
@@ -707,7 +707,7 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plu
 Every one of the Azure services above needs to _pull_ the image from somewhere. Options include:
 
 - **Docker Hub** (public or private repositories) — acceptable for public open-source base images, generally discouraged as the source of truth for proprietary production images due to rate limiting, availability dependency on a third party outside Azure's network boundary, and weaker integration with Azure RBAC/Managed Identity.
-- **Azure Container Registry (ACR)** — the enterprise-standard choice for Azure workloads: private by default, integrates with Microsoft Entra ID/Managed Identities for pull authentication (no embedded credentials), supports geo-replication, vulnerability scanning integration, and native build capabilities (ACR Tasks). Covered in full depth in **Section 35**, which is the direct next section in this roadmap.
+- **Azure Container Registry (ACR)** — the enterprise-standard choice for Azure workloads: private by default, integrates with Microsoft Entra ID/Managed Identities for pull authentication (no embedded credentials), supports geo-replication, vulnerability scanning integration, and native build capabilities (ACR Tasks). Covered in full depth in **[Section 35](./Section-35-Part7-Azure-Container-Registry.md)**, which is the direct next section in this roadmap.
 
 ---
 
@@ -750,10 +750,10 @@ Every one of the Azure services above needs to _pull_ the image from somewhere. 
 
 ## 15. Related Concepts and What Comes Next
 
-- **Section 35 — Azure Container Registry:** the private, Azure-integrated registry that stores and distributes the images built using everything taught in this section, including authentication via Managed Identities (Section 9), geo-replication, ACR Tasks (cloud-side image builds), and vulnerability scanning integration.
+- **[Section 35](./Section-35-Part7-Azure-Container-Registry.md) — Azure Container Registry:** the private, Azure-integrated registry that stores and distributes the images built using everything taught in this section, including authentication via Managed Identities ([Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)), geo-replication, ACR Tasks (cloud-side image builds), and vulnerability scanning integration.
 - **Sections 36–38 — Azure Kubernetes Service:** the orchestration layer that consumes these OCI images at scale, introducing pods, deployments, services, ingress, autoscaling, and cluster-level security — everything in 34.4 (architecture), 34.9 (security), and 34.10 (storage) directly underpins those sections' Kubernetes-specific equivalents.
-- **Section 15 — Azure Container Instances (revisit):** now that image/container fundamentals are established, Section 15's ACI coverage can be fully understood as "the simplest possible way to run the containers built in this section, without any orchestrator."
-- **Section 13 — Azure App Service (revisit):** custom container deployment to App Service is a direct application of everything in 34.5–34.7.
+- **[Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md) — Azure Container Instances (revisit):** now that image/container fundamentals are established, [Section 15](../Part3/Section-15-Part3-Azure-Container-Instances.md)'s ACI coverage can be fully understood as "the simplest possible way to run the containers built in this section, without any orchestrator."
+- **[Section 13](../Part3/Section-13-Part3-Azure-App-Service.md) — Azure App Service (revisit):** custom container deployment to App Service is a direct application of everything in 34.5–34.7.
 
 ---
 
@@ -769,8 +769,8 @@ Every one of the Azure services above needs to _pull_ the image from somewhere. 
 
 🔑 Every Azure container-hosting option (VM+Docker, ACI, App Service containers, Container Apps, AKS, custom-container Functions) consumes the same OCI image artifact — the choice between them is about orchestration control versus operational overhead, not about image compatibility.
 
-🔑 Azure Container Registry (Section 35, next) is the enterprise-standard image storage and distribution point tying this section's fundamentals into the rest of Azure's container ecosystem.
+🔑 Azure Container Registry ([Section 35](./Section-35-Part7-Azure-Container-Registry.md), next) is the enterprise-standard image storage and distribution point tying this section's fundamentals into the rest of Azure's container ecosystem.
 
 ---
 
-_End of Section 34. Next: Section 35 — Azure Container Registry (ACR)._
+_End of [Section 34](./Section-34-Part7-Docker-on-Azure-Fundamentals.md). Next: [Section 35](./Section-35-Part7-Azure-Container-Registry.md) — Azure Container Registry (ACR)._

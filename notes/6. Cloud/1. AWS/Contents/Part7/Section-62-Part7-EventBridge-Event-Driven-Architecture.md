@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-SNS (§61) fans out to subscribers based on **message attributes** you explicitly attach when publishing — the publisher has to know to set those attributes for filtering to work, and filtering is comparatively shallow (attribute matching, not deep event-content matching). It also doesn't natively understand events already flowing out of AWS services (e.g., "an EC2 instance changed state," "a CodePipeline deployment failed") — someone has to explicitly wire those into SNS.
+SNS ([§61](./Section-61-Part7-SNS-PubSub-Messaging.md)) fans out to subscribers based on **message attributes** you explicitly attach when publishing — the publisher has to know to set those attributes for filtering to work, and filtering is comparatively shallow (attribute matching, not deep event-content matching). It also doesn't natively understand events already flowing out of AWS services (e.g., "an EC2 instance changed state," "a CodePipeline deployment failed") — someone has to explicitly wire those into SNS.
 
 EventBridge solves a broader problem: it is AWS's answer to **"give me a central nervous system for events across my entire AWS environment and beyond, with rich, content-aware routing, and no need to modify the producer to add new consumers or new filtering logic."** Its rules match on the actual JSON structure of the event itself (nested fields, ranges, prefixes, "exists" checks), not just a small set of hand-picked attributes — a materially more expressive filtering model. It also comes pre-wired to receive events automatically from ~200 AWS services without any producer-side integration work, and supports ingesting from external SaaS vendors (Datadog, PagerDuty, Zendesk, and others) via **partner event sources**.
 
@@ -16,9 +16,9 @@ EventBridge solves a broader problem: it is AWS's answer to **"give me a central
 
 ## 3. Prerequisites and Dependencies
 
-- **SNS** (§61): EventBridge and SNS overlap significantly in purpose; the choice between them is a common architecture decision revisited fully in §67.
-- **Lambda** (§25) and **Step Functions** (next section, §63): the two most common EventBridge targets for actually doing something with a routed event.
-- **IAM** (§9-11): rules need permission to invoke their targets, and event buses have resource policies analogous to SNS/SQS.
+- **SNS** ([§61](./Section-61-Part7-SNS-PubSub-Messaging.md)): EventBridge and SNS overlap significantly in purpose; the choice between them is a common architecture decision revisited fully in [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
+- **Lambda** ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)) and **Step Functions** (next section, [§63](./Section-63-Part7-StepFunctions-Orchestration.md)): the two most common EventBridge targets for actually doing something with a routed event.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): rules need permission to invoke their targets, and event buses have resource policies analogous to SNS/SQS.
 
 ## 4. Internal Working
 
@@ -213,7 +213,7 @@ aws events put-targets --rule EC2StoppedAlert --targets '[
 
 - **Startups** commonly use EventBridge's scheduled rules as a lightweight, serverless cron replacement (e.g., "run this Lambda nightly") and a handful of rules reacting to core AWS service events (S3 uploads, CodePipeline state changes).
 - **Enterprises** build entire event-driven architectures (EDA) around EventBridge as the central nervous system: custom event buses per business domain, dozens to hundreds of rules owned by different teams, SaaS partner integrations feeding third-party tool events (e.g., a support-ticket system) directly into internal automation, and the schema registry providing a de facto contract/documentation layer between event producers and consumers across team boundaries.
-- **Cross-account event routing**: a common enterprise pattern is a central "hub" account's event bus receiving events from many "spoke" account buses (via resource policies granting cross-account `PutEvents`), enabling centralized security/compliance event monitoring across an entire AWS Organization (cross-reference §13).
+- **Cross-account event routing**: a common enterprise pattern is a central "hub" account's event bus receiving events from many "spoke" account buses (via resource policies granting cross-account `PutEvents`), enabling centralized security/compliance event monitoring across an entire AWS Organization (cross-reference [§13](../Part2/Section-13-Part2-AWS-Organizations-and-SCPs.md)).
 - **Archive & Replay** is used operationally for incident recovery: if a downstream consumer had a bug that silently mishandled events for a period, the archived events can be replayed against the fixed consumer logic without needing the original producers to resend anything.
 
 ## 11. Security Considerations
@@ -259,7 +259,7 @@ aws events put-targets --rule EC2StoppedAlert --targets '[
 - ❌ Assuming a rule "must be working" because it was created without error — pattern syntax validation at creation time does not guarantee the pattern logically matches real events; always verify against actual event samples.
 - ❌ Omitting target DLQs — the exact same silent-data-loss risk as an unconfigured SNS subscription applies here.
 - ❌ Routing everything through the single default event bus in a large multi-team organization, making ownership, permissions, and debugging unnecessarily tangled — custom buses per domain scale better organizationally.
-- **Common misconception:** "EventBridge and SNS are redundant; pick one and standardize." In practice, many enterprise architectures use both for different purposes — SNS for simple fan-out and human-facing alerting, EventBridge for rich content-based routing and native AWS-service-event reactions — full comparison in §67.
+- **Common misconception:** "EventBridge and SNS are redundant; pick one and standardize." In practice, many enterprise architectures use both for different purposes — SNS for simple fan-out and human-facing alerting, EventBridge for rich content-based routing and native AWS-service-event reactions — full comparison in [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
 
 ## 17. Interview Questions with Model Answers
 
@@ -286,11 +286,11 @@ aws events put-targets --rule EC2StoppedAlert --targets '[
 🔑 The default event bus automatically receives most AWS service events with zero producer-side wiring — a key differentiator from SNS, where every publisher relationship must be explicitly established.
 🔑 Every rule target should have a DLQ configured, exactly as with SNS subscriptions — EventBridge is not a durable store either.
 🔑 Archive and replay provide a recovery mechanism SNS and SQS don't natively offer — valuable for reprocessing after downstream bugs.
-🔑 EventBridge and SNS are not strictly redundant; many production architectures use both, and the choice is a recurring interview topic covered fully in §67.
+🔑 EventBridge and SNS are not strictly redundant; many production architectures use both, and the choice is a recurring interview topic covered fully in [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
 
 ## 20. Related Concepts
 
-- **Step Functions** (a very common EventBridge target for triggering multi-step workflows) → next section, §63.
-- **SNS** (compared and contrasted directly) → §61; full head-to-head comparison → §67.
-- **Lambda** (the most common single-action EventBridge target) → §25.
+- **Step Functions** (a very common EventBridge target for triggering multi-step workflows) → next section, [§63](./Section-63-Part7-StepFunctions-Orchestration.md).
+- **SNS** (compared and contrasted directly) → [§61](./Section-61-Part7-SNS-PubSub-Messaging.md); full head-to-head comparison → [§67](./Section-67-Part7-Choosing-Integration-Pattern.md).
+- **Lambda** (the most common single-action EventBridge target) → [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md).
 - **CloudWatch Events** (EventBridge's predecessor; still referenced in some legacy contexts) → conceptually superseded, will be noted briefly where relevant in Part 8.

@@ -2,21 +2,21 @@
 
 ## 1. Definition
 
-**Plain language:** This section covers the mechanisms that turn basic SQS (§59) into a production-grade messaging layer: dead-letter queues (a safety net for messages that keep failing), FIFO queues (strict ordering and exactly-once processing when you need them), and the deeper mechanics of visibility timeout and scaling behavior under real load.
+**Plain language:** This section covers the mechanisms that turn basic SQS ([§59](./Section-59-Part7-SQS-Fundamentals.md)) into a production-grade messaging layer: dead-letter queues (a safety net for messages that keep failing), FIFO queues (strict ordering and exactly-once processing when you need them), and the deeper mechanics of visibility timeout and scaling behavior under real load.
 
 **Precise definition:** These are advanced SQS features layered on the base queue primitive — Dead-Letter Queues (DLQs) via redrive policies, FIFO queue semantics (ordering, message groups, deduplication), and operational patterns for tuning visibility timeout and throughput at production scale, including redrive-to-source and high-throughput FIFO mode.
 
 ## 2. Why It Exists / Problem It Solves
 
-Basic SQS (§1) guarantees at-least-once delivery on a best-effort, unordered basis. Two real production problems remain unsolved by the basic primitive:
+Basic SQS ([§1](../Part1/Section-01-Part1-What-is-AWS-and-Cloud-Computing-Fundamentals.md)) guarantees at-least-once delivery on a best-effort, unordered basis. Two real production problems remain unsolved by the basic primitive:
 
 1. **The poison message problem:** a malformed or unprocessable message will fail every single time a consumer tries it, cycle back into the queue after visibility timeout expires, get retried, fail again — forever. Without intervention, this message consumes consumer capacity indefinitely and never surfaces as an alert; it just silently degrades throughput. DLQs solve this by giving failing messages a maximum number of attempts, after which they're moved somewhere a human can inspect them.
 2. **The ordering and duplication problem:** many real workflows (financial transactions, state-machine transitions, "create order" must precede "cancel order" for the same order) cannot tolerate out-of-order or duplicate processing. FIFO queues solve this with strict per-group ordering and built-in deduplication — at the cost of throughput ceilings that don't exist on standard queues.
 
 ## 3. Prerequisites and Dependencies
 
-- **§59** (SQS Fundamentals) — visibility timeout, receipt handles, and the send/receive/delete lifecycle are assumed knowledge here.
-- **Lambda** (§25) — Lambda has its own DLQ-adjacent concept (on-failure destinations) that is related but distinct from SQS DLQs; distinguished below.
+- **[§59](./Section-59-Part7-SQS-Fundamentals.md)** (SQS Fundamentals) — visibility timeout, receipt handles, and the send/receive/delete lifecycle are assumed knowledge here.
+- **Lambda** ([§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md)) — Lambda has its own DLQ-adjacent concept (on-failure destinations) that is related but distinct from SQS DLQs; distinguished below.
 
 ## 4. Internal Working
 
@@ -110,7 +110,7 @@ MessageGroupId="customer-B"  ->  [msg1] -> [msg2]             (strict order with
 
 ### `aws sqs send-message` (FIFO-specific parameters)
 
-- **Purpose:** Same core send operation as §59, but with FIFO-required parameters.
+- **Purpose:** Same core send operation as [§59](./Section-59-Part7-SQS-Fundamentals.md), but with FIFO-required parameters.
 - **Syntax:**
   ```
   aws sqs send-message --queue-url <fifo-queue-url> --message-body <text> \
@@ -136,7 +136,7 @@ MessageGroupId="customer-B"  ->  [msg1] -> [msg2]             (strict order with
   ```
 - **Common errors:** omitting `--message-group-id` on a FIFO queue -> `MissingParameter`; sending a duplicate `MessageDeduplicationId` within the 5-minute window silently succeeds (returns success) but the second message is discarded — this "silent" behavior surprises many engineers seeing it for the first time.
 - **Production usage:** `MessageGroupId` is commonly set to a natural partition key already used elsewhere in the system (e.g., customer ID, order ID, account ID) so ordering aligns with the actual business entity that needs sequential processing.
-- **Performance impact:** more message groups = more parallelism (different consumers can process different groups concurrently); a single group ID for all messages forces fully serial processing regardless of consumer count — a frequent, costly mistake (see §16).
+- **Performance impact:** more message groups = more parallelism (different consumers can process different groups concurrently); a single group ID for all messages forces fully serial processing regardless of consumer count — a frequent, costly mistake (see [§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md)).
 
 ### `aws sqs start-message-move-task` (DLQ redrive — moving messages back)
 
@@ -224,7 +224,7 @@ for message in response.get('Messages', []):
 
 ## 10. Production & Enterprise Usage
 
-- **Startups** commonly add a DLQ only after their first poison-message incident — a reactive rather than proactive pattern (see anti-patterns, §16).
+- **Startups** commonly add a DLQ only after their first poison-message incident — a reactive rather than proactive pattern (see anti-patterns, [§16](../Part2/Section-16-Part2-GuardDuty-SecurityHub-Config-Inspector.md)).
 - **Enterprises** treat DLQ depth as a first-class operational metric with automated alerting (CloudWatch alarm -> SNS -> PagerDuty/Slack, previewed here, full CloudWatch depth in Part 8) and a documented runbook for triage: inspect message, check for a known transient cause, decide redrive vs. manual fix vs. discard-with-audit-log.
 - FIFO queues are heavily used in **financial services** (payment state machines), **e-commerce** (order lifecycle events per order ID as the group key), and **logistics/telecom** (per-device or per-shipment ordered event streams).
 - **Multi-region/DR consideration:** SQS queues are regional resources; there is no built-in cross-region replication. Enterprises needing DR-level resilience for critical queues typically replicate at the application layer (dual-write to a queue in a secondary region) or rely on the broader multi-region architecture pattern rather than any native SQS cross-region feature.
@@ -232,7 +232,7 @@ for message in response.get('Messages', []):
 ## 11. Security Considerations
 
 - `RedriveAllowPolicy` on a DLQ is a security control, not just an operational one — without it, a compromised or misconfigured queue elsewhere in the account (or, if permissions are too broad, another account) could redirect large volumes of unrelated traffic into a shared DLQ, potentially as a cost-inflation or noise-injection vector; set it to `byQueue` with an explicit allow-list in security-sensitive environments.
-- DLQ messages often contain the same sensitive payload as the original message — encryption-at-rest and access-control requirements from §59 apply equally, and DLQ access should be scoped separately (often more restrictively, since DLQ inspection is typically a human/ops activity rather than an automated service).
+- DLQ messages often contain the same sensitive payload as the original message — encryption-at-rest and access-control requirements from [§59](./Section-59-Part7-SQS-Fundamentals.md) apply equally, and DLQ access should be scoped separately (often more restrictively, since DLQ inspection is typically a human/ops activity rather than an automated service).
 
 ## 12. Performance Considerations
 
@@ -241,7 +241,7 @@ for message in response.get('Messages', []):
 
 ## 13. Monitoring
 
-Additional metrics beyond §59's base set, specific to this section's features:
+Additional metrics beyond [§59](./Section-59-Part7-SQS-Fundamentals.md)'s base set, specific to this section's features:
 
 | Metric                                              | What it tells you                                                                                                                                                     |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -305,6 +305,6 @@ Additional metrics beyond §59's base set, specific to this section's features:
 
 ## 20. Related Concepts
 
-- **SNS** (pub/sub, often paired with SQS to fan out one event to multiple queues) → next section, §61.
-- **Lambda on-failure destinations** (a related but distinct DLQ-like concept specific to async Lambda invocations) → previously touched in §25; worth contrasting explicitly with SQS DLQs.
+- **SNS** (pub/sub, often paired with SQS to fan out one event to multiple queues) → next section, [§61](./Section-61-Part7-SNS-PubSub-Messaging.md).
+- **Lambda on-failure destinations** (a related but distinct DLQ-like concept specific to async Lambda invocations) → previously touched in [§25](../Part3/Section-25-Part3-AWS-Lambda-Serverless-Compute.md); worth contrasting explicitly with SQS DLQs.
 - **CloudWatch alarms on queue metrics** → full depth in Part 8.

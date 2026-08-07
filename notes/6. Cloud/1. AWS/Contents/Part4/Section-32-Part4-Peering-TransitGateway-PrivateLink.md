@@ -209,8 +209,8 @@ Senior - Design connectivity for 40 VPCs across accounts: production reaches sha
 
 ## Related Concepts (forward links)
 
-- VPN and Direct Connect for on-premises connectivity, including Transit Gateway attachment -> §33
-- Gateway Endpoints (S3/DynamoDB) vs Interface Endpoints (PrivateLink) in full depth -> §37
-- Route 53 Resolver for DNS across peered/Transit-Gateway-connected VPCs -> §34
-- AWS Global Accelerator, a complementary network-layer global traffic-routing service -> §34a (within Section 6, Route 53)
+- VPN and Direct Connect for on-premises connectivity, including Transit Gateway attachment -> [§33](./Section-33-Part4-VPN-DirectConnect.md)
+- Gateway Endpoints (S3/DynamoDB) vs Interface Endpoints (PrivateLink) in full depth -> [§37](./Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md)
+- Route 53 Resolver for DNS across peered/Transit-Gateway-connected VPCs -> [§34](./Section-34-Part4-Route53-DNS.md)
+- AWS Global Accelerator, a complementary network-layer global traffic-routing service -> [§34](./Section-34-Part4-Route53-DNS.md)a (within Section 6, Route 53)
 - VPC Lattice (see Section 6a above) as the application-layer alternative for many-to-many internal service connectivity

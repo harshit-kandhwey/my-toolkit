@@ -4,7 +4,7 @@
 
 **Plain language:** Azure Resource Manager (ARM) is the front door for literally everything you do in Azure. Whether you click a button in the Portal, run a CLI command, or submit a template, that request goes through ARM, which checks you're allowed to do it, then creates, updates, or deletes the actual resource.
 
-**Precise definition:** ARM is Azure's unified deployment and management layer — a RESTful API service that receives all resource lifecycle requests (create/read/update/delete), enforces authentication and authorization (via RBAC, Section 8) and governance (via Azure Policy, Section 57) before executing them, and provides consistent, idempotent, declarative deployment through ARM templates or Bicep (Section 46-47).
+**Precise definition:** ARM is Azure's unified deployment and management layer — a RESTful API service that receives all resource lifecycle requests (create/read/update/delete), enforces authentication and authorization (via RBAC, [Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)) and governance (via Azure Policy, [Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md)) before executing them, and provides consistent, idempotent, declarative deployment through ARM templates or Bicep ([Section 46](../Part9/Section-46-Part9-ARM-Templates.md)-[Section 47](../Part9/Section-47-Part9-Bicep.md)).
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -41,7 +41,7 @@ Every resource is created by a **Resource Provider** — a namespace of related 
 
 ### 3.3 Subscription
 
-**Definition:** A Subscription is a billing and access-management boundary — it's the unit Microsoft actually invoices, and it's also a hard boundary for certain resource limits/quotas (e.g., maximum number of VNets per subscription). A single organization (tenant, see Section 6) commonly has multiple subscriptions, often split by environment (Production, Development, Test) or by business unit, both for billing separation and for blast-radius containment (a mistake or breach in a Dev subscription can't directly damage Production resources).
+**Definition:** A Subscription is a billing and access-management boundary — it's the unit Microsoft actually invoices, and it's also a hard boundary for certain resource limits/quotas (e.g., maximum number of VNets per subscription). A single organization (tenant, see [Section 6](../Part2/Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md)) commonly has multiple subscriptions, often split by environment (Production, Development, Test) or by business unit, both for billing separation and for blast-radius containment (a mistake or breach in a Dev subscription can't directly damage Production resources).
 
 ### 3.4 Management Group
 
@@ -51,7 +51,7 @@ Every resource is created by a **Resource Provider** — a namespace of related 
 
 ## 4. Inheritance Model
 
-RBAC role assignments (Section 8) and Azure Policy assignments (Section 57) both **inherit downward** through this hierarchy: a role granted at the Management Group level applies to every Subscription, Resource Group, and Resource beneath it; a role granted at the Resource Group level applies to every Resource inside it, but not to sibling resource groups. This inheritance is additive only — you cannot "revoke" an inherited permission at a lower level, only grant additional permissions (the implications of this for least-privilege design are covered fully in Section 8).
+RBAC role assignments ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)) and Azure Policy assignments ([Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md)) both **inherit downward** through this hierarchy: a role granted at the Management Group level applies to every Subscription, Resource Group, and Resource beneath it; a role granted at the Resource Group level applies to every Resource inside it, but not to sibling resource groups. This inheritance is additive only — you cannot "revoke" an inherited permission at a lower level, only grant additional permissions (the implications of this for least-privilege design are covered fully in [Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)).
 
 ```
 Management Group "Contoso-Root"
@@ -73,7 +73,7 @@ az provider register --namespace Microsoft.ContainerService
 - **Purpose:** Enables the subscription to create resources of a given provider's types (here, enabling AKS, which lives under `Microsoft.ContainerService`) — many providers are pre-registered by default, but some require explicit registration.
 - **Common error:** Attempting to create a resource whose provider isn't registered returns an error like `MissingSubscriptionRegistration` — the fix is exactly this registration command.
 
-**Creating a resource group (Section 3.5), then listing resources within it:**
+**Creating a resource group ([Section 3](./Section-03-Part1-Azure-Global-Infrastructure.md).5), then listing resources within it:**
 
 ```bash
 az resource list --resource-group rg-myapp-prod --output table
@@ -105,7 +105,7 @@ Enterprises design their **management group and subscription hierarchy deliberat
 
 ## 7. Security Considerations
 
-- Because RBAC and Policy inherit downward and additively, granting a broad role (like Owner) at a high level (Management Group or Subscription) has a much larger blast radius than granting it at a Resource Group level — the principle of least privilege (Section 8) strongly favors scoping access as low in the hierarchy as the task allows.
+- Because RBAC and Policy inherit downward and additively, granting a broad role (like Owner) at a high level (Management Group or Subscription) has a much larger blast radius than granting it at a Resource Group level — the principle of least privilege ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)) strongly favors scoping access as low in the hierarchy as the task allows.
 - Resource locks (`CanNotDelete`, `ReadOnly`) are a distinct control from RBAC — even a user with full Owner permissions cannot delete a locked resource until the lock itself is removed, making locks a critical safety net against both accidental deletion and certain compromised-credential scenarios.
 
 ## 8. Troubleshooting
@@ -117,7 +117,7 @@ Enterprises design their **management group and subscription hierarchy deliberat
 | Cannot delete a resource group despite having Owner role     | A Resource Lock is present                                           | Locate and remove the lock (requires separate permission) before deletion                         |
 | A deployed resource doesn't show expected RBAC access        | Permission was assigned at a sibling resource group, not an ancestor | Re-check the exact scope of the RBAC assignment — inheritance only flows downward, never sideways |
 
-## 9. Interview Questions — Section 4
+## 9. Interview Questions — [Section 4](./Section-04-Part1-Azure-Resource-Manager.md)
 
 ### 🎯 Beginner
 
@@ -149,4 +149,4 @@ _What the interviewer is probing:_ whether the candidate can apply the ARM hiera
 
 ## 12. Related Concepts (Next Up)
 
-Section 5 wraps up Part 1 by covering the actual **tooling** used to interact with ARM — the Azure Portal, Azure CLI, Azure PowerShell, and SDKs — before Part 2 moves into Identity & Access Management, starting with Microsoft Entra ID, which governs _who_ is allowed to perform the ARM operations just described.
+[Section 5](./Section-05-Part1-Azure-Tooling-Overview.md) wraps up Part 1 by covering the actual **tooling** used to interact with ARM — the Azure Portal, Azure CLI, Azure PowerShell, and SDKs — before Part 2 moves into Identity & Access Management, starting with Microsoft Entra ID, which governs _who_ is allowed to perform the ARM operations just described.

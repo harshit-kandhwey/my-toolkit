@@ -130,8 +130,8 @@ us-central1-c    us-central1   UP
 ## 8. Production & Enterprise Usage
 
 - **High availability within a region:** Enterprises typically deploy redundant instances of a service across at least 3 zones within a region (e.g., a Managed Instance Group spanning `us-central1-a`, `-b`, `-c`) so that a single zone failure doesn't cause an outage.
-- **Multi-region for disaster recovery:** Mission-critical systems (e.g., banking, healthcare) often deploy fully redundant infrastructure in a second, geographically distant region, with data replication and failover mechanisms — covered in depth in Section 58 (Disaster Recovery & Multi-Region Architecture).
-- **Global load balancing:** Enterprises serving a worldwide user base use GCP's Global HTTP(S) Load Balancer (Section 22) to route users to the nearest healthy region automatically, rather than manually managing region selection.
+- **Multi-region for disaster recovery:** Mission-critical systems (e.g., banking, healthcare) often deploy fully redundant infrastructure in a second, geographically distant region, with data replication and failover mechanisms — covered in depth in [Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md) (Disaster Recovery & Multi-Region Architecture).
+- **Global load balancing:** Enterprises serving a worldwide user base use GCP's Global HTTP(S) Load Balancer ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)) to route users to the nearest healthy region automatically, rather than manually managing region selection.
 
 ## 9. Common Misconceptions
 
@@ -147,7 +147,7 @@ us-central1-c    us-central1   UP
 **Model answer:** A zonal Managed Instance Group places all instances within a single zone, so a zone-level failure takes down the entire group. A regional Managed Instance Group spreads instances across multiple zones within the region automatically, so the application remains available even if one zone fails. The trade-off is slightly more complexity in some data consistency scenarios (e.g., needing to handle cross-zone latency for stateful workloads), but for stateless workloads, regional MIGs are almost always preferred in production.
 
 **🎯 Senior/Architect:** _A client needs 99.99% availability with data residency restricted to the European Union, and a disaster recovery target region for business continuity. How would you approach region selection?_
-**Model answer:** I'd select a primary EU region (e.g., `europe-west1` in Belgium) for data residency compliance, deploying the primary workload across at least 3 zones within that region for intra-region high availability against zone-level failures. For disaster recovery, I'd choose a second EU region that is geographically distant enough to avoid correlated disasters (e.g., `europe-west3` in Frankfurt, or `europe-north1` in Finland) while still satisfying the EU data residency requirement — I would not select a US region as DR target, since that would violate the residency constraint even for backup/replica data. I'd then design either an active-passive or active-active replication strategy between the two regions depending on RPO/RTO requirements (detailed in Section 49), and use a Global Load Balancer with health checks to handle regional failover automatically.
+**Model answer:** I'd select a primary EU region (e.g., `europe-west1` in Belgium) for data residency compliance, deploying the primary workload across at least 3 zones within that region for intra-region high availability against zone-level failures. For disaster recovery, I'd choose a second EU region that is geographically distant enough to avoid correlated disasters (e.g., `europe-west3` in Frankfurt, or `europe-north1` in Finland) while still satisfying the EU data residency requirement — I would not select a US region as DR target, since that would violate the residency constraint even for backup/replica data. I'd then design either an active-passive or active-active replication strategy between the two regions depending on RPO/RTO requirements (detailed in [Section 49](../Part6/Section-49-Part6-Data-Pipeline-Architecture-Patterns.md)), and use a Global Load Balancer with health checks to handle regional failover automatically.
 
 ## 11. Key Takeaways
 
@@ -158,4 +158,4 @@ us-central1-c    us-central1   UP
 
 ## 12. Related Concepts
 
-Resource hierarchy (Section 3), VPC networks and subnets (Sections 19–20), regional vs zonal vs global load balancers (Section 22), and disaster recovery/multi-region architecture (Section 58) all build directly on the region/zone model introduced here.
+Resource hierarchy ([Section 3](./Section-03-Part1-Resource-Hierarchy.md)), VPC networks and subnets (Sections 19–20), regional vs zonal vs global load balancers ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)), and disaster recovery/multi-region architecture ([Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)) all build directly on the region/zone model introduced here.

@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Azure Database for PostgreSQL and Azure Database for MySQL are fully managed versions of these popular open-source relational databases — Azure handles patching, backups, and high availability, the same operational relief PaaS provides for SQL Server (Section 29), but for applications built around PostgreSQL or MySQL specifically.
+**Plain language:** Azure Database for PostgreSQL and Azure Database for MySQL are fully managed versions of these popular open-source relational databases — Azure handles patching, backups, and high availability, the same operational relief PaaS provides for SQL Server ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md)), but for applications built around PostgreSQL or MySQL specifically.
 
 **Precise definition:** Azure Database for PostgreSQL and Azure Database for MySQL are fully managed Platform-as-a-Service offerings running the genuine, community-compatible PostgreSQL and MySQL database engines respectively, providing automated patching, backups, high availability, and elastic scaling, without requiring the customer to manage underlying VM or OS infrastructure.
 
@@ -18,8 +18,8 @@ Both services have historically offered multiple deployment architectures, with 
 
 **Flexible Server characteristics:**
 
-- **Zone-redundant high availability** — can be configured to deploy a standby replica in a different Availability Zone (Section 3.3.2), with automated failover if the primary becomes unavailable.
-- **Burstable, General Purpose, and Memory Optimized compute tiers** — similar in spirit to VM sizing categories (Section 11.4), letting compute be matched to the actual workload's CPU/memory profile.
+- **Zone-redundant high availability** — can be configured to deploy a standby replica in a different Availability Zone ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2), with automated failover if the primary becomes unavailable.
+- **Burstable, General Purpose, and Memory Optimized compute tiers** — similar in spirit to VM sizing categories ([Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).4), letting compute be matched to the actual workload's CPU/memory profile.
 - **Custom maintenance windows** — allowing the customer to specify when Azure applies periodic patching, rather than having patching occur at an arbitrary, potentially business-inconvenient time.
 - **Stop/Start capability** — Flexible Server instances can be stopped (halting billing for compute, though storage billing typically continues) and restarted, useful for dev/test environments that don't need to run continuously, a capability not typically available on the older Single Server model or on other fully continuous PaaS database offerings.
 
@@ -35,7 +35,7 @@ PostgreSQL is particularly known for its rich **extension** ecosystem — additi
 
 ### 3.4 Read Replicas
 
-Both services support **read replicas** — additional, asynchronously-replicated copies of the database that can serve read-only query traffic, offloading read load from the primary instance and, when placed in different regions, providing lower-latency reads for geographically distributed read-heavy workloads — conceptually similar to RA-GRS's readable secondary for Storage Accounts (Section 20.3.4), but applied at the database engine level with its own replication lag characteristics that application logic must account for, similar to the eventual-consistency considerations already discussed for Cosmos DB (Section 30.3.3) and geo-redundant storage.
+Both services support **read replicas** — additional, asynchronously-replicated copies of the database that can serve read-only query traffic, offloading read load from the primary instance and, when placed in different regions, providing lower-latency reads for geographically distributed read-heavy workloads — conceptually similar to RA-GRS's readable secondary for Storage Accounts ([Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).3.4), but applied at the database engine level with its own replication lag characteristics that application logic must account for, similar to the eventual-consistency considerations already discussed for Cosmos DB ([Section 30](./Section-30-Part6-Cosmos-DB.md).3.3) and geo-redundant storage.
 
 ## 4. Architecture Diagram
 
@@ -71,9 +71,9 @@ az postgres flexible-server create \
   --version 16
 ```
 
-- **Purpose:** Creates a General Purpose-tier Flexible Server with zone-redundant high availability, following the architecture shown in Section 31.4.
+- **Purpose:** Creates a General Purpose-tier Flexible Server with zone-redundant high availability, following the architecture shown in [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).4.
 - **Important arguments explained individually:**
-  - `--high-availability ZoneRedundant` — explicitly enables the optional HA configuration discussed in Section 31.3.2; omitting this parameter results in a single-instance deployment without automated failover, an important distinction from Azure SQL Database's always-on-by-default HA posture.
+  - `--high-availability ZoneRedundant` — explicitly enables the optional HA configuration discussed in [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).3.2; omitting this parameter results in a single-instance deployment without automated failover, an important distinction from Azure SQL Database's always-on-by-default HA posture.
   - `--version` — specifies the PostgreSQL major version; supported versions and their end-of-support timelines should be verified against current documentation, since open-source database engines follow their own upstream version support lifecycles that Azure's managed service tracks.
 - **Common error:** Attempting to enable an unsupported extension without first verifying it's on the currently-supported allow-list for the specific server version results in a configuration failure — always check the supported extension list for the specific engine version in use.
 
@@ -87,17 +87,17 @@ az postgres flexible-server replica create \
   --location westeurope
 ```
 
-- **Purpose:** Creates an asynchronously-replicated, cross-region read replica, following the pattern shown in Section 31.4's diagram.
+- **Purpose:** Creates an asynchronously-replicated, cross-region read replica, following the pattern shown in [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).4's diagram.
 - **Application design note:** Read replica lag means replica reads may return slightly stale data relative to the primary; application logic must be designed to tolerate this (e.g., routing genuinely latency-tolerant analytical/reporting queries to the replica, while transactional reads requiring absolute freshness continue querying the primary).
 
 ## 6. Production & Enterprise Usage
 
-Enterprises with existing PostgreSQL or MySQL application investments (open-source web application stacks, applications built by teams with specific PostgreSQL/MySQL expertise, or applications leveraging PostgreSQL-specific extensions like PostGIS) migrate to the corresponding Azure managed offering specifically to preserve engine compatibility while gaining PaaS operational benefits. HA configuration, backup retention policies, and read replica placement are deliberate, workload-specific decisions — not every workload justifies the additional cost of zone-redundant HA, and this should be a considered trade-off against the workload's actual availability requirements, mirroring the redundancy-selection discipline established for Storage Accounts in Section 20.7.
+Enterprises with existing PostgreSQL or MySQL application investments (open-source web application stacks, applications built by teams with specific PostgreSQL/MySQL expertise, or applications leveraging PostgreSQL-specific extensions like PostGIS) migrate to the corresponding Azure managed offering specifically to preserve engine compatibility while gaining PaaS operational benefits. HA configuration, backup retention policies, and read replica placement are deliberate, workload-specific decisions — not every workload justifies the additional cost of zone-redundant HA, and this should be a considered trade-off against the workload's actual availability requirements, mirroring the redundancy-selection discipline established for Storage Accounts in [Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).7.
 
 ## 7. Security Considerations
 
 - Both services support Entra ID-based authentication as an alternative/complement to native database authentication, extending the same centralized identity benefits established throughout Part 2.
-- Private Link/VNet integration (Section 23.5) is recommended for production deployments holding sensitive data, avoiding public endpoint exposure.
+- Private Link/VNet integration ([Section 23](../Part5/Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5) is recommended for production deployments holding sensitive data, avoiding public endpoint exposure.
 - SSL/TLS enforcement for client connections should be verified as enabled (generally the default for Flexible Server), ensuring data in transit between application and database is encrypted.
 
 ## 8. Performance Considerations
@@ -106,7 +106,7 @@ Query performance tuning (appropriate indexing, query optimization) remains the 
 
 ## 9. Monitoring
 
-Standard Azure Monitor integration provides CPU, memory, storage, and connection-count metrics; PostgreSQL and MySQL-specific logs (query logs, slow query logs, when enabled) can be routed to Log Analytics for deeper query-level performance analysis, similar in spirit to Azure SQL Database's Query Performance Insight (Section 29.10) though implemented through more standard PostgreSQL/MySQL native logging mechanisms rather than an Azure SQL-specific proprietary feature.
+Standard Azure Monitor integration provides CPU, memory, storage, and connection-count metrics; PostgreSQL and MySQL-specific logs (query logs, slow query logs, when enabled) can be routed to Log Analytics for deeper query-level performance analysis, similar in spirit to Azure SQL Database's Query Performance Insight ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).10) though implemented through more standard PostgreSQL/MySQL native logging mechanisms rather than an Azure SQL-specific proprietary feature.
 
 ## 10. Troubleshooting
 
@@ -116,7 +116,7 @@ Standard Azure Monitor integration provides CPU, memory, storage, and connection
 | Failover during an HA event takes longer than expected, or doesn't occur | HA wasn't actually enabled (defaults to non-HA single instance), or a genuine platform issue     | Verify `--high-availability` configuration was actually applied; review HA-specific SLA and failover time documentation for the specific configuration                     |
 | Read replica queries return unexpectedly stale data                      | Normal asynchronous replication lag, potentially exacerbated by high write volume on the primary | Confirm application logic correctly tolerates expected replica lag for the specific query use case; monitor replication lag metrics to confirm it's within expected bounds |
 
-## 11. Interview Questions — Section 31
+## 11. Interview Questions — [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md)
 
 ### 🎯 Beginner
 
@@ -150,7 +150,7 @@ _What the interviewer is probing:_ whether the candidate can translate a descrip
 
 ### 14.1 Why MySQL Needs Its Own Treatment
 
-Sections 31.1–31.13 focused heavily on Flexible Server concepts illustrated primarily through PostgreSQL examples. While Azure Database for MySQL Flexible Server shares the same overall architecture (Flexible Server model, zone-redundant HA, burstable/General Purpose/Memory Optimized compute tiers, custom maintenance windows, stop/start capability — all as described in Section 31.3.1), MySQL has its own distinct compatibility surface, configuration mechanisms, and operational tooling that don't simply mirror PostgreSQL's — treating the two as interchangeable beyond the shared Flexible Server chassis is a real gap this subsection addresses.
+Sections 31.1–31.13 focused heavily on Flexible Server concepts illustrated primarily through PostgreSQL examples. While Azure Database for MySQL Flexible Server shares the same overall architecture (Flexible Server model, zone-redundant HA, burstable/General Purpose/Memory Optimized compute tiers, custom maintenance windows, stop/start capability — all as described in [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).3.1), MySQL has its own distinct compatibility surface, configuration mechanisms, and operational tooling that don't simply mirror PostgreSQL's — treating the two as interchangeable beyond the shared Flexible Server chassis is a real gap this subsection addresses.
 
 ### 14.2 MySQL-Specific Configuration
 
@@ -162,19 +162,19 @@ Sections 31.1–31.13 focused heavily on Flexible Server concepts illustrated pr
 
 ### 14.3 MySQL-Specific Compatibility Considerations
 
-⚠️ Similar in spirit to PostgreSQL's extension allow-list (Section 31.3.3), Azure Database for MySQL supports a defined set of **plugins** and has specific version-by-version feature support — MySQL-specific features an application might depend on (such as specific replication configurations, certain MySQL-proprietary SQL extensions, or specific authentication plugins) should be verified against the current supported feature list for the target MySQL version before migration, exactly mirroring the PostgreSQL extension-verification discipline established in Section 31.3.3, but against MySQL's own distinct compatibility matrix.
+⚠️ Similar in spirit to PostgreSQL's extension allow-list ([Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).3.3), Azure Database for MySQL supports a defined set of **plugins** and has specific version-by-version feature support — MySQL-specific features an application might depend on (such as specific replication configurations, certain MySQL-proprietary SQL extensions, or specific authentication plugins) should be verified against the current supported feature list for the target MySQL version before migration, exactly mirroring the PostgreSQL extension-verification discipline established in [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).3.3, but against MySQL's own distinct compatibility matrix.
 
 ### 14.4 Backup, Restore, and Point-in-Time Recovery (Both Engines)
 
-**Automated backups:** Both Azure Database for PostgreSQL and MySQL Flexible Server perform automated backups by default — full backups plus transaction log backups (PostgreSQL's write-ahead log / WAL, and MySQL's binary log, respectively, each engine's own native mechanism for durability and replication that the managed backup system builds on) — requiring no customer configuration to enable at a baseline level, mirroring the automated-backup-by-default posture established for Azure SQL Database in Section 29.15.2.
+**Automated backups:** Both Azure Database for PostgreSQL and MySQL Flexible Server perform automated backups by default — full backups plus transaction log backups (PostgreSQL's write-ahead log / WAL, and MySQL's binary log, respectively, each engine's own native mechanism for durability and replication that the managed backup system builds on) — requiring no customer configuration to enable at a baseline level, mirroring the automated-backup-by-default posture established for Azure SQL Database in [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.2.
 
-**Point-in-Time Restore (PITR):** Both services support restoring to any specific point in time within a configurable retention window (commonly a default around 7 days, configurable up to 35 days — ⚠️ verify current default/maximum values against official documentation, matching the same verification discipline applied to Azure SQL's PITR in Section 29.15.2). As with Azure SQL's PITR, **restore creates a new server instance**, not an in-place rollback of the existing server — the same operational detail flagged for Azure SQL Database in Section 29.15.2 applies identically here, and should be reflected in incident-response runbooks for PostgreSQL/MySQL workloads exactly as for SQL Server-based ones.
+**Point-in-Time Restore (PITR):** Both services support restoring to any specific point in time within a configurable retention window (commonly a default around 7 days, configurable up to 35 days — ⚠️ verify current default/maximum values against official documentation, matching the same verification discipline applied to Azure SQL's PITR in [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.2). As with Azure SQL's PITR, **restore creates a new server instance**, not an in-place rollback of the existing server — the same operational detail flagged for Azure SQL Database in [Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.2 applies identically here, and should be reflected in incident-response runbooks for PostgreSQL/MySQL workloads exactly as for SQL Server-based ones.
 
-**Long-term retention:** ⚠️ Unlike Azure SQL Database's dedicated, independently-configurable Long-Term Retention feature (Section 29.15.3), Azure Database for PostgreSQL/MySQL's native long-horizon backup retention capabilities should be verified against current documentation — if native LTR-equivalent functionality isn't available or doesn't meet a specific compliance retention requirement (e.g., a multi-year regulatory mandate), an application-level or infrastructure-level supplementary backup export strategy (e.g., periodic `pg_dump`/`mysqldump` exports to Blob Storage with its own lifecycle/immutability policy, connecting back to Section 17.14's Blob Storage data-protection capabilities) may be required to fully satisfy a long-term retention requirement — this is a genuine, worth-verifying gap-risk area rather than an assumed capability parity with Azure SQL Database.
+**Long-term retention:** ⚠️ Unlike Azure SQL Database's dedicated, independently-configurable Long-Term Retention feature ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.3), Azure Database for PostgreSQL/MySQL's native long-horizon backup retention capabilities should be verified against current documentation — if native LTR-equivalent functionality isn't available or doesn't meet a specific compliance retention requirement (e.g., a multi-year regulatory mandate), an application-level or infrastructure-level supplementary backup export strategy (e.g., periodic `pg_dump`/`mysqldump` exports to Blob Storage with its own lifecycle/immutability policy, connecting back to [Section 17](../Part4/Section-17-Part4-Blob-Storage-Deep-Dive.md).14's Blob Storage data-protection capabilities) may be required to fully satisfy a long-term retention requirement — this is a genuine, worth-verifying gap-risk area rather than an assumed capability parity with Azure SQL Database.
 
-**Geo-redundancy for DR:** Both PostgreSQL and MySQL Flexible Server support **geo-redundant backup** storage (backups replicated to the paired region, similar in principle to GRS, Section 20.3.3) and **read replicas** (Section 31.3.4) that can be promoted to a standalone writable server during a regional DR event — but this promotion is a **manual, customer-initiated** process for Flexible Server, distinct from Azure SQL Database's Auto-Failover Groups (Section 29.15.4), which support fully automatic failover with a stable connection endpoint. ⚠️ This is an important distinction to verify and communicate: PostgreSQL/MySQL Flexible Server's DR story generally requires more manual operational involvement during an actual regional failure than Azure SQL Database's most automated configuration — current documentation should be checked for whether this gap has narrowed, since managed-service DR automation capabilities are an actively developing area across Azure's database portfolio.
+**Geo-redundancy for DR:** Both PostgreSQL and MySQL Flexible Server support **geo-redundant backup** storage (backups replicated to the paired region, similar in principle to GRS, [Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md).3.3) and **read replicas** ([Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).3.4) that can be promoted to a standalone writable server during a regional DR event — but this promotion is a **manual, customer-initiated** process for Flexible Server, distinct from Azure SQL Database's Auto-Failover Groups ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.4), which support fully automatic failover with a stable connection endpoint. ⚠️ This is an important distinction to verify and communicate: PostgreSQL/MySQL Flexible Server's DR story generally requires more manual operational involvement during an actual regional failure than Azure SQL Database's most automated configuration — current documentation should be checked for whether this gap has narrowed, since managed-service DR automation capabilities are an actively developing area across Azure's database portfolio.
 
-### 14.5 Interview Questions — Section 31.14
+### 14.5 Interview Questions — [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).14
 
 **🎯 Intermediate**
 **Q: Are Azure Database for PostgreSQL and Azure Database for MySQL operationally identical aside from the underlying engine?**
@@ -186,11 +186,11 @@ _What the interviewer is probing:_ whether the candidate understands that "manag
 **🎯 Senior**
 **Q: A team is deciding between PostgreSQL and MySQL Flexible Server for a new application with no strong existing engine preference, but with a hard requirement for fully automatic regional failover with zero application connection-string changes. What would you tell them?**
 
-_Model answer:_ I'd flag that, as of current understanding, neither PostgreSQL nor MySQL Flexible Server offers the same fully automatic, stable-endpoint failover that Azure SQL Database's Auto-Failover Groups provide (Section 29.15.4) — their geo-redundant DR model generally requires manually promoting a read replica during an actual regional event, which doesn't meet a "zero application changes, fully automatic" requirement as stated. I'd recommend the team either verify this against the most current documentation in case this capability gap has narrowed, explicitly accept the manual-promotion operational model and build the necessary automation/runbook themselves (e.g., automation triggered by health monitoring that handles the promotion and connection-string update), or reconsider whether Azure SQL Database might be a better fit if the automatic-failover requirement is truly non-negotiable and outweighs any other engine preference — surfacing this trade-off explicitly before the team commits to an architecture, rather than discovering the gap during an actual incident.
+_Model answer:_ I'd flag that, as of current understanding, neither PostgreSQL nor MySQL Flexible Server offers the same fully automatic, stable-endpoint failover that Azure SQL Database's Auto-Failover Groups provide ([Section 29](./Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).15.4) — their geo-redundant DR model generally requires manually promoting a read replica during an actual regional event, which doesn't meet a "zero application changes, fully automatic" requirement as stated. I'd recommend the team either verify this against the most current documentation in case this capability gap has narrowed, explicitly accept the manual-promotion operational model and build the necessary automation/runbook themselves (e.g., automation triggered by health monitoring that handles the promotion and connection-string update), or reconsider whether Azure SQL Database might be a better fit if the automatic-failover requirement is truly non-negotiable and outweighs any other engine preference — surfacing this trade-off explicitly before the team commits to an architecture, rather than discovering the gap during an actual incident.
 
 _What the interviewer is probing:_ whether the candidate proactively surfaces a genuine, consequential service-capability gap relevant to the stated hard requirement, rather than assuming feature parity across Azure's different managed database offerings.
 
-### 14.6 Key Takeaways — Section 31.14
+### 14.6 Key Takeaways — [Section 31](./Section-31-Part6-Azure-Database-PostgreSQL-MySQL.md).14
 
 - 🔑 MySQL Flexible Server shares Flexible Server's overall architecture with PostgreSQL but has its own distinct configuration (server variables, InnoDB), compatibility surface (plugins, character sets/collation), and migration verification requirements — the two engines are not interchangeable beyond the shared chassis.
 - 🔑 Both PostgreSQL and MySQL Flexible Server provide automated backups and self-service Point-in-Time Restore (restoring to a new instance, not in place) within a configurable retention window, mirroring Azure SQL Database's PITR model.
@@ -199,4 +199,4 @@ _What the interviewer is probing:_ whether the candidate proactively surfaces a 
 
 ## 15. Related Concepts (Next Up)
 
-Section 32 covers **Azure Cache for Redis** — a managed in-memory caching service commonly deployed alongside the relational and NoSQL database services covered in Sections 29-31, used to reduce database load and improve application latency for frequently-accessed data.
+[Section 32](./Section-32-Part6-Azure-Cache-for-Redis.md) covers **Azure Cache for Redis** — a managed in-memory caching service commonly deployed alongside the relational and NoSQL database services covered in Sections 29-31, used to reduce database load and improve application latency for frequently-accessed data.

@@ -10,7 +10,7 @@
 - **`SCHED_FIFO` / `SCHED_RR`** — real-time classes for latency-sensitive workloads; these always preempt `SCHED_NORMAL` tasks and are used sparingly (e.g., audio/industrial control processes), because a misbehaving real-time task can starve everything else.
 - **`SCHED_BATCH` / `SCHED_IDLE`** — lower-priority variants for background/batch work that should yield to interactive tasks.
 
-The full mechanics of process states, `nice`/`renice` priority tuning, and scheduling in production troubleshooting are covered in Part 5 (§33–§40, especially §36 for `nice`/`renice`); this section only needs the conceptual model: **CFS picks the "most deserving" runnable task, weighted by priority, on every scheduling decision — it does not use a fixed round-robin time slice.**
+The full mechanics of process states, `nice`/`renice` priority tuning, and scheduling in production troubleshooting are covered in Part 5 ([§33](../Part5/Section-33-Part5-What-A-Process-Is.md)–[§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md), especially [§36](../Part5/Section-36-Part5-Signals.md) for `nice`/`renice`); this section only needs the conceptual model: **CFS picks the "most deserving" runnable task, weighted by priority, on every scheduling decision — it does not use a fixed round-robin time slice.**
 
 **Hands-on:**
 
@@ -36,9 +36,9 @@ se.sum_exec_runtime                :          9142.331200
 
 **Definition:** The memory manager is the kernel subsystem that allocates, tracks, and reclaims physical RAM, and presents each process with the illusion of its own private, contiguous **virtual address space** — regardless of how physical memory is actually fragmented or shared underneath.
 
-**What it does:** Every process sees virtual addresses; the memory manager translates those to physical RAM addresses via **page tables**, working together with the CPU's memory management unit (MMU) hardware. Memory is managed in fixed-size chunks called **pages** (commonly 4 KB), not arbitrary byte ranges — this is what makes allocation, protection, and swapping tractable at scale. When physical RAM runs short, the memory manager can move less-active pages out to swap space to free RAM for active work, and under severe pressure the kernel's **OOM (Out-Of-Memory) killer** terminates processes to prevent a total memory deadlock (troubleshooting depth: §82). Virtual memory also provides **isolation** — one process cannot read or corrupt another process's memory, because each process's virtual addresses map only to physical pages the kernel has explicitly assigned to it.
+**What it does:** Every process sees virtual addresses; the memory manager translates those to physical RAM addresses via **page tables**, working together with the CPU's memory management unit (MMU) hardware. Memory is managed in fixed-size chunks called **pages** (commonly 4 KB), not arbitrary byte ranges — this is what makes allocation, protection, and swapping tractable at scale. When physical RAM runs short, the memory manager can move less-active pages out to swap space to free RAM for active work, and under severe pressure the kernel's **OOM (Out-Of-Memory) killer** terminates processes to prevent a total memory deadlock (troubleshooting depth: [§82](../Part11/Section-82-Part11-Memory-Analysis.md)). Virtual memory also provides **isolation** — one process cannot read or corrupt another process's memory, because each process's virtual addresses map only to physical pages the kernel has explicitly assigned to it.
 
-⚠️ **Warning:** This is an intentionally shallow introduction. Full virtual memory mechanics — page tables in depth, paging vs. swapping, memory overcommit, huge pages — are covered in `§16` (Part 2's own closing section). Production memory analysis tooling (`free`, `/proc/meminfo` field-by-field, OOM killer tuning) is covered in `§82` (Part 11).
+⚠️ **Warning:** This is an intentionally shallow introduction. Full virtual memory mechanics — page tables in depth, paging vs. swapping, memory overcommit, huge pages — are covered in `[§16](./Section-16-Part2-Virtual-Memory-Paging-Swap.md)` (Part 2's own closing section). Production memory analysis tooling (`free`, `/proc/meminfo` field-by-field, OOM killer tuning) is covered in `[§82](../Part11/Section-82-Part11-Memory-Analysis.md)` (Part 11).
 
 **Hands-on:**
 
@@ -52,13 +52,13 @@ Cached:          4213880 kB
 SwapTotal:        2097148 kB
 ```
 
-`MemAvailable` (not `MemFree`) is the field that actually reflects usable memory for new workloads — `MemFree` alone is misleading because it excludes reclaimable cache the kernel would happily hand back on demand (§82 covers why this distinction trips up so many first-pass "server is out of memory" diagnoses).
+`MemAvailable` (not `MemFree`) is the field that actually reflects usable memory for new workloads — `MemFree` alone is misleading because it excludes reclaimable cache the kernel would happily hand back on demand ([§82](../Part11/Section-82-Part11-Memory-Analysis.md) covers why this distinction trips up so many first-pass "server is out of memory" diagnoses).
 
 ## 3. VFS — The Virtual Filesystem Switch
 
 **Definition:** The VFS (Virtual Filesystem Switch, sometimes called the Virtual File System) is an abstraction layer inside the kernel that presents a single, uniform filesystem interface (`open`, `read`, `write`, `close`, `stat`, …) to userspace, regardless of which actual filesystem implementation is backing a given path.
 
-**What it does:** This is the mechanical answer to _why_ "everything is a file" (`§4`, Principle 1) actually works rather than being just a slogan. When a program calls `open("/var/log/syslog")`, it does not need to know or care whether `/var` lives on ext4, XFS, Btrfs, or a network-mounted NFS share — the VFS sits between the generic system call and the specific filesystem driver, translating the generic request into whatever operations that particular filesystem's driver actually implements. `/proc` and `/sys` (§24) are the most striking proof of this: they are not backed by any disk at all — they are entirely synthetic filesystems that generate their content on the fly from live kernel state, yet they honor the exact same `open`/`read`/`write` contract as a real ext4 file, because the VFS makes "is this data on disk or generated live" invisible to the calling program. This is the same pattern `sendfile()` exploits (6 below) to move data from a file straight into a network socket without a userspace round trip.
+**What it does:** This is the mechanical answer to _why_ "everything is a file" (`[§4](../Part1/Section-04-Part1-Linux-Philosophy-Design-Principles.md)`, Principle 1) actually works rather than being just a slogan. When a program calls `open("/var/log/syslog")`, it does not need to know or care whether `/var` lives on ext4, XFS, Btrfs, or a network-mounted NFS share — the VFS sits between the generic system call and the specific filesystem driver, translating the generic request into whatever operations that particular filesystem's driver actually implements. `/proc` and `/sys` ([§24](../Part3/Section-24-Part3-Proc-Sys-Virtual-Filesystems.md)) are the most striking proof of this: they are not backed by any disk at all — they are entirely synthetic filesystems that generate their content on the fly from live kernel state, yet they honor the exact same `open`/`read`/`write` contract as a real ext4 file, because the VFS makes "is this data on disk or generated live" invisible to the calling program. This is the same pattern `sendfile()` exploits (6 below) to move data from a file straight into a network socket without a userspace round trip.
 
 **Hands-on:**
 
@@ -81,7 +81,7 @@ $ mount | grep -E "^/dev"
 /dev/sda2 on /var type xfs (rw,relatime,noatime)
 ```
 
-Full filesystem-type depth, mounting, `/proc`/`/sys` as introspection interfaces, and inode mechanics live in Part 3 (§17–§24).
+Full filesystem-type depth, mounting, `/proc`/`/sys` as introspection interfaces, and inode mechanics live in Part 3 ([§17](../Part3/Section-17-Part3-Filesystem-Hierarchy-Standard.md)–[§24](../Part3/Section-24-Part3-Proc-Sys-Virtual-Filesystems.md)).
 
 ## 4. The Network Stack
 
@@ -105,7 +105,7 @@ Link layer        — Ethernet framing, ARP, hands frames to the NIC driver
 Device driver     — NIC hardware
 ```
 
-Every network-facing syscall a userspace program makes (`socket()`, `bind()`, `connect()`, `send()`) crosses the same syscall boundary covered in `§11`, then travels down through this layering before touching a physical wire. Full protocol depth, socket programming concepts, firewalls, and diagnostics are Part 7's entire subject (§51–§58).
+Every network-facing syscall a userspace program makes (`socket()`, `bind()`, `connect()`, `send()`) crosses the same syscall boundary covered in `[§11](./Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md)`, then travels down through this layering before touching a physical wire. Full protocol depth, socket programming concepts, firewalls, and diagnostics are Part 7's entire subject ([§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)–[§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)).
 
 **Hands-on:**
 
@@ -121,13 +121,13 @@ TCP	  46        30        16
 INET	  55        36        19
 ```
 
-`ss -s` gives an instant socket-count summary — a fast first check when triaging "is this box under unusual connection load" before reaching for `tcpdump` or per-connection detail (§54).
+`ss -s` gives an instant socket-count summary — a fast first check when triaging "is this box under unusual connection load" before reaching for `tcpdump` or per-connection detail ([§54](../Part7/Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md)).
 
 ## 5. Device Drivers
 
 **Definition:** A device driver is the kernel code that translates generic requests from a kernel subsystem (block I/O, character I/O, network I/O) into the specific commands a piece of hardware understands — and translates hardware responses back into a form the rest of the kernel can use.
 
-**What it does:** Drivers are the abstraction boundary between "the kernel wants to read a block from a disk" and "this exact NVMe controller's register-level protocol for reading a block." This is what lets the memory manager, VFS, and network stack stay hardware-agnostic: the VFS calls a generic block-device read; the driver for that specific disk controller is the only code that needs to know the hardware's actual command set. Drivers can be **built-in** (compiled directly into the kernel image, loaded at boot) or **loadable kernel modules** (`.ko` files loaded on demand, `§14` covers `lsmod`/`modprobe`/`insmod` in depth) — the loadable-module model is what lets a single kernel image support wildly different hardware across a fleet without recompiling, and what lets a driver be unloaded/reloaded (e.g., after a firmware update) without rebooting.
+**What it does:** Drivers are the abstraction boundary between "the kernel wants to read a block from a disk" and "this exact NVMe controller's register-level protocol for reading a block." This is what lets the memory manager, VFS, and network stack stay hardware-agnostic: the VFS calls a generic block-device read; the driver for that specific disk controller is the only code that needs to know the hardware's actual command set. Drivers can be **built-in** (compiled directly into the kernel image, loaded at boot) or **loadable kernel modules** (`.ko` files loaded on demand, `[§14](./Section-14-Part2-Kernel-Modules.md)` covers `lsmod`/`modprobe`/`insmod` in depth) — the loadable-module model is what lets a single kernel image support wildly different hardware across a fleet without recompiling, and what lets a driver be unloaded/reloaded (e.g., after a firmware update) without rebooting.
 
 **Hands-on:**
 
@@ -150,7 +150,7 @@ $ lsusb -t
 
 ## 6. How the Five Components Relate to Each Other and to the Syscall Boundary
 
-These five subsystems are not five independent silos — userspace requests routinely traverse more than one of them in a single system call, and all of them sit beneath the same syscall boundary (`§11`) that separates kernel space from user space:
+These five subsystems are not five independent silos — userspace requests routinely traverse more than one of them in a single system call, and all of them sit beneath the same syscall boundary (`[§11](./Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md)`) that separates kernel space from user space:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -186,15 +186,15 @@ The scheduler decides _which_ process runs when any of these subsystems needs CP
 
 ## 7. Production Relevance: Subsystem-Based Troubleshooting Triage
 
-Naming these five subsystems is not academic — mapping a production symptom to the responsible subsystem is often the fastest way to narrow a troubleshooting search space before reaching for any specific tool (full methodology in §88):
+Naming these five subsystems is not academic — mapping a production symptom to the responsible subsystem is often the fastest way to narrow a troubleshooting search space before reaching for any specific tool (full methodology in [§88](../Part11/Section-88-Part11-Incident-Case-Studies.md)):
 
-| Symptom                                            | Likely responsible subsystem      | Where the deep-dive lives |
-| -------------------------------------------------- | --------------------------------- | ------------------------- |
-| High load average, CPU-bound processes stacking up | Process scheduler                 | §33–§40                   |
-| Slow disk I/O, high `iowait`                       | VFS / block layer / device driver | §17–§24, §83              |
-| Process killed unexpectedly, `dmesg` shows OOM     | Memory manager                    | §16, §82                  |
-| Dropped packets, connection timeouts, high latency | Network stack                     | §51–§58                   |
-| Hardware not detected, device missing from `/dev`  | Device driver                     | §14                       |
+| Symptom                                            | Likely responsible subsystem      | Where the deep-dive lives                                                                                                                                                                  |
+| -------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| High load average, CPU-bound processes stacking up | Process scheduler                 | [§33](../Part5/Section-33-Part5-What-A-Process-Is.md)–[§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md)                                                             |
+| Slow disk I/O, high `iowait`                       | VFS / block layer / device driver | [§17](../Part3/Section-17-Part3-Filesystem-Hierarchy-Standard.md)–[§24](../Part3/Section-24-Part3-Proc-Sys-Virtual-Filesystems.md), [§83](../Part11/Section-83-Part11-Disk-IO-Analysis.md) |
+| Process killed unexpectedly, `dmesg` shows OOM     | Memory manager                    | [§16](./Section-16-Part2-Virtual-Memory-Paging-Swap.md), [§82](../Part11/Section-82-Part11-Memory-Analysis.md)                                                                             |
+| Dropped packets, connection timeouts, high latency | Network stack                     | [§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)–[§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)                                     |
+| Hardware not detected, device missing from `/dev`  | Device driver                     | [§14](./Section-14-Part2-Kernel-Modules.md)                                                                                                                                                |
 
 🔑 **Key Takeaway:** "Which subsystem owns this symptom" is a triage question every senior engineer asks in the first sixty seconds of an incident — it determines whether the next command is `chrt`/`top`, `free`/`/proc/meminfo`, `mount`/`iostat`, `ss`/`tcpdump`, or `lspci -k`/`dmesg`.
 
@@ -203,7 +203,7 @@ Naming these five subsystems is not academic — mapping a production symptom to
 1. **"The kernel handles filesystems and networking as totally separate, unrelated code paths."** False — `sendfile()`, `splice()`, and similar zero-copy syscalls deliberately traverse both the VFS and the network stack in one kernel-internal operation specifically to avoid the cost of treating them as separate paths with a userspace hop in between.
 2. **"CFS uses fixed time slices like older round-robin schedulers."** False — CFS makes its "who runs next" decision based on tracked virtual runtime fairness, not a fixed quantum; the effective time a task runs before being preempted varies based on system load and the number of competing runnable tasks.
 3. **"Device drivers only matter for desktop peripherals like printers and webcams."** False in a server/cloud context — every disk controller, NIC, and virtualized device (`virtio` drivers in cloud VMs) is bound to a driver; a driver mismatch or missing module is a common cause of "cloud instance won't detect its disk/NIC" boot failures.
-4. **"Virtual memory means my process actually has the RAM size shown by its virtual address space."** False — virtual address space size is not a promise of physical RAM backing; pages are mapped to physical RAM (or swap, or not mapped at all yet) on demand (§16 covers demand paging in depth).
+4. **"Virtual memory means my process actually has the RAM size shown by its virtual address space."** False — virtual address space size is not a promise of physical RAM backing; pages are mapped to physical RAM (or swap, or not mapped at all yet) on demand ([§16](./Section-16-Part2-Virtual-Memory-Paging-Swap.md) covers demand paging in depth).
 
 ---
 
@@ -222,7 +222,7 @@ _What the interviewer is probing for:_ Whether the candidate can connect an abst
 _What the interviewer is probing for:_ Real diagnostic reasoning that connects a specific metric (load average counting D-state processes) to the correct subsystem, not a rehearsed generic answer.
 
 **🎯 Architect:** _"How would you design an onboarding mental model for new SREs so they map symptoms to kernel subsystems quickly during incidents, and what's the risk of getting that mapping wrong?"_
-**Model answer:** I'd anchor the model on the five-subsystem breakdown — scheduler, memory manager, VFS, network stack, device drivers — and drill a simple triage table mapping common symptoms (load, OOM kills, iowait, dropped packets, missing hardware) to the responsible subsystem and the first diagnostic tool to reach for, similar to what's used in incident runbooks (§88). The risk of getting the mapping wrong is real: engineers who don't have this model tend to reach for whatever tool they're most comfortable with regardless of the actual bottleneck — e.g., tuning `nice` values on a process that's actually blocked on disk I/O, which wastes response time and can even mask the real problem by changing scheduling behavior around a symptom that was never scheduler-caused. I'd also make sure the model explicitly calls out that subsystems interact — `sendfile()` spanning VFS and network stack is a good teaching example — so engineers don't over-narrow their search to one subsystem when a symptom genuinely spans two.
+**Model answer:** I'd anchor the model on the five-subsystem breakdown — scheduler, memory manager, VFS, network stack, device drivers — and drill a simple triage table mapping common symptoms (load, OOM kills, iowait, dropped packets, missing hardware) to the responsible subsystem and the first diagnostic tool to reach for, similar to what's used in incident runbooks ([§88](../Part11/Section-88-Part11-Incident-Case-Studies.md)). The risk of getting the mapping wrong is real: engineers who don't have this model tend to reach for whatever tool they're most comfortable with regardless of the actual bottleneck — e.g., tuning `nice` values on a process that's actually blocked on disk I/O, which wastes response time and can even mask the real problem by changing scheduling behavior around a symptom that was never scheduler-caused. I'd also make sure the model explicitly calls out that subsystems interact — `sendfile()` spanning VFS and network stack is a good teaching example — so engineers don't over-narrow their search to one subsystem when a symptom genuinely spans two.
 _What the interviewer is probing for:_ Ability to turn a technical mental model into a scalable team practice, and awareness that oversimplified mental models carry real operational risk if taken too literally.
 
 ---
@@ -230,14 +230,14 @@ _What the interviewer is probing for:_ Ability to turn a technical mental model 
 ## 10. 🔑 Key Takeaways
 
 - The Linux kernel's internals decompose into five major subsystems: the **process scheduler** (CFS, deciding what runs next), the **memory manager** (virtual memory, page tables, OOM killer), the **VFS** (uniform filesystem interface across ext4/XFS/Btrfs/NFS/`/proc`), the **network stack** (socket API down through TCP/IP to the link layer), and **device drivers** (the hardware-specific translation layer, built-in or loadable modules).
-- The VFS is the mechanical explanation for _why_ "everything is a file" (§4) works — it is an abstraction layer, not a slogan.
+- The VFS is the mechanical explanation for _why_ "everything is a file" ([§4](../Part1/Section-04-Part1-Linux-Philosophy-Design-Principles.md)) works — it is an abstraction layer, not a slogan.
 - These subsystems are not isolated silos — `sendfile()` is the canonical example of a single syscall traversing both the VFS and the network stack inside the kernel.
-- All five subsystems sit beneath the syscall boundary (§11) and are invisible to userspace except through that controlled interface.
-- Mapping a production symptom to the responsible subsystem (scheduler / memory / VFS / network / drivers) is a core, fast troubleshooting triage skill, formalized later in §88.
-- This section is intentionally shallow on each subsystem by design — §14, §16, and Parts 3/5/7 each return to one of these five components at full depth.
+- All five subsystems sit beneath the syscall boundary ([§11](./Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md)) and are invisible to userspace except through that controlled interface.
+- Mapping a production symptom to the responsible subsystem (scheduler / memory / VFS / network / drivers) is a core, fast troubleshooting triage skill, formalized later in [§88](../Part11/Section-88-Part11-Incident-Case-Studies.md).
+- This section is intentionally shallow on each subsystem by design — [§14](./Section-14-Part2-Kernel-Modules.md), [§16](./Section-16-Part2-Virtual-Memory-Paging-Swap.md), and Parts 3/5/7 each return to one of these five components at full depth.
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on `§9` (monolithic kernel design) and sets up everything that follows in the rest of the roadmap: `§11` covers the system-call boundary sitting directly above these five subsystems; `§14` returns to device drivers as loadable kernel modules; `§16` closes out Part 2 with full virtual memory depth. Part 3 (§17–§24) is the VFS and filesystem subsystem expanded to full production depth; Part 5 (§33–§40) is the process scheduler and process lifecycle expanded to full depth, including `§36`'s `nice`/`renice` priority tuning; Part 7 (§51–§58) is the network stack expanded to full depth; Part 11 (§80–§88) returns to all five subsystems together as the unified performance-and-troubleshooting model this section's triage table previews.
+This section builds directly on `[§9](./Section-09-Part2-Kernel-Monolithic-Design-Kernel-vs-User-Space.md)` (monolithic kernel design) and sets up everything that follows in the rest of the roadmap: `[§11](./Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md)` covers the system-call boundary sitting directly above these five subsystems; `[§14](./Section-14-Part2-Kernel-Modules.md)` returns to device drivers as loadable kernel modules; `[§16](./Section-16-Part2-Virtual-Memory-Paging-Swap.md)` closes out Part 2 with full virtual memory depth. Part 3 ([§17](../Part3/Section-17-Part3-Filesystem-Hierarchy-Standard.md)–[§24](../Part3/Section-24-Part3-Proc-Sys-Virtual-Filesystems.md)) is the VFS and filesystem subsystem expanded to full production depth; Part 5 ([§33](../Part5/Section-33-Part5-What-A-Process-Is.md)–[§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md)) is the process scheduler and process lifecycle expanded to full depth, including `[§36](../Part5/Section-36-Part5-Signals.md)`'s `nice`/`renice` priority tuning; Part 7 ([§51](../Part7/Section-51-Part7-Networking-Fundamentals-Recap.md)–[§58](../Part7/Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)) is the network stack expanded to full depth; Part 11 ([§80](../Part11/Section-80-Part11-Performance-Fundamentals-Unified-Model.md)–[§88](../Part11/Section-88-Part11-Incident-Case-Studies.md)) returns to all five subsystems together as the unified performance-and-troubleshooting model this section's triage table previews.
 
-**Next Section:** §11 — `Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md`
+**Next Section:** [§11](./Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md) — `Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md`

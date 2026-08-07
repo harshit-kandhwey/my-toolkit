@@ -2,7 +2,7 @@
 
 ## 1. Load Average: What the Three Numbers Actually Measure
 
-§80 introduced CPU, memory, disk I/O, and network as a unified four-resource model for reasoning about performance, and framed the recurring job as bottleneck identification — figuring out which of the four is actually constrained rather than guessing. This section is the first of the four resource-specific deep dives that model implies, starting with CPU.
+[§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md) introduced CPU, memory, disk I/O, and network as a unified four-resource model for reasoning about performance, and framed the recurring job as bottleneck identification — figuring out which of the four is actually constrained rather than guessing. This section is the first of the four resource-specific deep dives that model implies, starting with CPU.
 
 `uptime` is usually the first command run on an unfamiliar host, and its output is the most commonly misread number in Linux performance work:
 
@@ -24,24 +24,24 @@ The three numbers are the **1-minute, 5-minute, and 15-minute load averages** �
 
 ## 2. `top`'s CPU Fields in Depth: us, sy, ni, id, wa, hi, si
 
-§34 (Part 5) introduced `top` for viewing processes generally — this section goes deeper specifically on its CPU summary line, which is where the actual bottleneck-classification work happens.
+[§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md) introduced `top` for viewing processes generally — this section goes deeper specifically on its CPU summary line, which is where the actual bottleneck-classification work happens.
 
 ```bash
 $ top
 %Cpu(s): 22.3 us,  4.1 sy,  0.0 ni, 15.8 id, 57.2 wa,  0.4 hi,  0.2 si
 ```
 
-| Field | Meaning                                                                                                                    |
-| ----- | -------------------------------------------------------------------------------------------------------------------------- |
-| `us`  | User time — CPU spent running normal, unprivileged application code                                                        |
-| `sy`  | System time — CPU spent in kernel code on behalf of processes (system calls, context switching)                            |
-| `ni`  | User time spent running processes that have a **nice**d (adjusted) priority (§38, Part 5, covers `nice`/`renice` directly) |
-| `id`  | Idle — CPU genuinely has nothing to do                                                                                     |
-| `wa`  | **I/O wait** — CPU is idle, specifically because it's waiting on an outstanding disk or network I/O operation to complete  |
-| `hi`  | Hardware interrupt time — servicing interrupts raised directly by hardware devices                                         |
-| `si`  | Softirq time — deferred, lower-priority interrupt-related kernel work                                                      |
+| Field | Meaning                                                                                                                                                                         |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `us`  | User time — CPU spent running normal, unprivileged application code                                                                                                             |
+| `sy`  | System time — CPU spent in kernel code on behalf of processes (system calls, context switching)                                                                                 |
+| `ni`  | User time spent running processes that have a **nice**d (adjusted) priority ([§38](../Part5/Section-38-Part5-Process-Priority-Nice-Renice.md), covers `nice`/`renice` directly) |
+| `id`  | Idle — CPU genuinely has nothing to do                                                                                                                                          |
+| `wa`  | **I/O wait** — CPU is idle, specifically because it's waiting on an outstanding disk or network I/O operation to complete                                                       |
+| `hi`  | Hardware interrupt time — servicing interrupts raised directly by hardware devices                                                                                              |
+| `si`  | Softirq time — deferred, lower-priority interrupt-related kernel work                                                                                                           |
 
-The field worth dedicated attention is **`wa`**, because it's the one most often misdiagnosed as a CPU problem when it's the opposite. A high `wa` value means the CPU has no runnable work available — it is **idle**, just idle in a specific, named way, sitting there because the process it would otherwise run is blocked on I/O. The `57.2 wa` reading above is not a CPU bottleneck at all; it's a direct symptom that disk or network I/O is the actual constraint (§83 covers the disk-I/O-specific tools for confirming which).
+The field worth dedicated attention is **`wa`**, because it's the one most often misdiagnosed as a CPU problem when it's the opposite. A high `wa` value means the CPU has no runnable work available — it is **idle**, just idle in a specific, named way, sitting there because the process it would otherwise run is blocked on I/O. The `57.2 wa` reading above is not a CPU bottleneck at all; it's a direct symptom that disk or network I/O is the actual constraint ([§83](./Section-83-Part11-Disk-IO-Analysis.md) covers the disk-I/O-specific tools for confirming which).
 
 > 💡 **Tip:** A quick mental model for the whole line: `us` + `sy` + `ni` is genuine CPU work being done. `id` is genuine spare capacity. `wa` is neither — it's idle capacity being held hostage by something else entirely, and it's the single field most worth checking first when load average is high but the workload "shouldn't" be CPU-bound.
 
@@ -110,13 +110,13 @@ procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
 
 **Key columns:**
 
-| Column              | Meaning                                                                                                                                                                                            |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `r`                 | Number of processes currently runnable — actively running or waiting for a CPU (this is the CPU-contention half of what feeds load average)                                                        |
-| `b`                 | Number of processes **blocked**, uninterruptible sleep / D-state (this is the I/O-wait half feeding load average — §2's `wa` field and this column are two views of the same underlying condition) |
-| `us`/`sy`/`id`/`wa` | Same meaning as `top`'s CPU line (2)                                                                                                                                                               |
+| Column              | Meaning                                                                                                                                                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `r`                 | Number of processes currently runnable — actively running or waiting for a CPU (this is the CPU-contention half of what feeds load average)                                                                                                              |
+| `b`                 | Number of processes **blocked**, uninterruptible sleep / D-state (this is the I/O-wait half feeding load average — [§2](../Part1/Section-02-Part1-History-and-Evolution.md)'s `wa` field and this column are two views of the same underlying condition) |
+| `us`/`sy`/`id`/`wa` | Same meaning as `top`'s CPU line (2)                                                                                                                                                                                                                     |
 
-**Interpretation:** A sustained non-zero `r` well above the core count, alongside a comfortably low `wa`, points toward genuine CPU contention. A sustained non-zero `b`, alongside a high `wa`, points toward I/O contention instead — the same distinction §1's load-average warning raised, now visible as two separate live columns rather than one blended number.
+**Interpretation:** A sustained non-zero `r` well above the core count, alongside a comfortably low `wa`, points toward genuine CPU contention. A sustained non-zero `b`, alongside a high `wa`, points toward I/O contention instead — the same distinction [§1](../Part1/Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s load-average warning raised, now visible as two separate live columns rather than one blended number.
 
 > 💡 **Tip:** Always discard `vmstat`'s first output line — it's a since-boot cumulative average, not a live sample, and reading it as "current state" is a common first-time mistake.
 
@@ -126,7 +126,7 @@ A host reports `load average: 8.20, 7.95, 6.10` on a 4-core box. All three sympt
 
 **Step 1 — check `top`'s CPU summary line for `wa`:**
 
-- **If `wa` is high (e.g. 60%+)** and `us`+`sy` are comparatively low: the box is **I/O-bound**, not CPU-bound. The high load average is mostly D-state processes stuck on disk/network I/O, not runnable processes contending for CPU cycles. Adding CPU capacity would not help; the investigation moves to §83 (disk I/O tools — `iostat`, `iotop`).
+- **If `wa` is high (e.g. 60%+)** and `us`+`sy` are comparatively low: the box is **I/O-bound**, not CPU-bound. The high load average is mostly D-state processes stuck on disk/network I/O, not runnable processes contending for CPU cycles. Adding CPU capacity would not help; the investigation moves to [§83](./Section-83-Part11-Disk-IO-Analysis.md) (disk I/O tools — `iostat`, `iotop`).
 - **If `us`+`sy` together are high and `wa` is low**: the box is genuinely **CPU-bound** — proceed to step 2 to determine whether it's evenly spread or concentrated.
 
 **Step 2 — if CPU-bound, check `mpstat -P ALL` for per-core distribution:**
@@ -136,7 +136,7 @@ A host reports `load average: 8.20, 7.95, 6.10` on a 4-core box. All three sympt
 
 **Step 3 — corroborate with `vmstat 1`'s `r` and `b` columns**, watched over a few seconds rather than one snapshot, to confirm the trend matches: a high `r` with low `b` confirms CPU contention; a high `b` with low `r` confirms I/O blocking; both fluctuating together suggests a mixed workload worth investigating further before concluding either way.
 
-This three-step sequence — load average for "is something queued," `top`'s `wa` for "CPU-bound or I/O-bound," `mpstat` for "evenly saturated or single-core-pinned" — is the concrete, repeatable version of §80's bottleneck-identification principle applied specifically to the CPU resource.
+This three-step sequence — load average for "is something queued," `top`'s `wa` for "CPU-bound or I/O-bound," `mpstat` for "evenly saturated or single-core-pinned" — is the concrete, repeatable version of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s bottleneck-identification principle applied specifically to the CPU resource.
 
 ## 6. Common Misconceptions
 
@@ -156,11 +156,11 @@ _What the interviewer is probing for:_ Whether the candidate knows load average 
 _What the interviewer is probing for:_ The specific tool sequence for disambiguating, not just naming that "it could be CPU or I/O."
 
 **🎯 Senior:** _"You're paged for 'high load' on a host, but the on-call engineer who first looked at it added more application worker processes and it made things worse. What likely happened, and what would you check?"_
-**Model answer:** Adding more workers assumes the bottleneck is CPU contention with spare I/O capacity — if the actual bottleneck was I/O wait (a high `wa` in `top`, or a high `b` count in `vmstat`), adding more workers just creates more processes competing to get stuck in the same I/O queue, worsening contention on the actual constrained resource (disk or network) without adding any CPU relief, since CPU wasn't the constraint to begin with. I'd immediately check `top`'s `wa` field and `vmstat 1`'s `r` versus `b` columns to confirm whether the original bottleneck was CPU or I/O before taking any further remediation action, and if it's I/O, redirect the investigation to §83's tools (`iostat`, `iotop`) rather than continuing to add compute capacity that can't help.
+**Model answer:** Adding more workers assumes the bottleneck is CPU contention with spare I/O capacity — if the actual bottleneck was I/O wait (a high `wa` in `top`, or a high `b` count in `vmstat`), adding more workers just creates more processes competing to get stuck in the same I/O queue, worsening contention on the actual constrained resource (disk or network) without adding any CPU relief, since CPU wasn't the constraint to begin with. I'd immediately check `top`'s `wa` field and `vmstat 1`'s `r` versus `b` columns to confirm whether the original bottleneck was CPU or I/O before taking any further remediation action, and if it's I/O, redirect the investigation to [§83](./Section-83-Part11-Disk-IO-Analysis.md)'s tools (`iostat`, `iotop`) rather than continuing to add compute capacity that can't help.
 _What the interviewer is probing for:_ Recognizing that misdiagnosing I/O-bound load as CPU-bound leads to remediation that actively makes things worse, and knowing the fast diagnostic sequence to catch that before acting.
 
 **🎯 Architect:** _"How would you build automated alerting around CPU health for a fleet, given that load average alone is ambiguous?"_
-**Model answer:** I wouldn't alert on raw load average alone — I'd normalize it against core count per host first (load-per-core), then pair it with `wa` percentage (or the equivalent from `/proc/stat` collected by the monitoring agent) so alerts can be classified at generation time as CPU-pressure versus I/O-pressure rather than a single ambiguous "load is high" page. I'd also collect per-core utilization (the `mpstat` view) on a lower-frequency basis, since single-core saturation hidden by aggregates is exactly the kind of issue that silently caps a specific service's throughput without tripping an aggregate-based threshold — a fleet-wide "max single-core utilization" metric catches that class of problem an average never will. The goal is for the alert itself to already point toward §5's diagnostic branch (CPU-bound vs. I/O-bound vs. single-core-pinned) rather than paging someone with just a bare number and making them re-derive the same three-step process from scratch every incident.
+**Model answer:** I wouldn't alert on raw load average alone — I'd normalize it against core count per host first (load-per-core), then pair it with `wa` percentage (or the equivalent from `/proc/stat` collected by the monitoring agent) so alerts can be classified at generation time as CPU-pressure versus I/O-pressure rather than a single ambiguous "load is high" page. I'd also collect per-core utilization (the `mpstat` view) on a lower-frequency basis, since single-core saturation hidden by aggregates is exactly the kind of issue that silently caps a specific service's throughput without tripping an aggregate-based threshold — a fleet-wide "max single-core utilization" metric catches that class of problem an average never will. The goal is for the alert itself to already point toward [§5](../Part1/Section-05-Part1-Major-Distribution-Families.md)'s diagnostic branch (CPU-bound vs. I/O-bound vs. single-core-pinned) rather than paging someone with just a bare number and making them re-derive the same three-step process from scratch every incident.
 _What the interviewer is probing for:_ Designing monitoring that encodes the diagnostic reasoning up front rather than just forwarding a raw, ambiguous metric.
 
 ## 8. Key Takeaways
@@ -169,10 +169,10 @@ _What the interviewer is probing for:_ Designing monitoring that encodes the dia
 - `top`'s CPU line breaks down into `us`/`sy`/`ni`/`id`/`wa`/`hi`/`si` — a high `wa` specifically means the CPU is idle waiting on I/O, not CPU-bound at all, the single most important field for the CPU-vs-I/O distinction (2).
 - `mpstat -P ALL` reveals per-core utilization, exposing single-core saturation an aggregate view (`top`'s summary line) hides entirely (3).
 - `vmstat`'s `r` (runnable) and `b` (blocked) columns are the live, per-second version of load average's two components, and its first output line is a since-boot average that should always be discarded (4).
-- The full CPU diagnostic sequence — load average for "is something queued," `top`'s `wa` for CPU-vs-I/O, `mpstat` for evenly-saturated-vs-single-core — is the concrete application of §80's bottleneck-identification model to the CPU resource specifically (5).
+- The full CPU diagnostic sequence — load average for "is something queued," `top`'s `wa` for CPU-vs-I/O, `mpstat` for evenly-saturated-vs-single-core — is the concrete application of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s bottleneck-identification model to the CPU resource specifically (5).
 
 ## 9. Related Concepts & What's Next
 
-This section is the first of §80's four resource-specific continuations, going deeper on the CPU-diagnostic angle that §34's `top` coverage (Part 5) only introduced at a process-visibility level, and connecting to §38's `nice`/`renice` (Part 5) for the `ni` field's meaning. §82 (next) applies the same resource-specific depth to memory — `free`, `/proc/meminfo`, and the OOM killer — continuing the four-part sequence this Part is built around.
+This section is the first of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s four resource-specific continuations, going deeper on the CPU-diagnostic angle that [§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md)'s `top` coverage (Part 5) only introduced at a process-visibility level, and connecting to [§38](../Part5/Section-38-Part5-Process-Priority-Nice-Renice.md)'s `nice`/`renice` (Part 5) for the `ni` field's meaning. [§82](./Section-82-Part11-Memory-Analysis.md) (next) applies the same resource-specific depth to memory — `free`, `/proc/meminfo`, and the OOM killer — continuing the four-part sequence this Part is built around.
 
-**Next Section:** §82 — `Section-82-Part11-Memory-Analysis.md`
+**Next Section:** [§82](./Section-82-Part11-Memory-Analysis.md) — `Section-82-Part11-Memory-Analysis.md`

@@ -4,7 +4,7 @@
 
 **Plain language:** Azure DNS is Azure's service for hosting DNS domains — translating human-readable names (like `www.contoso.com`) into IP addresses. It comes in two flavors: public DNS zones for internet-facing domains anyone can resolve, and private DNS zones for name resolution that only works within your own private Azure network.
 
-**Precise definition:** Azure DNS is a hosting service for DNS domains, providing name resolution using Microsoft's global network of DNS servers for high availability and performance. **Public DNS Zones** host domains resolvable from anywhere on the public internet. **Private DNS Zones** provide name resolution scoped to one or more linked Virtual Networks, not resolvable from the public internet, and are the specific mechanism required to correctly resolve Private Link endpoints (introduced in Section 23.5) to their private IP addresses.
+**Precise definition:** Azure DNS is a hosting service for DNS domains, providing name resolution using Microsoft's global network of DNS servers for high availability and performance. **Public DNS Zones** host domains resolvable from anywhere on the public internet. **Private DNS Zones** provide name resolution scoped to one or more linked Virtual Networks, not resolvable from the public internet, and are the specific mechanism required to correctly resolve Private Link endpoints (introduced in [Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5) to their private IP addresses.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -30,15 +30,15 @@ Every networking concept covered throughout this Part — VNets, Load Balancers,
 
 **Definition:** A Private DNS Zone provides name resolution for one or more **linked** Virtual Networks, resolving names only for clients within those linked VNets (or networks connected to them via peering/hybrid connectivity with appropriate DNS configuration) — completely inaccessible from the public internet.
 
-**Why linked, not just deployed:** A Private DNS Zone must be explicitly **linked** to each VNet that should use it for resolution — this linking step is what actually connects the zone's records to a specific VNet's DNS resolution behavior, and a zone can be linked to multiple VNets simultaneously, enabling shared internal name resolution across a hub-and-spoke topology (Section 21.6) from one central zone rather than duplicating records per VNet.
+**Why linked, not just deployed:** A Private DNS Zone must be explicitly **linked** to each VNet that should use it for resolution — this linking step is what actually connects the zone's records to a specific VNet's DNS resolution behavior, and a zone can be linked to multiple VNets simultaneously, enabling shared internal name resolution across a hub-and-spoke topology ([Section 21](./Section-21-Part5-Virtual-Network-Fundamentals.md).6) from one central zone rather than duplicating records per VNet.
 
 ### 4.2 Auto-Registration
 
 Private DNS Zones support an optional **auto-registration** feature for VM hostnames specifically — when enabled on a linked VNet, VMs deployed into that VNet automatically get an A record created in the Private DNS Zone reflecting their private IP address, without manual DNS record management, keeping internal VM name resolution current automatically as VMs are created, deleted, or have their IP addresses change.
 
-### 4.3 Private Link Integration (Critical Connection to Section 23.5)
+### 4.3 Private Link Integration (Critical Connection to [Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5)
 
-As introduced in Section 23.5, Private Link/Private Endpoints require correct DNS configuration to actually function as intended — when a Private Endpoint is created for a PaaS resource (like a Storage Account), a specific Private DNS Zone (following a predictable, resource-type-specific naming convention, such as `privatelink.blob.core.windows.net` for Blob Storage) must be created (or an existing one used) and linked to the relevant VNet(s), with an A record mapping the PaaS resource's standard hostname to its new private IP address. This is precisely what ensures that when an application resolves `mystorageaccount.blob.core.windows.net`, it receives the private IP address (routed privately within the VNet) rather than the resource's public IP address — without this specific Private DNS Zone configuration, traffic would continue resolving to and using the public endpoint even after a Private Endpoint has been technically created, silently undermining the network isolation the Private Endpoint was meant to provide.
+As introduced in [Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).5, Private Link/Private Endpoints require correct DNS configuration to actually function as intended — when a Private Endpoint is created for a PaaS resource (like a Storage Account), a specific Private DNS Zone (following a predictable, resource-type-specific naming convention, such as `privatelink.blob.core.windows.net` for Blob Storage) must be created (or an existing one used) and linked to the relevant VNet(s), with an A record mapping the PaaS resource's standard hostname to its new private IP address. This is precisely what ensures that when an application resolves `mystorageaccount.blob.core.windows.net`, it receives the private IP address (routed privately within the VNet) rather than the resource's public IP address — without this specific Private DNS Zone configuration, traffic would continue resolving to and using the public endpoint even after a Private Endpoint has been technically created, silently undermining the network isolation the Private Endpoint was meant to provide.
 
 ⚠️ The specific required Private DNS Zone names for each Azure service type (e.g., `privatelink.blob.core.windows.net` for Blob Storage, a different specific zone name for Azure SQL Database, and so on) are defined by Microsoft and must match exactly — verify the current, correct zone name for each specific service type against official documentation when configuring Private Link, since using an incorrect zone name silently fails to achieve the intended private resolution.
 
@@ -97,9 +97,9 @@ az network private-dns record-set a add-record \
   --ipv4-address 10.1.1.10
 ```
 
-- **Purpose:** Creates the specific, correctly-named Private DNS Zone required for Blob Storage Private Link resolution (per Section 28.4.3), links it to the application VNet, and adds the A record mapping the storage account's hostname prefix to its Private Endpoint IP — completing the Private Endpoint configuration started in Section 23.7's example.
+- **Purpose:** Creates the specific, correctly-named Private DNS Zone required for Blob Storage Private Link resolution (per [Section 28](./Section-28-Part5-Azure-DNS.md).4.3), links it to the application VNet, and adds the A record mapping the storage account's hostname prefix to its Private Endpoint IP — completing the Private Endpoint configuration started in [Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md).7's example.
 - **Important arguments explained individually:**
-  - `--registration-enabled false` — auto-registration (Section 28.4.2) is a VM-hostname feature and isn't relevant/applicable to this Private Link-specific zone, so it's explicitly disabled here.
+  - `--registration-enabled false` — auto-registration ([Section 28](./Section-28-Part5-Azure-DNS.md).4.2) is a VM-hostname feature and isn't relevant/applicable to this Private Link-specific zone, so it's explicitly disabled here.
 - ⚠️ In practice, Azure can automate much of this Private Link DNS record creation automatically when a Private Endpoint is created with DNS integration configured — verify current tooling capabilities (which have improved to reduce manual DNS record management for Private Link scenarios) against official documentation, since manually replicating every step shown here may not always be necessary with current tooling.
 
 ## 7. Production & Enterprise Usage
@@ -117,7 +117,7 @@ Azure DNS's global anycast network generally provides fast, low-latency resoluti
 
 ## 10. Monitoring
 
-DNS query analytics and zone configuration changes can be monitored via Azure Monitor and activity logs (Part 10); given how silently a DNS misconfiguration can undermine Private Link's intended isolation (Section 28.8), some organizations specifically monitor for unexpected changes to Private DNS Zone records tied to sensitive Private Link endpoints as part of their broader security monitoring posture (Part 11).
+DNS query analytics and zone configuration changes can be monitored via Azure Monitor and activity logs (Part 10); given how silently a DNS misconfiguration can undermine Private Link's intended isolation ([Section 28](./Section-28-Part5-Azure-DNS.md).8), some organizations specifically monitor for unexpected changes to Private DNS Zone records tied to sensitive Private Link endpoints as part of their broader security monitoring posture (Part 11).
 
 ## 11. Troubleshooting
 
@@ -127,7 +127,7 @@ DNS query analytics and zone configuration changes can be monitored via Azure Mo
 | Private Endpoint created, but application still connects to the resource's public IP          | Private DNS Zone missing, not linked to the correct VNet, or missing/incorrect A record | Verify the specific required Private DNS Zone name (per service type), confirm it's linked to the client's VNet, and confirm the A record correctly maps to the Private Endpoint's private IP |
 | VM hostname resolution not working automatically for newly created VMs                        | Auto-registration not enabled on the Private DNS Zone's VNet link                       | Enable `--registration-enabled true` on the relevant VNet link, or manually create the A record if auto-registration isn't desired                                                            |
 
-## 12. Interview Questions — Section 28
+## 12. Interview Questions — [Section 28](./Section-28-Part5-Azure-DNS.md)
 
 ### 🎯 Intermediate
 
@@ -160,4 +160,4 @@ _What the interviewer is probing:_ whether the candidate can design a centrally-
 
 ## 15. Related Concepts / Part 5 Wrap-Up
 
-This completes **Part 5 — Networking**, covering VNets, NSGs/Route Tables, VNet Peering/Private Link, Load Balancer/Application Gateway, Front Door/CDN, VPN Gateway/ExpressRoute, and Azure DNS — the full networking foundation underlying every compute (Part 3) and storage (Part 4) resource covered so far, and essential context for every subsequent Part. **Part 6 — Databases & Data Services** begins next with Section 29, covering Azure SQL Database & Managed Instance, the first of Azure's managed relational database offerings, building on the compute, storage, and now networking foundations established across Parts 3 through 5.
+This completes **Part 5 — Networking**, covering VNets, NSGs/Route Tables, VNet Peering/Private Link, Load Balancer/Application Gateway, Front Door/CDN, VPN Gateway/ExpressRoute, and Azure DNS — the full networking foundation underlying every compute (Part 3) and storage (Part 4) resource covered so far, and essential context for every subsequent Part. **Part 6 — Databases & Data Services** begins next with [Section 29](../Part6/Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md), covering Azure SQL Database & Managed Instance, the first of Azure's managed relational database offerings, building on the compute, storage, and now networking foundations established across Parts 3 through 5.

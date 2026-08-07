@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-A VNet (Section 21) provides isolation and address space, but by itself doesn't restrict what traffic can flow between resources within it, or dictate any specific path traffic must take — by default, Azure provides basic connectivity (VNet-internal traffic flows freely, and Azure's system routes handle default internet/VNet routing sensibly) but this default openness is inappropriate for production security postures requiring the principle of least privilege applied to network traffic itself, not just to RBAC-controlled management operations (Section 8). NSGs solve the "what traffic should be allowed" problem; Route Tables solve the separate "what path should traffic take" problem — for example, forcing all outbound internet traffic through a centralized firewall appliance rather than allowing it to route directly to the internet from each subnet independently.
+A VNet ([Section 21](./Section-21-Part5-Virtual-Network-Fundamentals.md)) provides isolation and address space, but by itself doesn't restrict what traffic can flow between resources within it, or dictate any specific path traffic must take — by default, Azure provides basic connectivity (VNet-internal traffic flows freely, and Azure's system routes handle default internet/VNet routing sensibly) but this default openness is inappropriate for production security postures requiring the principle of least privilege applied to network traffic itself, not just to RBAC-controlled management operations ([Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)). NSGs solve the "what traffic should be allowed" problem; Route Tables solve the separate "what path should traffic take" problem — for example, forcing all outbound internet traffic through a centralized firewall appliance rather than allowing it to route directly to the internet from each subnet independently.
 
 ## 3. Network Security Groups (NSGs)
 
@@ -38,7 +38,7 @@ By default, Azure automatically creates **system routes** handling common cases 
 
 ### 4.2 Common Use Case — Forced Tunneling / Hub-and-Spoke Firewall Inspection
 
-**Definition:** "Forced tunneling" (or more generally, routing all outbound traffic through a central inspection point) uses a UDR to override the default direct-to-internet system route, instead directing all outbound internet-bound traffic from a spoke subnet through a central firewall/NVA sitting in a hub VNet (the hub-and-spoke pattern introduced in Section 21.6), ensuring all outbound traffic is inspected and filtered centrally rather than allowing each subnet's resources to reach the internet directly and independently.
+**Definition:** "Forced tunneling" (or more generally, routing all outbound traffic through a central inspection point) uses a UDR to override the default direct-to-internet system route, instead directing all outbound internet-bound traffic from a spoke subnet through a central firewall/NVA sitting in a hub VNet (the hub-and-spoke pattern introduced in [Section 21](./Section-21-Part5-Virtual-Network-Fundamentals.md).6), ensuring all outbound traffic is inspected and filtered centrally rather than allowing each subnet's resources to reach the internet directly and independently.
 
 **Why this matters:** Without a UDR forcing this centralized routing, NSGs alone can restrict which ports/protocols are allowed, but can't provide the deeper content inspection, threat intelligence-based filtering, and centralized logging that a dedicated firewall appliance (like Azure Firewall, covered in Part 11) provides — UDRs are what make it possible to actually force traffic through such an appliance rather than merely hoping application configuration sends it there voluntarily.
 
@@ -88,7 +88,7 @@ az network vnet subnet update \
   --network-security-group nsg-frontend
 ```
 
-- **Purpose:** Creates an NSG, adds an explicit rule allowing inbound HTTPS (port 443) from the internet, then associates the NSG with the frontend subnet from Section 21.5's example — implementing the security posture shown conceptually in Section 22.5's diagram.
+- **Purpose:** Creates an NSG, adds an explicit rule allowing inbound HTTPS (port 443) from the internet, then associates the NSG with the frontend subnet from [Section 21](./Section-21-Part5-Virtual-Network-Fundamentals.md).5's example — implementing the security posture shown conceptually in [Section 22](./Section-22-Part5-NSGs-and-Route-Tables.md).5's diagram.
 - **Important arguments explained individually:**
   - `--priority` — lower numbers are evaluated first; setting this to `100` leaves room for additional rules to be inserted at lower-priority-number (higher-precedence) or higher-priority-number (lower-precedence) positions later without needing to renumber existing rules.
   - `--source-address-prefixes Internet` — uses Azure's built-in **service tag** for "the internet" rather than requiring an explicit, unwieldy enumeration of IP ranges; service tags (covering constructs like `Internet`, `VirtualNetwork`, `AzureLoadBalancer`, and many specific Azure service ranges) are a significant convenience and accuracy improvement over manually maintained IP lists.
@@ -116,7 +116,7 @@ az network vnet subnet update \
 
 - **Purpose:** Creates a route sending all traffic (`0.0.0.0/0`, meaning "any destination not otherwise more specifically routed") to a specific IP address representing a firewall/NVA's internal interface, then associates this Route Table with the frontend subnet, forcing that subnet's outbound traffic through the appliance rather than taking Azure's default direct route.
 - **Important arguments explained individually:**
-  - `--next-hop-type VirtualAppliance` — indicates traffic should be sent to a specific IP address running a network appliance, as opposed to other next-hop types like `Internet` (direct default routing) or `VNetPeering` (routing toward a peered VNet, Section 23).
+  - `--next-hop-type VirtualAppliance` — indicates traffic should be sent to a specific IP address running a network appliance, as opposed to other next-hop types like `Internet` (direct default routing) or `VNetPeering` (routing toward a peered VNet, [Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md)).
 
 ## 7. Production & Enterprise Usage
 
@@ -144,7 +144,7 @@ Forcing traffic through a centralized firewall/NVA via Route Tables introduces a
 | Traffic that should be inspected by a central firewall is bypassing it | No Route Table associated with the relevant subnet, or the UDR's address prefix doesn't cover the actual destination              | Verify Route Table association and that the `0.0.0.0/0` (or more specific) route correctly covers the intended traffic           |
 | A newly added NSG rule doesn't seem to take effect                     | A higher-priority (lower-number) rule is matching first and already allowing/denying the traffic before the new rule is evaluated | Review rule priorities; remember that NSG rule evaluation stops at the first match, so rule order/priority matters significantly |
 
-## 12. Interview Questions — Section 22
+## 12. Interview Questions — [Section 22](./Section-22-Part5-NSGs-and-Route-Tables.md)
 
 ### 🎯 Intermediate
 
@@ -165,7 +165,7 @@ _What the interviewer is probing:_ whether the candidate can design a complete, 
 ## 13. Common Misconceptions
 
 - **"NSGs alone provide the same protection as a dedicated firewall appliance."** False — NSGs provide basic, stateful, port/protocol/source-based filtering; a dedicated firewall (Azure Firewall or a third-party NVA) typically adds deeper content inspection, threat intelligence integration, and centralized logging that NSGs don't provide on their own; the two are complementary, not interchangeable.
-- **"You need to write a separate NSG rule for return traffic on an allowed connection."** False — NSGs are stateful (Section 22.3.2); return traffic for an already-allowed connection is handled automatically.
+- **"You need to write a separate NSG rule for return traffic on an allowed connection."** False — NSGs are stateful ([Section 22](./Section-22-Part5-NSGs-and-Route-Tables.md).3.2); return traffic for an already-allowed connection is handled automatically.
 
 ## 14. Key Takeaways
 
@@ -176,4 +176,4 @@ _What the interviewer is probing:_ whether the candidate can design a complete, 
 
 ## 15. Related Concepts (Next Up)
 
-Section 23 covers **VNet Peering and Service Endpoints/Private Link** — the mechanisms for connecting separate VNets to each other and for privately reaching Azure PaaS services (like Storage Accounts or Azure SQL Database) without traffic ever traversing the public internet, extending the single-VNet networking model just covered into multi-VNet and hybrid-service architectures.
+[Section 23](./Section-23-Part5-VNet-Peering-Service-Endpoints-Private-Link.md) covers **VNet Peering and Service Endpoints/Private Link** — the mechanisms for connecting separate VNets to each other and for privately reaching Azure PaaS services (like Storage Accounts or Azure SQL Database) without traffic ever traversing the public internet, extending the single-VNet networking model just covered into multi-VNet and hybrid-service architectures.

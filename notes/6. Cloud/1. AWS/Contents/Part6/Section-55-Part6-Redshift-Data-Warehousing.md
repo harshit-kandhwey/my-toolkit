@@ -146,6 +146,6 @@ Senior - Design data architecture for real-time order processing, a BI dashboard
 
 ## Related Concepts (forward links)
 
-- DocumentDB and Neptune as further specialized database engines for different data models -> §56
+- DocumentDB and Neptune as further specialized database engines for different data models -> [§56](./Section-56-Part6-DocumentDB-Neptune.md)
 - ETL/ELT pipelines and Kinesis for feeding data into Redshift -> Part 7
-- Choosing among all of Part 6's database services, and Database Migration Service -> §57
+- Choosing among all of Part 6's database services, and Database Migration Service -> [§57](./Section-57-Part6-DMS-Choosing-Right-Database.md)

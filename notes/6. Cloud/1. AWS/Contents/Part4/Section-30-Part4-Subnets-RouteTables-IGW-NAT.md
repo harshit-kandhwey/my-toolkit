@@ -236,7 +236,7 @@ Senior - Design subnet/routing for a three-tier app (public web, private app, pr
 
 ## Related Concepts (forward links)
 
-- Security Groups vs NACLs, the firewall layers on top of this routing foundation, including their independent IPv4/IPv6 evaluation (see §5a) -> §31
-- VPC Peering, Transit Gateway, PrivateLink for cross-VPC routing -> §32
-- VPC Endpoints as a NAT Gateway cost-avoidance mechanism -> §37
+- Security Groups vs NACLs, the firewall layers on top of this routing foundation, including their independent IPv4/IPv6 evaluation (see [§5](../Part1/Section-05-Part1-Ways-to-Interact-with-AWS.md)a) -> [§31](./Section-31-Part4-SecurityGroups-vs-NACLs.md)
+- VPC Peering, Transit Gateway, PrivateLink for cross-VPC routing -> [§32](./Section-32-Part4-Peering-TransitGateway-PrivateLink.md)
+- VPC Endpoints as a NAT Gateway cost-avoidance mechanism -> [§37](./Section-37-Part4-VPCEndpoints-FlowLogs-Troubleshooting.md)
 - Bastion hosts vs Systems Manager Session Manager -> Part 8

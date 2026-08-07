@@ -4,11 +4,11 @@
 
 **Plain language:** Azure Functions lets you deploy a single small piece of code — a function — that Azure runs automatically whenever something triggers it (an HTTP request, a new file, a scheduled time, a message arriving in a queue), without you ever provisioning or managing any server, and where you're typically billed only for the actual time your code runs.
 
-**Precise definition:** Azure Functions is Azure's Function-as-a-Service (FaaS, introduced conceptually in Section 2.7) offering — an event-driven, serverless compute service where individual functions are deployed independently, invoked automatically by configured triggers, scaled automatically (including to zero when idle, depending on hosting plan) by the platform, and billed based on execution count, duration, and memory consumption rather than reserved, always-on capacity.
+**Precise definition:** Azure Functions is Azure's Function-as-a-Service (FaaS, introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).7) offering — an event-driven, serverless compute service where individual functions are deployed independently, invoked automatically by configured triggers, scaled automatically (including to zero when idle, depending on hosting plan) by the platform, and billed based on execution count, duration, and memory consumption rather than reserved, always-on capacity.
 
 ## 2. Why It Exists / Problem It Solves
 
-Even App Service (Section 13), despite being PaaS, still requires thinking in terms of a continuously-running application with its own scaling and hosting configuration — appropriate for a full web application, but excessive for a workload that's genuinely just "run this small piece of logic whenever X happens" (e.g., resize an image whenever one is uploaded, process a message from a queue, respond to a webhook). Azure Functions exists to remove even that remaining layer of abstraction: there's no "app" to configure at all, just individual functions bound to triggers, letting a developer focus purely on the logic that should run in response to a specific event, with the platform handling everything about when and how many instances actually execute that logic.
+Even App Service ([Section 13](./Section-13-Part3-Azure-App-Service.md)), despite being PaaS, still requires thinking in terms of a continuously-running application with its own scaling and hosting configuration — appropriate for a full web application, but excessive for a workload that's genuinely just "run this small piece of logic whenever X happens" (e.g., resize an image whenever one is uploaded, process a message from a queue, respond to a webhook). Azure Functions exists to remove even that remaining layer of abstraction: there's no "app" to configure at all, just individual functions bound to triggers, letting a developer focus purely on the logic that should run in response to a specific event, with the platform handling everything about when and how many instances actually execute that logic.
 
 ## 3. Core Concepts
 
@@ -19,7 +19,7 @@ Even App Service (Section 13), despite being PaaS, still requires thinking in te
 - **HTTP trigger** — the function runs in response to an incoming HTTP request, effectively making the function a lightweight API endpoint.
 - **Timer trigger** — the function runs on a defined schedule (using CRON-like expressions), for periodic/batch-style tasks.
 - **Queue trigger** — the function runs automatically whenever a new message arrives in a configured queue (e.g., Azure Storage Queue or Service Bus Queue, Part 8), a common pattern for asynchronous background processing.
-- **Blob trigger** — the function runs whenever a new or updated blob appears in a configured Blob Storage container (Section 17), commonly used for file-processing pipelines.
+- **Blob trigger** — the function runs whenever a new or updated blob appears in a configured Blob Storage container ([Section 17](../Part4/Section-17-Part4-Blob-Storage-Deep-Dive.md)), commonly used for file-processing pipelines.
 
 **Binding:** A declarative way to connect a function's input or output directly to another Azure service, without writing explicit connection/SDK code inside the function body. An **input binding** supplies data to the function (e.g., automatically reading a related database record); an **output binding** sends the function's result somewhere (e.g., automatically writing a result to a queue or a database) — bindings reduce boilerplate integration code, letting the function focus purely on its core logic while the platform handles the connection details based on declarative configuration.
 
@@ -29,11 +29,11 @@ Even App Service (Section 13), despite being PaaS, still requires thinking in te
 
 Azure Functions can run on different underlying hosting plans, each with a different scaling and cost model:
 
-| Plan                             | Scaling Behavior                                                                 | Cold Start                                 | Cost Model                                | Typical Use                                                                                     |
-| -------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Consumption**                  | Fully automatic, scales to zero when idle                                        | Possible (instances spin up on demand)     | Pay strictly per execution/duration       | Sporadic, unpredictable, or low-volume event-driven workloads                                   |
-| **Premium**                      | Automatic, but can keep pre-warmed instances to avoid cold starts                | Reduced/avoidable via pre-warmed instances | Pay for allocated capacity plus scale-out | Latency-sensitive functions needing consistent response times                                   |
-| **Dedicated (App Service Plan)** | Runs on a normal App Service Plan (Section 13.3.1) alongside possible other apps | None (always running)                      | Same as App Service Plan cost             | Predictable, continuous workloads, or when already paying for an underutilized App Service Plan |
+| Plan                             | Scaling Behavior                                                                                                            | Cold Start                                 | Cost Model                                | Typical Use                                                                                     |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Consumption**                  | Fully automatic, scales to zero when idle                                                                                   | Possible (instances spin up on demand)     | Pay strictly per execution/duration       | Sporadic, unpredictable, or low-volume event-driven workloads                                   |
+| **Premium**                      | Automatic, but can keep pre-warmed instances to avoid cold starts                                                           | Reduced/avoidable via pre-warmed instances | Pay for allocated capacity plus scale-out | Latency-sensitive functions needing consistent response times                                   |
+| **Dedicated (App Service Plan)** | Runs on a normal App Service Plan ([Section 13](./Section-13-Part3-Azure-App-Service.md).3.1) alongside possible other apps | None (always running)                      | Same as App Service Plan cost             | Predictable, continuous workloads, or when already paying for an underutilized App Service Plan |
 
 ⚠️ Specific plan names, exact scaling limits, and cold-start mitigation details evolve over time — verify current hosting plan options and their precise characteristics against official documentation before selecting one for a production design.
 
@@ -119,12 +119,12 @@ Enterprises use Azure Functions extensively for event-driven integration glue (r
 ## 7. Security Considerations
 
 - HTTP-triggered functions should use an appropriate `authLevel` (function-level key, or better, Entra ID-based authentication/authorization) rather than fully anonymous access, unless the endpoint is genuinely intended to be fully public.
-- Managed Identities (Section 9) are the recommended authentication mechanism for a function that needs to call other Azure services (databases, Storage, Key Vault), avoiding stored connection strings or keys in function configuration wherever possible.
+- Managed Identities ([Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) are the recommended authentication mechanism for a function that needs to call other Azure services (databases, Storage, Key Vault), avoiding stored connection strings or keys in function configuration wherever possible.
 - Because Functions can be triggered by many different event sources, each trigger type's own security model matters — e.g., a Blob-triggered function's security is partly dependent on who can write to the source Storage Account, since any authorized write there will invoke the function.
 
 ## 8. Performance Considerations
 
-Cold starts (Section 14.3.3) are the primary Functions-specific performance consideration beyond standard code-level optimization; additionally, functions with heavy per-invocation initialization work (loading large models, establishing expensive connections) benefit from moving that initialization outside the per-request code path where the platform's execution model allows reuse of warm instances, rather than repeating expensive setup on every single invocation.
+Cold starts ([Section 14](./Section-14-Part3-Azure-Functions.md).3.3) are the primary Functions-specific performance consideration beyond standard code-level optimization; additionally, functions with heavy per-invocation initialization work (loading large models, establishing expensive connections) benefit from moving that initialization outside the per-request code path where the platform's execution model allows reuse of warm instances, rather than repeating expensive setup on every single invocation.
 
 ## 9. Monitoring
 
@@ -138,7 +138,7 @@ Azure Functions integrates natively with Application Insights (Part 10) for per-
 | Queue/Blob-triggered function isn't firing at all                        | Misconfigured connection to the storage account, or trigger binding configuration mismatch                    | Verify the Function App's storage connection configuration and the specific trigger binding's target queue/container name |
 | Function execution fails intermittently under high concurrent load       | Downstream dependency (database, API) being overwhelmed by the function's own automatic scale-out concurrency | Review and potentially cap the function's maximum concurrent instance/batch settings to match downstream capacity         |
 
-## 11. Interview Questions — Section 14
+## 11. Interview Questions — [Section 14](./Section-14-Part3-Azure-Functions.md)
 
 ### 🎯 Beginner
 
@@ -170,4 +170,4 @@ _What the interviewer is probing:_ whether the candidate can reason about the ac
 
 ## 14. Related Concepts (Next Up)
 
-Section 15 completes Part 3 — Core Compute by covering **Azure Container Instances (ACI)** — a Containers-as-a-Service offering (introduced conceptually in Section 2.7) for running individual containers directly without managing a VM, a Kubernetes cluster, or a Functions-style trigger model, filling the gap between "just run this one container" simplicity and the fuller orchestration capabilities of AKS (Part 7).
+[Section 15](./Section-15-Part3-Azure-Container-Instances.md) completes Part 3 — Core Compute by covering **Azure Container Instances (ACI)** — a Containers-as-a-Service offering (introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).7) for running individual containers directly without managing a VM, a Kubernetes cluster, or a Functions-style trigger model, filling the gap between "just run this one container" simplicity and the fuller orchestration capabilities of AKS (Part 7).

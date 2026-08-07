@@ -34,7 +34,7 @@ When you land on an unfamiliar host — during onboarding, an incident, or audit
 
 ### `cat /etc/os-release` — Distribution Identity
 
-**Purpose:** Read the standardized, machine-parseable file that identifies the distribution family, name, and version. This is the same file introduced in §1's hands-on section; it's repeated here because it's the correct _first_ command specifically for the family-identification question this section is about.
+**Purpose:** Read the standardized, machine-parseable file that identifies the distribution family, name, and version. This is the same file introduced in [§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s hands-on section; it's repeated here because it's the correct _first_ command specifically for the family-identification question this section is about.
 
 **Syntax:**
 
@@ -121,11 +121,11 @@ Codename:       noble
 - `lsb_release: command not found` — the `lsb-release` (or `redhat-lsb-core`) package is not installed by default on many minimal images, including minimal RHEL-family and most container base images. This is the single most common failure mode for this command; when it happens, fall back to `/etc/os-release`, which requires no extra package and is present far more reliably.
 - The "No LSB modules are available" line is harmless noise on many systems — it refers to optional LSB compliance modules unrelated to the fields you actually care about.
 
-> 💡 **Tip:** In practice, prefer `/etc/os-release` over `lsb_release` for anything you're scripting — it's present on more systems out of the box, doesn't require installing an extra package, and is the current standardized convention (as covered in §1). Reach for `lsb_release` mainly when a runbook or legacy script already expects it.
+> 💡 **Tip:** In practice, prefer `/etc/os-release` over `lsb_release` for anything you're scripting — it's present on more systems out of the box, doesn't require installing an extra package, and is the current standardized convention (as covered in [§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)). Reach for `lsb_release` mainly when a runbook or legacy script already expects it.
 
 ### `hostnamectl` — Consolidated Identity (systemd hosts)
 
-Covered in depth in §1's hands-on section; the same command applies here as a fast first check that includes distro identity alongside kernel and virtualization info. Not available on non-systemd distros — most notably **Alpine**, which uses OpenRC by default rather than systemd.
+Covered in depth in [§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md)'s hands-on section; the same command applies here as a fast first check that includes distro identity alongside kernel and virtualization info. Not available on non-systemd distros — most notably **Alpine**, which uses OpenRC by default rather than systemd.
 
 ### Identifying Available Package Managers on an Unfamiliar Host
 
@@ -152,7 +152,7 @@ $ which apt dnf yum zypper pacman apk 2>/dev/null
 /usr/bin/yum
 ```
 
-Note both `dnf` and `yum` appear here — on modern RHEL-family systems, `yum` is typically a compatibility symlink to `dnf` rather than a genuinely separate legacy tool, preserved so that older scripts and muscle memory keep working (package-manager internals and the `dnf`/`yum` relationship are covered fully in §59–§64).
+Note both `dnf` and `yum` appear here — on modern RHEL-family systems, `yum` is typically a compatibility symlink to `dnf` rather than a genuinely separate legacy tool, preserved so that older scripts and muscle memory keep working (package-manager internals and the `dnf`/`yum` relationship are covered fully in [§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)).
 
 **Example output on Alpine:**
 
@@ -170,19 +170,19 @@ $ which apt dnf yum zypper pacman apk 2>/dev/null
 
 ## 4. Package Format Internals — Conceptual Comparison Only
 
-The mechanics of dependency resolution, repository metadata, and transaction handling are covered in full in Part 8 (§59–§64). At a conceptual level, though, the families differ in a way worth understanding now because it explains _why_ certain operational behaviors (like Arch requiring manual intervention on some upgrades, or apt/dnf mostly "just working") exist:
+The mechanics of dependency resolution, repository metadata, and transaction handling are covered in full in Part 8 ([§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)). At a conceptual level, though, the families differ in a way worth understanding now because it explains _why_ certain operational behaviors (like Arch requiring manual intervention on some upgrades, or apt/dnf mostly "just working") exist:
 
 - **Debian/apt and Red Hat/dnf** both use a **declarative, repository-metadata-driven dependency resolver**: you declare what you want installed, and the tool computes a full dependency graph against pre-published repository metadata, resolving conflicts largely automatically. This is why both feel similar in daily use despite different underlying formats.
 - **Arch/pacman** uses a simpler, more direct dependency model with less resolver sophistication historically, paired with a strong cultural expectation that the administrator reads release announcements before major updates — rolling-release distros trade automated safety for currency and transparency.
 - **Alpine/apk** is deliberately minimal and fast, targeting small, mostly-static container images rather than long-lived, heavily-customized systems — its dependency resolution philosophy optimizes for small closure size over exhaustive compatibility shimming.
 
-🔑 **Key Takeaway:** These philosophy differences are _why_ certain distros feel more or less "hands-off" in daily operations — but the actual command syntax, repository configuration, and transaction mechanics live in §59–§64, not here.
+🔑 **Key Takeaway:** These philosophy differences are _why_ certain distros feel more or less "hands-off" in daily operations — but the actual command syntax, repository configuration, and transaction mechanics live in [§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md), not here.
 
 ## 5. Production Usage Notes: Fleet Automation and Mixed-Distro Overhead
 
-- **Golden images diverge by family.** Golden-image pipelines (§102) typically build one base image per distro family, since the provisioning steps, hardening baselines, and package sets are not portable as-is across `apt`/`dnf`/`zypper`/`apk` ecosystems. A fleet standardized on a single family needs one golden-image pipeline; a fleet spanning two families effectively needs two full pipelines maintained in parallel.
-- **Ansible/Terraform provisioning differences.** Infrastructure-as-code tooling (§97) has to branch per distro family in real, concrete ways — Ansible's `package` module abstracts _some_ of this, but package names themselves are rarely identical across families (e.g., a library package might be named differently on Debian vs. RHEL vs. SUSE), so playbooks maintained across a mixed fleet accumulate per-family conditionals (`when: ansible_os_family == "Debian"`) that are a real, ongoing maintenance cost, not a one-time setup cost.
-- **Mixed-distro fleets create real operational overhead**, not just inconvenience: duplicated hardening baselines, duplicated vulnerability-scanning tool configuration (a scanner needs distro-aware package-to-CVE mapping, per §96), duplicated on-call runbooks, and a wider hiring/training surface for staff who need to be comfortable across ecosystems. Organizations sometimes accumulate a mixed fleet organically (an acquisition, a team going rogue, a specific vendor requiring one family) rather than by deliberate design — recognizing this as _debt_ rather than neutral diversity is a useful senior-level framing.
+- **Golden images diverge by family.** Golden-image pipelines ([§102](../Part13/Section-102-Part13-Golden-Images-Immutable-Infrastructure.md)) typically build one base image per distro family, since the provisioning steps, hardening baselines, and package sets are not portable as-is across `apt`/`dnf`/`zypper`/`apk` ecosystems. A fleet standardized on a single family needs one golden-image pipeline; a fleet spanning two families effectively needs two full pipelines maintained in parallel.
+- **Ansible/Terraform provisioning differences.** Infrastructure-as-code tooling ([§97](../Part13/Section-97-Part13-Infrastructure-As-Code-Ansible-Terraform.md)) has to branch per distro family in real, concrete ways — Ansible's `package` module abstracts _some_ of this, but package names themselves are rarely identical across families (e.g., a library package might be named differently on Debian vs. RHEL vs. SUSE), so playbooks maintained across a mixed fleet accumulate per-family conditionals (`when: ansible_os_family == "Debian"`) that are a real, ongoing maintenance cost, not a one-time setup cost.
+- **Mixed-distro fleets create real operational overhead**, not just inconvenience: duplicated hardening baselines, duplicated vulnerability-scanning tool configuration (a scanner needs distro-aware package-to-CVE mapping, per [§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)), duplicated on-call runbooks, and a wider hiring/training surface for staff who need to be comfortable across ecosystems. Organizations sometimes accumulate a mixed fleet organically (an acquisition, a team going rogue, a specific vendor requiring one family) rather than by deliberate design — recognizing this as _debt_ rather than neutral diversity is a useful senior-level framing.
 
 ## 6. Security Considerations: Default Posture Differences
 
@@ -193,12 +193,12 @@ Distro families differ meaningfully in their **default** security posture out of
 - **SUSE** also uses AppArmor by default, consistent with its historical role as an AppArmor-originating distro.
 - **Arch and Alpine** generally ship with neither enabled by default, leaving mandatory access control as an opt-in step for the administrator.
 
-The practical consequence: an application that behaves correctly on Ubuntu (AppArmor's default policies) can be unexpectedly blocked by SELinux on a RHEL-family host with no code change involved — a very common real-world troubleshooting scenario, and one reason "it worked on my dev box" bugs sometimes trace back to distro-family security defaults rather than application logic. Full coverage of SELinux and AppArmor mechanics, policy authoring, and troubleshooting (`audit2allow`, `aa-complain`, etc.) is in Part 12, §89–§96.
+The practical consequence: an application that behaves correctly on Ubuntu (AppArmor's default policies) can be unexpectedly blocked by SELinux on a RHEL-family host with no code change involved — a very common real-world troubleshooting scenario, and one reason "it worked on my dev box" bugs sometimes trace back to distro-family security defaults rather than application logic. Full coverage of SELinux and AppArmor mechanics, policy authoring, and troubleshooting (`audit2allow`, `aa-complain`, etc.) is in Part 12, [§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)–[§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md).
 
 ## 7. Best Practices
 
 - Standardize on as few distro families as the organization's actual compliance and technical requirements demand — treat every additional family as a recurring multiplier on pipeline, tooling, and runbook maintenance cost, not a one-time decision.
-- Pin distro _and_ version explicitly in golden images and IaC definitions — "latest Ubuntu" is not a reproducible specification any more than "Linux" alone is (§1 makes the same point about kernel vs. distro).
+- Pin distro _and_ version explicitly in golden images and IaC definitions — "latest Ubuntu" is not a reproducible specification any more than "Linux" alone is ([§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md) makes the same point about kernel vs. distro).
 - Verify compliance certification requirements (FedRAMP, Common Criteria, industry-specific mandates) _before_ a technical bake-off, since they can eliminate entire families up front and make later technical comparison moot.
 - Treat container base-image distro choice (often Alpine, for size) as a decision independent from host OS distro choice — they don't need to match, and conflating "our servers run RHEL so our containers should too" is a common, low-value assumption.
 
@@ -239,15 +239,15 @@ _What the interviewer is probing for:_ whether the candidate can turn a broad "w
 - The main distro families are Debian-based (`.deb`/`apt`), Red Hat-based (`.rpm`/`dnf`), SUSE-based (`.rpm`/`zypper`), independent/rolling (Arch, `pacman`), and minimalist/container-focused (Alpine, `.apk`/musl) — shared package _format_ does not imply shared repository ecosystem or binary compatibility.
 - Distro choice in production is driven primarily by support lifecycle length, compliance certification availability (FedRAMP, Common Criteria, etc.), and ecosystem lock-in — not raw technical preference.
 - `cat /etc/os-release` (preferred, standardized), `lsb_release -a` (legacy, may not be installed), `hostnamectl` (systemd hosts only), and `which apt dnf yum zypper pacman apk` are the practical toolkit for identifying a host's distro family and available package manager.
-- Package-format dependency-resolution _philosophy_ differs across families (declarative resolver vs. simpler direct model vs. minimal/static-optimized) — the full mechanics live in §59–§64, not here.
-- Distro families ship different default mandatory access control systems — SELinux by default on RHEL-family, AppArmor by default on Debian/Ubuntu/SUSE — which is a common, non-obvious source of "works on one distro, blocked on another" bugs (full depth in §89–§96).
+- Package-format dependency-resolution _philosophy_ differs across families (declarative resolver vs. simpler direct model vs. minimal/static-optimized) — the full mechanics live in [§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md), not here.
+- Distro families ship different default mandatory access control systems — SELinux by default on RHEL-family, AppArmor by default on Debian/Ubuntu/SUSE — which is a common, non-obvious source of "works on one distro, blocked on another" bugs (full depth in [§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)–[§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)).
 - Mixed-distro fleets carry real, ongoing operational overhead (duplicated golden images, IaC conditionals, scanning configuration, runbooks) — treat additional families as deliberate, justified exceptions rather than accumulated default.
 - The Alpine/musl compatibility warning is the highest-value practical anti-pattern in this section: verify before standardizing, don't assume "it's just Linux."
 
 ## Related Concepts & What's Next
 
-§1 established the kernel-vs-distribution layering and the standardized identification files (`/etc/os-release`, `uname`) this section builds directly on. §6 (next) takes the distribution concept a step further — where Linux actually runs today across servers, cloud, embedded, mobile, and containers, which is where family choice (especially the Alpine/container question raised here) gets applied concretely. Part 8 (§59–§64) is the deep dive into the package-management internals only summarized conceptually in 4 — dependency resolution, repository metadata, and transaction mechanics for `apt`, `dnf`/`yum`, and beyond. Part 12 (§89–§96) returns to the SELinux-vs-AppArmor default-posture point from 6 with full mandatory-access-control policy authoring and troubleshooting coverage. Part 13 (§97–§102) covers golden images and IaC provisioning patterns referenced in 5's fleet-automation discussion. Part 14 (§103–§110) covers enterprise support models and subscription economics for the vendor-backed families (RHEL, SLES, Ubuntu Pro) discussed in 2.
+[§1](./Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md) established the kernel-vs-distribution layering and the standardized identification files (`/etc/os-release`, `uname`) this section builds directly on. [§6](./Section-06-Part1-Where-Linux-Runs-Today.md) (next) takes the distribution concept a step further — where Linux actually runs today across servers, cloud, embedded, mobile, and containers, which is where family choice (especially the Alpine/container question raised here) gets applied concretely. Part 8 ([§59](../Part8/Section-59-Part8-Package-Management-Concepts.md)–[§64](../Part8/Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)) is the deep dive into the package-management internals only summarized conceptually in 4 — dependency resolution, repository metadata, and transaction mechanics for `apt`, `dnf`/`yum`, and beyond. Part 12 ([§89](../Part12/Section-89-Part12-Linux-Security-Model-Recap-Threat-Landscape.md)–[§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)) returns to the SELinux-vs-AppArmor default-posture point from 6 with full mandatory-access-control policy authoring and troubleshooting coverage. Part 13 ([§97](../Part13/Section-97-Part13-Infrastructure-As-Code-Ansible-Terraform.md)–[§102](../Part13/Section-102-Part13-Golden-Images-Immutable-Infrastructure.md)) covers golden images and IaC provisioning patterns referenced in 5's fleet-automation discussion. Part 14 ([§103](../Part14/Section-103-Part14-Enterprise-Linux-Distributions-Support-Models.md)–[§110](../Part14/Section-110-Part14-Compliance-Governance-Regulated-Environments.md)) covers enterprise support models and subscription economics for the vendor-backed families (RHEL, SLES, Ubuntu Pro) discussed in 2.
 
 ---
 
-**Next Section:** §6 — `Section-06-Part1-Where-Linux-Runs-Today.md`
+**Next Section:** [§6](./Section-06-Part1-Where-Linux-Runs-Today.md) — `Section-06-Part1-Where-Linux-Runs-Today.md`

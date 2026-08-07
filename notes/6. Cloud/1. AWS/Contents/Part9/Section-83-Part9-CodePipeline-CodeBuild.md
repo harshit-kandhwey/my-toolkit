@@ -8,14 +8,14 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-§79–4 established _what_ gets deployed (CloudFormation/CDK/Terraform templates) and §86 (later in this Part) establishes the _discipline_ around deploying infrastructure changes safely. But before any of that, there's a more basic, universal problem: application code itself needs to be built, tested, and packaged reliably and repeatably every time it changes — and traditionally, this meant standing up and maintaining your own build infrastructure (a Jenkins server, a build agent fleet), which is itself an operational burden requiring patching, scaling, and security hardening, similar in spirit to the burden SQS eliminated for message queuing (§59) or RDS eliminates for database administration.
+[§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)–[§4](../Part1/Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md) established _what_ gets deployed (CloudFormation/CDK/Terraform templates) and [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md) (later in this Part) establishes the _discipline_ around deploying infrastructure changes safely. But before any of that, there's a more basic, universal problem: application code itself needs to be built, tested, and packaged reliably and repeatably every time it changes — and traditionally, this meant standing up and maintaining your own build infrastructure (a Jenkins server, a build agent fleet), which is itself an operational burden requiring patching, scaling, and security hardening, similar in spirit to the burden SQS eliminated for message queuing ([§59](../Part7/Section-59-Part7-SQS-Fundamentals.md)) or RDS eliminates for database administration.
 
 CodePipeline and CodeBuild solve this the AWS-native way: CodePipeline provides the orchestration (what happens in what order, triggered by what), and CodeBuild provides the actual, ephemeral compute for building and testing, with AWS managing all the underlying build-server infrastructure — you define _what_ to build, not how to keep a build server patched and available.
 
 ## 3. Prerequisites and Dependencies
 
-- **IAM** (§9-11): CodePipeline and CodeBuild both operate via IAM service roles, exactly like every other AWS service execution role covered in this roadmap.
-- **CloudFormation/CDK/Terraform** (§79-82): the artifacts CodePipeline ultimately deploys are frequently these IaC templates, or application code that IaC-managed infrastructure runs.
+- **IAM** ([§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)-[§11](../Part2/Section-11-Part2-IAM-Roles-Trust-Policies-STS.md)): CodePipeline and CodeBuild both operate via IAM service roles, exactly like every other AWS service execution role covered in this roadmap.
+- **CloudFormation/CDK/Terraform** ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)): the artifacts CodePipeline ultimately deploys are frequently these IaC templates, or application code that IaC-managed infrastructure runs.
 - General familiarity with source control (Git) concepts, since CodePipeline's source stage typically integrates with CodeCommit, GitHub, Bitbucket, or a similar Git-based system.
 
 ## 4. Internal Working
@@ -23,7 +23,7 @@ CodePipeline and CodeBuild solve this the AWS-native way: CodePipeline provides 
 - A CodePipeline **pipeline** is composed of an ordered sequence of **stages** (e.g., Source, Build, Test, Deploy), each containing one or more **actions** — an action is a specific unit of work (pull from a Git repo, run a CodeBuild project, deploy a CloudFormation change set, wait for manual approval).
 - Stages execute **sequentially**; actions _within_ a stage can execute in **parallel** if there's no dependency between them — letting a pipeline run independent checks (e.g., a unit-test build and a separate security-scan build) concurrently within one stage rather than serially.
 - **Artifacts** (the output of one stage, e.g., a compiled build) are passed between stages via S3, automatically managed by CodePipeline — each stage's actions declare their input and output artifacts, and CodePipeline handles the storage/retrieval plumbing.
-- A pipeline is **triggered** automatically on a change to its configured source (a new commit to a branch, a new object in an S3 bucket, or on a schedule) — this event-driven triggering directly reuses the same EventBridge integration pattern covered in §62, since CodePipeline state changes and source triggers are themselves EventBridge-integrated events.
+- A pipeline is **triggered** automatically on a change to its configured source (a new commit to a branch, a new object in an S3 bucket, or on a schedule) — this event-driven triggering directly reuses the same EventBridge integration pattern covered in [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md), since CodePipeline state changes and source triggers are themselves EventBridge-integrated events.
 - **CodeBuild** executes within an ephemeral, containerized build environment (a specified base image, e.g., a standard AWS-managed Amazon Linux image with common language runtimes pre-installed, or a custom Docker image) that's provisioned fresh for each build and torn down afterward — no persistent build server to patch or maintain, and naturally parallel-scalable since AWS provisions as many concurrent build environments as needed.
 - CodeBuild's behavior is defined by a **buildspec.yml** file (checked into the source repository, alongside the application code itself) specifying phases (`install`, `pre_build`, `build`, `post_build`) and the commands to run in each — directly analogous in spirit to a CI configuration file in any other CI system (GitHub Actions YAML, GitLab CI YAML), but AWS-native.
 
@@ -40,25 +40,25 @@ Source Change (Git commit) ──▶ EventBridge trigger ──▶ CodePipeline
 
 ## 5. Architecture & Components
 
-| Component                  | Explanation                                                                                                                                                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pipeline**               | The overall, ordered definition of stages a change flows through.                                                                                                                                                     |
-| **Stage**                  | A named phase (Source, Build, Test, Deploy) containing one or more actions, executed sequentially relative to other stages.                                                                                           |
-| **Action**                 | A specific unit of work within a stage — source pull, CodeBuild invocation, deployment, manual approval, and many others (including third-party integrations).                                                        |
-| **Artifact**               | The input/output data passed between stages, stored in S3 and managed automatically by CodePipeline.                                                                                                                  |
-| **CodeBuild Project**      | A reusable CodeBuild configuration (build environment image, buildspec source, compute size) that a pipeline's Build action invokes.                                                                                  |
-| **buildspec.yml**          | The file defining CodeBuild's build phases and commands, checked into the source repository.                                                                                                                          |
-| **Manual Approval Action** | A pipeline action that pauses execution until a designated approver explicitly approves (or rejects) continuation — the CodePipeline-native implementation of the approval-gate pattern discussed generically in §86. |
+| Component                  | Explanation                                                                                                                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pipeline**               | The overall, ordered definition of stages a change flows through.                                                                                                                                                                                                         |
+| **Stage**                  | A named phase (Source, Build, Test, Deploy) containing one or more actions, executed sequentially relative to other stages.                                                                                                                                               |
+| **Action**                 | A specific unit of work within a stage — source pull, CodeBuild invocation, deployment, manual approval, and many others (including third-party integrations).                                                                                                            |
+| **Artifact**               | The input/output data passed between stages, stored in S3 and managed automatically by CodePipeline.                                                                                                                                                                      |
+| **CodeBuild Project**      | A reusable CodeBuild configuration (build environment image, buildspec source, compute size) that a pipeline's Build action invokes.                                                                                                                                      |
+| **buildspec.yml**          | The file defining CodeBuild's build phases and commands, checked into the source repository.                                                                                                                                                                              |
+| **Manual Approval Action** | A pipeline action that pauses execution until a designated approver explicitly approves (or rejects) continuation — the CodePipeline-native implementation of the approval-gate pattern discussed generically in [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md). |
 
 ## 6. Lifecycle / Workflow
 
-1. **Define** the pipeline's stages and actions (via console, CloudFormation/CDK/Terraform — pipelines are themselves commonly IaC-managed, directly tying back to §79-82).
+1. **Define** the pipeline's stages and actions (via console, CloudFormation/CDK/Terraform — pipelines are themselves commonly IaC-managed, directly tying back to [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)).
 2. A **source change** occurs (a commit, a new artifact), triggering the pipeline automatically via its configured source action's change-detection mechanism.
 3. The **Source stage** retrieves the changed code/configuration.
 4. The **Build stage** invokes a CodeBuild project, which provisions an ephemeral build environment, executes the buildspec's phases, and produces an output artifact (or fails, halting the pipeline).
 5. Optional **Test stages** run additional validation (integration tests, security scans) against the build artifact.
 6. Optional **Manual Approval actions** pause the pipeline for explicit human sign-off before proceeding, particularly before production deployment.
-7. The **Deploy stage** executes the actual deployment (via CodeDeploy, CloudFormation, ECS, or another deploy action — §84-85 cover deployment specifically).
+7. The **Deploy stage** executes the actual deployment (via CodeDeploy, CloudFormation, ECS, or another deploy action — [§84](./Section-84-Part9-CodeDeploy.md)-[§85](./Section-85-Part9-Deployment-Strategies.md) cover deployment specifically).
 8. Pipeline execution status, per-stage/action detail, and history are available via the console/API for troubleshooting and audit.
 
 ## 7. Configuration
@@ -71,7 +71,7 @@ Source Change (Git commit) ──▶ EventBridge trigger ──▶ CodePipeline
 | Stage/action ordering and parallelism                                             | How the release process is structured                                               |
 | Manual approval SNS notification                                                  | Alerts the designated approver when a pipeline execution is awaiting their sign-off |
 
-⚠️ **Warning:** a CodeBuild project's IAM service role determines what the _build process itself_ can access — a build script that needs to pull a private dependency, write to a specific S3 bucket, or read a Parameter Store value (§75) needs that access explicitly granted to the CodeBuild role, and over-broad grants here are a genuine, easily overlooked security risk, since build scripts execute third-party dependency code (via package managers) that isn't necessarily fully trusted.
+⚠️ **Warning:** a CodeBuild project's IAM service role determines what the _build process itself_ can access — a build script that needs to pull a private dependency, write to a specific S3 bucket, or read a Parameter Store value ([§75](../Part8/Section-75-Part8-Systems-Manager.md)) needs that access explicitly granted to the CodeBuild role, and over-broad grants here are a genuine, easily overlooked security risk, since build scripts execute third-party dependency code (via package managers) that isn't necessarily fully trusted.
 
 ## 8. Commands (Full Documentation)
 
@@ -122,7 +122,7 @@ Source Change (Git commit) ──▶ EventBridge trigger ──▶ CodePipeline
   }
   ```
   **Expected output:** the created pipeline's full definition, confirming stage/action configuration.
-- **Production usage:** pipelines are almost universally defined via CloudFormation/CDK/Terraform (§79-82) rather than this raw CLI form, so the pipeline's own definition is itself version-controlled and reviewable — a direct, recursive application of this Part's own IaC principles to the CI/CD tooling itself.
+- **Production usage:** pipelines are almost universally defined via CloudFormation/CDK/Terraform ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)) rather than this raw CLI form, so the pipeline's own definition is itself version-controlled and reviewable — a direct, recursive application of this Part's own IaC principles to the CI/CD tooling itself.
 - **Common errors:** the `roleArn` service role needs permissions for every action type the pipeline uses (S3 artifact access, CodeBuild invocation, deployment permissions) — an incomplete role produces action-level failures at the specific stage needing the missing permission, not an upfront validation error.
 
 ### `aws codebuild create-project`
@@ -143,7 +143,7 @@ Source Change (Git commit) ──▶ EventBridge trigger ──▶ CodePipeline
   **Expected output:** the created project's configuration detail.
 - **Important arguments:** `computeType` scales the build environment's CPU/memory — larger compute types reduce build time for resource-intensive builds (large compilations, extensive test suites) at proportionally higher per-minute cost, a direct, tunable cost/speed trade-off.
 - **Production usage:** typically one CodeBuild project per distinct build/test workflow (unit tests, integration tests, security scanning might each be a separate project invoked from different pipeline stages), rather than one monolithic project doing everything.
-- **Common errors:** a `buildspec.yml` with a syntax error, or referencing a phase command that fails, causes the build (and therefore that pipeline execution) to fail at the Build stage — CodeBuild's own logs (streamed to CloudWatch Logs, §70) are the primary debugging tool for a failed build.
+- **Common errors:** a `buildspec.yml` with a syntax error, or referencing a phase command that fails, causes the build (and therefore that pipeline execution) to fail at the Build stage — CodeBuild's own logs (streamed to CloudWatch Logs, [§70](../Part8/Section-70-Part8-CloudWatch-Logs.md)) are the primary debugging tool for a failed build.
 - **Security impact:** the `service-role` determines exactly what the build process can access; scope it narrowly to what the specific build genuinely needs (e.g., read access to a specific artifact bucket, not broad account-wide S3 access).
 
 ### `aws codepipeline start-pipeline-execution`
@@ -184,34 +184,34 @@ artifacts:
   base-directory: dist
 ```
 
-This buildspec demonstrates the standard phase progression: `install` sets up the runtime and dependencies, `pre_build` runs fast checks (linting) that should fail the build quickly if there's an obvious problem, `build` does the actual compilation and runs the test suite (a failing test here fails the entire build, halting the pipeline before any deployment is attempted), and `post_build` runs any final steps. The `artifacts` section tells CodeBuild what to package as output for the next pipeline stage — directly feeding into a subsequent Deploy stage (§84).
+This buildspec demonstrates the standard phase progression: `install` sets up the runtime and dependencies, `pre_build` runs fast checks (linting) that should fail the build quickly if there's an obvious problem, `build` does the actual compilation and runs the test suite (a failing test here fails the entire build, halting the pipeline before any deployment is attempted), and `post_build` runs any final steps. The `artifacts` section tells CodeBuild what to package as output for the next pipeline stage — directly feeding into a subsequent Deploy stage ([§84](./Section-84-Part9-CodeDeploy.md)).
 
 ## 10. Production & Enterprise Usage
 
 - **Startups** often adopt CodePipeline/CodeBuild specifically to avoid the operational overhead of self-hosting Jenkins or a similar CI system, particularly valuable for small teams without dedicated DevOps capacity.
-- **Enterprises** build standardized, reusable pipeline templates (defined via CloudFormation/CDK, directly tying to §79-82) that many teams' individual pipelines are instantiated from, ensuring consistent stage structure (mandatory security scanning, mandatory approval gates for production) across the organization — the same governance pattern discussed generically in §86.
-- CodeBuild is frequently used not just for application builds but for **infrastructure pipeline stages** themselves — running `cdk synth`, `terraform plan`, or `cloudformation validate-template` (§79-82) as CodeBuild build steps within a broader CodePipeline orchestrating the full validate→plan→review→apply flow.
-- Organizations already invested in third-party CI tools (GitHub Actions, GitLab CI, Jenkins) sometimes use those instead of CodePipeline/CodeBuild for the build/test portion while still using CodeDeploy (§84) for the AWS-native deployment portion — these AWS services are commonly composed with, not exclusively instead of, other CI/CD tooling.
+- **Enterprises** build standardized, reusable pipeline templates (defined via CloudFormation/CDK, directly tying to [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)) that many teams' individual pipelines are instantiated from, ensuring consistent stage structure (mandatory security scanning, mandatory approval gates for production) across the organization — the same governance pattern discussed generically in [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md).
+- CodeBuild is frequently used not just for application builds but for **infrastructure pipeline stages** themselves — running `cdk synth`, `terraform plan`, or `cloudformation validate-template` ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)) as CodeBuild build steps within a broader CodePipeline orchestrating the full validate→plan→review→apply flow.
+- Organizations already invested in third-party CI tools (GitHub Actions, GitLab CI, Jenkins) sometimes use those instead of CodePipeline/CodeBuild for the build/test portion while still using CodeDeploy ([§84](./Section-84-Part9-CodeDeploy.md)) for the AWS-native deployment portion — these AWS services are commonly composed with, not exclusively instead of, other CI/CD tooling.
 
 ## 11. Security Considerations
 
 - CodeBuild's service role is a genuine security boundary — build scripts execute arbitrary code (including third-party dependencies pulled via package managers), so scoping this role tightly, and being aware that a compromised dependency could abuse whatever access the build role has, matters as much as scoping any other execution role in this roadmap.
-- Manual approval actions should notify via SNS (§61) to an appropriately restricted group, and the IAM permission to actually approve/reject should be scoped to intended approvers only — directly implementing the separation-of-duties principle from §86.
+- Manual approval actions should notify via SNS ([§61](../Part7/Section-61-Part7-SNS-PubSub-Messaging.md)) to an appropriately restricted group, and the IAM permission to actually approve/reject should be scoped to intended approvers only — directly implementing the separation-of-duties principle from [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md).
 - Pipeline and CodeBuild execution history/logs may contain sensitive build output (though secrets should never be logged directly) — access to pipeline execution detail should be scoped appropriately.
 
 ## 12. Performance Considerations
 
 - CodeBuild's ephemeral, on-demand environments mean build concurrency scales naturally — many pipeline executions (or many parallel actions within one pipeline) can each get their own build environment without manual capacity planning, unlike a fixed-size self-hosted build agent pool.
-- Compute type selection is a direct build-speed/cost trade-off; profiling actual build resource usage (CPU/memory) and right-sizing the compute type is a legitimate cost-optimization lever (§90) for high-frequency build pipelines.
+- Compute type selection is a direct build-speed/cost trade-off; profiling actual build resource usage (CPU/memory) and right-sizing the compute type is a legitimate cost-optimization lever ([§90](../Part10/Section-90-Part10-Cost-Optimization-FinOps.md)) for high-frequency build pipelines.
 - Caching dependencies (via CodeBuild's built-in caching options, or artifact reuse between phases) meaningfully reduces build time for large dependency trees, avoiding a full fresh `npm ci`/`pip install` on every single build.
 
 ## 13. Monitoring
 
-| Signal                                         | What it tells you                                                                     |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Pipeline execution status/history              | Success/failure per stage, the primary "did this release actually complete" signal.   |
-| CodeBuild build logs (CloudWatch Logs, §70)    | Detailed build/test output, the primary debugging tool for a failed build.            |
-| EventBridge pipeline state-change events (§62) | Real-time notification/automation on pipeline success, failure, or stage transitions. |
+| Signal                                                                                                               | What it tells you                                                                     |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Pipeline execution status/history                                                                                    | Success/failure per stage, the primary "did this release actually complete" signal.   |
+| CodeBuild build logs (CloudWatch Logs, [§70](../Part8/Section-70-Part8-CloudWatch-Logs.md))                          | Detailed build/test output, the primary debugging tool for a failed build.            |
+| EventBridge pipeline state-change events ([§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md)) | Real-time notification/automation on pipeline success, failure, or stage transitions. |
 
 ## 14. Troubleshooting
 
@@ -249,7 +249,7 @@ This buildspec demonstrates the standard phase progression: `install` sets up th
 **Model answer:** Since each CodeBuild build gets its own isolated, ephemeral environment, true resource contention between separate builds shouldn't happen at the compute level — so I'd first look at whether the builds are actually contending for something shared outside CodeBuild's own isolated environments, like a shared external resource (a rate-limited package registry, a shared test database, a shared S3 bucket being written to concurrently by multiple builds in a way that causes conflicts). I'd also check whether the account or specific CodeBuild projects have concurrent-build limits being hit, which would cause some builds to queue or throttle rather than genuinely fail, and I'd review the specific error messages from the failing builds' CloudWatch logs to distinguish between an actual external contention issue and a build-limit throttling issue, since the fix differs meaningfully between those two root causes.
 
 **🎯 Architect:** _"Design a build/test pipeline architecture for an organization with 40 microservices, each with its own repository, ensuring consistent build standards across all of them without requiring each team to independently configure their own CodeBuild setup from scratch."_
-**Model answer:** I'd build a small set of standardized, reusable CodeBuild project templates (defined via CDK or CloudFormation, §79-81) — likely one per major language/runtime the organization uses — encoding the organization's standard build environment image, common phases (install, lint, test, security scan), and default compute sizing, published as a shared, versioned module. Each of the 40 microservice teams' own pipeline definitions would then instantiate this shared module with their service-specific parameters (repository, any service-specific build commands) rather than hand-authoring their own CodeBuild configuration from scratch — directly mirroring the same shared-construct-library pattern discussed for CDK in §81, applied here to CI/CD tooling rather than application infrastructure. I'd version the shared templates so improvements (a new mandatory security-scanning phase, an updated base image) roll out to all 40 teams through a controlled, trackable update to the shared module, and I'd keep the actual buildspec commands specific to each service's own repository, since the exact test/build commands genuinely do vary per service even while the surrounding structure (environment, phases, standards) stays consistent.
+**Model answer:** I'd build a small set of standardized, reusable CodeBuild project templates (defined via CDK or CloudFormation, [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§81](./Section-81-Part9-AWS-CDK.md)) — likely one per major language/runtime the organization uses — encoding the organization's standard build environment image, common phases (install, lint, test, security scan), and default compute sizing, published as a shared, versioned module. Each of the 40 microservice teams' own pipeline definitions would then instantiate this shared module with their service-specific parameters (repository, any service-specific build commands) rather than hand-authoring their own CodeBuild configuration from scratch — directly mirroring the same shared-construct-library pattern discussed for CDK in [§81](./Section-81-Part9-AWS-CDK.md), applied here to CI/CD tooling rather than application infrastructure. I'd version the shared templates so improvements (a new mandatory security-scanning phase, an updated base image) roll out to all 40 teams through a controlled, trackable update to the shared module, and I'd keep the actual buildspec commands specific to each service's own repository, since the exact test/build commands genuinely do vary per service even while the surrounding structure (environment, phases, standards) stays consistent.
 
 ## 18. Common Misconceptions
 
@@ -260,13 +260,13 @@ This buildspec demonstrates the standard phase progression: `install` sets up th
 
 🔑 CodePipeline orchestrates a release process as ordered stages of actions; CodeBuild is one specific managed action type providing ephemeral, on-demand build/test compute.
 🔑 buildspec.yml defines CodeBuild's phases (install, pre_build, build, post_build) — checked into the source repository alongside application code, exactly like any other CI configuration file.
-🔑 Pipelines and CodeBuild projects should themselves be IaC-managed (§79-82), applying this Part's own version-control and review discipline recursively to the CI/CD tooling.
+🔑 Pipelines and CodeBuild projects should themselves be IaC-managed ([§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md)), applying this Part's own version-control and review discipline recursively to the CI/CD tooling.
 🔑 CodeBuild's service role is a genuine security boundary, since build scripts execute third-party dependency code — scope it narrowly, as with any execution role.
 🔑 Fail-fast phase ordering (cheap checks before expensive ones) and appropriate compute-type sizing are direct, practical build-pipeline optimization levers.
 
 ## 20. Related Concepts
 
-- **CloudFormation, CDK, Terraform** (commonly both the artifacts a pipeline deploys, and the tools used to define the pipeline itself) → §79-82.
-- **AWS CodeDeploy** (the deployment-stage action type most commonly following a CodeBuild build) → next section, §84.
-- **EventBridge** (the mechanism behind pipeline triggering and state-change notification) → §62.
-- **CI/CD for Infrastructure** (the broader validate/plan/review/approve/apply discipline this section's pipeline mechanics implement) → §86.
+- **CloudFormation, CDK, Terraform** (commonly both the artifacts a pipeline deploys, and the tools used to define the pipeline itself) → [§79](./Section-79-Part9-IaC-Fundamentals-CloudFormation-Basics.md)-[§82](./Section-82-Part9-Terraform-on-AWS.md).
+- **AWS CodeDeploy** (the deployment-stage action type most commonly following a CodeBuild build) → next section, [§84](./Section-84-Part9-CodeDeploy.md).
+- **EventBridge** (the mechanism behind pipeline triggering and state-change notification) → [§62](../Part7/Section-62-Part7-EventBridge-Event-Driven-Architecture.md).
+- **CI/CD for Infrastructure** (the broader validate/plan/review/approve/apply discipline this section's pipeline mechanics implement) → [§86](./Section-86-Part9-CICD-Infrastructure-GitOps.md).

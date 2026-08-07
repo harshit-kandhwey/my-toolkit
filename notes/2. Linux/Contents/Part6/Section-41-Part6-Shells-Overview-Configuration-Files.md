@@ -2,13 +2,13 @@
 
 ## 1. What a Shell Actually Is
 
-§40 closed Part 5 by naming the shell pipe as the everyday IPC mechanism nearly every reader has already used, then handed off to Part 6 to build real fluency on top of it. Before any of that fluency — redirection, pipes, control operators, scripting — makes sense, one thing needs to be nailed down precisely: **a shell is not part of the kernel.** It is an ordinary userspace program, running as an ordinary process with its own PID, that happens to have one specific job: read commands typed by a user (or piped in from a script) and turn them into `fork()`/`exec()` calls against the kernel (§34 covered that lifecycle in full).
+[§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) closed Part 5 by naming the shell pipe as the everyday IPC mechanism nearly every reader has already used, then handed off to Part 6 to build real fluency on top of it. Before any of that fluency — redirection, pipes, control operators, scripting — makes sense, one thing needs to be nailed down precisely: **a shell is not part of the kernel.** It is an ordinary userspace program, running as an ordinary process with its own PID, that happens to have one specific job: read commands typed by a user (or piped in from a script) and turn them into `fork()`/`exec()` calls against the kernel ([§34](../Part5/Section-34-Part5-Viewing-Processes-Ps-Top-Htop-Proc.md) covered that lifecycle in full).
 
 That distinction matters more than it first appears:
 
 - The kernel has no concept of "shell." It only knows about processes, system calls, and file descriptors. When a shell runs `ls`, it `fork()`s itself, and the child `exec()`s the `ls` binary — the kernel is just servicing normal process-creation syscalls, indifferent to the fact that a shell orchestrated them.
 - Because a shell is a program, there can be more than one **kind** of shell installed on the same system simultaneously, each a separate binary living somewhere under `/bin` or `/usr/bin`, and a user (or a script) can choose which one interprets a given set of commands.
-- A shell is both an **interactive command interpreter** (what you type at after logging in) and a **scripting language interpreter** (what runs a `.sh` file's `#!/bin/bash` line, §45) — the same program serves both roles, which is part of why scripting habits and interactive habits sometimes bleed into each other in ways that cause bugs.
+- A shell is both an **interactive command interpreter** (what you type at after logging in) and a **scripting language interpreter** (what runs a `.sh` file's `#!/bin/bash` line, [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)) — the same program serves both roles, which is part of why scripting habits and interactive habits sometimes bleed into each other in ways that cause bugs.
 
 > 💡 **Tip:** Every confusion in this section eventually traces back to one thing: there is no single "the shell" on a Linux box. There is a specific binary, selected by a specific mechanism, running in a specific mode (interactive vs. non-interactive, login vs. non-login) — and each of those specifics changes which configuration files load and how commands behave. Get in the habit of asking "which shell, in which mode?" rather than assuming.
 
@@ -20,7 +20,7 @@ That distinction matters more than it first appears:
 
 ### 2.2 `bash` — the Dominant Default
 
-**bash** (Bourne Again SHell) is the de facto standard interactive and scripting shell across essentially all mainstream Linux distributions — it's what a new user lands in after logging into an Ubuntu, Debian, RHEL, or Fedora box by default. It's a superset of POSIX `sh` syntax, adding arrays, `[[ ]]` extended test syntax, process substitution, associative arrays (bash 4+), and a large set of other conveniences that plain POSIX `sh` does not guarantee (§45 and §47 build hands-on fluency on top of this).
+**bash** (Bourne Again SHell) is the de facto standard interactive and scripting shell across essentially all mainstream Linux distributions — it's what a new user lands in after logging into an Ubuntu, Debian, RHEL, or Fedora box by default. It's a superset of POSIX `sh` syntax, adding arrays, `[[ ]]` extended test syntax, process substitution, associative arrays (bash 4+), and a large set of other conveniences that plain POSIX `sh` does not guarantee ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) and [§47](./Section-47-Part6-Functions-Arrays-String-Manipulation.md) build hands-on fluency on top of this).
 
 ### 2.3 `zsh` — Increasingly Common, macOS's Default
 
@@ -56,7 +56,7 @@ This is the part worth memorizing precisely, because "which file do I edit" ques
 
 On startup, a bash login shell reads, in order:
 
-1. **`/etc/profile`** — the system-wide file, read for every user's login shell regardless of which shell they end up using day-to-day (it's `sh`-syntax by convention, since other shells may source it too). On most distributions it also sources everything under `/etc/profile.d/*.sh` (§72's environment-configuration coverage in Part 9 goes deeper on this pattern).
+1. **`/etc/profile`** — the system-wide file, read for every user's login shell regardless of which shell they end up using day-to-day (it's `sh`-syntax by convention, since other shells may source it too). On most distributions it also sources everything under `/etc/profile.d/*.sh` ([§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)'s environment-configuration coverage in Part 9 goes deeper on this pattern).
 2. **The first of `~/.bash_profile`, `~/.bash_login`, or `~/.profile` that exists** — bash checks for these in exactly that order and reads only the **first one found**, not all three. This surprises people who edit `~/.profile` expecting it to load, not realizing a stale `~/.bash_profile` from years ago is shadowing it.
 
 Because `~/.bashrc` is **not** in that login-shell list, the conventional pattern — seen in nearly every default `~/.bash_profile` on any mainstream distribution — is for `~/.bash_profile` to explicitly `source ~/.bashrc` itself, so that a login shell still picks up alias/function definitions meant for interactive use. This is a convention, not something bash does automatically — if that `source` line is ever accidentally deleted, a login shell will stop seeing your aliases even though nothing else looks wrong.
@@ -87,7 +87,7 @@ zsh follows a conceptually parallel but separately-named set of files, worth kno
 
 ## 6. Changing a User's Default Shell
 
-The shell a user lands in after logging in — their **default shell** — is recorded in `/etc/passwd`, in the final field of each user's entry (§25's coverage of `/etc/passwd` structure). Changing it is done with `chsh`:
+The shell a user lands in after logging in — their **default shell** — is recorded in `/etc/passwd`, in the final field of each user's entry ([§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)'s coverage of `/etc/passwd` structure). Changing it is done with `chsh`:
 
 ```bash
 $ chsh -s /bin/zsh
@@ -124,7 +124,7 @@ $ zsh
   48213 pts/0    00:00:00 zsh
 ```
 
-`$SHELL` still says `/bin/bash` in that example even after switching into zsh — `ps -p $$` is the ground-truth answer, the same "trust the running process, not the label" discipline §13's `ps -p 1 -o comm=` check applied to identifying a host's init system.
+`$SHELL` still says `/bin/bash` in that example even after switching into zsh — `ps -p $$` is the ground-truth answer, the same "trust the running process, not the label" discipline [§13](../Part2/Section-13-Part2-Init-Systems.md)'s `ps -p 1 -o comm=` check applied to identifying a host's init system.
 
 ## 8. Common Misconceptions
 
@@ -159,10 +159,10 @@ _What the interviewer is probing for:_ Fleet-scale thinking that goes beyond "fi
 - Login vs. non-login and interactive vs. non-interactive are independent axes that together determine which config files a shell reads — never assume "my config file" without specifying which combination applies.
 - bash's load order: `/etc/profile` then the first of `~/.bash_profile`/`~/.bash_login`/`~/.profile` for login shells; `~/.bashrc` alone for non-login interactive shells; nothing by default for non-login non-interactive shells (scripts, cron).
 - `chsh -s <path>` changes a user's default shell, restricted to paths listed in `/etc/shells` — a file some services also use as a security gate against interactive login.
-- `$SHELL` reflects the login-time default and is not updated when a different shell is invoked mid-session; `echo $0` or `ps -p $$` report the actually-running shell, the same ground-truth-over-label discipline §13 applied to identifying a host's init system.
+- `$SHELL` reflects the login-time default and is not updated when a different shell is invoked mid-session; `echo $0` or `ps -p $$` report the actually-running shell, the same ground-truth-over-label discipline [§13](../Part2/Section-13-Part2-Init-Systems.md) applied to identifying a host's init system.
 
 ## 11. Related Concepts & What's Next
 
-This section opens Part 6 by naming the program §40 closed Part 5 by demonstrating the effect of — the shell that turns a pipeline like `ls | grep` into the pipe-connected processes §40 described at the kernel level. It leans on §25's `/etc/passwd` structure for the default-shell field, covered above in the default-shell section, and echoes §13's "trust the running process over the label" discipline in distinguishing `$SHELL` from the actually-running shell, covered above. §42 (next) moves from "which shell, which config files" into shell basics proper — variables, quoting, and expansion — the vocabulary every later Part 6 section assumes. §45 returns to this section's shell-selection material when it introduces bash scripting fundamentals and the shebang line in full.
+This section opens Part 6 by naming the program [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) closed Part 5 by demonstrating the effect of — the shell that turns a pipeline like `ls | grep` into the pipe-connected processes [§40](../Part5/Section-40-Part5-Inter-Process-Communication-Overview.md) described at the kernel level. It leans on [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)'s `/etc/passwd` structure for the default-shell field, covered above in the default-shell section, and echoes [§13](../Part2/Section-13-Part2-Init-Systems.md)'s "trust the running process over the label" discipline in distinguishing `$SHELL` from the actually-running shell, covered above. [§42](./Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion-Command-Substitution.md) (next) moves from "which shell, which config files" into shell basics proper — variables, quoting, and expansion — the vocabulary every later Part 6 section assumes. [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) returns to this section's shell-selection material when it introduces bash scripting fundamentals and the shebang line in full.
 
-**Next Section:** §42 — `Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion.md`
+**Next Section:** [§42](./Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion-Command-Substitution.md) — `Section-42-Part6-Shell-Basics-Variables-Quoting-Expansion.md`

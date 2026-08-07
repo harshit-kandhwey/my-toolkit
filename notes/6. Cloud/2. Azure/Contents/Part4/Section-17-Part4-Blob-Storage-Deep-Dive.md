@@ -4,7 +4,7 @@
 
 **Plain language:** Blob Storage is Azure's service for storing large amounts of unstructured data — files of essentially any kind and size, from tiny config files to massive video archives — organized into containers, with pricing that can automatically adjust based on how frequently the data is actually accessed.
 
-**Precise definition:** Azure Blob Storage is an object storage service, one of the four core services hosted under a Storage Account (Section 16), providing scalable storage for unstructured binary data organized into a two-level hierarchy of Containers and Blobs, with configurable access tiers, lifecycle management, and multiple blob types suited to different access patterns.
+**Precise definition:** Azure Blob Storage is an object storage service, one of the four core services hosted under a Storage Account ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md)), providing scalable storage for unstructured binary data organized into a two-level hierarchy of Containers and Blobs, with configurable access tiers, lifecycle management, and multiple blob types suited to different access patterns.
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -20,7 +20,7 @@ A **Container** is a logical grouping of blobs within a Storage Account (roughly
 
 - **Block Blobs** — the standard, most common blob type, optimized for storing and efficiently uploading/downloading discrete files (documents, images, videos, backups) as a set of independently-manageable blocks, allowing efficient partial updates and parallel upload of large files.
 - **Append Blobs** — optimized specifically for append-only operations, such as continuously writing log data, where new data is always added to the end of the blob rather than modifying existing content.
-- **Page Blobs** — optimized for random read/write access patterns, historically the underlying blob type for Azure VM disk storage (Section 18) before Managed Disks abstracted this detail away; still relevant for certain specialized random-access storage scenarios.
+- **Page Blobs** — optimized for random read/write access patterns, historically the underlying blob type for Azure VM disk storage ([Section 18](./Section-18-Part4-Azure-Managed-Disks.md)) before Managed Disks abstracted this detail away; still relevant for certain specialized random-access storage scenarios.
 
 💡 **Tip:** For the significant majority of general application use cases (storing files, images, backups, static website assets), Block Blobs are the correct default choice; Append and Page Blobs serve genuinely specialized access patterns and shouldn't be reached for by default.
 
@@ -88,7 +88,7 @@ az storage blob upload \
 
 - **Purpose:** Creates a container, then uploads a file as a blob, explicitly setting its access tier to Hot.
 - **Important arguments explained individually:**
-  - `--auth-mode login` — authenticates using the caller's own Entra ID identity (RBAC-based, Section 8) rather than a shared account key, following the security best practice discussed in Section 16.7.
+  - `--auth-mode login` — authenticates using the caller's own Entra ID identity (RBAC-based, [Section 8](../Part2/Section-08-Part2-Role-Based-Access-Control.md)) rather than a shared account key, following the security best practice discussed in [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).7.
   - `--tier` — explicitly sets the access tier at upload time; omitting this uses the Storage Account's configured default tier.
 - **Common error:** `AuthorizationPermissionMismatch` when using `--auth-mode login` without an appropriate RBAC role (such as Storage Blob Data Contributor) assigned — a good illustration that Storage data-plane operations (reading/writing actual blob content) require specific data-plane RBAC roles, distinct from the management-plane roles (like Contributor) that only control the Storage Account resource itself, not its data.
 
@@ -126,26 +126,26 @@ az storage account management-policy create \
   --policy @lifecycle-policy.json
 ```
 
-- **Purpose:** Applies the JSON-defined lifecycle rule to the Storage Account, automating the tier-transition and eventual deletion strategy described conceptually in Section 17.3.5.
+- **Purpose:** Applies the JSON-defined lifecycle rule to the Storage Account, automating the tier-transition and eventual deletion strategy described conceptually in [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.5.
 - ⚠️ Exact JSON schema field names should be verified against current documentation before use in production, as lifecycle policy schema details are a specific, precise contract that must match exactly.
 
 ## 6. Production & Enterprise Usage
 
-Enterprises apply lifecycle management policies systematically across Storage Accounts holding backup, log, and compliance-retention data, tuning tier-transition thresholds based on actual observed access patterns (informed by Storage Account access logs and metrics, Section 16.9) rather than guessed defaults, since an incorrectly aggressive policy (moving actively-needed data to Archive too early) can create operational friction (multi-hour retrieval delays for data still occasionally needed) while an overly conservative policy leaves cost-optimization value unrealized. Blob Storage is also foundational to many higher-level enterprise data patterns: as the storage layer underneath data lakes (often paired with Azure Data Lake Storage capabilities, a Blob Storage feature set enabling hierarchical namespace support for big-data analytics workloads), as the backing store for static website hosting, and as the target for Azure Backup and Azure Site Recovery data (Part 12).
+Enterprises apply lifecycle management policies systematically across Storage Accounts holding backup, log, and compliance-retention data, tuning tier-transition thresholds based on actual observed access patterns (informed by Storage Account access logs and metrics, [Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).9) rather than guessed defaults, since an incorrectly aggressive policy (moving actively-needed data to Archive too early) can create operational friction (multi-hour retrieval delays for data still occasionally needed) while an overly conservative policy leaves cost-optimization value unrealized. Blob Storage is also foundational to many higher-level enterprise data patterns: as the storage layer underneath data lakes (often paired with Azure Data Lake Storage capabilities, a Blob Storage feature set enabling hierarchical namespace support for big-data analytics workloads), as the backing store for static website hosting, and as the target for Azure Backup and Azure Site Recovery data (Part 12).
 
 ## 7. Security Considerations
 
 - **Public access** to containers/blobs should be disabled by default at the Storage Account level unless a specific container genuinely needs to serve public content (like static website assets); accidentally public blob containers holding sensitive data are a well-documented real-world data-breach pattern.
 - **Immutability policies** (WORM — Write Once, Read Many) can be applied to blobs for compliance scenarios requiring data to be provably unmodifiable for a defined retention period, relevant for certain regulated industries' record-retention requirements.
-- Data-plane access (Section 17.5's `AuthorizationPermissionMismatch` note) should use Entra ID-based RBAC roles scoped narrowly (e.g., Storage Blob Data Reader for read-only needs) rather than defaulting to broader access or shared account keys.
+- Data-plane access ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).5's `AuthorizationPermissionMismatch` note) should use Entra ID-based RBAC roles scoped narrowly (e.g., Storage Blob Data Reader for read-only needs) rather than defaulting to broader access or shared account keys.
 
 ## 8. Performance Considerations
 
-Very large blob uploads/downloads benefit from Block Blob's block-based parallel transfer capability (uploading/downloading multiple blocks of a large file concurrently rather than as one single serial stream), which most modern SDK/CLI tooling handles automatically; for extremely high-throughput scenarios, Storage Account-level scalability limits (Section 16.8) still apply and may necessitate spreading load across multiple accounts.
+Very large blob uploads/downloads benefit from Block Blob's block-based parallel transfer capability (uploading/downloading multiple blocks of a large file concurrently rather than as one single serial stream), which most modern SDK/CLI tooling handles automatically; for extremely high-throughput scenarios, Storage Account-level scalability limits ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).8) still apply and may necessitate spreading load across multiple accounts.
 
 ## 9. Monitoring
 
-Blob-level access patterns (which blobs are actually being read, and how often) should inform lifecycle policy tuning — Storage Account diagnostic logs and metrics (Section 16.9, Part 10) provide this visibility, allowing a data-driven rather than purely assumption-based tiering strategy.
+Blob-level access patterns (which blobs are actually being read, and how often) should inform lifecycle policy tuning — Storage Account diagnostic logs and metrics ([Section 16](./Section-16-Part4-Azure-Storage-Account-Fundamentals.md).9, Part 10) provide this visibility, allowing a data-driven rather than purely assumption-based tiering strategy.
 
 ## 10. Troubleshooting
 
@@ -155,7 +155,7 @@ Blob-level access patterns (which blobs are actually being read, and how often) 
 | `AuthorizationPermissionMismatch` despite having Contributor role on the Storage Account | Contributor is a management-plane role; blob data access requires a separate data-plane RBAC role | Assign an appropriate data-plane role (e.g., Storage Blob Data Contributor) in addition to or instead of Contributor                           |
 | Storage costs unexpectedly high despite data being rarely accessed                       | Data sitting in Hot tier without a lifecycle policy moving it to cheaper tiers as it ages         | Implement and tune a lifecycle management policy based on actual access patterns                                                               |
 
-## 11. Interview Questions — Section 17
+## 11. Interview Questions — [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md)
 
 ### 🎯 Intermediate
 
@@ -190,7 +190,7 @@ _What the interviewer is probing:_ whether the candidate can design an end-to-en
 
 ### 14.1 Why This Is a Distinct Concern
 
-Access tiers (Section 17.3.3) and lifecycle policies (Section 17.3.5) manage _cost_ over a blob's life; they do nothing to protect against _accidental or malicious data loss_ — an application bug overwriting a blob, a user accidentally deleting a container, or a ransomware-style attack encrypting/corrupting blob content. The features in this subsection specifically address that separate concern: recovering from unwanted change or deletion, and, for regulated data, provably preventing deletion/modification entirely for a defined period.
+Access tiers ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.3) and lifecycle policies ([Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.5) manage _cost_ over a blob's life; they do nothing to protect against _accidental or malicious data loss_ — an application bug overwriting a blob, a user accidentally deleting a container, or a ransomware-style attack encrypting/corrupting blob content. The features in this subsection specifically address that separate concern: recovering from unwanted change or deletion, and, for regulated data, provably preventing deletion/modification entirely for a defined period.
 
 ### 14.2 Blob Versioning
 
@@ -214,7 +214,7 @@ Access tiers (Section 17.3.3) and lifecycle policies (Section 17.3.5) manage _co
 
 ### 14.5 Legal Holds and Immutability Policies
 
-**Definition:** Referenced briefly in Section 17.7, **immutability policies** enforce Write-Once-Read-Many (WORM) semantics on blobs — once written, a blob under an immutability policy cannot be modified or deleted until the policy's conditions are satisfied. Two distinct immutability mechanisms exist:
+**Definition:** Referenced briefly in [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).7, **immutability policies** enforce Write-Once-Read-Many (WORM) semantics on blobs — once written, a blob under an immutability policy cannot be modified or deleted until the policy's conditions are satisfied. Two distinct immutability mechanisms exist:
 
 - **Time-based retention policies** — data cannot be deleted or modified until a specified retention period elapses, suited to fixed-duration compliance retention requirements (e.g., "financial records must be retained for 7 years").
 - **Legal Holds** — data is protected indefinitely, with no fixed expiration, until the hold is explicitly and deliberately removed by an authorized administrator — suited to open-ended scenarios like active litigation or a regulatory investigation, where the required retention duration isn't known in advance.
@@ -223,9 +223,9 @@ Access tiers (Section 17.3.3) and lifecycle policies (Section 17.3.5) manage _co
 
 ### 14.6 Object Replication
 
-**Definition:** **Object Replication** asynchronously copies block blobs from a source container to a destination container, which can be in a different Storage Account and a different region, based on a configured replication policy (optionally scoped to specific blob prefixes or filters) — distinct from the account-wide GRS/RA-GRS redundancy mechanisms covered in Section 20, since Object Replication operates at the container/blob level with more granular control and, notably, allows the destination to be actively used (read from and even written to independently, depending on configuration) rather than serving purely as a passive redundancy target.
+**Definition:** **Object Replication** asynchronously copies block blobs from a source container to a destination container, which can be in a different Storage Account and a different region, based on a configured replication policy (optionally scoped to specific blob prefixes or filters) — distinct from the account-wide GRS/RA-GRS redundancy mechanisms covered in [Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md), since Object Replication operates at the container/blob level with more granular control and, notably, allows the destination to be actively used (read from and even written to independently, depending on configuration) rather than serving purely as a passive redundancy target.
 
-**When to use Object Replication vs. GRS/RA-GRS:** GRS/RA-GRS (Section 20.3.3–20.3.4) provide whole-account disaster-recovery-oriented replication with Microsoft managing the mechanism transparently. Object Replication is chosen when more granular, container/prefix-scoped replication is needed — for example, replicating only specific data to a region close to a particular set of users for lower-latency read access, or maintaining an independently-writable secondary copy for a distinct application need — rather than a blanket whole-account DR copy.
+**When to use Object Replication vs. GRS/RA-GRS:** GRS/RA-GRS ([Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md).3.3–20.3.4) provide whole-account disaster-recovery-oriented replication with Microsoft managing the mechanism transparently. Object Replication is chosen when more granular, container/prefix-scoped replication is needed — for example, replicating only specific data to a region close to a particular set of users for lower-latency read access, or maintaining an independently-writable secondary copy for a distinct application need — rather than a blanket whole-account DR copy.
 
 ### 14.7 Configuration Example
 
@@ -243,7 +243,7 @@ az storage account blob-service-properties update \
 - **Purpose:** Enables Blob Versioning, Soft Delete (30-day retention), and Point-in-Time Restore (restore window must be shorter than the delete-retention window, hence 29 days here) on the Storage Account in a single configuration pass — implementing the layered protection strategy described above.
 - ⚠️ Exact parameter names and interdependency rules (e.g., the restore-days-must-be-less-than-delete-retention-days constraint) should be verified against current CLI/documentation before applying to a production account, since these prerequisite relationships are specific and enforced by the platform.
 
-### 14.8 Interview Questions — Section 17.14
+### 14.8 Interview Questions — [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).14
 
 **🎯 Intermediate**
 **Q: What's the difference between Blob Versioning and Soft Delete, and why would you enable both?**
@@ -259,13 +259,13 @@ _Model answer:_ For the 7-year financial record requirement, I'd apply a time-ba
 
 _What the interviewer is probing:_ whether the candidate can map two similar-sounding but functionally distinct compliance requirements (fixed-duration vs. open-ended) to the two correspondingly distinct immutability mechanisms, rather than treating "immutability" as a single undifferentiated feature.
 
-### 14.9 Key Takeaways — Section 17.14
+### 14.9 Key Takeaways — [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).14
 
 - 🔑 Versioning (protects against overwrites) and Soft Delete (protects against deletion) are complementary data-protection mechanisms, distinct from access tiers and lifecycle management, which manage cost rather than protect against loss.
 - 🔑 Point-in-Time Restore (requiring Versioning + Soft Delete) enables bulk container-level recovery to a prior state in one operation, valuable for recovering from wide-impact accidental changes.
 - 🔑 Time-based immutability policies suit fixed-duration compliance retention; Legal Holds suit open-ended, indefinite retention needs — choosing the wrong one either under- or over-commits to a retention duration that doesn't match the actual requirement.
-- 🔑 Object Replication provides granular, container/prefix-scoped, actively-usable cross-account/cross-region replication, distinct from GRS/RA-GRS's whole-account, passive-by-default DR replication (Section 20).
+- 🔑 Object Replication provides granular, container/prefix-scoped, actively-usable cross-account/cross-region replication, distinct from GRS/RA-GRS's whole-account, passive-by-default DR replication ([Section 20](./Section-20-Part4-Data-Redundancy-and-Replication.md)).
 
 ## 15. Related Concepts (Next Up)
 
-Section 18 covers **Azure Managed Disks** — VM-attached block storage (referenced back in Section 11.3 as the OS/data disk mechanism for VMs), including disk types, performance tiers, and how Managed Disks relate to (and abstract away) the underlying Page Blob storage mechanism mentioned in Section 17.3.2.
+[Section 18](./Section-18-Part4-Azure-Managed-Disks.md) covers **Azure Managed Disks** — VM-attached block storage (referenced back in [Section 11](../Part3/Section-11-Part3-Azure-Virtual-Machines.md).3 as the OS/data disk mechanism for VMs), including disk types, performance tiers, and how Managed Disks relate to (and abstract away) the underlying Page Blob storage mechanism mentioned in [Section 17](./Section-17-Part4-Blob-Storage-Deep-Dive.md).3.2.

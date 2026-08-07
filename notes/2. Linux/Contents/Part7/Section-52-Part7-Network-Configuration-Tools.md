@@ -2,7 +2,7 @@
 
 ## 1. The Two-Layer Problem This Section Solves
 
-§51 recapped IP addressing, TCP/UDP, DNS, and routing as concepts. This section is where those concepts meet the actual commands and files used to configure them on a running Linux host — and it immediately runs into a distinction that trips up a lot of administrators moving between distributions: **runtime configuration** and **persistent configuration** are not the same layer, and several of the tools in this section only operate on one of them.
+[§51](./Section-51-Part7-Networking-Fundamentals-Recap.md) recapped IP addressing, TCP/UDP, DNS, and routing as concepts. This section is where those concepts meet the actual commands and files used to configure them on a running Linux host — and it immediately runs into a distinction that trips up a lot of administrators moving between distributions: **runtime configuration** and **persistent configuration** are not the same layer, and several of the tools in this section only operate on one of them.
 
 `ip` operates directly on the kernel's live network state — it's fast, universal, and takes effect immediately, but by itself it changes nothing that survives a reboot. `nmcli`, `netplan`, `/etc/network/interfaces`, and RHEL's `ifcfg-*` files exist specifically to solve the _other_ half of the problem: describing the network configuration a host should have, persistently, so it's reapplied automatically every time networking starts. Understanding which tool belongs to which layer — and, for `netplan` specifically, that it isn't even its own runtime layer at all — is most of what this section is about.
 
@@ -40,7 +40,7 @@ ip route add default via 192.168.1.1
 ip route del 10.0.0.0/24
 ```
 
-`ip route show` (`ip r`) prints the kernel routing table, the direct successor to `route -n`. `ip route add` inserts a route immediately — a specific destination network via a gateway, or `default` for the default route (the traditional "default gateway" concept from §51).
+`ip route show` (`ip r`) prints the kernel routing table, the direct successor to `route -n`. `ip route add` inserts a route immediately — a specific destination network via a gateway, or `default` for the default route (the traditional "default gateway" concept from [§51](./Section-51-Part7-Networking-Fundamentals-Recap.md)).
 
 > ⚠️ **Warning:** Every `ip` command in this section changes only the kernel's **live, in-memory** network state. None of it is written to any configuration file, and none of it survives a reboot or, in most cases, even a NetworkManager/systemd-networkd restart, which can silently reassert whatever _persistent_ configuration it has on file and overwrite the `ip`-applied change. This is the single most common cause of "I fixed the network, it worked, then it broke again after a reboot (or after the network service restarted)." `ip` is the right tool for immediate troubleshooting, temporary changes, and diagnostics — it is never, by itself, the right tool for a change that needs to survive past the current boot. Everything else in this section exists to make a change persistent.
 
@@ -48,7 +48,7 @@ ip route del 10.0.0.0/24
 
 ## 3. `nmcli`: NetworkManager's Command-Line Interface
 
-**NetworkManager** is a background service (its full role alongside `systemd-networkd` is covered in §58) that manages network connections and — critically for this section — persists its configuration itself, so changes made through it survive reboots without any separate step. `nmcli` is NetworkManager's command-line control surface, and it's the default persistent-configuration tool on most desktop-oriented distributions and a large share of RHEL-family server installs (RHEL, CentOS, Rocky, Alma all ship NetworkManager active by default on standard installs).
+**NetworkManager** is a background service (its full role alongside `systemd-networkd` is covered in [§58](./Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md)) that manages network connections and — critically for this section — persists its configuration itself, so changes made through it survive reboots without any separate step. `nmcli` is NetworkManager's command-line control surface, and it's the default persistent-configuration tool on most desktop-oriented distributions and a large share of RHEL-family server installs (RHEL, CentOS, Rocky, Alma all ship NetworkManager active by default on standard installs).
 
 ```bash
 nmcli device status
@@ -68,7 +68,7 @@ Under the hood, NetworkManager stores these profiles as keyfiles (commonly under
 
 ## 4. netplan: Ubuntu's YAML Configuration Layer
 
-**netplan**, Ubuntu's default network configuration system since 17.10/18.04 LTS, is where the "which layer does this tool actually operate at" question matters most, because netplan is frequently misunderstood as a third independent runtime alongside NetworkManager and systemd-networkd. It is not — **netplan is a generator, not a runtime.** It reads declarative YAML files and _renders_ configuration for one of two actual backends: **NetworkManager** or **systemd-networkd** (§58 covers the latter's own native configuration format and role in full). netplan itself does nothing at the point a packet is actually sent — it only produces the config that whichever backend is selected then acts on.
+**netplan**, Ubuntu's default network configuration system since 17.10/18.04 LTS, is where the "which layer does this tool actually operate at" question matters most, because netplan is frequently misunderstood as a third independent runtime alongside NetworkManager and systemd-networkd. It is not — **netplan is a generator, not a runtime.** It reads declarative YAML files and _renders_ configuration for one of two actual backends: **NetworkManager** or **systemd-networkd** ([§58](./Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) covers the latter's own native configuration format and role in full). netplan itself does nothing at the point a packet is actually sent — it only produces the config that whichever backend is selected then acts on.
 
 Config files live under `/etc/netplan/*.yaml`:
 
@@ -173,6 +173,6 @@ _What the interviewer is probing for:_ Pragmatic, layered thinking — building 
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §51's addressing/routing/DNS fundamentals, applying those concepts through actual commands and config files. The tools here — particularly `nmcli` and netplan's backends — are largely front ends to services covered in full architectural depth in §58 (Network Services on Linux: systemd-networkd and NetworkManager), which is the natural next stop for anyone who wants the service-layer picture underneath what this section covered operationally. §54 (Firewalls) picks up the adjacent concern of controlling _which_ traffic is allowed once addressing and routing are correctly configured, and §53 (next) covers DNS resolution specifically — `/etc/resolv.conf`, `/etc/hosts`, and `nsswitch.conf` — which several of this section's tools (`nmcli`, netplan) also touch when they manage nameserver configuration.
+This section builds directly on [§51](./Section-51-Part7-Networking-Fundamentals-Recap.md)'s addressing/routing/DNS fundamentals, applying those concepts through actual commands and config files. The tools here — particularly `nmcli` and netplan's backends — are largely front ends to services covered in full architectural depth in [§58](./Section-58-Part7-Network-Services-Systemd-Networkd-NetworkManager.md) (Network Services on Linux: systemd-networkd and NetworkManager), which is the natural next stop for anyone who wants the service-layer picture underneath what this section covered operationally. [§54](./Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md) (Firewalls) picks up the adjacent concern of controlling _which_ traffic is allowed once addressing and routing are correctly configured, and [§53](./Section-53-Part7-DNS-Resolution-Resolv-Conf-Hosts-Nsswitch.md) (next) covers DNS resolution specifically — `/etc/resolv.conf`, `/etc/hosts`, and `nsswitch.conf` — which several of this section's tools (`nmcli`, netplan) also touch when they manage nameserver configuration.
 
-**Next Section:** §53 — `Section-53-Part7-DNS-Resolution-On-Linux.md`
+**Next Section:** [§53](./Section-53-Part7-DNS-Resolution-Resolv-Conf-Hosts-Nsswitch.md) — `Section-53-Part7-DNS-Resolution-On-Linux.md`

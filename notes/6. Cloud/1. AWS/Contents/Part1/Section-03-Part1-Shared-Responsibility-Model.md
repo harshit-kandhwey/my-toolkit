@@ -47,7 +47,7 @@
 └──────────────────────────────────────────────┘
 ```
 
-The dividing line **moves by service type** (see §6).
+The dividing line **moves by service type** (see [§6](./Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)).
 
 ---
 

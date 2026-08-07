@@ -2,7 +2,7 @@
 
 ## 1. Overview: From Swap Theory to Swap Operations
 
-§16 (Part 2) covered virtual memory, paging, and swap at the conceptual level — the kernel's memory manager can move infrequently-used pages out of physical RAM onto disk to free RAM for more active use, and page back in whatever gets touched again. This section is the hands-on operational continuation: how to actually create, activate, size, and tune swap on a running system, using the same conceptual foundation without re-deriving it.
+[§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md) covered virtual memory, paging, and swap at the conceptual level — the kernel's memory manager can move infrequently-used pages out of physical RAM onto disk to free RAM for more active use, and page back in whatever gets touched again. This section is the hands-on operational continuation: how to actually create, activate, size, and tune swap on a running system, using the same conceptual foundation without re-deriving it.
 
 Swap sits in an odd place in modern infrastructure conversations — some administrators treat it as an obsolete relic from an era of scarce RAM, others treat old sizing rules as gospel without questioning whether they still apply. Both instincts are partly wrong. Swap remains operationally relevant on modern high-RAM systems, just for different reasons than it was in the 1990s, and this section tries to be honest about which old advice still holds and which doesn't.
 
@@ -87,11 +87,11 @@ Filename                                Type            Size            Used    
 | `Size` / `Used` | In KB — how much swap exists and how much is currently occupied by paged-out data                                                                                    |
 | `Priority`      | Higher-priority swap areas are preferred by the kernel when multiple swap areas exist; `-1`/`-2` are default auto-assigned values when priority isn't explicitly set |
 
-**Production usage example:** During a memory-pressure incident, checking `Used` here alongside `free -h` (§82 covers memory analysis tools in depth) quickly answers "is this host actually swapping meaningfully, or is swap essentially idle" — a host with gigabytes of swap `Used` under sustained load is a very different diagnosis than one with a few MB used, which is often just normal kernel housekeeping rather than a sign of memory pressure.
+**Production usage example:** During a memory-pressure incident, checking `Used` here alongside `free -h` ([§82](../Part11/Section-82-Part11-Memory-Analysis.md) covers memory analysis tools in depth) quickly answers "is this host actually swapping meaningfully, or is swap essentially idle" — a host with gigabytes of swap `Used` under sustained load is a very different diagnosis than one with a few MB used, which is often just normal kernel housekeeping rather than a sign of memory pressure.
 
 ## 5. Persisting Swap via `/etc/fstab`
 
-Everything in 3 only activates swap for the current boot — `swapon` doesn't survive a reboot on its own. Persisting it follows the same `/etc/fstab` mechanism §20 (Part 3) covered for regular mounts.
+Everything in 3 only activates swap for the current boot — `swapon` doesn't survive a reboot on its own. Persisting it follows the same `/etc/fstab` mechanism [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) covered for regular mounts.
 
 **Example `/etc/fstab` entry:**
 
@@ -107,7 +107,7 @@ Everything in 3 only activates swap for the current boot — `swapon` doesn't su
 | `sw`        | Mount option indicating swap usage                                             |
 | `0 0`       | Dump and fsck-order fields, both irrelevant for swap and conventionally zeroed |
 
-> ⚠️ **Warning:** Add the `/etc/fstab` line only _after_ confirming `mkswap` and a manual `swapon` succeeded. An `/etc/fstab` entry pointing at a swap file that doesn't exist or was never properly formatted can, on some systems, delay or interfere with boot the same way a bad regular-mount entry can (§20) — verify first, persist second.
+> ⚠️ **Warning:** Add the `/etc/fstab` line only _after_ confirming `mkswap` and a manual `swapon` succeeded. An `/etc/fstab` entry pointing at a swap file that doesn't exist or was never properly formatted can, on some systems, delay or interfere with boot the same way a bad regular-mount entry can ([§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)) — verify first, persist second.
 
 ## 6. `swappiness`: What It Actually Controls
 
@@ -138,7 +138,7 @@ The historically quoted rule — "swap should be roughly twice your RAM" — dat
 **What actually drives swap sizing today:**
 
 - **Hibernation support.** If a system needs to hibernate (suspend-to-disk), the swap space must be at least as large as the amount of RAM being written out — this is a hard, mechanical requirement, not a rule of thumb. Most production servers never hibernate, which removes this driver entirely for that population.
-- **Workload memory-pressure patterns.** A host that occasionally has short-lived memory spikes benefits from a modest swap buffer (a few GB) as a safety margin against the OOM killer (§83 covers the OOM killer in Part 11) firing on a transient spike rather than a sustained real shortage. A host that is chronically memory-constrained needs more RAM, not more swap — swap is a shock absorber for occasional spikes, not a substitute for adequate memory sizing.
+- **Workload memory-pressure patterns.** A host that occasionally has short-lived memory spikes benefits from a modest swap buffer (a few GB) as a safety margin against the OOM killer ([§83](../Part11/Section-83-Part11-Disk-IO-Analysis.md) covers the OOM killer in Part 11) firing on a transient spike rather than a sustained real shortage. A host that is chronically memory-constrained needs more RAM, not more swap — swap is a shock absorber for occasional spikes, not a substitute for adequate memory sizing.
 - **Latency tolerance.** Workloads where any swapping at all is unacceptable (very latency-sensitive services) sometimes run with minimal or even no swap deliberately, accepting that the OOM killer is the fallback for genuine memory exhaustion rather than a slow-but-surviving swapped state.
 
 **Honest guidance:** there is no single correct swap size for the modern era the way "2x RAM" once claimed to be. A reasonable default for a general-purpose server without hibernation needs is a modest fixed amount (commonly in the low single-digit GB range) sized as a pressure buffer rather than scaled proportionally to RAM, with the real sizing decision driven by the workload's actual memory-pressure behavior observed in practice — not a formula applied uniformly across a fleet with very different workloads.
@@ -161,7 +161,7 @@ _What the interviewer is probing for:_ Whether the candidate knows the mechanism
 _What the interviewer is probing for:_ Correcting the common misconception that swappiness is a blunt on/off toggle, and connecting the tunable to a concrete workload-tuning decision.
 
 **🎯 Senior:** _"A host is showing swap usage climbing steadily under normal load. How do you approach it?"_
-**Model answer:** First I'd distinguish transient from sustained — `swapon -s`/`/proc/swaps` and `free -h` (§82) sampled over time tell me whether `Used` is a small, stable amount (often just normal kernel housekeeping moving genuinely cold pages out, harmless) versus a steadily growing trend under otherwise normal load, which suggests real memory pressure. I'd check what's actually consuming memory (`/proc/meminfo`, per-process RSS) rather than assuming the fix is "add more swap" — swap is a shock absorber for occasional spikes, not a substitute for adequate RAM, so a steadily climbing trend under normal (not spiking) load points toward either a memory leak in a specific process or a genuinely undersized host for its workload. I'd also check `vm.swappiness` — an unusually high value on a latency-sensitive workload can cause more swapping than the actual memory pressure would otherwise justify, which is a tuning fix rather than a capacity fix.
+**Model answer:** First I'd distinguish transient from sustained — `swapon -s`/`/proc/swaps` and `free -h` ([§82](../Part11/Section-82-Part11-Memory-Analysis.md)) sampled over time tell me whether `Used` is a small, stable amount (often just normal kernel housekeeping moving genuinely cold pages out, harmless) versus a steadily growing trend under otherwise normal load, which suggests real memory pressure. I'd check what's actually consuming memory (`/proc/meminfo`, per-process RSS) rather than assuming the fix is "add more swap" — swap is a shock absorber for occasional spikes, not a substitute for adequate RAM, so a steadily climbing trend under normal (not spiking) load points toward either a memory leak in a specific process or a genuinely undersized host for its workload. I'd also check `vm.swappiness` — an unusually high value on a latency-sensitive workload can cause more swapping than the actual memory pressure would otherwise justify, which is a tuning fix rather than a capacity fix.
 _What the interviewer is probing for:_ Diagnostic discipline — distinguishing normal background swap activity from a real problem, and not reflexively treating "add more swap" as the answer to underlying memory pressure.
 
 **🎯 Architect:** _"How would you set a swap-sizing standard across a fleet with very different workloads — some memory-light web frontends, some memory-heavy databases?"_
@@ -170,7 +170,7 @@ _What the interviewer is probing for:_ Fleet-scale thinking — workload-differe
 
 ## 10. Key Takeaways
 
-- This section is the hands-on operational continuation of §16's virtual-memory/paging/swap theory (Part 2) — the mechanisms here (`swapon`, `mkswap`, `/etc/fstab`) are how that theory gets applied to a running system.
+- This section is the hands-on operational continuation of [§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md)'s virtual-memory/paging/swap theory (Part 2) — the mechanisms here (`swapon`, `mkswap`, `/etc/fstab`) are how that theory gets applied to a running system.
 - Swap partitions vs. swap files perform nearly identically on modern SSD-backed systems — the old "partitions are always faster" advice is outdated; files are the more flexible modern default (2).
 - Creating a swap file is `fallocate`/`dd` → `chmod 600` → `mkswap` → `swapon`, and must be added to `/etc/fstab` separately to persist across reboots (3, 5).
 - `swapon -s` / `/proc/swaps` show active swap areas, size, and usage — a fast diagnostic during memory-pressure incidents (4).
@@ -179,6 +179,6 @@ _What the interviewer is probing for:_ Fleet-scale thinking — workload-differe
 
 ## 11. Related Concepts & What's Next
 
-This section builds directly on §16's virtual memory and paging fundamentals (Part 2) and connects forward to §82 (memory analysis, Part 11) and §83 (the OOM killer, Part 11), both of which depend on correctly interpreting swap activity during troubleshooting. It follows §75's RAID coverage earlier in this Part — RAID protects against disk failure while swap management is an unrelated storage-configuration concern, and the two shouldn't be conflated. §78 (next) moves to network storage — NFS and Samba — a different corner of storage administration entirely.
+This section builds directly on [§16](../Part2/Section-16-Part2-Virtual-Memory-Paging-Swap.md)'s virtual memory and paging fundamentals (Part 2) and connects forward to [§82](../Part11/Section-82-Part11-Memory-Analysis.md) (memory analysis, Part 11) and [§83](../Part11/Section-83-Part11-Disk-IO-Analysis.md) (the OOM killer, Part 11), both of which depend on correctly interpreting swap activity during troubleshooting. It follows [§75](./Section-75-Part10-RAID-Concepts-Mdadm.md)'s RAID coverage earlier in this Part — RAID protects against disk failure while swap management is an unrelated storage-configuration concern, and the two shouldn't be conflated. [§78](./Section-78-Part10-Network-Storage-NFS-Samba.md) (next) moves to network storage — NFS and Samba — a different corner of storage administration entirely.
 
-**Next Section:** §78 — `Section-78-Part10-Network-Storage-NFS-Samba.md`
+**Next Section:** [§78](./Section-78-Part10-Network-Storage-NFS-Samba.md) — `Section-78-Part10-Network-Storage-NFS-Samba.md`

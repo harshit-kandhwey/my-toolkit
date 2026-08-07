@@ -33,7 +33,7 @@ A **Folder** is an optional grouping node beneath the Organization (or beneath a
 
 ### 3.3 Project
 
-The **Project** is the fundamental unit of resource ownership, billing, quota, and API management in GCP — every resource (VM, bucket, database, etc.) belongs to exactly one Project. See Section 4 for a full treatment of projects, billing accounts, and quotas.
+The **Project** is the fundamental unit of resource ownership, billing, quota, and API management in GCP — every resource (VM, bucket, database, etc.) belongs to exactly one Project. See [Section 4](./Section-04-Part1-Projects-Billing-Accounts-Quotas.md) for a full treatment of projects, billing accounts, and quotas.
 
 ### 3.4 Resource
 
@@ -43,13 +43,13 @@ Individual services and objects — a Compute Engine VM, a Cloud Storage bucket,
 
 ### 4.1 IAM Policy Inheritance
 
-IAM policies (who can do what — Section 35 covers IAM in full) can be attached at any node in the hierarchy. A policy attached at a higher node is inherited by every descendant node, and inherited permissions **cannot be revoked** at a lower level — GCP's IAM model only allows adding permissions as you descend, never subtracting them.
+IAM policies (who can do what — [Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md) covers IAM in full) can be attached at any node in the hierarchy. A policy attached at a higher node is inherited by every descendant node, and inherited permissions **cannot be revoked** at a lower level — GCP's IAM model only allows adding permissions as you descend, never subtracting them.
 
-> ⚠️ **Interview-relevant nuance:** This is a frequently tested distinction versus AWS. An AWS SCP (Service Control Policy) is a _guardrail_ that sets the maximum permissions a principal can have — it can only restrict, never grant. A GCP IAM policy at the Organization/Folder level, by contrast, actively _grants_ permissions that flow down and cannot be stripped away lower in the tree. To restrict what an inherited IAM grant can do in GCP, you use a separate mechanism — Organization Policies (Section 3.4.2) or, for finer identity restriction, IAM Deny policies — rather than expecting a lower-level IAM binding to override a higher one.
+> ⚠️ **Interview-relevant nuance:** This is a frequently tested distinction versus AWS. An AWS SCP (Service Control Policy) is a _guardrail_ that sets the maximum permissions a principal can have — it can only restrict, never grant. A GCP IAM policy at the Organization/Folder level, by contrast, actively _grants_ permissions that flow down and cannot be stripped away lower in the tree. To restrict what an inherited IAM grant can do in GCP, you use a separate mechanism — Organization Policies ([Section 3](./Section-03-Part1-Resource-Hierarchy.md).4.2) or, for finer identity restriction, IAM Deny policies — rather than expecting a lower-level IAM binding to override a higher one.
 
 ### 4.2 Organization Policy Inheritance
 
-**Organization Policies** (Section 37 covers these in depth) are a distinct mechanism from IAM: instead of granting permissions, they constrain _what actions are allowed at all_ within a scope, regardless of a principal's IAM permissions — e.g., "no VM may be created with a public IP address" or "resources may only be created in EU regions." Like IAM, Organization Policies attached at a higher node apply to all descendants by default, but unlike IAM, a lower node can override an inherited Organization Policy (subject to the policy's own configuration of whether overrides are allowed), making them the correct tool for enforcing hard guardrails that IAM inheritance cannot express.
+**Organization Policies** ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md) covers these in depth) are a distinct mechanism from IAM: instead of granting permissions, they constrain _what actions are allowed at all_ within a scope, regardless of a principal's IAM permissions — e.g., "no VM may be created with a public IP address" or "resources may only be created in EU regions." Like IAM, Organization Policies attached at a higher node apply to all descendants by default, but unlike IAM, a lower node can override an inherited Organization Policy (subject to the policy's own configuration of whether overrides are allowed), making them the correct tool for enforcing hard guardrails that IAM inheritance cannot express.
 
 ## 5. Architecture Diagram
 
@@ -126,15 +126,15 @@ payments-prod-01   project
 
 ## 8. Production & Enterprise Usage
 
-- **Folder design mirrors org structure or environment, not both loosely mixed.** Common enterprise patterns are either business-unit-first (`Folder: Payments → Folder: Prod/Nonprod`) or environment-first (`Folder: Prod → Folder: Payments/Marketing/...`) — mixing conventions inconsistently across the tree makes policy auditing much harder. This exact design decision is explored at scale in Section 59 (Landing Zone Architecture).
-- **Security/platform teams typically hold IAM at the Organization or top Folder level** (e.g., organization-wide viewer access for a central security team via Section 39's Security Command Center), while application teams are delegated ownership of their own Folder/Projects without visibility into siblings.
-- **Automation for folder/project creation at scale** (rather than manual console clicks) is standard in large organizations — covered fully in Section 63 (Folder/Project Vending Automation).
+- **Folder design mirrors org structure or environment, not both loosely mixed.** Common enterprise patterns are either business-unit-first (`Folder: Payments → Folder: Prod/Nonprod`) or environment-first (`Folder: Prod → Folder: Payments/Marketing/...`) — mixing conventions inconsistently across the tree makes policy auditing much harder. This exact design decision is explored at scale in [Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md) (Landing Zone Architecture).
+- **Security/platform teams typically hold IAM at the Organization or top Folder level** (e.g., organization-wide viewer access for a central security team via [Section 39](../Part5/Section-39-Part5-Security-Command-Center.md)'s Security Command Center), while application teams are delegated ownership of their own Folder/Projects without visibility into siblings.
+- **Automation for folder/project creation at scale** (rather than manual console clicks) is standard in large organizations — covered fully in [Section 63](../Part9/Section-63-Part9-Folder-Project-Vending-Automation.md) (Folder/Project Vending Automation).
 
 ## 9. Common Misconceptions
 
 - **Misconception:** "A Folder is required." Folders are optional — a small company can place Projects directly under the Organization with no Folders at all. Folders only add value once grouping for policy/delegation purposes is actually needed.
 - **Misconception:** "IAM inheritance can be blocked at a lower level, the same way a firewall rule can be overridden." IAM grants inherited from above are permanent as they flow down the tree — they cannot be revoked at a Project or Folder below. Restricting behavior requires Organization Policies or IAM Deny policies, not "un-granting" an inherited IAM role.
-- **Misconception:** "Billing is set at the Organization level." Billing accounts are linked to individual Projects (Section 4), not to Folders or the Organization directly, even though a single billing account is commonly linked to many projects across the hierarchy.
+- **Misconception:** "Billing is set at the Organization level." Billing accounts are linked to individual Projects ([Section 4](./Section-04-Part1-Projects-Billing-Accounts-Quotas.md)), not to Folders or the Organization directly, even though a single billing account is commonly linked to many projects across the hierarchy.
 
 ## 10. Interview Questions
 
@@ -145,16 +145,16 @@ payments-prod-01   project
 **Model answer:** No. IAM grants flow downward through the hierarchy and are additive only — a permission granted at the Organization level is inherited by every Folder and Project beneath it and cannot be revoked at a lower level. If the goal is to restrict what an inherited grant can actually do (e.g., prevent public bucket creation even for someone with Storage Admin), the correct tool is an Organization Policy or an IAM Deny policy, not an attempt to override the IAM binding itself.
 
 **🎯 Senior/Architect:** _A company has an "Engineering" business unit with 40 teams, each needing autonomy over their own projects, while the central security team needs to guarantee no team can ever disable audit logging or create public storage buckets. How would you design the Folder structure and policy placement?_
-**Model answer:** I'd create a top-level Folder per major business unit (e.g., "Engineering"), with per-team sub-Folders beneath it, and delegate Project Creator/Owner-equivalent IAM roles at each team's sub-Folder so teams can self-serve project creation without touching siblings. For the hard guarantees — no disabling audit logging, no public buckets — I would not rely on IAM at all, since IAM only grants and any team with sufficiently broad roles could otherwise take those actions; instead I'd attach Organization Policies enforcing those constraints as high as possible, ideally at the Organization root, and explicitly configure them as non-overridable further down the tree so no team Folder or Project can loosen the constraint even if granted broad IAM roles. This combination — delegated IAM for velocity, non-overridable Organization Policy for the non-negotiable guardrails — is the standard landing zone pattern covered in depth in Section 59.
+**Model answer:** I'd create a top-level Folder per major business unit (e.g., "Engineering"), with per-team sub-Folders beneath it, and delegate Project Creator/Owner-equivalent IAM roles at each team's sub-Folder so teams can self-serve project creation without touching siblings. For the hard guarantees — no disabling audit logging, no public buckets — I would not rely on IAM at all, since IAM only grants and any team with sufficiently broad roles could otherwise take those actions; instead I'd attach Organization Policies enforcing those constraints as high as possible, ideally at the Organization root, and explicitly configure them as non-overridable further down the tree so no team Folder or Project can loosen the constraint even if granted broad IAM roles. This combination — delegated IAM for velocity, non-overridable Organization Policy for the non-negotiable guardrails — is the standard landing zone pattern covered in depth in [Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md).
 
 ## 11. Key Takeaways
 
 - 🔑 The hierarchy is Organization → Folder (optional, nestable) → Project → Resource; every resource belongs to exactly one Project.
 - 🔑 IAM policies are additive and flow downward permanently — a lower node cannot revoke a higher node's grant.
 - 🔑 Organization Policies constrain allowed actions regardless of IAM permissions, and — unlike IAM — can be configured to allow or disallow overrides lower in the tree.
-- 🔑 Billing, quota, and API enablement are Project-level concerns, not Folder or Organization-level ones (Section 4).
+- 🔑 Billing, quota, and API enablement are Project-level concerns, not Folder or Organization-level ones ([Section 4](./Section-04-Part1-Projects-Billing-Accounts-Quotas.md)).
 - 🔑 GCP's Folder ≈ AWS's OU ≈ Azure's Management Group; GCP's Project ≈ AWS's Account ≈ Azure's Subscription, but the guardrail mechanisms (Organization Policy vs. SCP vs. Azure Policy) differ meaningfully in whether overrides are permitted.
 
 ## 12. Related Concepts
 
-Projects, billing accounts, and quotas (Section 4), IAM fundamentals (Section 35), Organization Policies in depth (Section 37), landing zone architecture (Section 59), and folder/project vending automation (Section 63) all build directly on the hierarchy introduced here.
+Projects, billing accounts, and quotas ([Section 4](./Section-04-Part1-Projects-Billing-Accounts-Quotas.md)), IAM fundamentals ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), Organization Policies in depth ([Section 37](../Part5/Section-37-Part5-Organization-Policies.md)), landing zone architecture ([Section 59](../Part9/Section-59-Part9-Landing-Zone-Architecture-Blueprints.md)), and folder/project vending automation ([Section 63](../Part9/Section-63-Part9-Folder-Project-Vending-Automation.md)) all build directly on the hierarchy introduced here.

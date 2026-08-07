@@ -8,13 +8,13 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Google's early ML tooling on GCP grew organically and, as a result, fragmented: **AI Platform** (formerly Cloud ML Engine) handled custom training and prediction; **AutoML Tables**, **AutoML Vision**, **AutoML Natural Language**, and **AutoML Video** were separate no-code products each with their own console pages, APIs, and quota systems; feature engineering and experiment tracking had no first-party home at all. Section 1.4 mentioned this consolidation briefly — by the early 2020s Google had accumulated enough separate ML products that data scientists had to learn multiple inconsistent APIs, manage separate IAM permissions per product, and manually stitch together pipelines that moved data and models between them.
+Google's early ML tooling on GCP grew organically and, as a result, fragmented: **AI Platform** (formerly Cloud ML Engine) handled custom training and prediction; **AutoML Tables**, **AutoML Vision**, **AutoML Natural Language**, and **AutoML Video** were separate no-code products each with their own console pages, APIs, and quota systems; feature engineering and experiment tracking had no first-party home at all. [Section 1](../Part1/Section-01-Part1-What-is-GCP-History-Evolution.md).4 mentioned this consolidation briefly — by the early 2020s Google had accumulated enough separate ML products that data scientists had to learn multiple inconsistent APIs, manage separate IAM permissions per product, and manually stitch together pipelines that moved data and models between them.
 
 Vertex AI (launched 2021) exists to solve this fragmentation directly:
 
 - **One API and SDK** instead of a dozen separate ones, so code written for AutoML tabular models and code written for custom PyTorch training jobs share the same client library patterns.
 - **One place for the full lifecycle** — data, training, tuning, deployment, monitoring, and generative AI — so a model doesn't have to "leave" the platform between steps.
-- **Consistent governance** — one IAM permission model, one VPC Service Controls perimeter (Section 41), one Model Registry — instead of securing each fragmented product separately.
+- **Consistent governance** — one IAM permission model, one VPC Service Controls perimeter ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)), one Model Registry — instead of securing each fragmented product separately.
 
 ## 3. Core Concepts
 
@@ -25,7 +25,7 @@ Vertex AI (launched 2021) exists to solve this fragmentation directly:
 - **Instance-based Workbench**: a single-user managed VM running JupyterLab, similar in spirit to a persistent development notebook you fully control (choose machine type, GPUs, idle-shutdown schedules).
 - **Vertex AI Workbench (managed, serverless-leaning)**: a more automated, managed notebook runtime with less infrastructure management, oriented toward teams that don't want to administer the underlying VM at all.
 
-Workbench is the starting point for exploratory data analysis and prototyping before graduating to a formal Training Job (Section 66).
+Workbench is the starting point for exploratory data analysis and prototyping before graduating to a formal Training Job ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)).
 
 ### 3.2 Vertex AI Datasets
 
@@ -42,7 +42,7 @@ Feature Store organizes data into **Featurestores → EntityTypes → Features**
 
 ### 3.4 Model Registry (Preview)
 
-The **Vertex AI Model Registry** is the central catalog of all trained models — AutoML and custom — with version history, deployment status, and evaluation metrics attached. It's covered in depth alongside training and deployment in Section 66, but is introduced here as the piece that ties Datasets, Feature Store, and training jobs together into one lifecycle: data goes in, a model comes out and is registered, and the registered model is what gets deployed.
+The **Vertex AI Model Registry** is the central catalog of all trained models — AutoML and custom — with version history, deployment status, and evaluation metrics attached. It's covered in depth alongside training and deployment in [Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md), but is introduced here as the piece that ties Datasets, Feature Store, and training jobs together into one lifecycle: data goes in, a model comes out and is registered, and the registered model is what gets deployed.
 
 ## 4. Comparison: Vertex AI vs. AWS SageMaker vs. Azure Machine Learning
 
@@ -133,15 +133,15 @@ projects/123456789012/locations/us-central1/datasets/1234567890123456789
 
 ## 7. Production & Enterprise Usage
 
-- Enterprises with an existing BigQuery-centric data warehouse (Section 44) typically feed Vertex AI Datasets and Feature Store directly from curated BigQuery tables, treating ML as one more downstream consumer of the same governed data pipeline — the same pattern used for Looker dashboards (Section 48).
+- Enterprises with an existing BigQuery-centric data warehouse ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)) typically feed Vertex AI Datasets and Feature Store directly from curated BigQuery tables, treating ML as one more downstream consumer of the same governed data pipeline — the same pattern used for Looker dashboards ([Section 48](../Part6/Section-48-Part6-Looker-Looker-Studio.md)).
 - Feature Store is adopted specifically once an organization has more than one team building models against overlapping customer/product data, to avoid each team recomputing the same features with subtly different logic.
-- Workbench instances are commonly configured with idle-shutdown schedules and are provisioned inside a Shared VPC (Section 62) so notebook environments inherit the same network security posture as the rest of the enterprise landing zone.
+- Workbench instances are commonly configured with idle-shutdown schedules and are provisioned inside a Shared VPC ([Section 62](../Part9/Section-62-Part9-Shared-VPC-at-Scale.md)) so notebook environments inherit the same network security posture as the rest of the enterprise landing zone.
 
 ## 8. Common Misconceptions
 
-- **Misconception:** "Vertex AI is just AutoML." AutoML (Section 67) is one training approach; Vertex AI also fully supports custom training containers, pipelines, and generative AI — AutoML is the no-code entry point, not the whole platform.
+- **Misconception:** "Vertex AI is just AutoML." AutoML ([Section 67](./Section-67-Part10-AutoML-Model-Garden.md)) is one training approach; Vertex AI also fully supports custom training containers, pipelines, and generative AI — AutoML is the no-code entry point, not the whole platform.
 - **Misconception:** "Feature Store is only useful for real-time serving." Feature Store also provides significant value purely for offline training consistency and feature reuse across teams, even for models that only ever run batch prediction.
-- **Misconception:** "Vertex AI replaced BigQuery ML." BigQuery ML (training simple models directly via SQL inside BigQuery, Section 44) and Vertex AI are complementary — BigQuery ML is best for teams wanting SQL-native, in-warehouse model training on structured data, while Vertex AI is the platform for the full custom/deep-learning/generative-AI lifecycle. Many organizations use both together.
+- **Misconception:** "Vertex AI replaced BigQuery ML." BigQuery ML (training simple models directly via SQL inside BigQuery, [Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)) and Vertex AI are complementary — BigQuery ML is best for teams wanting SQL-native, in-warehouse model training on structured data, while Vertex AI is the platform for the full custom/deep-learning/generative-AI lifecycle. Many organizations use both together.
 
 ## 9. Interview Questions
 
@@ -152,7 +152,7 @@ projects/123456789012/locations/us-central1/datasets/1234567890123456789
 **Model answer:** Training/serving skew — where the code computing a feature for offline model training differs subtly from the code computing that same feature for real-time online prediction, causing the deployed model to behave differently than it did during evaluation. Feature Store provides one canonical definition of each feature, served consistently to both batch training reads and low-latency online prediction reads, eliminating that class of bug. It also lets multiple teams reuse the same engineered features instead of each team re-implementing similar transformation logic independently.
 
 **🎯 Senior/Architect:** _An enterprise has five data science teams, each independently building models against overlapping customer and transaction data in BigQuery, and is seeing inconsistent model behavior in production that traces back to feature computation differences between teams. How would you redesign their ML platform usage?_
-**Model answer:** I'd introduce a centralized Vertex AI Feature Store as the single source of truth for shared features (customer lifetime value, transaction velocity, churn risk signals), populated by a governed pipeline reading from the same curated BigQuery tables (Section 44/49) rather than each team writing its own feature-computation SQL. Each team's training jobs and online prediction endpoints would then read features from Feature Store rather than recomputing them, eliminating the training/serving-skew and cross-team-inconsistency issues. I'd pair this with a shared Vertex AI Dataset convention (so lineage is tracked consistently) and a shared Model Registry so all five teams' models are cataloged and governed centrally, with IAM (Section 35) scoping who can publish versus consume features and models. This turns five siloed, inconsistent ML practices into one governed, reusable platform without removing any team's autonomy over their own model architecture choices.
+**Model answer:** I'd introduce a centralized Vertex AI Feature Store as the single source of truth for shared features (customer lifetime value, transaction velocity, churn risk signals), populated by a governed pipeline reading from the same curated BigQuery tables ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)/49) rather than each team writing its own feature-computation SQL. Each team's training jobs and online prediction endpoints would then read features from Feature Store rather than recomputing them, eliminating the training/serving-skew and cross-team-inconsistency issues. I'd pair this with a shared Vertex AI Dataset convention (so lineage is tracked consistently) and a shared Model Registry so all five teams' models are cataloged and governed centrally, with IAM ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)) scoping who can publish versus consume features and models. This turns five siloed, inconsistent ML practices into one governed, reusable platform without removing any team's autonomy over their own model architecture choices.
 
 ## 10. Key Takeaways
 
@@ -163,4 +163,4 @@ projects/123456789012/locations/us-central1/datasets/1234567890123456789
 
 ## 11. Related Concepts
 
-BigQuery (Section 44) as a common upstream data source, IAM (Section 35) for governing platform access, VPC Service Controls (Section 41) for perimeter security around Vertex AI resources (detailed in Section 70), and Vertex AI Deep Dive — Training, Pipelines & Endpoints (Section 66), which builds directly on the Datasets and Feature Store concepts introduced here.
+BigQuery ([Section 44](../Part6/Section-44-Part6-BigQuery-Deep-Dive.md)) as a common upstream data source, IAM ([Section 35](../Part5/Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)) for governing platform access, VPC Service Controls ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)) for perimeter security around Vertex AI resources (detailed in [Section 70](./Section-70-Part10-AIML-Security-Responsible-AI.md)), and Vertex AI Deep Dive — Training, Pipelines & Endpoints ([Section 66](./Section-66-Part10-Vertex-AI-Deep-Dive-Training-Pipelines-Endpoints.md)), which builds directly on the Datasets and Feature Store concepts introduced here.

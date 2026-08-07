@@ -4,11 +4,11 @@
 
 **Plain language:** A collaboration model is the agreed shape of how a team's contributors get their changes from a personal branch into the project's shared history — who can push where, and what has to happen (review, checks, approval) before that's allowed.
 
-**Precise:** Git itself is agnostic about collaboration structure — §20 gave you `fetch`/`pull`/`push` and nothing more. Everything in this section is a **social and platform-level convention** layered on top of those primitives: which remotes exist, who has write access to which repository, and what gate (a pull/merge request plus review) sits between a contributor's branch and the shared history. The two dominant conventions are the **shared repository model** and the **fork-and-pull-request model**.
+**Precise:** Git itself is agnostic about collaboration structure — [§20](./Section-20-Part5-Remotes-In-Depth.md) gave you `fetch`/`pull`/`push` and nothing more. Everything in this section is a **social and platform-level convention** layered on top of those primitives: which remotes exist, who has write access to which repository, and what gate (a pull/merge request plus review) sits between a contributor's branch and the shared history. The two dominant conventions are the **shared repository model** and the **fork-and-pull-request model**.
 
 ## 2. Why It Exists / Problem It Solves
 
-§20's commands let anyone with write access push directly to any branch, including `main`, with zero review. That's fine for a single developer or a tiny trusted team, and actively dangerous at any larger scale: broken code lands in the shared line of truth, nobody sees the change before it ships, and there's no recorded conversation about _why_ a change was made beyond the commit message. Collaboration models exist to insert a deliberate checkpoint — the **pull request** (GitHub/Bitbucket terminology) or **merge request** (GitLab terminology) — between "I wrote this" and "this is part of the project," giving the team a place to review, discuss, run automated checks (§25), and require explicit approval before history changes.
+[§20](./Section-20-Part5-Remotes-In-Depth.md)'s commands let anyone with write access push directly to any branch, including `main`, with zero review. That's fine for a single developer or a tiny trusted team, and actively dangerous at any larger scale: broken code lands in the shared line of truth, nobody sees the change before it ships, and there's no recorded conversation about _why_ a change was made beyond the commit message. Collaboration models exist to insert a deliberate checkpoint — the **pull request** (GitHub/Bitbucket terminology) or **merge request** (GitLab terminology) — between "I wrote this" and "this is part of the project," giving the team a place to review, discuss, run automated checks ([§25](../Part6/Section-25-Part6-Git-in-CICD-Pipelines.md)), and require explicit approval before history changes.
 
 ## 3. Shared Repository Model
 
@@ -32,7 +32,7 @@ Every contributor has push access to one single repository. Nobody forks; everyo
 
 - **Who uses it:** internal teams inside a company or organization, where every contributor is a known, trusted employee/team member with legitimate reason to have write access.
 - **Mechanics:** each contributor pushes a feature branch directly to `origin`, opens a pull request from `feature/a` into `main` _within the same repository_, gets it reviewed, and merges. There is no second repository involved at any point.
-- **Access control:** enforced through branch protection rules (§23) on the shared repo — contributors can push to their own branches freely, but `main` (and other protected branches) requires a PR with approval, not raw push access.
+- **Access control:** enforced through branch protection rules ([§23](./Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) on the shared repo — contributors can push to their own branches freely, but `main` (and other protected branches) requires a PR with approval, not raw push access.
 
 ## 4. Fork-and-Pull-Request Model
 
@@ -72,40 +72,40 @@ Contributors do **not** have write access to the canonical (**upstream**) reposi
 
 ### 4.1 Comparison
 
-| Dimension                       | Shared Repository Model                                       | Fork-and-Pull-Request Model                        |
-| ------------------------------- | ------------------------------------------------------------- | -------------------------------------------------- |
-| Write access to canonical repo  | All contributors                                              | Maintainers only                                   |
-| Number of repositories involved | One                                                           | Two (fork + upstream) per contributor              |
-| Typical audience                | Internal team, known employees                                | Open-source, external/untrusted contributors       |
-| Branch namespace                | Shared — needs naming discipline (§12) to avoid collisions | Isolated per fork — no collision risk              |
-| Setup overhead per contributor  | Low (just clone)                                              | Slightly higher (fork, clone, add upstream remote) |
-| Typical PR direction            | branch → main, same repo                                      | fork:branch → upstream:main                        |
+| Dimension                       | Shared Repository Model                                                                                       | Fork-and-Pull-Request Model                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Write access to canonical repo  | All contributors                                                                                              | Maintainers only                                   |
+| Number of repositories involved | One                                                                                                           | Two (fork + upstream) per contributor              |
+| Typical audience                | Internal team, known employees                                                                                | Open-source, external/untrusted contributors       |
+| Branch namespace                | Shared — needs naming discipline ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) to avoid collisions | Isolated per fork — no collision risk              |
+| Setup overhead per contributor  | Low (just clone)                                                                                              | Slightly higher (fork, clone, add upstream remote) |
+| Typical PR direction            | branch → main, same repo                                                                                      | fork:branch → upstream:main                        |
 
 ## 5. The Full Pull Request Lifecycle
 
 Both models converge on essentially the same review workflow once a PR is open; the difference is only which repository the branch physically lives in.
 
-1. **Branch.** Create a feature/fix branch off the latest `main` (§12): `git switch -c feature-payments`.
-2. **Commit.** Make a series of focused commits (§10, tag/commit conventions in §18) as work progresses.
+1. **Branch.** Create a feature/fix branch off the latest `main` ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)): `git switch -c feature-payments`.
+2. **Commit.** Make a series of focused commits ([§10](../Part3/Section-10-Part3-Core-Workflow.md), tag/commit conventions in [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) as work progresses.
 3. **Push.** `git push -u origin feature-payments` (shared model) or to your fork (fork model, as covered above).
 4. **Open the PR.** On the hosting platform, open a pull request targeting the appropriate base branch, with a description of what changed and why. Many teams use a PR template requiring a summary, testing notes, and linked issue.
-5. **Automated checks run.** CI (§25) runs tests, linters, and build steps automatically against the PR; most teams block merge until these pass.
+5. **Automated checks run.** CI ([§25](../Part6/Section-25-Part6-Git-in-CICD-Pipelines.md)) runs tests, linters, and build steps automatically against the PR; most teams block merge until these pass.
 6. **Review.** One or more reviewers read the diff, leave inline comments, request changes, or approve. This is where most of the _value_ of the model lives — a second set of eyes catches bugs, design issues, and knowledge silos before they become permanent.
 7. **Address feedback.** The contributor pushes more commits addressing comments. Two common styles:
    - **New commits on top** (`git commit -m "Address review: validate input"`), preserving the exact sequence of what happened during review — easy to see what changed in response to which comment, but a noisier final history.
-   - **Amend/fixup and force-push** (`git commit --amend` or `git commit --fixup=<hash>` + `git rebase -i --autosquash`, full mechanics §14 and §15) to keep the branch's history clean, then `git push --force-with-lease` to update the PR. Force-pushing to _your own_ PR branch is normal and expected here — §20's caution about force-push applies to shared integration branches, not to a personal feature branch only you and the PR's CI are working from.
-8. **Approval.** Once required reviewers approve and required checks pass, the platform allows merging (often enforced by protected-branch rules, §23).
+   - **Amend/fixup and force-push** (`git commit --amend` or `git commit --fixup=<hash>` + `git rebase -i --autosquash`, full mechanics [§14](../Part4/Section-14-Part4-Rebasing.md) and [§15](../Part4/Section-15-Part4-Undoing-Things.md)) to keep the branch's history clean, then `git push --force-with-lease` to update the PR. Force-pushing to _your own_ PR branch is normal and expected here — [§20](./Section-20-Part5-Remotes-In-Depth.md)'s caution about force-push applies to shared integration branches, not to a personal feature branch only you and the PR's CI are working from.
+8. **Approval.** Once required reviewers approve and required checks pass, the platform allows merging (often enforced by protected-branch rules, [§23](./Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)).
 9. **Merge.** A maintainer (or the author, if permitted) merges using one of three strategies, covered next.
 
 > 💡 **Tip:** Re-requesting review after pushing fixes, rather than assuming a reviewer will notice new commits, is basic PR hygiene that keeps review cycles fast on busy teams.
 
 ## 6. Merge Strategies at PR-Merge Time
 
-| Strategy             | What happens                                                                                                   | History shape                                                                     | Trade-off                                                                                                                                              |
-| -------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Merge commit**     | All of the branch's commits are added as-is, plus one new merge commit joining them to the base                | Preserves the branch's exact commit-by-commit history, plus a visible merge point | Most information preserved; can clutter history with many small "wip" commits and review-fixup commits unless the branch was cleaned first             |
-| **Squash and merge** | All of the branch's commits are collapsed into a single new commit on the base branch                          | One clean commit per PR, linear history                                           | Loses individual commit granularity (useful review-iteration history disappears); simplest `git log` and easiest to revert a whole feature in one step |
-| **Rebase and merge** | Each of the branch's commits is individually replayed onto the tip of the base branch, no merge commit created | Fully linear history, but with every original commit preserved                    | Keeps granular history _and_ linearity; rewrites commit hashes, so anyone else who'd pulled the original branch needs to reconcile (§14)               |
+| Strategy             | What happens                                                                                                   | History shape                                                                     | Trade-off                                                                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Merge commit**     | All of the branch's commits are added as-is, plus one new merge commit joining them to the base                | Preserves the branch's exact commit-by-commit history, plus a visible merge point | Most information preserved; can clutter history with many small "wip" commits and review-fixup commits unless the branch was cleaned first                                        |
+| **Squash and merge** | All of the branch's commits are collapsed into a single new commit on the base branch                          | One clean commit per PR, linear history                                           | Loses individual commit granularity (useful review-iteration history disappears); simplest `git log` and easiest to revert a whole feature in one step                            |
+| **Rebase and merge** | Each of the branch's commits is individually replayed onto the tip of the base branch, no merge commit created | Fully linear history, but with every original commit preserved                    | Keeps granular history _and_ linearity; rewrites commit hashes, so anyone else who'd pulled the original branch needs to reconcile ([§14](../Part4/Section-14-Part4-Rebasing.md)) |
 
 There's no universally correct choice — it's a team convention, and most hosting platforms let you configure which strategies are even offered.
 
@@ -113,14 +113,14 @@ There's no universally correct choice — it's a team convention, and most hosti
 - Teams doing careful, atomic commit discipline where each commit is independently meaningful and should survive into `main` as such: **rebase and merge**.
 - Teams that want the review-and-fixup history itself preserved as a record, or that merge long-lived branches with genuine parallel structure: **merge commit**.
 
-> ⚠️ **Critical clarification / Common confusion to preempt:** "Squash and merge" operates only on the PR's branch commits at merge time — it is a platform-level convenience equivalent to `git merge --squash`, not the same operation as an interactive rebase you'd run yourself beforehand (§14). Both compress multiple commits into one, but squash-merge does it automatically as part of the merge button and never touches your local branch's actual commits.
+> ⚠️ **Critical clarification / Common confusion to preempt:** "Squash and merge" operates only on the PR's branch commits at merge time — it is a platform-level convenience equivalent to `git merge --squash`, not the same operation as an interactive rebase you'd run yourself beforehand ([§14](../Part4/Section-14-Part4-Rebasing.md)). Both compress multiple commits into one, but squash-merge does it automatically as part of the merge button and never touches your local branch's actual commits.
 
 ## 7. Code Review Practices
 
 - **Small, focused PRs.** A PR that changes one thing is reviewable in minutes; a PR touching forty files across three concerns gets rubber-stamped out of reviewer fatigue, defeating the point of review.
 - **Descriptive PR title and body.** State _what_ changed and _why_, link the relevant issue/ticket, and note anything a reviewer should specifically scrutinize (e.g., "changed the retry backoff — please check the timing math").
 - **Draft PRs.** Most platforms support opening a PR in a "draft" state — visible, CI-checkable, but explicitly not ready for review or merge. Useful for early feedback on direction, or to keep a WIP branch's CI status visible without inviting a full review pass yet.
-- **Required reviewers / CODEOWNERS.** Platforms can mandate that specific people or teams review changes to specific paths automatically — full syntax and mechanics in §23.
+- **Required reviewers / CODEOWNERS.** Platforms can mandate that specific people or teams review changes to specific paths automatically — full syntax and mechanics in [§23](./Section-23-Part5-Git-Hosting-Enterprise-Platforms.md).
 - **Respond to every comment**, even just to say "done" or explain why you disagree — an unanswered review comment is a stalled PR.
 - **Don't take review personally; don't review personally.** Comment on the code, not the person; a good review culture treats feedback as protecting the codebase, not judging the author.
 
@@ -195,7 +195,7 @@ $ git push --force-with-lease
 **Model answer:** A fork is a one-time server-side copy made at the moment you fork; after that, it's an entirely independent repository as far as synchronization is concerned; the hosting platform doesn't push upstream's new commits into your fork for you. You have to explicitly add the canonical repo as a second remote (conventionally `upstream`), fetch from it, and merge or rebase your fork's branches onto its latest state — otherwise your fork, and any PRs based on it, silently drift further out of date and accumulate avoidable merge conflicts.
 
 **[Senior] Q5. A team wants a clean, linear `main` for readability, but also wants to preserve individual commit history for detailed blame/bisect work. Which merge strategy fits, and what's the cost?**
-**Model answer:** Rebase and merge is the fit — it replays each of the PR's commits individually onto the tip of the base branch with no merge commit, so `main` stays fully linear while every original commit (and its message, author, and content) survives intact, which keeps `git blame` and `git bisect` (§19) precise down to the individual change rather than one large squashed blob. The cost is that rebasing rewrites commit hashes, so if the same branch had been pulled or built upon anywhere else before the merge, those copies now diverge from the merged history and need reconciling — this is why rebase-and-merge works best when PR branches are genuinely personal and short-lived, which pairs naturally with a trunk-based or GitHub-Flow-style workflow (§22).
+**Model answer:** Rebase and merge is the fit — it replays each of the PR's commits individually onto the tip of the base branch with no merge commit, so `main` stays fully linear while every original commit (and its message, author, and content) survives intact, which keeps `git blame` and `git bisect` ([§19](../Part4/Section-19-Part4-Interrogating-History.md)) precise down to the individual change rather than one large squashed blob. The cost is that rebasing rewrites commit hashes, so if the same branch had been pulled or built upon anywhere else before the merge, those copies now diverge from the merged history and need reconciling — this is why rebase-and-merge works best when PR branches are genuinely personal and short-lived, which pairs naturally with a trunk-based or GitHub-Flow-style workflow ([§22](./Section-22-Part5-Branching-Strategies.md)).
 
 ## 11. Common Misconceptions
 
@@ -207,7 +207,7 @@ $ git push --force-with-lease
 
 ## 12. 🔑 Key Takeaways
 
-- Collaboration models are conventions built on top of §20's primitives, not new Git mechanics — Git itself doesn't know what a "pull request" is; that lives entirely at the hosting-platform layer.
+- Collaboration models are conventions built on top of [§20](./Section-20-Part5-Remotes-In-Depth.md)'s primitives, not new Git mechanics — Git itself doesn't know what a "pull request" is; that lives entirely at the hosting-platform layer.
 - Shared repository model: everyone has write access to one repo. Fork model: contributors work in their own server-side copy and propose changes via PR into an upstream they can't write to directly.
 - The PR lifecycle is branch → commit → push → open PR → automated checks → review → address feedback (new commits or amend+force-push) → approval → merge.
 - Three merge strategies — merge commit, squash and merge, rebase and merge — trade off history granularity against linearity; there's no universally right answer, only team convention.
@@ -215,4 +215,4 @@ $ git push --force-with-lease
 
 ## 13. Related Concepts & What's Next
 
-This section assumed §20's remote vocabulary and layered the human workflow — forks, PRs, review, merge strategy — on top of it. §22 zooms out further, to the branching _strategies_ (Git Flow, GitHub Flow, GitLab Flow, trunk-based development) that determine which branches exist in the first place and how long they live before the PR process covered here brings them back together.
+This section assumed [§20](./Section-20-Part5-Remotes-In-Depth.md)'s remote vocabulary and layered the human workflow — forks, PRs, review, merge strategy — on top of it. [§22](./Section-22-Part5-Branching-Strategies.md) zooms out further, to the branching _strategies_ (Git Flow, GitHub Flow, GitLab Flow, trunk-based development) that determine which branches exist in the first place and how long they live before the PR process covered here brings them back together.

@@ -18,7 +18,7 @@ Every Cloud Load Balancing product shares the same conceptual pieces: a **forwar
 
 ### 3.2 Global External HTTP(S) Load Balancer
 
-Terminates HTTP(S) traffic at Google's global edge (anycast IP — one IP address advertised from every edge PoP simultaneously), then routes each request over Google's private backbone to the closest healthy backend across any region. Supports advanced Layer 7 features: URL-path-based routing, host-based routing, SSL offload, Cloud CDN integration, and Cloud Armor (WAF/DDoS, Section 74) integration. Used for internet-facing web applications and APIs that need global reach with a single anycast IP.
+Terminates HTTP(S) traffic at Google's global edge (anycast IP — one IP address advertised from every edge PoP simultaneously), then routes each request over Google's private backbone to the closest healthy backend across any region. Supports advanced Layer 7 features: URL-path-based routing, host-based routing, SSL offload, Cloud CDN integration, and Cloud Armor (WAF/DDoS, [Section 74](../Part11/Section-74-Part11-Cloud-Armor-Edge-Security.md)) integration. Used for internet-facing web applications and APIs that need global reach with a single anycast IP.
 
 ### 3.3 Global External TCP/SSL Proxy Load Balancer
 
@@ -125,8 +125,8 @@ status:
 
 ## 8. Production & Enterprise Usage
 
-- **Global HTTP(S) LB as the default front door** for internet-facing enterprise applications spanning multiple regions, paired with Cloud CDN for static content and Cloud Armor for WAF/DDoS protection (Section 74).
-- **Internal HTTP(S) LB for service-mesh-adjacent microservice traffic**, often as a stepping stone before or alongside a full service mesh via Traffic Director (Section 27).
+- **Global HTTP(S) LB as the default front door** for internet-facing enterprise applications spanning multiple regions, paired with Cloud CDN for static content and Cloud Armor for WAF/DDoS protection ([Section 74](../Part11/Section-74-Part11-Cloud-Armor-Edge-Security.md)).
+- **Internal HTTP(S) LB for service-mesh-adjacent microservice traffic**, often as a stepping stone before or alongside a full service mesh via Traffic Director ([Section 27](./Section-27-Part3-Network-Intelligence-Center-Traffic-Director.md)).
 - **Regional external LBs for regulated workloads** where data-residency or compliance requirements dictate all traffic (including load balancer entry) must terminate within one specific region/country, rather than at a global edge PoP that could be anywhere.
 - **Passthrough Network LBs for legacy or non-HTTP protocols** and any scenario where the backend application itself must see the true client source IP (e.g., IP-based access control logic inside the application).
 
@@ -144,7 +144,7 @@ status:
 **Model answer:** When the protocol isn't HTTP(S) (e.g., a custom TCP protocol or non-HTTP database traffic), when the backend application needs to see the true client source IP address for its own logic (passthrough LBs don't terminate/proxy the connection), or when ultra-low latency Layer 4 forwarding is preferred over Layer 7 features like URL-based routing, which aren't needed for the workload.
 
 **🎯 Senior/Architect:** _Design the load balancing layer for a global e-commerce platform: public web/API traffic worldwide, an internal microservices layer, and a subset of traffic requiring EU-only data residency._
-**Model answer:** For the public web/API tier, I'd use a Global External HTTP(S) LB with a single anycast IP, Cloud CDN for cacheable static assets, and Cloud Armor in front for WAF/DDoS protection, using URL maps to route by path to different backend services across regions. For internal microservice-to-microservice traffic, I'd use Internal HTTP(S) Load Balancers per region (no public IP), potentially evolving toward Traffic Director-managed service mesh (Section 27) as the microservice count grows. For the EU-data-residency-constrained subset of traffic, I'd deploy a separate Regional External Application Load Balancer confined to an EU region, ensuring both the load balancer's entry point and its backends stay within the required jurisdiction, rather than relying on the global LB's anycast entry (which could technically accept the connection at a non-EU edge PoP before routing it, which may itself be a residency concern requiring VPC Service Controls (Section 41) evaluation).
+**Model answer:** For the public web/API tier, I'd use a Global External HTTP(S) LB with a single anycast IP, Cloud CDN for cacheable static assets, and Cloud Armor in front for WAF/DDoS protection, using URL maps to route by path to different backend services across regions. For internal microservice-to-microservice traffic, I'd use Internal HTTP(S) Load Balancers per region (no public IP), potentially evolving toward Traffic Director-managed service mesh ([Section 27](./Section-27-Part3-Network-Intelligence-Center-Traffic-Director.md)) as the microservice count grows. For the EU-data-residency-constrained subset of traffic, I'd deploy a separate Regional External Application Load Balancer confined to an EU region, ensuring both the load balancer's entry point and its backends stay within the required jurisdiction, rather than relying on the global LB's anycast entry (which could technically accept the connection at a non-EU edge PoP before routing it, which may itself be a residency concern requiring VPC Service Controls ([Section 41](../Part5/Section-41-Part5-VPC-Service-Controls.md)) evaluation).
 
 ## 11. Key Takeaways
 
@@ -155,4 +155,4 @@ status:
 
 ## 12. Related Concepts
 
-Cloud DNS for directing users to load balancer IPs (Section 23), Cloud Armor for WAF/DDoS protection at the load balancer edge (Section 74), Traffic Director for service-mesh-managed internal traffic (Section 27), and GKE Ingress/Gateway resources that provision these load balancers automatically for containerized workloads (Section 31).
+Cloud DNS for directing users to load balancer IPs ([Section 23](./Section-23-Part3-Cloud-DNS.md)), Cloud Armor for WAF/DDoS protection at the load balancer edge ([Section 74](../Part11/Section-74-Part11-Cloud-Armor-Edge-Security.md)), Traffic Director for service-mesh-managed internal traffic ([Section 27](./Section-27-Part3-Network-Intelligence-Center-Traffic-Director.md)), and GKE Ingress/Gateway resources that provision these load balancers automatically for containerized workloads ([Section 31](../Part4/Section-31-Part4-GKE-Networking-and-Storage.md)).

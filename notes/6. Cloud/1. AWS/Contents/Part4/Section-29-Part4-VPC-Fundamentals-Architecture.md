@@ -162,7 +162,7 @@ Senior - Design VPC/CIDR strategy for an org anticipating 50 accounts over three
 
 ## Related Concepts (forward links)
 
-- Subnets, route tables, Internet Gateway, NAT Gateway in full depth -> §30
-- Security Groups vs NACLs in full depth -> §31
-- VPC Peering, Transit Gateway, PrivateLink -> §32
-- Route 53 DNS in full depth -> §34
+- Subnets, route tables, Internet Gateway, NAT Gateway in full depth -> [§30](./Section-30-Part4-Subnets-RouteTables-IGW-NAT.md)
+- Security Groups vs NACLs in full depth -> [§31](./Section-31-Part4-SecurityGroups-vs-NACLs.md)
+- VPC Peering, Transit Gateway, PrivateLink -> [§32](./Section-32-Part4-Peering-TransitGateway-PrivateLink.md)
+- Route 53 DNS in full depth -> [§34](./Section-34-Part4-Route53-DNS.md)

@@ -2,7 +2,7 @@
 
 ## 1. Overview: Why Filesystem Type Choice Matters
 
-§17 walked the **Filesystem Hierarchy Standard** — the conventional layout of directories every Linux system agrees on. This section moves one layer down: the FHS describes _where_ things live, but says nothing about _how_ the bytes backing those directories are actually organized on a block device. That's the job of a **filesystem type** — the on-disk data structure and code (usually a kernel module) that turns a raw block device into something `open()`, `read()`, and `write()` can operate on.
+[§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md) walked the **Filesystem Hierarchy Standard** — the conventional layout of directories every Linux system agrees on. This section moves one layer down: the FHS describes _where_ things live, but says nothing about _how_ the bytes backing those directories are actually organized on a block device. That's the job of a **filesystem type** — the on-disk data structure and code (usually a kernel module) that turns a raw block device into something `open()`, `read()`, and `write()` can operate on.
 
 Every mounted filesystem on a Linux host — root, `/home`, a database data directory, a container's writable layer — has exactly one filesystem type backing it, chosen at `mkfs` time (or, for network and pseudo-filesystems, defined by the protocol/kernel subsystem itself). That choice is not cosmetic. It determines:
 
@@ -24,7 +24,7 @@ Key characteristics:
 
 - **Extents-based allocation** — ext4 tracks contiguous ranges of blocks ("extents") rather than ext2/ext3's block-by-block mapping, which reduces fragmentation and metadata overhead for large files.
 - **Journaling modes** — `data=ordered` (default; data is flushed before its metadata is journaled, a good balance), `data=journal` (both data and metadata journaled — safest, slowest), `data=writeback` (only metadata journaled — fastest, weakest crash guarantees). Set via a mount option or at `mkfs` time.
-- **Backward compatibility** — an ext4 filesystem can, in many cases, be mounted as ext2/ext3 (with reduced feature support), and the ext2→ext3→ext4 lineage shares tooling (`e2fsck`, `tune2fs`, `resize2fs`) — §10 (Part 10, §76) covers `fsck`/repair tooling for this family in depth.
+- **Backward compatibility** — an ext4 filesystem can, in many cases, be mounted as ext2/ext3 (with reduced feature support), and the ext2→ext3→ext4 lineage shares tooling (`e2fsck`, `tune2fs`, `resize2fs`) — [§76](../Part10/Section-76-Part10-Filesystem-Creation-Checking-Repair.md) covers `fsck`/repair tooling for this family in depth.
 - **Practical limits** — maximum individual file size and maximum volume size are both in the exabyte range on modern configurations, which is not a real-world constraint for the overwhelming majority of deployments.
 - **Maturity** — decades of production use, extremely well-understood failure modes, broad tooling support. This is its single biggest practical advantage: when something goes wrong, the diagnostic playbook is well trodden.
 
@@ -38,7 +38,7 @@ mkfs.ext4 /dev/sdb1
 mkfs.ext4 -L data-vol /dev/sdb1
 ```
 
-The `-L` flag sets a filesystem label, which is useful for referencing the device by label rather than a potentially unstable device path in `/etc/fstab` (§20 covers `/etc/fstab` and mount options in full).
+The `-L` flag sets a filesystem label, which is useful for referencing the device by label rather than a potentially unstable device path in `/etc/fstab` ([§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) covers `/etc/fstab` and mount options in full).
 
 ## 3. XFS: The High-Throughput, Large-File Default
 
@@ -63,11 +63,11 @@ mkfs.xfs -L data-vol -f /dev/sdb1
 
 `-f` forces creation, overwriting any existing filesystem signature — required if `mkfs.xfs` detects a prior filesystem and refuses to proceed without confirmation.
 
-> ⚠️ **Warning:** The "XFS cannot shrink" limitation is a real operational trap, not folklore — plan volume sizing (or use LVM, §10/§73, to size logical volumes with headroom) with the assumption that an XFS filesystem, once grown, can never be made smaller again without a full backup/recreate/restore cycle.
+> ⚠️ **Warning:** The "XFS cannot shrink" limitation is a real operational trap, not folklore — plan volume sizing (or use LVM, [§10](../Part2/Section-10-Part2-Kernel-Components.md)/[§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md), to size logical volumes with headroom) with the assumption that an XFS filesystem, once grown, can never be made smaller again without a full backup/recreate/restore cycle.
 
 ## 4. Btrfs: Copy-on-Write With Built-In Volume Management
 
-**Btrfs** ("B-tree filesystem") takes a fundamentally different architectural approach from ext4 and XFS: it's a **copy-on-write (CoW)** filesystem that folds volume-management functionality — the kind of thing LVM (§10/§73) provides as a separate layer for ext4/XFS — directly into the filesystem itself.
+**Btrfs** ("B-tree filesystem") takes a fundamentally different architectural approach from ext4 and XFS: it's a **copy-on-write (CoW)** filesystem that folds volume-management functionality — the kind of thing LVM ([§10](../Part2/Section-10-Part2-Kernel-Components.md)/[§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)) provides as a separate layer for ext4/XFS — directly into the filesystem itself.
 
 Key characteristics:
 
@@ -100,7 +100,7 @@ Despite the licensing friction, ZFS remains a strong, deliberate choice for spec
 **tmpfs** is architecturally unlike everything above it in this section — it is not disk-backed at all. A tmpfs filesystem lives in **volatile memory** (RAM, and it can spill into swap under memory pressure), which gives it two defining properties:
 
 - **Extremely fast** — no disk I/O is involved for reads or writes, since the "storage" is memory itself.
-- **Contents do not survive a reboot** (or an unmount) — by design, not as a limitation. This is why `/tmp` is commonly mounted as tmpfs on many modern distributions (§17 covered `/tmp`'s FHS role): its contents are explicitly meant to be transient.
+- **Contents do not survive a reboot** (or an unmount) — by design, not as a limitation. This is why `/tmp` is commonly mounted as tmpfs on many modern distributions ([§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md) covered `/tmp`'s FHS role): its contents are explicitly meant to be transient.
 
 Common real-world tmpfs mount points:
 
@@ -114,7 +114,7 @@ Common real-world tmpfs mount points:
 mount -t tmpfs -o size=512M tmpfs /mnt/scratch
 ```
 
-Sizing tmpfs matters operationally: an unbounded or oversized tmpfs mount can be filled by a runaway process and consume real system RAM, potentially triggering OOM-killer activity (§11's Part-11 memory-analysis coverage goes deeper on OOM behavior) rather than simply failing a disk-full write the way a disk-backed filesystem would.
+Sizing tmpfs matters operationally: an unbounded or oversized tmpfs mount can be filled by a runaway process and consume real system RAM, potentially triggering OOM-killer activity ([§11](../Part2/Section-11-Part2-System-Calls-Kernel-Userland-Boundary.md)'s Part-11 memory-analysis coverage goes deeper on OOM behavior) rather than simply failing a disk-full write the way a disk-backed filesystem would.
 
 > 💡 **Tip:** Because tmpfs contents vanish on unmount/reboot, never treat it as a place to stage data you can't afford to lose — it's ideal for build caches, ephemeral sockets, and genuinely disposable scratch space, and a real hazard if a script mistakenly assumes any mounted filesystem is persistent.
 
@@ -138,7 +138,7 @@ mount -t overlay overlay \
   /mnt/merged
 ```
 
-The single most important real-world application of overlayfs is **container image layering** — this is exactly the mechanism Docker's `overlay2` storage driver (and equivalent mechanisms in other container runtimes) uses to implement image layers: each image layer is a read-only lower directory, and a container's writable filesystem is a thin upper layer on top, which is why spinning up many containers from the same base image is cheap in both disk space and startup time — no per-container full filesystem copy is needed. Part 13's containers coverage (§97–§102) goes deeper on how this fits into the broader namespaces/cgroups/OverlayFS foundation that Docker and Kubernetes build on.
+The single most important real-world application of overlayfs is **container image layering** — this is exactly the mechanism Docker's `overlay2` storage driver (and equivalent mechanisms in other container runtimes) uses to implement image layers: each image layer is a read-only lower directory, and a container's writable filesystem is a thin upper layer on top, which is why spinning up many containers from the same base image is cheap in both disk space and startup time — no per-container full filesystem copy is needed. Part 13's containers coverage ([§97](../Part13/Section-97-Part13-Infrastructure-As-Code-Ansible-Terraform.md)–[§102](../Part13/Section-102-Part13-Golden-Images-Immutable-Infrastructure.md)) goes deeper on how this fits into the broader namespaces/cgroups/OverlayFS foundation that Docker and Kubernetes build on.
 
 ## 8. Comparison Table
 
@@ -198,7 +198,7 @@ $ blkid /dev/sdb1
 /dev/sdb1: LABEL="data-vol" UUID="a1b2c3d4-e5f6-7890-abcd-ef1234567890" TYPE="xfs"
 ```
 
-**Production usage example:** Before writing an `/etc/fstab` entry (§20) for a newly created filesystem, `blkid` supplies the UUID that should be used to reference the device — referencing by UUID rather than a device path like `/dev/sdb1` avoids boot failures if device enumeration order changes (a common issue after hardware/controller changes on physical or virtualized hosts).
+**Production usage example:** Before writing an `/etc/fstab` entry ([§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md)) for a newly created filesystem, `blkid` supplies the UUID that should be used to reference the device — referencing by UUID rather than a device path like `/dev/sdb1` avoids boot failures if device enumeration order changes (a common issue after hardware/controller changes on physical or virtualized hosts).
 
 ### 9.3 `mkfs.ext4` / `mkfs.xfs` — Creating a Filesystem
 
@@ -224,7 +224,7 @@ A few concrete, real-world decision patterns:
 
 - **General-purpose application servers, root filesystem:** ext4 or XFS are both reasonable defaults today; the honest answer is "follow your distribution's default unless you have a specific reason not to" — RHEL-family defaults to XFS, Debian/Ubuntu-family historically defaults to ext4, and fighting the distro default adds operational surprise for marginal benefit in most cases.
 - **Database storage volumes:** XFS is a very common production choice given its strength with large files and high-throughput parallel I/O, which matches typical database data-file access patterns closely.
-- **Hosts needing frequent, cheap snapshots** (e.g., rollback-friendly desktop-adjacent servers, some CI/build hosts): Btrfs's native snapshot support is a genuine differentiator over ext4/XFS, which need LVM snapshots (§10/§74) layered on top to get comparable functionality.
+- **Hosts needing frequent, cheap snapshots** (e.g., rollback-friendly desktop-adjacent servers, some CI/build hosts): Btrfs's native snapshot support is a genuine differentiator over ext4/XFS, which need LVM snapshots ([§10](../Part2/Section-10-Part2-Kernel-Components.md)/[§74](../Part10/Section-74-Part10-LVM-Resizing-Snapshots-Thin-Provisioning.md)) layered on top to get comparable functionality.
 - **Storage/NAS-focused hosts prioritizing data integrity above all else:** ZFS's checksumming and mature RAID-Z are strong arguments, provided the team accepts the out-of-tree-module operational overhead (10) and picks a distribution (commonly Ubuntu) with solid ZFS packaging support.
 - **Anything under `/tmp`, `/dev/shm`, `/run`, or genuinely ephemeral scratch space:** tmpfs, sized deliberately rather than left unbounded.
 - **Container runtimes:** overlayfs, essentially by default via Docker's `overlay2` driver — this isn't usually a choice an administrator makes directly per-container, but understanding why it's there (cheap layered images, fast container startup) matters for diagnosing container storage behavior.
@@ -254,7 +254,7 @@ _What the interviewer is probing for:_ Understanding that this is a licensing is
 _What the interviewer is probing for:_ Whether the candidate connects overlayfs's copy-on-write layering mechanics to a concrete operational symptom, not just knowing the term "overlayfs" exists.
 
 **🎯 Architect:** _"You're designing storage layout for a fleet that includes general app servers, a database tier, and a container platform. How do you decide filesystem types across that fleet, and what do you standardize versus leave flexible?"_
-**Model answer:** I wouldn't pick one filesystem type fleet-wide — the workloads are different enough that a single choice would be a compromise everywhere rather than a good fit anywhere. For general app servers, I'd default to whatever the chosen distribution ships as default (ext4 or XFS) unless there's a specific reason to deviate, since fighting the distro default just adds operational surprise for the team maintaining images and automation. For the database tier, I'd lean toward XFS on data volumes given its large-file, high-throughput characteristics, sized via LVM (§10/§73) so volumes can be grown online — and I'd make sure everyone provisioning those volumes internalizes that XFS can never be shrunk, so initial sizing needs headroom baked in rather than "we'll shrink it later" as a fallback plan. For the container platform, the filesystem choice is mostly indirect — I'd make sure the container runtime's storage driver is overlayfs-based (the modern default) and that the underlying filesystem backing `/var/lib/docker`-equivalent storage is fast and appropriately sized, since that's where actual I/O pressure from image layers and writable container layers lands. What I would standardize fleet-wide is the operational discipline around it: consistent use of LVM underneath ext4/XFS volumes so resizing has a safety valve, consistent UUID-based `/etc/fstab` entries rather than device-path-based ones, and a documented decision record for any host that deviates from the distro default (e.g., a storage-focused host running ZFS) so the DKMS/kernel-upgrade coupling that comes with it is a known, tracked risk rather than a surprise during the next kernel patch cycle.
+**Model answer:** I wouldn't pick one filesystem type fleet-wide — the workloads are different enough that a single choice would be a compromise everywhere rather than a good fit anywhere. For general app servers, I'd default to whatever the chosen distribution ships as default (ext4 or XFS) unless there's a specific reason to deviate, since fighting the distro default just adds operational surprise for the team maintaining images and automation. For the database tier, I'd lean toward XFS on data volumes given its large-file, high-throughput characteristics, sized via LVM ([§10](../Part2/Section-10-Part2-Kernel-Components.md)/[§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)) so volumes can be grown online — and I'd make sure everyone provisioning those volumes internalizes that XFS can never be shrunk, so initial sizing needs headroom baked in rather than "we'll shrink it later" as a fallback plan. For the container platform, the filesystem choice is mostly indirect — I'd make sure the container runtime's storage driver is overlayfs-based (the modern default) and that the underlying filesystem backing `/var/lib/docker`-equivalent storage is fast and appropriately sized, since that's where actual I/O pressure from image layers and writable container layers lands. What I would standardize fleet-wide is the operational discipline around it: consistent use of LVM underneath ext4/XFS volumes so resizing has a safety valve, consistent UUID-based `/etc/fstab` entries rather than device-path-based ones, and a documented decision record for any host that deviates from the distro default (e.g., a storage-focused host running ZFS) so the DKMS/kernel-upgrade coupling that comes with it is a known, tracked risk rather than a surprise during the next kernel patch cycle.
 _What the interviewer is probing for:_ Ability to make differentiated, workload-driven storage decisions across a heterogeneous fleet, awareness of XFS's shrink limitation and ZFS's operational overhead as real design inputs, and the instinct to standardize process/tooling even when the filesystem type itself intentionally varies.
 
 ## 13. Key Takeaways
@@ -268,6 +268,6 @@ _What the interviewer is probing for:_ Ability to make differentiated, workload-
 
 ## 14. Related Concepts & What's Next
 
-This section builds directly on §17's FHS coverage — the hierarchy describes where things live; this section describes what actually stores them. §19 (next) goes one level deeper into how files are represented within a filesystem — inodes, hard links, and symbolic links — which applies across ext4, XFS, and Btrfs alike. §20 covers mounting these filesystem types in practice via `/etc/fstab` and mount options, referenced throughout this section for UUID-based device references. Part 10 (§73–§79) returns to storage with full LVM, RAID (`mdadm`), and filesystem repair (`fsck`/`xfs_repair`) depth that this section deliberately left at introductory level. Part 13 (§97–§102) covers namespaces, cgroups, and OverlayFS's role in the container platform stack in full, building on overlayfs's mechanics introduced here in 7.
+This section builds directly on [§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md)'s FHS coverage — the hierarchy describes where things live; this section describes what actually stores them. [§19](./Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md) (next) goes one level deeper into how files are represented within a filesystem — inodes, hard links, and symbolic links — which applies across ext4, XFS, and Btrfs alike. [§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) covers mounting these filesystem types in practice via `/etc/fstab` and mount options, referenced throughout this section for UUID-based device references. Part 10 ([§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md)–[§79](../Part10/Section-79-Part10-Backup-Strategies-Tools.md)) returns to storage with full LVM, RAID (`mdadm`), and filesystem repair (`fsck`/`xfs_repair`) depth that this section deliberately left at introductory level. Part 13 ([§97](../Part13/Section-97-Part13-Infrastructure-As-Code-Ansible-Terraform.md)–[§102](../Part13/Section-102-Part13-Golden-Images-Immutable-Infrastructure.md)) covers namespaces, cgroups, and OverlayFS's role in the container platform stack in full, building on overlayfs's mechanics introduced here in 7.
 
-**Next Section:** §19 — `Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md`
+**Next Section:** [§19](./Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md) — `Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md`

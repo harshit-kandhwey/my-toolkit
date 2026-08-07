@@ -2,7 +2,7 @@
 
 ## 1. The Core Idea: `if` Tests an Exit Code, Not a Boolean
 
-Every mainstream language treats `if` as evaluating a boolean expression. Bash does not — this is the single most important mental adjustment for anyone arriving from another language, and it's the reason a huge amount of bash conditional syntax looks strange until this clicks. `if` in bash runs a **command** and branches on that command's **exit status** (§44, §45 covered exit codes as the `0` = success / nonzero = failure convention):
+Every mainstream language treats `if` as evaluating a boolean expression. Bash does not — this is the single most important mental adjustment for anyone arriving from another language, and it's the reason a huge amount of bash conditional syntax looks strange until this clicks. `if` in bash runs a **command** and branches on that command's **exit status** ([§44](./Section-44-Part6-Command-Chaining-Control-Operators.md), [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) covered exit codes as the `0` = success / nonzero = failure convention):
 
 ```bash
 if command; then
@@ -12,7 +12,7 @@ else
 fi
 ```
 
-There is no boolean type being evaluated here at all — `command` is executed, and `if` inspects `$?` afterward exactly the way `&&`/`||` do (§44). This is why `if grep "pattern" file.txt; then ...` is completely ordinary bash: `grep` is the command, its exit status (`0` if it found a match, `1` if not, `2` on a real error) is what `if` branches on, no boolean conversion involved anywhere.
+There is no boolean type being evaluated here at all — `command` is executed, and `if` inspects `$?` afterward exactly the way `&&`/`||` do ([§44](./Section-44-Part6-Command-Chaining-Control-Operators.md)). This is why `if grep "pattern" file.txt; then ...` is completely ordinary bash: `grep` is the command, its exit status (`0` if it found a match, `1` if not, `2` on a real error) is what `if` branches on, no boolean conversion involved anywhere.
 
 ## 2. `[ ]` Is a Command: Why `if [ condition ]` Works
 
@@ -76,7 +76,7 @@ if [[ -f "$file" && -r "$file" ]]; then
 fi
 ```
 
-`=~` performs full POSIX extended regex matching (§50 covers regex syntax in depth) and populates `${BASH_REMATCH[@]}` with captured groups — a capability `[ ]` has no equivalent for at all.
+`=~` performs full POSIX extended regex matching ([§50](./Section-50-Part6-Regular-Expressions-For-Linux-Administration.md) covers regex syntax in depth) and populates `${BASH_REMATCH[@]}` with captured groups — a capability `[ ]` has no equivalent for at all.
 
 > 💡 **Tip:** Default to `[[ ]]` for anything bash-specific — scripts with a `#!/bin/bash` or `#!/usr/bin/env bash` shebang, which is nearly everything covered in this knowledge base. Reach for `[ ]`/`test` only when a script must run under a strict POSIX `sh` (no bash extensions available) — `[[ ]]` is a bash (and zsh/ksh) extension, not part of POSIX `sh`, so a script targeting `#!/bin/sh` on a system where `sh` is genuinely minimal (e.g., `dash` on Debian/Ubuntu) cannot use it.
 
@@ -128,7 +128,7 @@ Key mechanics:
 - Each pattern branch ends in `;;`, which terminates that branch (no fallthrough into the next pattern by default — unlike C-family `switch`).
 - `|` separates multiple patterns that share the same branch (`stop|halt` above).
 - Patterns are **glob-style** (`*`, `?`, `[...]`), the same wildcard matching `for` loops over filenames use — not regex; `=~`-style regex matching belongs to `[[ ]]` (3), not `case` patterns.
-- `*)` as the final pattern is the conventional catch-all/default branch, matching anything not caught above — §45's flag-parsing loop (§45, section 4) used exactly this `case` shape for `--env`/`--verbose`/unknown-flag handling.
+- `*)` as the final pattern is the conventional catch-all/default branch, matching anything not caught above — [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md)'s flag-parsing loop ([§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md), section 4) used exactly this `case` shape for `--env`/`--verbose`/unknown-flag handling.
 - `;;&` (bash 4+) and `;&` are less common fallthrough variants — worth recognizing on sight if encountered, not something to reach for by default.
 
 ## 6. `for` Loops: List-Iteration and C-Style
@@ -159,7 +159,7 @@ done
 
 **Which to prefer:** list-iteration (`for item in list`) is the more idiomatic bash default and reads more naturally for the overwhelmingly common case of "do this for each file/argument/line" — reach for C-style `for ((...))` specifically when the loop logic genuinely needs a numeric counter with arbitrary step/comparison logic (`i += 2`, counting down, nested index math), not as a reflexive habit carried over from C-family languages.
 
-> ⚠️ **Warning:** `for file in *.txt` iterates over unquoted glob results, which word-splits on whitespace — a filename with a space in it silently becomes two loop iterations instead of one. This is the same class of bug §45 (section 3) covered for `$@` vs `$*`; there's no fully clean fix within `for item in list` itself for filenames with spaces (`find ... -print0` piped into a `while read -d ''` loop, 8, is the robust pattern for that specific case).
+> ⚠️ **Warning:** `for file in *.txt` iterates over unquoted glob results, which word-splits on whitespace — a filename with a space in it silently becomes two loop iterations instead of one. This is the same class of bug [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) (section 3) covered for `$@` vs `$*`; there's no fully clean fix within `for item in list` itself for filenames with spaces (`find ... -print0` piped into a `while read -d ''` loop, 8, is the robust pattern for that specific case).
 
 ## 7. `while` and `until`: Condition-Driven Loops
 
@@ -249,7 +249,7 @@ while true; do
 done
 ```
 
-`while true` (or the equivalent `while :`, using the `:` no-op builtin that always exits `0`) is the idiomatic bash spelling of "loop forever." An infinite loop like this is only safe in production when it has an actual exit path — a `sleep` interval so it doesn't spin the CPU, a `break` condition reachable from inside the loop, or reliance on an external signal (SIGTERM from a process supervisor, §36's signal coverage) to end the process — an infinite loop with none of those is a resource leak or a runaway process waiting to happen, not a polling script.
+`while true` (or the equivalent `while :`, using the `:` no-op builtin that always exits `0`) is the idiomatic bash spelling of "loop forever." An infinite loop like this is only safe in production when it has an actual exit path — a `sleep` interval so it doesn't spin the CPU, a `break` condition reachable from inside the loop, or reliance on an external signal (SIGTERM from a process supervisor, [§36](../Part5/Section-36-Part5-Signals.md)'s signal coverage) to end the process — an infinite loop with none of those is a resource leak or a runaway process waiting to happen, not a polling script.
 
 ## 11. Common Misconceptions
 
@@ -289,6 +289,6 @@ _What the interviewer is probing for:_ Recognizing that an infinite loop is a le
 
 ## 14. Related Concepts & What's Next
 
-This section is the direct continuation of §45, which used `while` and `case` minimally in its flag-parsing example and deferred full control-flow depth here; it also builds on §44's exit-code-as-branching-signal foundation, applied throughout every conditional and loop construct covered here. §50 (later in Part 6) covers regular expressions in the depth `[[ ]]`'s `=~` operator only introduced by name in 3. §47 (next) moves to functions, arrays, and string manipulation — the vocabulary needed to keep scripts that lean heavily on the loops and conditionals from this section organized and reusable rather than one long linear script body.
+This section is the direct continuation of [§45](./Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md), which used `while` and `case` minimally in its flag-parsing example and deferred full control-flow depth here; it also builds on [§44](./Section-44-Part6-Command-Chaining-Control-Operators.md)'s exit-code-as-branching-signal foundation, applied throughout every conditional and loop construct covered here. [§50](./Section-50-Part6-Regular-Expressions-For-Linux-Administration.md) (later in Part 6) covers regular expressions in the depth `[[ ]]`'s `=~` operator only introduced by name in 3. [§47](./Section-47-Part6-Functions-Arrays-String-Manipulation.md) (next) moves to functions, arrays, and string manipulation — the vocabulary needed to keep scripts that lean heavily on the loops and conditionals from this section organized and reusable rather than one long linear script body.
 
-**Next Section:** §47 — `Section-47-Part6-Functions-Arrays-String-Manipulation.md`
+**Next Section:** [§47](./Section-47-Part6-Functions-Arrays-String-Manipulation.md) — `Section-47-Part6-Functions-Arrays-String-Manipulation.md`

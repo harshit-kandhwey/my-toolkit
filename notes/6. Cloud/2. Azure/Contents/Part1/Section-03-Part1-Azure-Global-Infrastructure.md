@@ -22,13 +22,13 @@ A **Region** is a set of data centers deployed within a defined perimeter, inter
 
 An **Availability Zone** is a physically separate location _within_ a region, each consisting of one or more data centers equipped with independent power, cooling, and networking. A region that supports Availability Zones typically has a minimum of three zones. Because zones are physically separate (typically kilometers apart, connected by high-bandwidth, low-latency fiber), a failure in one zone (power outage, fire, localized flooding) does not affect the others.
 
-**Why this matters practically:** If you deploy a VM Scale Set (Section 12) or an App Service across multiple Availability Zones, your application can survive the complete loss of one zone's data centers with no downtime, because the workload continues running in the surviving zones. This is Azure's primary mechanism for **intra-region high availability**, distinct from disaster recovery, which operates _across_ regions (covered in Part 12).
+**Why this matters practically:** If you deploy a VM Scale Set ([Section 12](../Part3/Section-12-Part3-VM-Scale-Sets.md)) or an App Service across multiple Availability Zones, your application can survive the complete loss of one zone's data centers with no downtime, because the workload continues running in the surviving zones. This is Azure's primary mechanism for **intra-region high availability**, distinct from disaster recovery, which operates _across_ regions (covered in Part 12).
 
-> ⚠️ **Not every region supports Availability Zones.** Zone support depends on the region having sufficient physically-separate data center infrastructure built out; smaller or newer regions may not offer zones, in which case the older "Availability Set" mechanism (Section 61) is used instead for intra-datacenter resilience. Always verify zone support for your target region against current documentation.
+> ⚠️ **Not every region supports Availability Zones.** Zone support depends on the region having sufficient physically-separate data center infrastructure built out; smaller or newer regions may not offer zones, in which case the older "Availability Set" mechanism ([Section 61](../Part12/Section-61-Part12-HA-DR-Patterns-Availability-Sets-Zones.md)) is used instead for intra-datacenter resilience. Always verify zone support for your target region against current documentation.
 
 ### 3.3 Region Pairs
 
-Each Azure region is paired with another region, typically within the same geography, at least 300 miles apart when feasible (this distance criterion is meant to reduce the chance that a single natural disaster affects both). This pairing exists to support **cross-region disaster recovery**: Microsoft sequences planned maintenance so that paired regions are never updated simultaneously, and in the rare case of a broad regional outage, Microsoft prioritizes restoring at least one region in each pair. Services like geo-redundant storage (Section 20) and Azure Site Recovery (Section 62) commonly replicate data specifically to the paired region.
+Each Azure region is paired with another region, typically within the same geography, at least 300 miles apart when feasible (this distance criterion is meant to reduce the chance that a single natural disaster affects both). This pairing exists to support **cross-region disaster recovery**: Microsoft sequences planned maintenance so that paired regions are never updated simultaneously, and in the rare case of a broad regional outage, Microsoft prioritizes restoring at least one region in each pair. Services like geo-redundant storage ([Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md)) and Azure Site Recovery ([Section 62](../Part12/Section-62-Part12-Azure-Site-Recovery-Backup.md)) commonly replicate data specifically to the paired region.
 
 > ⚠️ Region pairing is a Microsoft-defined, largely fixed mapping (with a few newer regions being "unpaired" by design for data-residency reasons) — do not assume any two regions are paired without checking current documentation, and note that some newer regions operate without a pair as part of updated data-residency practices.
 
@@ -70,7 +70,7 @@ When you create almost any Azure resource, you specify a `location` (the region,
 az group create --name rg-myapp-prod --location eastus
 ```
 
-- **Purpose:** Creates a resource group (an organizational container, covered in Section 4) anchored to the East US region — note that a resource group's location primarily affects where its _metadata_ is stored; resources placed inside it can still individually target other regions.
+- **Purpose:** Creates a resource group (an organizational container, covered in [Section 4](./Section-04-Part1-Azure-Resource-Manager.md)) anchored to the East US region — note that a resource group's location primarily affects where its _metadata_ is stored; resources placed inside it can still individually target other regions.
 - **Expected output:**
 
 ```
@@ -90,7 +90,7 @@ az group create --name rg-myapp-prod --location eastus
 
 Enterprises typically select regions based on three factors, in rough priority order: **data residency/compliance** (legal requirements about where citizen or regulated data may be stored), **latency to end users** (choosing a region geographically close to the majority of users or other dependent systems), and **service/feature availability** (some regions lag behind on newest service availability). A common enterprise pattern is a "hub-and-spoke" multi-region design, where a primary region hosts most workloads, a paired region serves as the disaster-recovery target, and Availability Zones are used within the primary region for day-to-day high availability — this pattern is developed fully in Part 12.
 
-## 7. Interview Questions — Section 3
+## 7. Interview Questions — [Section 3](./Section-03-Part1-Azure-Global-Infrastructure.md)
 
 ### 🎯 Intermediate
 
@@ -122,4 +122,4 @@ _What the interviewer is probing:_ whether the candidate recognizes when a busin
 
 ## 10. Related Concepts (Next Up)
 
-Section 4 covers **Azure Resource Manager (ARM)** — the management layer that lets you actually organize, deploy, and control resources across these regions, introducing resource groups, subscriptions, and management groups as the organizational hierarchy that sits on top of the physical infrastructure just covered.
+[Section 4](./Section-04-Part1-Azure-Resource-Manager.md) covers **Azure Resource Manager (ARM)** — the management layer that lets you actually organize, deploy, and control resources across these regions, introducing resource groups, subscriptions, and management groups as the organizational hierarchy that sits on top of the physical infrastructure just covered.

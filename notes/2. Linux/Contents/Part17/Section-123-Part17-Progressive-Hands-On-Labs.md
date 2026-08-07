@@ -6,7 +6,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Build unconscious fluency with the filesystem hierarchy and the permission model before anything else depends on it.
 
-**Draws on:** §17 (FHS), §21 (file/directory operations), §27 (standard permission model).
+**Draws on:** [§17](../Part3/Section-17-Part3-Filesystem-Hierarchy-Standard.md) (FHS), [§21](../Part3/Section-21-Part3-File-Directory-Operations.md) (file/directory operations), [§27](../Part4/Section-27-Part4-Standard-Permission-Model.md) (standard permission model).
 
 **What to do:** On a fresh VM, create a small directory tree under your home directory (a few nested subdirectories, a handful of files). Practice copying, moving, and renaming files and directories with relative and absolute paths. Then deliberately break and fix permissions: create a file only you can read, one a group can write to, one that's world-readable but not world-writable, and predict — before running `ls -l` — what the permission string will look like. Use `chmod` in both symbolic (`u+x`) and octal (`755`) form until both feel equally natural.
 
@@ -14,7 +14,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Stand up a properly configured non-root operational account the way a real onboarding would.
 
-**Draws on:** §25 (users/groups), §26 (user management commands), §31 (sudo/sudoers), §56 (SSH architecture and key-based auth).
+**Draws on:** [§25](../Part4/Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md) (users/groups), [§26](../Part4/Section-26-Part4-User-Group-Management-Commands.md) (user management commands), [§31](../Part4/Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md) (sudo/sudoers), [§56](../Part7/Section-56-Part7-SSH-Architecture-Key-Auth-Config-Tunneling-Hardening.md) (SSH architecture and key-based auth).
 
 **What to do:** Create a new user, add it to an appropriate group, and grant it sudo access via a dedicated `/etc/sudoers.d/` file rather than editing `/etc/sudoers` directly. Generate an SSH key pair on your client machine, install the public key for the new user, and disable password authentication for SSH entirely. Confirm you can SSH in as the new user with no password prompt, and that the account can run privileged commands via `sudo` but cannot log in directly as root.
 
@@ -22,7 +22,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Turn an ad-hoc script into a properly supervised, boot-persistent service.
 
-**Draws on:** §65 (unit/target architecture), §66 (`systemctl`), §67 (writing unit files).
+**Draws on:** [§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) (unit/target architecture), [§66](../Part9/Section-66-Part9-Managing-Services-Systemctl.md) (`systemctl`), [§67](../Part9/Section-67-Part9-Writing-Custom-Systemd-Unit-Files.md) (writing unit files).
 
 **What to do:** Write a small script that does something observable in a loop (append a timestamp to a log file every few seconds, for instance). Write a unit file for it with an appropriate `Type=`, a `Restart=` policy, and correct `After=`/`Requires=` ordering relative to networking. Enable it, start it, confirm it survives a reboot, then kill the underlying process directly and confirm systemd notices and restarts it per the policy you declared.
 
@@ -30,7 +30,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Practice the timer-vs-cron migration this roadmap argues for directly, rather than just reading the comparison.
 
-**Draws on:** §69 (systemd timers vs. cron).
+**Draws on:** [§69](../Part9/Section-69-Part9-Systemd-Timers-Vs-Cron-Deep-Comparison.md) (systemd timers vs. cron).
 
 **What to do:** Take a task you'd normally schedule with cron (rotating a file, running a cleanup script) and implement it twice: once as a traditional crontab entry, once as a paired `.service` + `.timer` unit. Compare what each approach gives you for free — timer's ability to see missed-run history via `systemctl list-timers`, catch-up behavior with `Persistent=true`, and journald-integrated output versus cron's mail-based (or silent) failure reporting.
 
@@ -38,7 +38,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Move from "firewall exists" to "firewall enforces exactly the intended policy, provably."
 
-**Draws on:** §54 (firewalls: iptables/nftables/firewalld/ufw).
+**Draws on:** [§54](../Part7/Section-54-Part7-Firewalls-Iptables-Nftables-Firewalld-Ufw.md) (firewalls: iptables/nftables/firewalld/ufw).
 
 **What to do:** On a test VM (not anything with a production SSH session you can't afford to lose), configure a default-deny inbound policy that allows only SSH and one or two other services you're actually running, with everything else rejected. Verify from a second machine that the allowed ports are reachable and everything else is not — don't just trust the ruleset syntax, confirm the observed behavior matches intent. Practice reloading the ruleset without ever locking yourself out (test the change in a way that self-reverts if it breaks connectivity).
 
@@ -46,7 +46,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Practice the LVM stack end-to-end, from raw block device to a filesystem that survives a reboot.
 
-**Draws on:** §73 (LVM: PVs, VGs, LVs), §20 (mounting and `/etc/fstab`).
+**Draws on:** [§73](../Part10/Section-73-Part10-LVM-Physical-Volumes-Volume-Groups-Logical-Volumes.md) (LVM: PVs, VGs, LVs), [§20](../Part3/Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) (mounting and `/etc/fstab`).
 
 **What to do:** Attach an extra virtual disk to a test VM (or use a loop device if no extra disk is available), initialize it as a physical volume, add it to a new volume group, carve out a logical volume, format it with a filesystem of your choice, and mount it at a sensible path. Add the correct entry to `/etc/fstab` — using the filesystem's UUID rather than the device path — and confirm the mount survives a full reboot rather than only working until the next power-off.
 
@@ -54,7 +54,7 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Write automation that fails loudly and safely rather than silently continuing past a broken step.
 
-**Draws on:** §45 (bash scripting fundamentals: shebang, arguments, exit codes), §101 (shell scripting for automation pipelines).
+**Draws on:** [§45](../Part6/Section-45-Part6-Bash-Scripting-Fundamentals-Shebang-Arguments-Exit-Codes.md) (bash scripting fundamentals: shebang, arguments, exit codes), [§101](../Part13/Section-101-Part13-Shell-Scripting-For-Automation-Pipelines.md) (shell scripting for automation pipelines).
 
 **What to do:** Write a script that performs a small real automation task (back up a directory, check disk usage and alert past a threshold, roll a log file). Require `set -euo pipefail` at the top, meaningful non-zero exit codes for each distinct failure mode, and explicit checks before destructive operations rather than assuming prior commands succeeded. Deliberately introduce a failure partway through a run (a missing file, an unwritable target) and confirm the script stops and reports clearly instead of limping forward with a partial, silent failure.
 
@@ -62,15 +62,15 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Practice structured troubleshooting under realistic pressure, using a controlled failure instead of a hypothetical one.
 
-**Draws on:** §87 (structured troubleshooting methodology and runbooks), §88 (incident case studies).
+**Draws on:** [§87](../Part11/Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md) (structured troubleshooting methodology and runbooks), [§88](../Part11/Section-88-Part11-Incident-Case-Studies.md) (incident case studies).
 
-**What to do:** Pick one deliberate failure and inflict it on a disposable VM without telling yourself in advance exactly what you broke: fill a filesystem to 100% with a large dummy file, kill a service's process out from under systemd in a way that produces a non-obvious symptom, or misconfigure a config file just enough that a service starts but behaves wrong rather than failing outright. Then work the problem using the structured methodology from §87 rather than randomly poking at it — reproduce the symptom, form a hypothesis, check the cheapest thing first, narrow scope systematically — and only look at the answer (what you actually broke) after you've either solved it or genuinely exhausted your own approach.
+**What to do:** Pick one deliberate failure and inflict it on a disposable VM without telling yourself in advance exactly what you broke: fill a filesystem to 100% with a large dummy file, kill a service's process out from under systemd in a way that produces a non-obvious symptom, or misconfigure a config file just enough that a service starts but behaves wrong rather than failing outright. Then work the problem using the structured methodology from [§87](../Part11/Section-87-Part11-Structured-Troubleshooting-Methodology-Runbooks.md) rather than randomly poking at it — reproduce the symptom, form a hypothesis, check the cheapest thing first, narrow scope systematically — and only look at the answer (what you actually broke) after you've either solved it or genuinely exhausted your own approach.
 
 ## 9. Lab 9 — Log Rotation and Forwarding for a Custom Application
 
 **Goal:** Make a script or service's own log output behave like a properly operated production service's logs, not an unmanaged, ever-growing file.
 
-**Draws on:** §85 (logging deep dive: rsyslog, `logrotate`, centralized logging pipelines).
+**Draws on:** [§85](../Part11/Section-85-Part11-Logging-Deep-Dive-Rsyslog-Log-Rotation.md) (logging deep dive: rsyslog, `logrotate`, centralized logging pipelines).
 
 **What to do:** Take the script or service from Lab 3 and give its log output a real lifecycle: configure `logrotate` for its log file with a sensible rotation schedule, size threshold, and retention count, and confirm a forced rotation (`logrotate -f`) behaves as configured. Then take it one step further and forward that log's content somewhere central — even a simple rsyslog forwarding rule to a second local VM counts — to practice the mechanics of centralized log shipping, not just local rotation.
 
@@ -78,6 +78,6 @@ Everything in Parts 1–16 has been explanation, command reference, and intervie
 
 **Goal:** Reason through production-style change management, not just execute individual commands.
 
-**Draws on:** §102 (golden images and immutable infrastructure concepts), §108 (patch and upgrade strategies: blue/green, canary, in-place vs. reimage).
+**Draws on:** [§102](../Part13/Section-102-Part13-Golden-Images-Immutable-Infrastructure.md) (golden images and immutable infrastructure concepts), [§108](../Part14/Section-108-Part14-Patch-Upgrade-Strategies-Blue-Green-Canary.md) (patch and upgrade strategies: blue/green, canary, in-place vs. reimage).
 
 **What to do:** Write a provisioning script that takes a bare VM to a known-good baseline state — the packages, users, hardened SSH config, and firewall rules from earlier labs, applied idempotently (safe to re-run without duplicating work or erroring on things that already exist). Treat that script's output as a conceptual "golden image." Then, without necessarily building the full infrastructure to do it, write out — in your own words — exactly how you would roll out a change to that baseline across a fleet using a blue/green or rolling strategy: what gets built first, what validates a new instance before traffic shifts to it, and what the rollback path looks like if the new baseline turns out to be broken.

@@ -2,7 +2,7 @@
 
 ## 1. Definition
 
-**Plain language:** Azure gives you several different ways to talk to Azure Resource Manager (ARM, Section 4) — a visual web interface, command-line tools, scripting languages, and programming-language libraries — and they all ultimately send the same underlying API requests, just packaged differently for different workflows.
+**Plain language:** Azure gives you several different ways to talk to Azure Resource Manager (ARM, [Section 4](./Section-04-Part1-Azure-Resource-Manager.md)) — a visual web interface, command-line tools, scripting languages, and programming-language libraries — and they all ultimately send the same underlying API requests, just packaged differently for different workflows.
 
 **Precise definition:** All Azure management tools (Portal, CLI, PowerShell, SDKs, REST API directly) are clients of the same ARM REST API. They differ in interface (graphical vs. text vs. programmatic), authentication flow, scripting/automation suitability, and target audience, but produce identical underlying resource operations and are subject to identical RBAC and Policy enforcement.
 
@@ -43,7 +43,7 @@ az vm create \
 
 - **Purpose:** Creates a new Linux VM in one command, including generating an SSH key pair for authentication if one doesn't already exist locally.
 - **Important arguments explained individually:**
-  - `--resource-group` — the target resource group (Section 4.3.2) the VM will belong to; must already exist.
+  - `--resource-group` — the target resource group ([Section 4](./Section-04-Part1-Azure-Resource-Manager.md).3.2) the VM will belong to; must already exist.
   - `--name` — the resource name for the VM, used in its Resource ID.
   - `--image` — the base OS image; Azure CLI accepts shorthand aliases like `Ubuntu2204` as well as full image URNs for more specific version pinning.
     > ⚠️ Available shorthand aliases change over time — verify current aliases against `az vm image list` before relying on one in a script.
@@ -70,7 +70,7 @@ az vm create \
 
 **Definition:** Azure PowerShell is a set of PowerShell modules (`Az` module) providing cmdlets for managing Azure resources, following PowerShell's verb-noun naming convention (e.g., `New-AzVM`, `Get-AzResourceGroup`).
 
-**Example — creating a resource group (PowerShell equivalent of the CLI example in Section 3.5):**
+**Example — creating a resource group (PowerShell equivalent of the CLI example in [Section 3](./Section-03-Part1-Azure-Global-Infrastructure.md).5):**
 
 ```powershell
 New-AzResourceGroup -Name "rg-myapp-prod" -Location "eastus"
@@ -125,9 +125,9 @@ In production environments, **manual Portal changes are strongly discouraged** f
 
 ## 10. Security Considerations
 
-Regardless of which tool is used, authentication ultimately flows through Microsoft Entra ID (Part 2) — the CLI and PowerShell both support interactive login (`az login` / `Connect-AzAccount`) for human users and non-interactive authentication via Service Principals or Managed Identities (Section 9) for automation scenarios like CI/CD pipelines, which should **never** use a human user's personal credentials for automated processes, since that creates an audit and security liability tied to an individual rather than a dedicated, scoped automation identity.
+Regardless of which tool is used, authentication ultimately flows through Microsoft Entra ID (Part 2) — the CLI and PowerShell both support interactive login (`az login` / `Connect-AzAccount`) for human users and non-interactive authentication via Service Principals or Managed Identities ([Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) for automation scenarios like CI/CD pipelines, which should **never** use a human user's personal credentials for automated processes, since that creates an audit and security liability tied to an individual rather than a dedicated, scoped automation identity.
 
-## 11. Interview Questions — Section 5
+## 11. Interview Questions — [Section 5](./Section-05-Part1-Azure-Tooling-Overview.md)
 
 ### 🎯 Beginner
 
@@ -141,7 +141,7 @@ _What the interviewer is probing:_ whether the candidate understands the operati
 
 **Q: A CI/CD pipeline needs to deploy Azure resources automatically. What authentication approach should it use, and why not just use a personal Azure login?**
 
-_Model answer:_ The pipeline should authenticate using a Service Principal or, where the pipeline runs on Azure-hosted infrastructure, a Managed Identity (both covered in Section 9) — dedicated, non-human identities scoped with only the permissions the pipeline actually needs. Using a personal login ties automation to an individual's identity, meaning the pipeline breaks if that person leaves or their password rotates, obscures audit trails (was this action a human or the pipeline?), and typically grants the pipeline broader permissions than it actually needs since personal accounts often carry broad access for day-to-day work.
+_Model answer:_ The pipeline should authenticate using a Service Principal or, where the pipeline runs on Azure-hosted infrastructure, a Managed Identity (both covered in [Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)) — dedicated, non-human identities scoped with only the permissions the pipeline actually needs. Using a personal login ties automation to an individual's identity, meaning the pipeline breaks if that person leaves or their password rotates, obscures audit trails (was this action a human or the pipeline?), and typically grants the pipeline broader permissions than it actually needs since personal accounts often carry broad access for day-to-day work.
 
 _What the interviewer is probing:_ understanding of the identity-lifecycle and least-privilege problems that arise from conflating human and automation credentials — a common real-world security anti-pattern interviewers specifically screen for.
 
@@ -159,4 +159,4 @@ _What the interviewer is probing:_ understanding of the identity-lifecycle and l
 
 ## 14. Related Concepts / Part 1 Wrap-Up
 
-This completes **Part 1 — Foundations & Cloud Computing Model**. You now have the conceptual grounding (what Azure is, the service/deployment models, the physical global infrastructure, the ARM management hierarchy, and the tooling used to interact with it) needed for everything that follows. **Part 2 — Identity & Access Management** begins next with Section 6, covering Microsoft Entra ID — the identity system that determines _who_ can use the tools just described, and _what_ they're allowed to do once authenticated, directly building on the RBAC concept introduced in Section 4.4 and referenced throughout this section.
+This completes **Part 1 — Foundations & Cloud Computing Model**. You now have the conceptual grounding (what Azure is, the service/deployment models, the physical global infrastructure, the ARM management hierarchy, and the tooling used to interact with it) needed for everything that follows. **Part 2 — Identity & Access Management** begins next with [Section 6](../Part2/Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md), covering Microsoft Entra ID — the identity system that determines _who_ can use the tools just described, and _what_ they're allowed to do once authenticated, directly building on the RBAC concept introduced in [Section 4](./Section-04-Part1-Azure-Resource-Manager.md).4 and referenced throughout this section.

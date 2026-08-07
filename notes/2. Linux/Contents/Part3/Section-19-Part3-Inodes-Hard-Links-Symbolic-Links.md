@@ -2,15 +2,15 @@
 
 ## 1. What an Inode Actually Is
 
-Every file on a Linux filesystem — ext4, XFS, and most others §18 covered — is really two separate pieces of information stored in two separate places: the file's **data** (the actual bytes) and the file's **metadata**, which lives in a fixed-size on-disk structure called an **inode** (index node). The critical fact that unlocks everything else in this section: **an inode does not store the filename.**
+Every file on a Linux filesystem — ext4, XFS, and most others [§18](./Section-18-Part3-Filesystem-Types.md) covered — is really two separate pieces of information stored in two separate places: the file's **data** (the actual bytes) and the file's **metadata**, which lives in a fixed-size on-disk structure called an **inode** (index node). The critical fact that unlocks everything else in this section: **an inode does not store the filename.**
 
 An inode stores:
 
 - **File type** — regular file, directory, symlink, device node, socket, FIFO
-- **Permissions** — the `rwx` bits for owner/group/other (§28, Part 4, covers this model in depth)
+- **Permissions** — the `rwx` bits for owner/group/other ([§28](../Part4/Section-28-Part4-Special-Permissions-SUID-SGID-Sticky-Bit.md), covers this model in depth)
 - **Ownership** — owning UID and GID
 - **Size** in bytes
-- **Timestamps** — mtime (content modified), ctime (metadata/inode changed), atime (last accessed) — full detail in §22 later in this Part
+- **Timestamps** — mtime (content modified), ctime (metadata/inode changed), atime (last accessed) — full detail in [§22](./Section-22-Part3-File-Metadata-Timestamps-Ownership-Attributes.md) later in this Part
 - **Link count** — how many directory entries currently point at this inode, covered in the hard links section below
 - **Pointers to the actual data blocks** on disk holding the file's contents (or, for a symlink, the target path string itself, as covered in the symbolic links section below)
 
@@ -65,14 +65,14 @@ Change: 2026-06-15 14:02:11.000000000 +0000
 
 **Key fields to read deliberately:**
 
-| Field                      | Meaning                                                                                                                 |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `Inode`                    | The inode number (matches `ls -i`)                                                                                      |
-| `Links`                    | The hard link count, covered in the hard links section below — how many directory entries point at this inode          |
-| `Access`/`Modify`/`Change` | atime/mtime/ctime — three distinct timestamps, frequently confused (§22)                                                |
-| `Device`                   | Identifies which filesystem/mount this inode belongs to — relevant because inode numbers are only unique per-filesystem |
+| Field                      | Meaning                                                                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Inode`                    | The inode number (matches `ls -i`)                                                                                                              |
+| `Links`                    | The hard link count, covered in the hard links section below — how many directory entries point at this inode                                   |
+| `Access`/`Modify`/`Change` | atime/mtime/ctime — three distinct timestamps, frequently confused ([§22](./Section-22-Part3-File-Metadata-Timestamps-Ownership-Attributes.md)) |
+| `Device`                   | Identifies which filesystem/mount this inode belongs to — relevant because inode numbers are only unique per-filesystem                         |
 
-**Production usage example:** During an incident where a process is writing to what looks like the wrong file (e.g., a log rotation gone wrong, or a deployment that swapped a config file), `stat`-ing both the path the process has open (via `/proc/<pid>/fd/`, §24) and the path an admin expects, then comparing `Inode` and `Device` fields, definitively answers "are these actually the same file on disk" — filenames alone can't answer that when hard links or bind mounts are in play.
+**Production usage example:** During an incident where a process is writing to what looks like the wrong file (e.g., a log rotation gone wrong, or a deployment that swapped a config file), `stat`-ing both the path the process has open (via `/proc/<pid>/fd/`, [§24](./Section-24-Part3-Proc-Sys-Virtual-Filesystems.md)) and the path an admin expects, then comparing `Inode` and `Device` fields, definitively answers "are these actually the same file on disk" — filenames alone can't answer that when hard links or bind mounts are in play.
 
 ### 2.3 `df -i` — Inode Usage Per Filesystem
 
@@ -92,9 +92,9 @@ Filesystem      Inodes  IUsed    IFree IUse% Mounted on
 /dev/sda1      6553600 6553600      0  100% /var
 ```
 
-**Production usage example — inode exhaustion is a real, distinct production failure mode.** A filesystem is created with a **fixed number of inodes** at format time (`mkfs`, §75 in Part 10) on traditional filesystems like ext4 — that count generally cannot be changed without reformatting. A host can therefore hit `ENOSPC` ("No space left on device") from application writes, package installs, or even SSH login (PAM needing to write session files) while `df -h` shows plenty of free **space**, because what actually ran out was the fixed inode pool — typically from a workload that creates enormous numbers of tiny files (a runaway session-cache directory, a mail queue, a build system leaving thousands of small artifacts, a misbehaving logger writing one file per event instead of appending). `df -i` is the diagnostic that catches this; `df -h` alone will not.
+**Production usage example — inode exhaustion is a real, distinct production failure mode.** A filesystem is created with a **fixed number of inodes** at format time (`mkfs`, [§75](../Part10/Section-75-Part10-RAID-Concepts-Mdadm.md) in Part 10) on traditional filesystems like ext4 — that count generally cannot be changed without reformatting. A host can therefore hit `ENOSPC` ("No space left on device") from application writes, package installs, or even SSH login (PAM needing to write session files) while `df -h` shows plenty of free **space**, because what actually ran out was the fixed inode pool — typically from a workload that creates enormous numbers of tiny files (a runaway session-cache directory, a mail queue, a build system leaving thousands of small artifacts, a misbehaving logger writing one file per event instead of appending). `df -i` is the diagnostic that catches this; `df -h` alone will not.
 
-> ⚠️ **Warning:** "Disk full" errors are not always a disk-space problem. Always check `df -i` alongside `df -h` during a `No space left on device` incident — treating every such error as a space problem leads you to delete large files that free up plenty of space but zero inodes, while the actual fix is deleting large _quantities_ of small files (or, for XFS, considering that XFS allocates inodes dynamically and is far less prone to this specific failure mode than ext4's fixed-at-format-time allocation, per §18's filesystem comparison).
+> ⚠️ **Warning:** "Disk full" errors are not always a disk-space problem. Always check `df -i` alongside `df -h` during a `No space left on device` incident — treating every such error as a space problem leads you to delete large files that free up plenty of space but zero inodes, while the actual fix is deleting large _quantities_ of small files (or, for XFS, considering that XFS allocates inodes dynamically and is far less prone to this specific failure mode than ext4's fixed-at-format-time allocation, per [§18](./Section-18-Part3-Filesystem-Types.md)'s filesystem comparison).
 
 ## 3. Hard Links: A Second Name for the Same Inode
 
@@ -204,6 +204,6 @@ _What the interviewer is probing for:_ Ability to apply inode/symlink mechanics 
 
 ## 8. Related Concepts & What's Next
 
-This section builds directly on §18's filesystem-type coverage — ext4's fixed-at-format-time inode allocation vs. XFS's more dynamic behavior, covered in the `df -i` discussion above, is a concrete consequence of the filesystem design choices §18 introduced. §17's FHS coverage is where these mechanics show up structurally in practice — `/proc` and `/dev` entries, and the pervasive use of symlinks throughout a standard Linux tree (e.g., `/etc/mtab`, `/sbin -> usr/sbin` conventions on some distros). §20 (next) moves to mounting and `/etc/fstab` — the layer that determines which filesystem (and therefore which independent inode namespace) a given path actually belongs to, which is the direct prerequisite for correctly reasoning about when hard links will and won't work across a real host's mount layout.
+This section builds directly on [§18](./Section-18-Part3-Filesystem-Types.md)'s filesystem-type coverage — ext4's fixed-at-format-time inode allocation vs. XFS's more dynamic behavior, covered in the `df -i` discussion above, is a concrete consequence of the filesystem design choices [§18](./Section-18-Part3-Filesystem-Types.md) introduced. [§17](./Section-17-Part3-Filesystem-Hierarchy-Standard.md)'s FHS coverage is where these mechanics show up structurally in practice — `/proc` and `/dev` entries, and the pervasive use of symlinks throughout a standard Linux tree (e.g., `/etc/mtab`, `/sbin -> usr/sbin` conventions on some distros). [§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) (next) moves to mounting and `/etc/fstab` — the layer that determines which filesystem (and therefore which independent inode namespace) a given path actually belongs to, which is the direct prerequisite for correctly reasoning about when hard links will and won't work across a real host's mount layout.
 
-**Next Section:** §20 — `Section-20-Part3-Mounting-fstab.md`
+**Next Section:** [§20](./Section-20-Part3-Mounting-Unmounting-Fstab-Mount-Options.md) — `Section-20-Part3-Mounting-fstab.md`

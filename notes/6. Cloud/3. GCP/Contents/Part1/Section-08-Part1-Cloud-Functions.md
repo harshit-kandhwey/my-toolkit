@@ -4,7 +4,7 @@
 
 **Plain language:** Cloud Functions lets you deploy a single small piece of code — a function — that Google runs automatically whenever a specific event happens: an HTTP request arrives, a file is uploaded to Cloud Storage, a message is published to Pub/Sub, or a document changes in Firestore. You never provision a server, never manage a container, and pay only for the function's actual execution time.
 
-**Precise:** Cloud Functions is GCP's Function-as-a-Service (FaaS) offering, deploying single-purpose functions triggered by HTTP requests or asynchronous events, available in two generations — **1st gen** (the original, more limited implementation) and **2nd gen** (rebuilt on top of Cloud Run and Eventarc, Section 7 and Section 53, offering longer execution times, larger instance sizes, and a broader set of event sources).
+**Precise:** Cloud Functions is GCP's Function-as-a-Service (FaaS) offering, deploying single-purpose functions triggered by HTTP requests or asynchronous events, available in two generations — **1st gen** (the original, more limited implementation) and **2nd gen** (rebuilt on top of Cloud Run and Eventarc, [Section 7](./Section-07-Part1-Cloud-Run.md) and [Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md), offering longer execution times, larger instance sizes, and a broader set of event sources).
 
 ## 2. Why It Exists / Problem It Solves
 
@@ -26,10 +26,10 @@ Cloud Functions exists for the narrowest, most granular slice of the serverless 
 ## 4. Triggers
 
 - **HTTP trigger:** Invoked directly via an HTTPS endpoint, for lightweight APIs or webhooks.
-- **Pub/Sub trigger:** Invoked when a message is published to a specified Pub/Sub topic (Section 45) — the standard pattern for decoupled, asynchronous event processing.
-- **Cloud Storage trigger:** Invoked when an object is created, updated, or deleted in a specified bucket (Section 11) — commonly used for triggering processing pipelines on file upload (e.g., resizing an uploaded image).
-- **Firestore trigger:** Invoked on document create/update/delete events in a Firestore database (Section 15).
-- **Eventarc trigger (2nd gen only):** A generalized eventing layer (Section 53) supporting a much broader range of event sources — including many Google Cloud audit log events and, in some configurations, third-party event sources — routed via a standardized CloudEvents format.
+- **Pub/Sub trigger:** Invoked when a message is published to a specified Pub/Sub topic ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)) — the standard pattern for decoupled, asynchronous event processing.
+- **Cloud Storage trigger:** Invoked when an object is created, updated, or deleted in a specified bucket ([Section 11](../Part2/Section-11-Part2-Cloud-Storage-GCS-Deep-Dive.md)) — commonly used for triggering processing pipelines on file upload (e.g., resizing an uploaded image).
+- **Firestore trigger:** Invoked on document create/update/delete events in a Firestore database ([Section 15](../Part2/Section-15-Part2-Firestore-Datastore.md)).
+- **Eventarc trigger (2nd gen only):** A generalized eventing layer ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)) supporting a much broader range of event sources — including many Google Cloud audit log events and, in some configurations, third-party event sources — routed via a standardized CloudEvents format.
 
 ## 5. Cold Starts
 
@@ -100,7 +100,7 @@ status: ACTIVE
 ## 8. Production & Enterprise Usage
 
 - **Pub/Sub fan-out processing:** A common enterprise pattern is a Pub/Sub topic feeding multiple independent Cloud Functions, each performing a distinct piece of downstream processing (e.g., one function updates a database, another sends a notification, a third writes an audit log) — decoupled via the topic rather than one monolithic handler doing everything.
-- **Storage-triggered pipelines:** Image/document processing pipelines commonly trigger a Cloud Function on file upload to a Cloud Storage bucket, which then hands off to further processing (potentially Cloud Run or Dataflow, Section 45, for heavier transformation).
+- **Storage-triggered pipelines:** Image/document processing pipelines commonly trigger a Cloud Function on file upload to a Cloud Storage bucket, which then hands off to further processing (potentially Cloud Run or Dataflow, [Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md), for heavier transformation).
 - **Migration to 2nd gen:** Organizations still running 1st-gen functions are commonly encouraged to migrate to 2nd gen for the longer timeout, larger instance sizes, and broader Eventarc-based triggers, though 1st gen remains supported for existing deployments.
 
 ## 9. Common Misconceptions
@@ -129,4 +129,4 @@ status: ACTIVE
 
 ## 12. Related Concepts
 
-Cloud Run as the underlying execution platform for 2nd-gen functions (Section 7), Eventarc and Workflows for the broader eventing model (Section 53), Cloud Storage and Firestore as common event sources (Sections 11 and 15), Pub/Sub as a messaging backbone (Section 45), and the full compute decision matrix (Section 10) all build on the FaaS model introduced here.
+Cloud Run as the underlying execution platform for 2nd-gen functions ([Section 7](./Section-07-Part1-Cloud-Run.md)), Eventarc and Workflows for the broader eventing model ([Section 53](../Part7/Section-53-Part7-Eventarc-Workflows.md)), Cloud Storage and Firestore as common event sources (Sections 11 and 15), Pub/Sub as a messaging backbone ([Section 45](../Part6/Section-45-Part6-Dataflow-Dataproc-PubSub.md)), and the full compute decision matrix ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)) all build on the FaaS model introduced here.

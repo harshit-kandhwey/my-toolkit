@@ -4,11 +4,11 @@
 
 **Plain language:** Authentication answers "who are you?" — proving your identity, usually with a password, certificate, or biometric factor. Authorization answers "what are you allowed to do?" — a separate decision made _after_ authentication succeeds, based on assigned permissions.
 
-**Precise definition:** Authentication (AuthN) is the process of verifying a claimed identity, resulting in a trusted, verifiable representation of that identity (a token or session). Authorization (AuthZ) is the process of evaluating whether an authenticated identity is permitted to perform a specific action on a specific resource, evaluated separately and after authentication, typically via a policy or role-based mechanism such as Azure RBAC (Section 8).
+**Precise definition:** Authentication (AuthN) is the process of verifying a claimed identity, resulting in a trusted, verifiable representation of that identity (a token or session). Authorization (AuthZ) is the process of evaluating whether an authenticated identity is permitted to perform a specific action on a specific resource, evaluated separately and after authentication, typically via a policy or role-based mechanism such as Azure RBAC ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md)).
 
 ## 2. Why the Distinction Matters
 
-These two concepts are frequently conflated by newcomers but are architecturally and operationally distinct, handled by different systems even though they happen in close sequence. Entra ID (Section 6) is fundamentally an **authentication and identity directory** service — it proves who you are and issues tokens asserting that identity. Azure RBAC (Section 8) and application-level permission systems are **authorization** systems — they decide what an already-authenticated identity is allowed to do. Understanding this separation matters practically: a user can be perfectly, successfully authenticated (Entra ID confirms they are who they claim) and still be denied every single action (because RBAC grants them zero permissions) — these are two independent checkpoints, and troubleshooting an access problem requires figuring out which one is failing.
+These two concepts are frequently conflated by newcomers but are architecturally and operationally distinct, handled by different systems even though they happen in close sequence. Entra ID ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md)) is fundamentally an **authentication and identity directory** service — it proves who you are and issues tokens asserting that identity. Azure RBAC ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md)) and application-level permission systems are **authorization** systems — they decide what an already-authenticated identity is allowed to do. Understanding this separation matters practically: a user can be perfectly, successfully authenticated (Entra ID confirms they are who they claim) and still be denied every single action (because RBAC grants them zero permissions) — these are two independent checkpoints, and troubleshooting an access problem requires figuring out which one is failing.
 
 > 🎯 **Interview Tip:** "The user can log in but can't do anything" is a classic scenario question specifically designed to test whether a candidate understands that successful authentication does not imply any authorization — a very common real interview probe.
 
@@ -65,9 +65,9 @@ These two concepts are frequently conflated by newcomers but are architecturally
 | Typical transport   | HTTP redirects with tokens in URL/POST body | HTTP POST with XML payload                     |
 | Mobile-friendliness | Strong                                      | Weaker, generally considered legacy for mobile |
 
-## 6. Where RBAC Fits (Preview of Section 8)
+## 6. Where RBAC Fits (Preview of [Section 8](./Section-08-Part2-Role-Based-Access-Control.md))
 
-Once OIDC/OAuth2 has authenticated a user and issued tokens, **Azure RBAC** is the system that decides what that authenticated identity can actually do to Azure resources specifically (as opposed to application-level permissions, which are typically defined by the application itself using OAuth scopes). This is the authorization layer referenced throughout this section, and is covered in full depth in Section 8 immediately following.
+Once OIDC/OAuth2 has authenticated a user and issued tokens, **Azure RBAC** is the system that decides what that authenticated identity can actually do to Azure resources specifically (as opposed to application-level permissions, which are typically defined by the application itself using OAuth scopes). This is the authorization layer referenced throughout this section, and is covered in full depth in [Section 8](./Section-08-Part2-Role-Based-Access-Control.md) immediately following.
 
 ## 7. Configuration Example — Registering an App for OIDC Sign-In
 
@@ -77,7 +77,7 @@ az ad app create --display-name "internal-dashboard-app" \
   --web-redirect-uris "https://dashboard.contoso.com/auth/callback"
 ```
 
-- **Purpose:** Registers a new application in Entra ID (Section 6.3.4) configured to support web-based OIDC sign-in, restricted to the organization's own tenant.
+- **Purpose:** Registers a new application in Entra ID ([Section 6](./Section-06-Part2-Microsoft-Entra-ID-Fundamentals.md).3.4) configured to support web-based OIDC sign-in, restricted to the organization's own tenant.
 - **Important arguments explained individually:**
   - `--sign-in-audience` — controls which identities can sign in: `AzureADMyOrg` restricts to the current tenant only; other values (verify current supported values in documentation) allow multi-tenant or personal Microsoft account sign-in, a significant security-relevant configuration choice.
   - `--web-redirect-uris` — the exact URL(s) Entra ID is allowed to redirect back to after authentication completes; this must exactly match the application's actual callback endpoint, and is a deliberate security control preventing tokens from being redirected to an attacker-controlled URL.
@@ -85,14 +85,14 @@ az ad app create --display-name "internal-dashboard-app" \
 
 ## 8. Troubleshooting
 
-| Symptom                                                           | Likely Layer                    | Likely Cause                                                                                                                                      |
-| ----------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| User cannot sign in at all                                        | Authentication (Entra ID)       | Wrong credentials, account disabled, Conditional Access block (Section 10)                                                                        |
-| User signs in successfully but sees "Access Denied" on a resource | Authorization (RBAC, Section 8) | No role assignment, or role assigned at wrong scope                                                                                               |
-| Application shows "invalid redirect URI" error                    | OAuth2/OIDC configuration       | Redirect URI in the request doesn't exactly match a registered URI on the App Registration                                                        |
-| Application receives a token but can't call the target API        | Token scope/audience mismatch   | The requested token's `scope`/`audience` doesn't match what the resource server expects — verify scope configuration on both client and API sides |
+| Symptom                                                           | Likely Layer                                                                       | Likely Cause                                                                                                                                      |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User cannot sign in at all                                        | Authentication (Entra ID)                                                          | Wrong credentials, account disabled, Conditional Access block ([Section 10](./Section-10-Part2-Conditional-Access-MFA-PIM.md))                    |
+| User signs in successfully but sees "Access Denied" on a resource | Authorization (RBAC, [Section 8](./Section-08-Part2-Role-Based-Access-Control.md)) | No role assignment, or role assigned at wrong scope                                                                                               |
+| Application shows "invalid redirect URI" error                    | OAuth2/OIDC configuration                                                          | Redirect URI in the request doesn't exactly match a registered URI on the App Registration                                                        |
+| Application receives a token but can't call the target API        | Token scope/audience mismatch                                                      | The requested token's `scope`/`audience` doesn't match what the resource server expects — verify scope configuration on both client and API sides |
 
-## 9. Interview Questions — Section 7
+## 9. Interview Questions — [Section 7](./Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md)
 
 ### 🎯 Intermediate
 
@@ -113,7 +113,7 @@ _What the interviewer is probing:_ whether the candidate understands _why_ a sta
 ## 10. Common Misconceptions
 
 - **"OAuth 2.0 is a login protocol."** Not by itself — OAuth 2.0 is an authorization delegation framework; OpenID Connect is the layer that adds actual authentication/login semantics on top of it.
-- **"Once a user authenticates, they can do anything they're able to see in the Portal."** False — visibility in the Portal and actual permission to act are governed by separate RBAC checks (Section 8); a user might see a resource listed but be denied any action on it.
+- **"Once a user authenticates, they can do anything they're able to see in the Portal."** False — visibility in the Portal and actual permission to act are governed by separate RBAC checks ([Section 8](./Section-08-Part2-Role-Based-Access-Control.md)); a user might see a resource listed but be denied any action on it.
 
 ## 11. Key Takeaways
 
@@ -124,4 +124,4 @@ _What the interviewer is probing:_ whether the candidate understands _why_ a sta
 
 ## 12. Related Concepts (Next Up)
 
-Section 8 covers **Role-Based Access Control (RBAC)** in full depth — the authorization system referenced repeatedly throughout this section, including built-in vs. custom roles, scope, role assignment mechanics, and how RBAC's inheritance model (introduced conceptually in Section 4.4) works in practice.
+[Section 8](./Section-08-Part2-Role-Based-Access-Control.md) covers **Role-Based Access Control (RBAC)** in full depth — the authorization system referenced repeatedly throughout this section, including built-in vs. custom roles, scope, role assignment mechanics, and how RBAC's inheritance model (introduced conceptually in [Section 4](../Part1/Section-04-Part1-Azure-Resource-Manager.md).4) works in practice.

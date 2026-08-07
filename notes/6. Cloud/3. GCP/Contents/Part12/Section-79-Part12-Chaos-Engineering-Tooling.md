@@ -2,15 +2,15 @@
 
 ## 1. Definition
 
-**Plain language:** Since GCP doesn't ship its own chaos-engineering product (Section 78), you install one yourself. The two dominant paths are running an open-source tool like **Chaos Mesh** directly inside a GKE cluster, or subscribing to a third-party managed platform like **Gremlin** that reaches into your Compute Engine VMs and GKE nodes from the outside.
+**Plain language:** Since GCP doesn't ship its own chaos-engineering product ([Section 78](./Section-78-Part12-Resilience-and-Chaos-Engineering-Concepts.md)), you install one yourself. The two dominant paths are running an open-source tool like **Chaos Mesh** directly inside a GKE cluster, or subscribing to a third-party managed platform like **Gremlin** that reaches into your Compute Engine VMs and GKE nodes from the outside.
 
 **Precise:** Chaos engineering tooling on GCP falls into two operational models: **in-cluster, self-hosted Kubernetes-native platforms** (Chaos Mesh, Litmus Chaos) that run as controllers and CRDs inside GKE and inject faults via sidecars, kernel-level hooks, or the Kubernetes API itself; and **externally-hosted, agent-based SaaS platforms** (Gremlin) that install a lightweight agent on each target (a Compute Engine VM or a GKE node/pod) and orchestrate fault injection from a control plane outside the cluster, typically with a commercial support contract and built-in safety/halt controls.
 
 ## 2. Why It Exists / Problem It Solves
 
-Section 78 established that GCP has no first-party equivalent to AWS FIS or Azure Chaos Studio. That gap does not mean chaos engineering is impractical on GCP — it means the tooling decision shifts from "which managed service do I enable" to "which ecosystem tool do I install and operate." This section exists to answer that decision concretely: what Chaos Mesh and Litmus actually look like running on GKE, what Gremlin adds as a managed alternative, and how a team should choose between "operate it yourself for free" and "pay for a managed experience" — the same build-vs-buy trade-off that shows up everywhere else in cloud architecture, just applied to fault injection specifically.
+[Section 78](./Section-78-Part12-Resilience-and-Chaos-Engineering-Concepts.md) established that GCP has no first-party equivalent to AWS FIS or Azure Chaos Studio. That gap does not mean chaos engineering is impractical on GCP — it means the tooling decision shifts from "which managed service do I enable" to "which ecosystem tool do I install and operate." This section exists to answer that decision concretely: what Chaos Mesh and Litmus actually look like running on GKE, what Gremlin adds as a managed alternative, and how a team should choose between "operate it yourself for free" and "pay for a managed experience" — the same build-vs-buy trade-off that shows up everywhere else in cloud architecture, just applied to fault injection specifically.
 
-🔑 **Key Takeaway:** on GCP, "chaos tooling" is a deliberate installation and vendor decision, not a checkbox in the console — this section is the practical follow-through on the gap Section 78 identified.
+🔑 **Key Takeaway:** on GCP, "chaos tooling" is a deliberate installation and vendor decision, not a checkbox in the console — this section is the practical follow-through on the gap [Section 78](./Section-78-Part12-Resilience-and-Chaos-Engineering-Concepts.md) identified.
 
 ## 3. Core Concepts
 
@@ -119,7 +119,7 @@ spec:
 kubectl apply -f pod-kill-experiment.yaml
 ```
 
-Expected output: `podchaos.chaos-mesh.org/checkout-pod-kill created`. Watching `kubectl get pods -n production -l app=checkout-service -w` shows one pod terminating and a replacement pod entering `Running` within the Deployment's normal reconciliation window — the empirical evidence that the steady-state hypothesis (Section 78.3.1) holds.
+Expected output: `podchaos.chaos-mesh.org/checkout-pod-kill created`. Watching `kubectl get pods -n production -l app=checkout-service -w` shows one pod terminating and a replacement pod entering `Running` within the Deployment's normal reconciliation window — the empirical evidence that the steady-state hypothesis ([Section 78](./Section-78-Part12-Resilience-and-Chaos-Engineering-Concepts.md).3.1) holds.
 
 ```bash
 # Halt the experiment
@@ -150,7 +150,7 @@ Expected output: `podchaos.chaos-mesh.org "checkout-pod-kill" deleted` — the s
 **Model answer:** Gremlin makes sense when the organization is genuinely multi-cloud and wants one consistent chaos-engineering tool and workflow across AWS, Azure, GCP, and on-premises VMs rather than maintaining separate open-source toolchains per environment; when the team wants to avoid the operational burden of running and upgrading chaos infrastructure themselves; or when built-in safety features like an automatic "stop all attacks" halt control are a hard requirement. Chaos Mesh makes more sense when the workload is GKE-only, budget favors free/open-source tooling, and the team is comfortable operating the controller itself.
 
 **🎯 Senior/Architect:** _Design a chaos-tooling strategy for a company running workloads on both GKE and plain Compute Engine VMs, with a small platform team._
-**Model answer:** I'd first inventory which workloads are Kubernetes-native versus VM-based, since that directly constrains tooling choice — Chaos Mesh and Litmus are Kubernetes-only, so they can't cover the VM fleet at all. Given a small platform team (limited capacity to operate new infrastructure), I'd lean toward Gremlin as the primary tool specifically because one agent-based platform covers both GKE and Compute Engine VMs without requiring the team to operate a separate in-cluster controller, freeing their limited time for actually designing and reviewing experiments rather than maintaining chaos infrastructure. I'd still pilot Chaos Mesh on a single non-critical GKE workload in parallel at near-zero cost, both to keep an open-source fallback option live and because its CRD-based experiment definitions are useful to check into version control alongside application manifests. I'd tie whichever tool is chosen into Cloud Monitoring alerting (Section 80) so experiment results are captured as first-class signals, not just console screenshots.
+**Model answer:** I'd first inventory which workloads are Kubernetes-native versus VM-based, since that directly constrains tooling choice — Chaos Mesh and Litmus are Kubernetes-only, so they can't cover the VM fleet at all. Given a small platform team (limited capacity to operate new infrastructure), I'd lean toward Gremlin as the primary tool specifically because one agent-based platform covers both GKE and Compute Engine VMs without requiring the team to operate a separate in-cluster controller, freeing their limited time for actually designing and reviewing experiments rather than maintaining chaos infrastructure. I'd still pilot Chaos Mesh on a single non-critical GKE workload in parallel at near-zero cost, both to keep an open-source fallback option live and because its CRD-based experiment definitions are useful to check into version control alongside application manifests. I'd tie whichever tool is chosen into Cloud Monitoring alerting ([Section 80](./Section-80-Part12-Continuous-DR-Validation-Game-Days.md)) so experiment results are captured as first-class signals, not just console screenshots.
 
 ## 10. Key Takeaways
 
@@ -162,4 +162,4 @@ Expected output: `podchaos.chaos-mesh.org "checkout-pod-kill" deleted` — the s
 
 ## 11. Related Concepts
 
-Resilience & Chaos Engineering Concepts (Section 78), Continuous DR Validation & Game Days (Section 80), GKE Architecture (Section 30), and Cloud Monitoring/Alerting (Section 54) all connect directly to the concepts introduced here.
+Resilience & Chaos Engineering Concepts ([Section 78](./Section-78-Part12-Resilience-and-Chaos-Engineering-Concepts.md)), Continuous DR Validation & Game Days ([Section 80](./Section-80-Part12-Continuous-DR-Validation-Game-Days.md)), GKE Architecture ([Section 30](../Part4/Section-30-Part4-GKE-Architecture-Deep-Dive.md)), and Cloud Monitoring/Alerting ([Section 54](../Part7/Section-54-Part7-Cloud-Monitoring-Logging-Trace-Profiler.md)) all connect directly to the concepts introduced here.

@@ -2,20 +2,20 @@
 
 ## 1. Definition
 
-**Plain language:** Beyond the logical object model (§5), Git has a physical storage layer that decides _how_ those objects actually sit on disk — as many small individual files, or consolidated into a few large, compressed archive-like files. This layer is purely a storage optimization and never changes what objects logically exist or how you interact with them.
+**Plain language:** Beyond the logical object model ([§5](./Section-05-Part2-Object-Model.md)), Git has a physical storage layer that decides _how_ those objects actually sit on disk — as many small individual files, or consolidated into a few large, compressed archive-like files. This layer is purely a storage optimization and never changes what objects logically exist or how you interact with them.
 
 **Precise:** Git objects exist on disk in one of two physical forms: **loose objects** (one zlib-compressed file per object, under `.git/objects/<first-2-hex-chars>/<remaining-38-chars>`) or **packfiles** (many objects consolidated into a single binary file, internally delta-compressed against similar objects). Git periodically repacks loose objects into packfiles via **garbage collection** (`git gc`), which also identifies and removes objects that are no longer reachable from any ref.
 
 ## 2. Why It Exists / Problem It Solves
 
-1. **Loose objects don't scale.** One file per object is simple and exactly what you see immediately after a commit (as shown in §4's repository anatomy), but a repository with hundreds of thousands of commits accumulates hundreds of thousands of tiny files — filesystem overhead (inode allocation, directory traversal, per-file open/close costs) becomes a real performance and disk-usage problem at scale.
-2. **Related content compresses far better together than individually.** Two commits a day apart typically share the overwhelming majority of their content (most files unchanged). Compressing each object in isolation (as loose objects do) misses this; compressing similar objects _together_, storing one as a base and others as small deltas against it, is dramatically more space-efficient — directly reusing the "delta storage" idea from Generation 1 VCS (as covered in §1), but purely as a storage trick invisible above this layer.
+1. **Loose objects don't scale.** One file per object is simple and exactly what you see immediately after a commit (as shown in [§4](./Section-04-Part2-Git-Architecture-Three-Areas.md)'s repository anatomy), but a repository with hundreds of thousands of commits accumulates hundreds of thousands of tiny files — filesystem overhead (inode allocation, directory traversal, per-file open/close costs) becomes a real performance and disk-usage problem at scale.
+2. **Related content compresses far better together than individually.** Two commits a day apart typically share the overwhelming majority of their content (most files unchanged). Compressing each object in isolation (as loose objects do) misses this; compressing similar objects _together_, storing one as a base and others as small deltas against it, is dramatically more space-efficient — directly reusing the "delta storage" idea from Generation 1 VCS (as covered in [§1](../Part1/Section-01-Part1-Version-Control-Fundamentals.md)), but purely as a storage trick invisible above this layer.
 3. **Network transfer efficiency.** When you clone or fetch, Git transmits packfiles, not thousands of individual loose objects — hugely reducing both the number of network round trips and total bytes transferred.
-4. **Reclaiming space from abandoned work.** Commits made in detached HEAD and later abandoned (per §6's detached-HEAD coverage), amended commits' old versions (per §5's amend discussion), and other objects that become unreachable still physically occupy disk until `gc` prunes them — necessary periodic cleanup.
+4. **Reclaiming space from abandoned work.** Commits made in detached HEAD and later abandoned (per [§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)'s detached-HEAD coverage), amended commits' old versions (per [§5](./Section-05-Part2-Object-Model.md)'s amend discussion), and other objects that become unreachable still physically occupy disk until `gc` prunes them — necessary periodic cleanup.
 
 ## 3. Loose Objects — Physical Detail
 
-As established in §4's repository anatomy and §5, every new object Git creates (from `add`, `commit`, etc.) is initially written as a **loose object**: an individual file, zlib-deflate-compressed, named by its own hash, split into a 2-character directory prefix and a 38-character filename purely to avoid having tens of thousands of files in one flat directory (a filesystem performance consideration, not a Git-logical one).
+As established in [§4](./Section-04-Part2-Git-Architecture-Three-Areas.md)'s repository anatomy and [§5](./Section-05-Part2-Object-Model.md), every new object Git creates (from `add`, `commit`, etc.) is initially written as a **loose object**: an individual file, zlib-deflate-compressed, named by its own hash, split into a 2-character directory prefix and a 38-character filename purely to avoid having tens of thousands of files in one flat directory (a filesystem performance consideration, not a Git-logical one).
 
 ```bash
 $ echo "hello" | git hash-object -w --stdin
@@ -76,7 +76,7 @@ BEFORE gc (loose objects):                  AFTER gc (packed):
 
 **Precise mechanism:** Git's packing algorithm looks for objects with similar content (often by comparing objects of similar size and type, and using name/path similarity as a heuristic hint) and computes a compact binary diff between a chosen "base" object and each "delta" object referencing it. Reconstructing a delta object at read time means reading its base plus applying the delta instructions — a small amount of extra CPU work at read time in exchange for large storage savings.
 
-> ⚠️ **Critical distinction to never blur (revisited from §1's delta-storage discussion and §5's tree coverage):** this delta compression is a **physical, storage-layer** technique, completely invisible at the logical object-model layer covered in §5. Logically, every commit still points to a **complete, full tree snapshot** — `git cat-file -p <tree>` always shows you the complete directory listing, never "here's what changed." Delta compression only describes how that logically-complete data happens to be _packed on disk_; it is never something you interact with directly, and it never changes what `git log`, `git diff`, or `git checkout` show you.
+> ⚠️ **Critical distinction to never blur (revisited from [§1](../Part1/Section-01-Part1-Version-Control-Fundamentals.md)'s delta-storage discussion and [§5](./Section-05-Part2-Object-Model.md)'s tree coverage):** this delta compression is a **physical, storage-layer** technique, completely invisible at the logical object-model layer covered in [§5](./Section-05-Part2-Object-Model.md). Logically, every commit still points to a **complete, full tree snapshot** — `git cat-file -p <tree>` always shows you the complete directory listing, never "here's what changed." Delta compression only describes how that logically-complete data happens to be _packed on disk_; it is never something you interact with directly, and it never changes what `git log`, `git diff`, or `git checkout` show you.
 
 ## 6. Garbage Collection (`git gc`)
 
@@ -85,8 +85,8 @@ BEFORE gc (loose objects):                  AFTER gc (packed):
 `git gc` performs several related maintenance tasks in one operation:
 
 1. **Repacks loose objects into packfiles** (as described above), including recompacting existing packs if beneficial.
-2. **Prunes genuinely unreachable objects** — objects not referenced, directly or transitively, by any ref (branch, tag) _and_ not protected by the reflog's retention window (per §6's safety-net discussion). This is where detached-HEAD commits you abandoned, or old commits replaced by `amend`/`rebase`, are eventually actually deleted from disk.
-3. **Packs refs** into the single `packed-refs` file (per §6's refs-architecture diagram) for faster bulk ref resolution when there are many refs.
+2. **Prunes genuinely unreachable objects** — objects not referenced, directly or transitively, by any ref (branch, tag) _and_ not protected by the reflog's retention window (per [§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)'s safety-net discussion). This is where detached-HEAD commits you abandoned, or old commits replaced by `amend`/`rebase`, are eventually actually deleted from disk.
+3. **Packs refs** into the single `packed-refs` file (per [§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)'s refs-architecture diagram) for faster bulk ref resolution when there are many refs.
 4. **Removes stale/expired reflog entries** past the configured retention window.
 
 ### 6.2 When it runs
@@ -101,7 +101,7 @@ $ git count-objects -v       # inspect current loose object count before/after
 
 ### 6.3 The safety relationship with the reflog
 
-`gc` will **not** prune an object that's still within the reflog's retention window, even if no branch or tag currently references it — this is precisely the safety mechanism that makes "recover a lost commit via reflog" (per §6's recovery walkthrough) actually work in practice: the object survives specifically _because_ gc respects reflog entries as a form of reachability, until those entries themselves expire.
+`gc` will **not** prune an object that's still within the reflog's retention window, even if no branch or tag currently references it — this is precisely the safety mechanism that makes "recover a lost commit via reflog" (per [§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)'s recovery walkthrough) actually work in practice: the object survives specifically _because_ gc respects reflog entries as a form of reachability, until those entries themselves expire.
 
 ```
 Object reachability for gc purposes:
@@ -114,7 +114,7 @@ Object reachability for gc purposes:
     AND reflog entry expired  →  ELIGIBLE FOR PRUNING by gc
 ```
 
-## 7. Commands (Full Documentation per §9 Template)
+## 7. Commands (Full Documentation per [§9](../Part3/Section-09-Part3-Creating-Cloning-Repositories.md) Template)
 
 ### `git gc`
 
@@ -149,10 +149,10 @@ Object reachability for gc purposes:
 
   Expected outcome: loose object count drops to (near) zero, replaced by objects consolidated into one or more packfiles — a direct, visible demonstration of the loose-objects-vs-packfiles diagram above.
 
-- **Production usage:** typically left to run automatically; explicitly invoked as part of scheduled repository maintenance jobs on self-hosted Git servers, or after operations known to generate large numbers of loose objects (e.g., a large history rewrite via `filter-repo`, §31).
+- **Production usage:** typically left to run automatically; explicitly invoked as part of scheduled repository maintenance jobs on self-hosted Git servers, or after operations known to generate large numbers of loose objects (e.g., a large history rewrite via `filter-repo`, [§31](../Part8/Section-31-Part8-Advanced-Tooling.md)).
 - **Common errors:** `warning: There are too many unreachable loose objects; run 'git prune' to remove them` — informational, not an error; indicates gc's automatic pruning threshold hasn't triggered yet.
-- **Security impact:** `gc` pruning objects is actually security-_relevant_ in a good way for secret remediation — it's the step that actually frees disk space after history has been rewritten to remove a leaked secret (§28), though the reflog must also be cleared/expired first for the secret to be fully gone locally.
-- **Performance impact:** `gc` itself can be CPU- and I/O-intensive on very large repositories (potentially minutes on huge monorepos); this is why it typically runs automatically in the background rather than blocking your commands, and why enterprises with very large repos schedule it deliberately during low-usage windows rather than relying purely on automatic triggers (§29).
+- **Security impact:** `gc` pruning objects is actually security-_relevant_ in a good way for secret remediation — it's the step that actually frees disk space after history has been rewritten to remove a leaked secret ([§28](../Part7/Section-28-Part7-Security.md)), though the reflog must also be cleared/expired first for the secret to be fully gone locally.
+- **Performance impact:** `gc` itself can be CPU- and I/O-intensive on very large repositories (potentially minutes on huge monorepos); this is why it typically runs automatically in the background rather than blocking your commands, and why enterprises with very large repos schedule it deliberately during low-usage windows rather than relying purely on automatic triggers ([§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)).
 
 ### `git count-objects`
 
@@ -176,7 +176,7 @@ Object reachability for gc purposes:
   ```
 - **Production usage:** occasionally run directly (rather than via full `gc`) when specifically trying to reclaim space after a known history rewrite, without paying the cost of a full repack.
 - **Common errors:** running `prune` without understanding the reflog relationship can lead to confusion about why an "unreachable" object wasn't actually removed — check reflog retention first.
-- **Security impact:** as with `gc`, relevant to actually completing secret-remediation cleanup (§28).
+- **Security impact:** as with `gc`, relevant to actually completing secret-remediation cleanup ([§28](../Part7/Section-28-Part7-Security.md)).
 - **Performance impact:** generally lighter than a full `gc` since it skips the repacking step.
 
 ## 8. Hands-On Example — Watching Loose Objects Become a Packfile
@@ -221,13 +221,13 @@ Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas 
 ## 9. Production & Enterprise Usage
 
 - **Self-hosted Git server maintenance:** enterprises running GitLab, Gitea, or bare Git servers typically schedule periodic `git gc`/repack jobs across all hosted repositories during low-traffic windows, since automatic per-operation `gc.auto` triggers may not aggressively optimize very large or very active repositories without administrator tuning.
-- **Repository size monitoring:** platform/infrastructure teams often track packfile size growth over time as a repository health metric, using it to decide when techniques like history filtering (§31), Git LFS migration for binaries (§26), or splitting a monorepo become worthwhile.
-- **CI/CD clone performance:** because clones transfer packfiles (not loose objects), CI system performance is directly affected by how well a repository is packed — a poorly-maintained repository (many loose objects, fragmented packs) can measurably slow down CI checkout times at scale, motivating shallow clones (`--depth`) and partial clone techniques covered in §26.
+- **Repository size monitoring:** platform/infrastructure teams often track packfile size growth over time as a repository health metric, using it to decide when techniques like history filtering ([§31](../Part8/Section-31-Part8-Advanced-Tooling.md)), Git LFS migration for binaries ([§26](../Part6/Section-26-Part6-Scaling-Git.md)), or splitting a monorepo become worthwhile.
+- **CI/CD clone performance:** because clones transfer packfiles (not loose objects), CI system performance is directly affected by how well a repository is packed — a poorly-maintained repository (many loose objects, fragmented packs) can measurably slow down CI checkout times at scale, motivating shallow clones (`--depth`) and partial clone techniques covered in [§26](../Part6/Section-26-Part6-Scaling-Git.md).
 
 ## 10. Security Considerations
 
-- **Secret remediation is incomplete without gc.** Rewriting history to remove a leaked secret (via `filter-repo` or similar, §28, §31) only detaches the secret from reachable refs — the actual object with the secret's content still exists as a loose (or already-packed) object until `git gc --prune=now` (or equivalent) actually removes it, and even then, remote copies, forks, and other clones are entirely unaffected and must be separately addressed. This is one of the most commonly mishandled aspects of secret-leak incident response.
-- **Packfiles themselves carry no additional security properties** beyond what loose objects already have (per §5's security considerations) — packing is purely a size/performance optimization, not an encryption or access-control mechanism.
+- **Secret remediation is incomplete without gc.** Rewriting history to remove a leaked secret (via `filter-repo` or similar, [§28](../Part7/Section-28-Part7-Security.md), [§31](../Part8/Section-31-Part8-Advanced-Tooling.md)) only detaches the secret from reachable refs — the actual object with the secret's content still exists as a loose (or already-packed) object until `git gc --prune=now` (or equivalent) actually removes it, and even then, remote copies, forks, and other clones are entirely unaffected and must be separately addressed. This is one of the most commonly mishandled aspects of secret-leak incident response.
+- **Packfiles themselves carry no additional security properties** beyond what loose objects already have (per [§5](./Section-05-Part2-Object-Model.md)'s security considerations) — packing is purely a size/performance optimization, not an encryption or access-control mechanism.
 
 ## 11. Performance Considerations
 
@@ -238,21 +238,21 @@ Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas 
 ## 12. Monitoring
 
 - `git count-objects -v` is the primary lightweight health-check command; a persistently high loose-object count across normal operation suggests `gc.auto` isn't triggering appropriately (worth checking `gc.auto`'s configured threshold) or that manual scheduled maintenance is warranted.
-- Repository size growth over time (via hosting-platform dashboards, or periodic `du -sh .git`) is a useful longer-term monitoring signal feeding into decisions covered in §26 and §29.
+- Repository size growth over time (via hosting-platform dashboards, or periodic `du -sh .git`) is a useful longer-term monitoring signal feeding into decisions covered in [§26](../Part6/Section-26-Part6-Scaling-Git.md) and [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md).
 
 ## 13. Troubleshooting
 
-| Symptom                                                    | Likely cause                                                                 | Fix                                                                                                                                                                     |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repository `.git` directory unexpectedly large             | Many loose objects not yet packed, or genuinely large history/binary content | Run `git count-objects -v` and `git gc` first; if still large, investigate large blobs (§26, §29) or consider Git LFS                                                   |
-| `warning: There are too many unreachable loose objects`    | Objects past the gc auto-pack threshold but not yet cleaned                  | Run `git gc` manually, or wait for the next automatic trigger                                                                                                           |
-| Secret still recoverable from `.git` after history rewrite | Old objects not yet pruned, or reflog still referencing them                 | Run `git reflog expire --expire=now --all` followed by `git gc --prune=now`; remember this only affects the local clone — remote copies need separate remediation (§28) |
-| `git gc` unexpectedly slow on a very large repository      | Large object count/history depth, or `--aggressive` used unnecessarily       | Schedule gc during low-usage windows; avoid `--aggressive` for routine maintenance                                                                                      |
+| Symptom                                                    | Likely cause                                                                 | Fix                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository `.git` directory unexpectedly large             | Many loose objects not yet packed, or genuinely large history/binary content | Run `git count-objects -v` and `git gc` first; if still large, investigate large blobs ([§26](../Part6/Section-26-Part6-Scaling-Git.md), [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)) or consider Git LFS |
+| `warning: There are too many unreachable loose objects`    | Objects past the gc auto-pack threshold but not yet cleaned                  | Run `git gc` manually, or wait for the next automatic trigger                                                                                                                                                                             |
+| Secret still recoverable from `.git` after history rewrite | Old objects not yet pruned, or reflog still referencing them                 | Run `git reflog expire --expire=now --all` followed by `git gc --prune=now`; remember this only affects the local clone — remote copies need separate remediation ([§28](../Part7/Section-28-Part7-Security.md))                          |
+| `git gc` unexpectedly slow on a very large repository      | Large object count/history depth, or `--aggressive` used unnecessarily       | Schedule gc during low-usage windows; avoid `--aggressive` for routine maintenance                                                                                                                                                        |
 
 ## 14. Best Practices
 
 - Let automatic `gc.auto` handle routine maintenance for typical repositories; only invoke `git gc` manually after unusual events (large history rewrites, bulk imports) or as part of deliberate scheduled maintenance on self-hosted infrastructure.
-- When remediating a leaked secret, always follow the history rewrite with reflog expiry and `git gc --prune=now` locally, and treat remote repository cleanup, forks, and CI caches as separate, equally necessary steps (§28).
+- When remediating a leaked secret, always follow the history rewrite with reflog expiry and `git gc --prune=now` locally, and treat remote repository cleanup, forks, and CI caches as separate, equally necessary steps ([§28](../Part7/Section-28-Part7-Security.md)).
 - Monitor `.git` directory size and loose object counts periodically on any self-hosted, high-activity repository rather than assuming defaults scale indefinitely without attention.
 
 ## 15. Anti-Patterns & Common Mistakes
@@ -276,16 +276,16 @@ Note the `Total 40 (delta 15)` line: 15 of the 40 objects were stored as deltas 
 
 ## 17. Common Misconceptions
 
-1. **"Delta compression means commits store diffs."** Delta compression is a storage-layer optimization inside packfiles only; every commit's logical content remains a complete, full tree snapshot at the object-model layer (§5).
+1. **"Delta compression means commits store diffs."** Delta compression is a storage-layer optimization inside packfiles only; every commit's logical content remains a complete, full tree snapshot at the object-model layer ([§5](./Section-05-Part2-Object-Model.md)).
 2. **"`git gc` immediately deletes anything not currently referenced by a branch."** The reflog's retention window protects recently-unreferenced objects from immediate deletion — this delay is deliberate and is exactly what makes local recovery from mistakes possible.
 3. **"Rewriting history removes a leaked secret from the repository."** It only detaches the secret from reachable history; the object still exists locally until reflog expiry and `gc --prune=now`, and remote copies/forks/clones are entirely unaffected and need separate handling.
 4. **"Packing is a rarely-relevant internal detail I'll never need to know."** Understanding it directly explains observed behavior — why clones transfer quickly despite huge history, why `.git` directory size sometimes drops sharply after `gc`, and why secret remediation requires more than a single history-rewriting command.
 
 ## 18. 🔑 Key Takeaways
 
-- Git objects exist physically as either loose objects (one file per object) or consolidated into packfiles with delta compression between similar objects — a purely physical storage optimization that never changes the logical object model from §5.
+- Git objects exist physically as either loose objects (one file per object) or consolidated into packfiles with delta compression between similar objects — a purely physical storage optimization that never changes the logical object model from [§5](./Section-05-Part2-Object-Model.md).
 - `git gc` repacks loose objects into packfiles, prunes genuinely unreachable objects (respecting the reflog's retention window), and compacts refs — running automatically in the background and manually invocable.
-- The reflog protects recently-unreferenced objects from immediate garbage collection, which is the underlying mechanism that makes local mistake-recovery (§6) actually work.
+- The reflog protects recently-unreferenced objects from immediate garbage collection, which is the underlying mechanism that makes local mistake-recovery ([§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md)) actually work.
 - Secret remediation requires more than rewriting history: local reflog expiry plus `gc --prune=now`, remote repository cleanup, and credential rotation are all separately necessary.
 - `git count-objects -v` and `git gc` are the primary diagnostic and maintenance tools for this storage layer.
 

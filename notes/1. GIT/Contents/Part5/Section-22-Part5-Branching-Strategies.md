@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** A branching strategy is a team-wide agreement about which branches exist, what each one means, how long branches live, and exactly when and how they merge into each other — the policy layer sitting on top of the mechanical branch commands from §12.
+**Plain language:** A branching strategy is a team-wide agreement about which branches exist, what each one means, how long branches live, and exactly when and how they merge into each other — the policy layer sitting on top of the mechanical branch commands from [§12](../Part4/Section-12-Part4-Branching-In-Depth.md).
 
-**Precise:** Formally, a branching strategy specifies: (1) the set of **long-lived** branches and their roles, (2) the rules for creating **short-lived** branches from them, (3) the merge direction and method (§21) permitted between each pair, and (4) how releases and hotfixes are cut. None of this is enforced by Git itself — it's convention, optionally backed by platform tooling like protected branches (§23).
+**Precise:** Formally, a branching strategy specifies: (1) the set of **long-lived** branches and their roles, (2) the rules for creating **short-lived** branches from them, (3) the merge direction and method ([§21](./Section-21-Part5-Collaboration-Models.md)) permitted between each pair, and (4) how releases and hotfixes are cut. None of this is enforced by Git itself — it's convention, optionally backed by platform tooling like protected branches ([§23](./Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)).
 
 ## 2. Why It Exists / Problem It Solves
 
-Branches are cheap (§12) — that's exactly the problem a strategy solves. Cheap branches mean a team of twenty can easily end up with two hundred branches, no shared understanding of which ones are safe to build on, which are stale, which represent what's actually in production versus what's merely "done," and no consistent process for cutting a release or an emergency hotfix. A branching strategy answers, in advance and for the whole team: where do I branch from to start new work, where does my work go when it's done, and how does a fix reach production. Different strategies answer these questions differently because different teams have genuinely different constraints — release cadence, number of concurrently supported versions, team size, and deployment model all push toward different answers.
+Branches are cheap ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) — that's exactly the problem a strategy solves. Cheap branches mean a team of twenty can easily end up with two hundred branches, no shared understanding of which ones are safe to build on, which are stale, which represent what's actually in production versus what's merely "done," and no consistent process for cutting a release or an emergency hotfix. A branching strategy answers, in advance and for the whole team: where do I branch from to start new work, where does my work go when it's done, and how does a fix reach production. Different strategies answer these questions differently because different teams have genuinely different constraints — release cadence, number of concurrently supported versions, team size, and deployment model all push toward different answers.
 
 ## 3. Git Flow
 
@@ -40,7 +40,7 @@ develop  ●────●──────●─────────●�
 ```
 
 - **New feature work:** branch `feature/x` from `develop`, work, merge back into `develop` when done (never directly into `main`).
-- **Preparing a release:** branch `release/1.1` from `develop` once `develop` has everything the release needs; only bug fixes land on the release branch during stabilization; when ready, merge into both `main` (tagging the release, §18) and back into `develop` (so those fixes aren't lost from ongoing development).
+- **Preparing a release:** branch `release/1.1` from `develop` once `develop` has everything the release needs; only bug fixes land on the release branch during stabilization; when ready, merge into both `main` (tagging the release, [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) and back into `develop` (so those fixes aren't lost from ongoing development).
 - **Emergency production fix:** branch `hotfix/x` directly from `main` (skipping `develop` entirely, since `develop` may contain unfinished, unreleased work you don't want in the emergency fix), fix, merge into both `main` (tag a new patch release) and `develop`.
 
 ### 3.2 Why It's Considered Heavyweight Today
@@ -64,7 +64,7 @@ main  ●───●───────●───────●───�
 1. Branch off `main` for anything — feature, fix, experiment. Name it descriptively.
 2. Commit and push regularly.
 3. Open a PR early, even in draft form, for visibility and CI.
-4. Discuss and review (§21).
+4. Discuss and review ([§21](./Section-21-Part5-Collaboration-Models.md)).
 5. Deploy from the branch for final validation, or merge to `main` and deploy from there — the model is explicit that `main` is _always_ deployable, so merging is not a scary event.
 6. Merge, then deploy (if not already validated pre-merge).
 
@@ -95,7 +95,7 @@ Code always flows **downstream** — `main` → `staging` → `production` — b
 
 ### 5.2 Release Branches Variant
 
-For teams shipping multiple supported versions (closer to Git Flow's original problem): `main` stays the trunk, and a `release/2.4` branch is cut when version 2.4 ships. Fixes destined for the current release are cherry-picked (§17) from `main` onto the relevant `release/*` branch rather than developed there directly — keeping `main` as the single source of truth for all new work while still letting `2.4.1`, `2.4.2` patch releases happen independently.
+For teams shipping multiple supported versions (closer to Git Flow's original problem): `main` stays the trunk, and a `release/2.4` branch is cut when version 2.4 ships. Fixes destined for the current release are cherry-picked ([§17](../Part4/Section-17-Part4-Cherry-Pick-Patches.md)) from `main` onto the relevant `release/*` branch rather than developed there directly — keeping `main` as the single source of truth for all new work while still letting `2.4.1`, `2.4.2` patch releases happen independently.
 
 ### 5.3 GitLab Flow vs the Other Two
 
@@ -128,15 +128,15 @@ Two operating variants:
 
 ### 6.2 Feature Flags: The Enabling Technology
 
-Trunk-based development's central problem is obvious: if everyone merges to `main` constantly and `main` is always deployable, how do you work on something that takes three weeks without shipping a half-finished feature to users? The answer is **feature flags** (also called feature toggles): the incomplete code merges to `main` and ships to production like anything else, but is wrapped in a runtime conditional that keeps it inactive (or active only for internal users/a canary cohort) until it's ready. This decouples **merging** (a Git/code event, safe and continuous) from **releasing** (a business/product event, controlled separately) — a distinction that's central to modern continuous-delivery pipelines and is revisited from the deployment-automation side in §25.
+Trunk-based development's central problem is obvious: if everyone merges to `main` constantly and `main` is always deployable, how do you work on something that takes three weeks without shipping a half-finished feature to users? The answer is **feature flags** (also called feature toggles): the incomplete code merges to `main` and ships to production like anything else, but is wrapped in a runtime conditional that keeps it inactive (or active only for internal users/a canary cohort) until it's ready. This decouples **merging** (a Git/code event, safe and continuous) from **releasing** (a business/product event, controlled separately) — a distinction that's central to modern continuous-delivery pipelines and is revisited from the deployment-automation side in [§25](../Part6/Section-25-Part6-Git-in-CICD-Pipelines.md).
 
 > 💡 **Tip:** Feature flags trade a code-complexity cost (conditional logic, eventual flag cleanup debt) for a process-complexity win (no long-lived branches, no giant merge-day risk). Teams that adopt trunk-based development without disciplined flag lifecycle management (removing flags once a feature is fully rolled out) accumulate exactly the kind of cruft the model was supposed to avoid.
 
 ### 6.3 Why Large Tech Companies Favor It
 
 - **Merge conflict cost grows with branch lifetime and divergence**, roughly proportional to how much both `main` and the branch have changed since they diverged — short-lived branches keep this cost small and constant; long-lived branches accumulate it exponentially, culminating in the dreaded multi-day "integration merge" that Git Flow's `develop`-then-`release` model is especially prone to at scale.
-- **Continuous integration is only meaningful with frequent integration.** CI (§25) is designed to catch problems the moment code is combined; a team that branches for weeks before merging is running CI on isolated code that hasn't actually been "integrated" until the final merge, defeating much of CI's purpose.
-- **Large organizations, huge monorepos, thousands of daily commits** (§1's Google/Meta/Microsoft examples) make long-lived divergent branches operationally unworkable at scale — the coordination cost of many teams each holding weeks-old branches against a fast-moving trunk compounds badly.
+- **Continuous integration is only meaningful with frequent integration.** CI ([§25](../Part6/Section-25-Part6-Git-in-CICD-Pipelines.md)) is designed to catch problems the moment code is combined; a team that branches for weeks before merging is running CI on isolated code that hasn't actually been "integrated" until the final merge, defeating much of CI's purpose.
+- **Large organizations, huge monorepos, thousands of daily commits** ([§1](../Part1/Section-01-Part1-Version-Control-Fundamentals.md)'s Google/Meta/Microsoft examples) make long-lived divergent branches operationally unworkable at scale — the coordination cost of many teams each holding weeks-old branches against a fast-moving trunk compounds badly.
 
 ## 7. Decision Framework
 
@@ -152,7 +152,7 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 
 ## 8. Interview Questions
 
-**[Beginner] Q1. What problem does a branching strategy solve that plain Git branching (§12) doesn't already solve?**
+**[Beginner] Q1. What problem does a branching strategy solve that plain Git branching ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) doesn't already solve?**
 **Model answer:** Git makes branches cheap and easy to create, but it has no opinion at all about what any given branch _means_, how long it should live, or which branches are allowed to merge into which. A branching strategy is the team-level convention that answers those questions — for example, that `feature/*` branches always come from and return to `develop`, or that `main` must always be deployable — so that everyone on the team shares the same mental model of the repository's branch structure instead of each person inventing their own.
 
 **[Beginner] Q2. Describe Git Flow's branch structure in one or two sentences.**
@@ -177,7 +177,7 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 
 ## 10. 🔑 Key Takeaways
 
-- Branching strategies are team convention layered on Git's mechanically opinion-free branch primitives (§12) — Git enforces none of this on its own.
+- Branching strategies are team convention layered on Git's mechanically opinion-free branch primitives ([§12](../Part4/Section-12-Part4-Branching-In-Depth.md)) — Git enforces none of this on its own.
 - Git Flow: `main` + `develop` permanent, plus `feature/*`, `release/*`, `hotfix/*` temporary branches — built for scheduled releases and multi-version support; heavyweight for continuous delivery.
 - GitHub Flow: one long-lived `main`, short-lived branches, PR-and-merge, always deployable — minimal ceremony, fits continuous deployment.
 - GitLab Flow: GitHub Flow's simplicity plus optional environment or release branches — the deliberate middle ground.
@@ -186,4 +186,4 @@ No strategy is objectively "best" — the honest senior answer is always "it dep
 
 ## 11. Related Concepts & What's Next
 
-This section built on §12's branch mechanics and §21's PR/review workflow to describe the higher-level policies teams layer on top of both. §23 closes out Part 5 by looking at where all of this actually runs: the hosting platforms (GitHub, GitLab, Bitbucket) and the governance features — protected branches, CODEOWNERS, org-level permissions — that make a chosen branching strategy actually enforceable rather than merely agreed-upon.
+This section built on [§12](../Part4/Section-12-Part4-Branching-In-Depth.md)'s branch mechanics and [§21](./Section-21-Part5-Collaboration-Models.md)'s PR/review workflow to describe the higher-level policies teams layer on top of both. [§23](./Section-23-Part5-Git-Hosting-Enterprise-Platforms.md) closes out Part 5 by looking at where all of this actually runs: the hosting platforms (GitHub, GitLab, Bitbucket) and the governance features — protected branches, CODEOWNERS, org-level permissions — that make a chosen branching strategy actually enforceable rather than merely agreed-upon.

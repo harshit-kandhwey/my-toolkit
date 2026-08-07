@@ -135,4 +135,4 @@ gcloud spanner instances update demo-spanner --processing-units=1000
 
 ## 11. Related Concepts
 
-Cloud SQL as the default relational choice below Spanner's scale threshold (Section 13), Bigtable for non-relational massive-scale workloads (Section 16), the storage/database decision matrix (Section 18), disaster recovery and multi-region architecture (Section 58), and the AWS Aurora/DynamoDB comparison here and in Section 82.
+Cloud SQL as the default relational choice below Spanner's scale threshold ([Section 13](./Section-13-Part2-Cloud-SQL.md)), Bigtable for non-relational massive-scale workloads ([Section 16](./Section-16-Part2-Bigtable.md)), the storage/database decision matrix ([Section 18](./Section-18-Part2-Storage-DB-Decision-Matrix.md)), disaster recovery and multi-region architecture ([Section 58](../Part8/Section-58-Part8-Disaster-Recovery-Multi-Region-Architecture.md)), and the AWS Aurora/DynamoDB comparison here and in [Section 82](../Part13/Section-82-Part13-GCP-vs-AWS-vs-Azure-Comparison.md).

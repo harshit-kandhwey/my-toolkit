@@ -161,6 +161,6 @@ Senior - Design network observability for 30 VPCs across multiple accounts, need
 
 ## Related Concepts (forward links)
 
-- Part 4 Wrap-Up and comprehensive Networking interview drill -> §38 (final section)
+- Part 4 Wrap-Up and comprehensive Networking interview drill -> [§38](./Section-38-Part4-WrapUp-and-Interview-Drill.md) (final section)
 - CloudTrail, GuardDuty, Security Hub as the broader detective-controls ecosystem Flow Logs feeds into -> Part 8
 - Storage services (S3, EBS, EFS) that Gateway Endpoints and NAT Gateway traffic ultimately connect to -> Part 5

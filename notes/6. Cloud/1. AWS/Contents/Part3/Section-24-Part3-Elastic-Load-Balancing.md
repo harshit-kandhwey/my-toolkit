@@ -15,7 +15,7 @@
 ## 2. Why It Exists
 
 - ASGs constantly launch/terminate instances — direct client connections to a specific instance would break on every scaling event. ELB provides a stable entry point abstracting the changing fleet.
-- Multi-AZ traffic distribution actively delivers §2's HA architecture — spans AZs, routes only to healthy targets, so a single AZ failure doesn't take down the app.
+- Multi-AZ traffic distribution actively delivers [§2](../Part1/Section-02-Part1-AWS-Global-Infrastructure.md)'s HA architecture — spans AZs, routes only to healthy targets, so a single AZ failure doesn't take down the app.
 - Application-aware health checking is what makes self-healing meaningful — ELB performs the checks ASG acts on.
 
 ---
@@ -37,7 +37,7 @@
 ### 3.3 Gateway Load Balancer (GWLB) — Layer 3
 
 - Deploys/scales/manages third-party network appliances (firewalls, IDS/IPS); inserts traffic through them for inspection via GENEVE encapsulation.
-- Best for: centralizing traffic inspection through security appliances (connects to §17's Network Firewall).
+- Best for: centralizing traffic inspection through security appliances (connects to [§17](../Part2/Section-17-Part2-WAF-Shield-Network-Firewall.md)'s Network Firewall).
 
 ### 3.4 Classic Load Balancer (CLB) — Legacy
 
@@ -70,14 +70,14 @@ Ordered condition-to-action rules (forward, redirect, fixed response), evaluated
 ## 5. Health Checks
 
 - Each target group defines protocol, port, path, interval, timeout, healthy/unhealthy threshold.
-- A failing target is **removed from traffic rotation** — the LB just stops routing to it; instance termination is a separate ASG decision (Section 5 §6).
+- A failing target is **removed from traffic rotation** — the LB just stops routing to it; instance termination is a separate ASG decision (Section 5 [§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md)).
 - **Handoff:** ELB detects the application-level failure; ASG acts on that detection by replacing the instance.
 
 ---
 
 ## 6. Connection Draining / Deregistration Delay
 
-- When a target is removed (health failure, scale-in, manual deregistration), the LB can keep routing already-established connections for a configurable **deregistration delay** while sending no new requests — the mechanism behind Section 5 §9's graceful termination.
+- When a target is removed (health failure, scale-in, manual deregistration), the LB can keep routing already-established connections for a configurable **deregistration delay** while sending no new requests — the mechanism behind Section 5 [§9](../Part2/Section-09-Part2-IAM-Core-Concepts.md)'s graceful termination.
 - Without it, abrupt removal cuts off in-flight requests, causing user-facing errors.
 
 ---
@@ -86,7 +86,7 @@ Ordered condition-to-action rules (forward, redirect, fixed response), evaluated
 
 - Controls whether traffic distributes evenly across **all targets in all AZs**, or only evenly within the AZ that received the request.
 - Without it, an AZ with fewer targets gets a disproportionate traffic share relative to its target count.
-- **Cost nuance:** can introduce cross-AZ data transfer charges in some ALB configurations (§6 §4).
+- **Cost nuance:** can introduce cross-AZ data transfer charges in some ALB configurations ([§6](../Part1/Section-06-Part1-AWS-Pricing-and-Cost-Fundamentals.md) [§4](../Part1/Section-04-Part1-AWS-Accounts-Root-User-Identity-Basics.md)).
 
 ---
 
@@ -94,7 +94,7 @@ Ordered condition-to-action rules (forward, redirect, fixed response), evaluated
 
 - LB can terminate TLS, decrypting at the load balancer, then communicating with backends over HTTP or re-encrypted TLS.
 - Centralizes certificate management via **AWS Certificate Manager** rather than every backend instance managing its own cert.
-- **WAF connection:** WAF attaches to ALB precisely because the ALB is where HTTP/HTTPS requests are processed/terminated (§17).
+- **WAF connection:** WAF attaches to ALB precisely because the ALB is where HTTP/HTTPS requests are processed/terminated ([§17](../Part2/Section-17-Part2-WAF-Shield-Network-Firewall.md)).
 
 ---
 
@@ -187,4 +187,4 @@ Ordered condition-to-action rules (forward, redirect, fixed response), evaluated
 - VPC subnets, public/private architecture, Route 53 integration with ELB → Part 4
 - AWS Certificate Manager for TLS → Part 4
 - Blue/green and canary deployment strategies in full depth → Part 9
-- AWS Lambda as an ALB target → §25 (next)
+- AWS Lambda as an ALB target → [§25](./Section-25-Part3-AWS-Lambda-Serverless-Compute.md) (next)

@@ -20,9 +20,9 @@ A **secret** is a named container; each time its value changes, a new immutable 
 
 ### 3.2 Access Control and Rotation
 
-- Access to secrets is governed by IAM roles (`roles/secretmanager.secretAccessor` to read a value, `roles/secretmanager.admin` to manage), following the same principal/binding model as Section 35 — a secret's access can be scoped as tightly as a single service account.
+- Access to secrets is governed by IAM roles (`roles/secretmanager.secretAccessor` to read a value, `roles/secretmanager.admin` to manage), following the same principal/binding model as [Section 35](./Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md) — a secret's access can be scoped as tightly as a single service account.
 - Secret Manager supports **rotation notifications** — configuring a schedule that publishes a Pub/Sub message reminding an owner (or triggering an automation, e.g., a Cloud Function) to rotate the underlying credential; Secret Manager itself does not automatically regenerate arbitrary third-party credentials, since it has no way to know how to, e.g., change a specific database's password — rotation logic is application/service-specific.
-- Every access to a secret version is recorded in Cloud Audit Logs' Data Access logs (Section 40), letting security teams answer "who read this secret, and when?"
+- Every access to a secret version is recorded in Cloud Audit Logs' Data Access logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)), letting security teams answer "who read this secret, and when?"
 
 ### 3.3 Replication
 
@@ -36,11 +36,11 @@ Cloud KMS organizes keys as: **Key Ring** (a regional or global grouping/namespa
 
 ### 4.2 Key Types
 
-| Key type                      | Use case                                                                                                                                                       |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Symmetric encryption key**  | The default and most common type — same key encrypts and decrypts. Used for envelope encryption of application data and CMEK.                                  |
-| **Asymmetric decryption key** | A public/private key pair where the public key encrypts and only the private key (which never leaves KMS) decrypts.                                            |
-| **Asymmetric signing key**    | A public/private key pair used to produce and verify digital signatures, e.g., for signed URLs or attestations (relevant to Binary Authorization, Section 43). |
+| Key type                      | Use case                                                                                                                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Symmetric encryption key**  | The default and most common type — same key encrypts and decrypts. Used for envelope encryption of application data and CMEK.                                                                                                       |
+| **Asymmetric decryption key** | A public/private key pair where the public key encrypts and only the private key (which never leaves KMS) decrypts.                                                                                                                 |
+| **Asymmetric signing key**    | A public/private key pair used to produce and verify digital signatures, e.g., for signed URLs or attestations (relevant to Binary Authorization, [Section 43](./Section-43-Part5-Binary-Authorization-Confidential-Computing.md)). |
 
 ### 4.3 Protection Levels
 
@@ -123,7 +123,7 @@ Created key [cmek-gcs-key] (protection level: HSM).
 gcloud secrets versions access latest --secret=db-password
 ```
 
-> 💡 **Tip:** Never bake a secret's value into a build artifact or environment variable at deploy time from a fetched value that's then logged — instead, have the running workload call `secretmanager.versions.access` at startup using its own attached identity (Section 36), so the plaintext value never touches CI/CD logs or version control.
+> 💡 **Tip:** Never bake a secret's value into a build artifact or environment variable at deploy time from a fetched value that's then logged — instead, have the running workload call `secretmanager.versions.access` at startup using its own attached identity ([Section 36](./Section-36-Part5-Service-Accounts.md)), so the plaintext value never touches CI/CD logs or version control.
 
 ## 8. Production & Enterprise Usage
 
@@ -146,7 +146,7 @@ gcloud secrets versions access latest --secret=db-password
 **Model answer:** The data itself is not deleted or modified — it remains on disk as ciphertext — but it becomes immediately inaccessible, since the service can no longer perform the decryption operation without an enabled key. Re-enabling the key restores access instantly, since nothing about the underlying data changed; only fully destroying the key version (after its mandatory scheduled-destruction delay) makes the data permanently unrecoverable.
 
 **🎯 Senior/Architect:** _Design a key management and secrets strategy for a multi-tenant SaaS platform that must be able to cryptographically guarantee complete data destruction for any tenant on offboarding, and must satisfy a customer requirement for HSM-backed keys._
-**Model answer:** I'd provision one Cloud KMS key per tenant (or per tenant-tier, if per-tenant key sprawl becomes operationally heavy), created at the HSM protection level to satisfy the hardware-backing requirement, organized into key rings scoped by environment and region for data residency. Each tenant's data across relevant services (Cloud Storage, BigQuery, Cloud SQL) would be CMEK-encrypted using that tenant's dedicated key. On offboarding, I'd destroy that tenant's key (respecting the mandatory destruction delay, verified by an internal approval workflow before the delay begins, per Access Approval practices in Section 40), which renders every copy of that tenant's data across every service permanently unrecoverable without needing to manually locate and delete each individual record — a strong, auditable "crypto-shredding" guarantee. Application secrets (database credentials, third-party API keys) would live in Secret Manager, scoped per-tenant or per-service via IAM, accessed only by each service's own dedicated service account (Section 36), with rotation notifications wired to an automation that regenerates credentials and stores new versions without human handling of plaintext.
+**Model answer:** I'd provision one Cloud KMS key per tenant (or per tenant-tier, if per-tenant key sprawl becomes operationally heavy), created at the HSM protection level to satisfy the hardware-backing requirement, organized into key rings scoped by environment and region for data residency. Each tenant's data across relevant services (Cloud Storage, BigQuery, Cloud SQL) would be CMEK-encrypted using that tenant's dedicated key. On offboarding, I'd destroy that tenant's key (respecting the mandatory destruction delay, verified by an internal approval workflow before the delay begins, per Access Approval practices in [Section 40](./Section-40-Part5-Compliance-Governance.md)), which renders every copy of that tenant's data across every service permanently unrecoverable without needing to manually locate and delete each individual record — a strong, auditable "crypto-shredding" guarantee. Application secrets (database credentials, third-party API keys) would live in Secret Manager, scoped per-tenant or per-service via IAM, accessed only by each service's own dedicated service account ([Section 36](./Section-36-Part5-Service-Accounts.md)), with rotation notifications wired to an automation that regenerates credentials and stores new versions without human handling of plaintext.
 
 ## 🔑 Key Takeaways
 
@@ -158,4 +158,4 @@ gcloud secrets versions access latest --secret=db-password
 
 ## Related Concepts
 
-IAM Fundamentals (Section 35), Service Accounts (Section 36), Security Command Center (Section 39), Compliance & Governance and Cloud Audit Logs (Section 40), Binary Authorization & Confidential Computing (Section 43), and Cloud SQL/BigQuery/Cloud Storage encryption-at-rest options (Sections 11, 13, 44) all build directly on the secrets and key-management concepts introduced here.
+IAM Fundamentals ([Section 35](./Section-35-Part5-IAM-Fundamentals-Members-Roles-Policies.md)), Service Accounts ([Section 36](./Section-36-Part5-Service-Accounts.md)), Security Command Center ([Section 39](./Section-39-Part5-Security-Command-Center.md)), Compliance & Governance and Cloud Audit Logs ([Section 40](./Section-40-Part5-Compliance-Governance.md)), Binary Authorization & Confidential Computing ([Section 43](./Section-43-Part5-Binary-Authorization-Confidential-Computing.md)), and Cloud SQL/BigQuery/Cloud Storage encryption-at-rest options (Sections 11, 13, 44) all build directly on the secrets and key-management concepts introduced here.

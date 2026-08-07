@@ -2,7 +2,7 @@
 
 ## 1. From Files to Commands
 
-§25 covered `/etc/passwd`, `/etc/shadow`, and `/etc/group` as the raw data files that define every user and group on a system. This section covers the command layer that mutates those files correctly — with locking, validation, and the right side effects (home directory creation, mail spool setup, skeleton files) — rather than editing them by hand. Every command below is, at its core, a safe wrapper around exactly those three files (plus `/etc/gshadow` for group passwords); understanding §25 first is what makes the flags in this section make sense rather than feel arbitrary.
+[§25](./Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md) covered `/etc/passwd`, `/etc/shadow`, and `/etc/group` as the raw data files that define every user and group on a system. This section covers the command layer that mutates those files correctly — with locking, validation, and the right side effects (home directory creation, mail spool setup, skeleton files) — rather than editing them by hand. Every command below is, at its core, a safe wrapper around exactly those three files (plus `/etc/gshadow` for group passwords); understanding [§25](./Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md) first is what makes the flags in this section make sense rather than feel arbitrary.
 
 > 💡 **Tip:** Never hand-edit `/etc/passwd`, `/etc/shadow`, or `/etc/group` directly with a text editor while the system is live — use `vipw` / `vipw -s` / `vigr` if a manual edit is ever genuinely necessary, since they lock the file and validate syntax on save. The commands in this section exist specifically to make manual edits unnecessary for routine work.
 
@@ -45,7 +45,7 @@ uid=1002(jane) gid=1002(jane) groups=1002(jane),27(sudo),999(docker)
 - Forgetting `-m` and being surprised the user has no home directory — on many distributions `useradd`'s raw defaults do **not** create a home directory automatically, unlike `adduser` below.
 - Omitting `-s` and getting whatever the system default shell is (frequently `/bin/sh` or even no shell at all on minimal images), then wondering why an interactive login "doesn't work right."
 
-**Troubleshooting:** If a newly created user can't log in interactively at all, check `-s` was set to a real shell and cross-check `/etc/shadow`'s password field isn't `!` or `*` (locked, §25) — `useradd` without `-p` or a following `passwd` call creates an account with no usable password by default.
+**Troubleshooting:** If a newly created user can't log in interactively at all, check `-s` was set to a real shell and cross-check `/etc/shadow`'s password field isn't `!` or `*` (locked, [§25](./Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)) — `useradd` without `-p` or a following `passwd` call creates an account with no usable password by default.
 
 ### 2.1 `useradd` vs. `adduser`: Raw Tool vs. Debian Wrapper
 
@@ -85,14 +85,14 @@ $ groups jane
 jane : jane sudo docker
 ```
 
-**Production usage example:** Onboarding a user onto a new service (adding them to a `docker` or `wheel` group, §31's sudo coverage ties in directly here for `sudo`/`wheel`) is one of the single most common day-to-day admin actions on any fleet — and it's exactly where the `-aG` vs `-G` distinction below causes real incidents.
+**Production usage example:** Onboarding a user onto a new service (adding them to a `docker` or `wheel` group, [§31](./Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md)'s sudo coverage ties in directly here for `sudo`/`wheel`) is one of the single most common day-to-day admin actions on any fleet — and it's exactly where the `-aG` vs `-G` distinction below causes real incidents.
 
 > ⚠️ **Warning: The single most common `usermod` mistake — `-G` silently drops every other group.** `usermod -G docker jane` does not _add_ `jane` to `docker`; it **replaces** her entire supplementary group list with just `docker`, silently removing her from `sudo`, `adm`, or any other group she previously belonged to. The fix is `usermod -aG docker jane` — `-a` ("append") tells `usermod` to add to the existing list rather than overwrite it. `-a` is meaningless without `-G` right next to it; there is no standalone "append" flag. This single missing character has locked engineers out of `sudo` access on live hosts more than once — always run `groups USERNAME` or `id USERNAME` before and after to confirm the change did what was intended.
 
 **Common errors:**
 
 - Running `usermod -G` alone (no `-a`) intending to add one group, and silently dropping every other supplementary group membership the account had.
-- Using `-u` to change a UID and then wondering why the user's existing files under their home directory (or elsewhere) still show the _old_ UID as owner — `usermod -u` changes the account's UID going forward but does **not** retroactively `chown` files; that's a manual `find / -uid OLDUID -exec chown NEWUID {} +` step (§27 covers ownership mechanics in depth).
+- Using `-u` to change a UID and then wondering why the user's existing files under their home directory (or elsewhere) still show the _old_ UID as owner — `usermod -u` changes the account's UID going forward but does **not** retroactively `chown` files; that's a manual `find / -uid OLDUID -exec chown NEWUID {} +` step ([§27](./Section-27-Part4-Standard-Permission-Model.md) covers ownership mechanics in depth).
 
 **Troubleshooting:** If a user reports they've lost `sudo` access after what should have been an unrelated group change, `groups USERNAME` is the first diagnostic step — a stray `-G` without `-a` is the leading suspect.
 
@@ -231,7 +231,7 @@ Password inactive                                       : never
 Account expires                                          : never
 ```
 
-**Production usage example:** `chage -M 90` enforced fleet-wide is a common, concrete implementation of a "passwords must rotate every 90 days" compliance requirement (§96's CIS Benchmark coverage, Part 12, formalizes this kind of policy at the audit level).
+**Production usage example:** `chage -M 90` enforced fleet-wide is a common, concrete implementation of a "passwords must rotate every 90 days" compliance requirement ([§96](../Part12/Section-96-Part12-CIS-Benchmarks-Compliance-Frameworks.md)'s CIS Benchmark coverage, Part 12, formalizes this kind of policy at the audit level).
 
 ## 7. Identity Inspection: `id`, `whoami`, `groups`
 
@@ -256,7 +256,7 @@ $ groups jane
 jane : jane sudo docker
 ```
 
-`id` with no argument reports the current shell's identity, which is subtly different from `whoami` in one edge case worth knowing: under `sudo` (§31), `whoami` reports the **effective** user (e.g., `root`), while `id` shows both real and effective UID/GID together when they differ — making `id` the more complete diagnostic when investigating a privilege-related issue.
+`id` with no argument reports the current shell's identity, which is subtly different from `whoami` in one edge case worth knowing: under `sudo` ([§31](./Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md)), `whoami` reports the **effective** user (e.g., `root`), while `id` shows both real and effective UID/GID together when they differ — making `id` the more complete diagnostic when investigating a privilege-related issue.
 
 > 💡 **Tip:** After any `usermod -aG`/`-G`, `gpasswd -a`/`-d`, or lock/unlock change, run `id USERNAME` (or have the affected user log out and back in, since group membership is generally read at login time, not live) as the standard verification step — this is the direct antidote to the `-aG` vs `-G` gotcha covered in the `usermod` section above.
 
@@ -289,7 +289,7 @@ deploy@host:~$ pwd
 
 > ⚠️ **Warning:** Plain `su jane` (no dash) is a common source of "it works when I `su` in but breaks in a real login" confusion — inherited environment variables (especially `$PATH`, which may still contain directories relevant to the switching-_from_ user but not the target) can cause scripts or tools to behave differently than they would under a genuine login. Default to `su -` unless there's a specific reason to preserve the calling shell's environment.
 
-`su` with no username at all defaults to switching to root. Note that `su` still exists and works even on hosts where `sudo` (§31) is the primary day-to-day privilege-escalation mechanism — `su -` is what most `sudo` configurations effectively wrap when an admin runs `sudo -i` or `sudo su -`.
+`su` with no username at all defaults to switching to root. Note that `su` still exists and works even on hosts where `sudo` ([§31](./Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md)) is the primary day-to-day privilege-escalation mechanism — `su -` is what most `sudo` configurations effectively wrap when an admin runs `sudo -i` or `sudo su -`.
 
 ## 9. Command Reference Table
 
@@ -310,7 +310,7 @@ deploy@host:~$ pwd
 
 ## 10. A Note on systemd-homed
 
-Part 9 (§65–§72) covers systemd in depth, but it's worth flagging here that modern systemd-based distributions increasingly offer **`systemd-homed`** (managed via `homectl`) as an alternative to the classic `/etc/passwd`+`useradd` model — it stores user records (including, optionally, encrypted home directories) in a more self-contained, portable format rather than flat files split across `passwd`/`shadow`/`group`. It is **not** yet the default on most production server distributions, and the commands in this section remain the standard, portable baseline every Linux admin needs regardless of whether a given host also has `homectl` available. Treat `systemd-homed` as an alternative worth recognizing by name, not as something to substitute for this section's commands in day-to-day work.
+Part 9 ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) covers systemd in depth, but it's worth flagging here that modern systemd-based distributions increasingly offer **`systemd-homed`** (managed via `homectl`) as an alternative to the classic `/etc/passwd`+`useradd` model — it stores user records (including, optionally, encrypted home directories) in a more self-contained, portable format rather than flat files split across `passwd`/`shadow`/`group`. It is **not** yet the default on most production server distributions, and the commands in this section remain the standard, portable baseline every Linux admin needs regardless of whether a given host also has `homectl` available. Treat `systemd-homed` as an alternative worth recognizing by name, not as something to substitute for this section's commands in day-to-day work.
 
 ## 11. Common Misconceptions
 
@@ -350,6 +350,6 @@ _What the interviewer is probing for:_ Systems-level process design that closes 
 
 ## 14. Related Concepts & What's Next
 
-This section is the command-layer counterpart to §25's `/etc/passwd`/`/etc/shadow`/`/etc/group` file formats — every command here ultimately just edits those files safely. §27 (next) covers the standard `rwx` permission model (`chmod`, `chown`, `chgrp`) that determines what a user or group created here can actually do to files. §31's sudo/privilege-escalation coverage depends directly on the `usermod -aG sudo`/`wheel` pattern shown in the `usermod` section above. Part 9's systemd coverage (§65–§72) is where `systemd-homed`/`homectl`, briefly flagged in the systemd-homed note above as a modern alternative, would be covered in operational depth if a given fleet adopts it.
+This section is the command-layer counterpart to [§25](./Section-25-Part4-Users-Groups-Passwd-Shadow-Group.md)'s `/etc/passwd`/`/etc/shadow`/`/etc/group` file formats — every command here ultimately just edits those files safely. [§27](./Section-27-Part4-Standard-Permission-Model.md) (next) covers the standard `rwx` permission model (`chmod`, `chown`, `chgrp`) that determines what a user or group created here can actually do to files. [§31](./Section-31-Part4-Sudo-Sudoers-Privilege-Escalation.md)'s sudo/privilege-escalation coverage depends directly on the `usermod -aG sudo`/`wheel` pattern shown in the `usermod` section above. Part 9's systemd coverage ([§65](../Part9/Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md)–[§72](../Part9/Section-72-Part9-Time-Synchronization-Chrony-Ntpd-Timedatectl.md)) is where `systemd-homed`/`homectl`, briefly flagged in the systemd-homed note above as a modern alternative, would be covered in operational depth if a given fleet adopts it.
 
-**Next Section:** §27 — `Section-27-Part4-Standard-Permission-Model.md`
+**Next Section:** [§27](./Section-27-Part4-Standard-Permission-Model.md) — `Section-27-Part4-Standard-Permission-Model.md`

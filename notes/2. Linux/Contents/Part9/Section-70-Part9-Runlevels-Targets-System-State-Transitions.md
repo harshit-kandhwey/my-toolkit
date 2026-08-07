@@ -2,11 +2,11 @@
 
 ## 1. Overview: The Promised Deep Dive
 
-§65 introduced targets conceptually — named synchronization points that generalize SysVinit's runlevels into a dependency graph — and explicitly deferred the operational half of that story here: "how does a running system actually move from one target to another, on purpose, and how does that differ from a runlevel switch." §66 then gave `systemctl` as the general operational tool for units. This section is where those two threads converge on one specific question: **system-state transitions** — what the standard targets are, how they map onto the SysVinit runlevels an inherited fleet or muscle memory might still reference, how to change the boot-time default, how to change the _currently running_ state without touching that default, and the two real degraded-mode troubleshooting states (rescue and emergency) every SRE eventually needs under pressure.
+[§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) introduced targets conceptually — named synchronization points that generalize SysVinit's runlevels into a dependency graph — and explicitly deferred the operational half of that story here: "how does a running system actually move from one target to another, on purpose, and how does that differ from a runlevel switch." [§66](./Section-66-Part9-Managing-Services-Systemctl.md) then gave `systemctl` as the general operational tool for units. This section is where those two threads converge on one specific question: **system-state transitions** — what the standard targets are, how they map onto the SysVinit runlevels an inherited fleet or muscle memory might still reference, how to change the boot-time default, how to change the _currently running_ state without touching that default, and the two real degraded-mode troubleshooting states (rescue and emergency) every SRE eventually needs under pressure.
 
 ## 2. The Standard Targets and Their Runlevel Equivalents
 
-§13 (Part 2) covered SysVinit's 0–6 runlevel numbering only as history. Because a large amount of operational vocabulary, documentation, and older automation still speaks in runlevel numbers, systemd ships **runlevel-compatibility targets** — actual `.target` units, several of them symlinks to a "real" target — so that both languages resolve to the same running state:
+[§13](../Part2/Section-13-Part2-Init-Systems.md) covered SysVinit's 0–6 runlevel numbering only as history. Because a large amount of operational vocabulary, documentation, and older automation still speaks in runlevel numbers, systemd ships **runlevel-compatibility targets** — actual `.target` units, several of them symlinks to a "real" target — so that both languages resolve to the same running state:
 
 | SysVinit Runlevel | systemd Target         | Meaning                                                                                                            |
 | ----------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -24,9 +24,9 @@ The runlevel numbers themselves still work as a typing convenience — `systemct
 
 ## 3. The Real Difference: A Dependency Chain, Not a Flat List
 
-§13 flagged this as a misconception worth correcting and §65 built the general dependency-directive vocabulary (`Requires=`/`Wants=`/`After=`) that makes the correction concrete here. SysVinit's runlevels are **mutually exclusive, flat, numbered states** — a system is in exactly one of 0 through 6, and nothing about runlevel 3 declares any relationship to runlevel 1 beyond an implicit "higher number, more services" convention with no machine-checkable meaning.
+[§13](../Part2/Section-13-Part2-Init-Systems.md) flagged this as a misconception worth correcting and [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) built the general dependency-directive vocabulary (`Requires=`/`Wants=`/`After=`) that makes the correction concrete here. SysVinit's runlevels are **mutually exclusive, flat, numbered states** — a system is in exactly one of 0 through 6, and nothing about runlevel 3 declares any relationship to runlevel 1 beyond an implicit "higher number, more services" convention with no machine-checkable meaning.
 
-`graphical.target` is not a flat, self-contained state — it is the top of a genuine **dependency chain**, each link built from the ordinary `Requires=`/`After=` directives §65 covered:
+`graphical.target` is not a flat, self-contained state — it is the top of a genuine **dependency chain**, each link built from the ordinary `Requires=`/`After=` directives [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) covered:
 
 ```
 graphical.target
@@ -140,6 +140,6 @@ _What the interviewer is probing for:_ Whether the candidate treats kernel-comma
 
 ## 11. Related Concepts & What's Next
 
-This section is the promised full depth on the target concept §65 introduced structurally in Part 9's opening section, and it operates on the general `[Unit]` dependency/ordering vocabulary (`Requires=`/`After=`) §65 established — 3's dependency-chain diagram is that vocabulary applied specifically to targets. It also assumes §66's `systemctl` fluency, since `get-default`/`set-default`/`isolate` are all `systemctl` subcommands rather than separate tools. §71 (next) moves to environment configuration — `/etc/environment`, `profile.d`, and systemd environment files — a different corner of system-wide configuration that, unlike target transitions, is about what environment a started process inherits rather than which units get started at all.
+This section is the promised full depth on the target concept [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) introduced structurally in Part 9's opening section, and it operates on the general `[Unit]` dependency/ordering vocabulary (`Requires=`/`After=`) [§65](./Section-65-Part9-Systemd-Architecture-Units-Targets-Dependencies.md) established — 3's dependency-chain diagram is that vocabulary applied specifically to targets. It also assumes [§66](./Section-66-Part9-Managing-Services-Systemctl.md)'s `systemctl` fluency, since `get-default`/`set-default`/`isolate` are all `systemctl` subcommands rather than separate tools. [§71](./Section-71-Part9-Environment-Configuration-Etc-Environment-Profile-D-Systemd.md) (next) moves to environment configuration — `/etc/environment`, `profile.d`, and systemd environment files — a different corner of system-wide configuration that, unlike target transitions, is about what environment a started process inherits rather than which units get started at all.
 
-**Next Section:** §71 — `Section-71-Part9-Environment-Configuration.md`
+**Next Section:** [§71](./Section-71-Part9-Environment-Configuration-Etc-Environment-Profile-D-Systemd.md) — `Section-71-Part9-Environment-Configuration.md`

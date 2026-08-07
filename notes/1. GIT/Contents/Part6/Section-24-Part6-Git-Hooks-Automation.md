@@ -9,7 +9,7 @@
 ## 2. Why It Exists / Problem It Solves
 
 1. **Shifting checks left.** Waiting for CI to reject a badly formatted commit or a failing test wastes a round trip (push, wait, get a red build, fix, push again). A local hook catches the same problem in seconds, before anything leaves the machine.
-2. **Enforcing conventions without relying on memory.** Commit message formats (§18's Conventional Commits), no-secrets-in-diff checks, and linting are easy to forget under deadline pressure; a hook makes them automatic rather than aspirational.
+2. **Enforcing conventions without relying on memory.** Commit message formats ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)'s Conventional Commits), no-secrets-in-diff checks, and linting are easy to forget under deadline pressure; a hook makes them automatic rather than aspirational.
 3. **Server-side gatekeeping.** A hosting server can refuse pushes that don't meet policy (no force-pushes to `main`, no oversized files, no unsigned commits) at the one point that's actually enforceable for everyone, not just cooperative clients.
 4. **Automation triggers.** Hooks are also a convenient place to fire side effects — updating a deployed working tree after a push, notifying a chat channel, regenerating derived files after checkout.
 
@@ -27,22 +27,22 @@ pre-applypatch.sample      prepare-commit-msg.sample
 pre-commit.sample          update.sample
 ```
 
-> ⚠️ **Critical clarification: hooks are not versioned by default.** `.git/` is never committed — it is the repository's private local metadata, not tracked content (§4). That means a `pre-commit` script you write and rely on lives only on your machine; a teammate cloning the same repository gets none of it, silently. This single fact is the reason the versioning frameworks covered later in this section exist at all — "just write a hook" doesn't scale past a solo project.
+> ⚠️ **Critical clarification: hooks are not versioned by default.** `.git/` is never committed — it is the repository's private local metadata, not tracked content ([§4](../Part2/Section-04-Part2-Git-Architecture-Three-Areas.md)). That means a `pre-commit` script you write and rely on lives only on your machine; a teammate cloning the same repository gets none of it, silently. This single fact is the reason the versioning frameworks covered later in this section exist at all — "just write a hook" doesn't scale past a solo project.
 
 ## 4. Client-Side Hooks
 
 These fire on the developer's own machine during ordinary local operations.
 
-| Hook                 | Fires                                                                                               | Typical use                                                                             | Can abort the operation?                         |
-| -------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `pre-commit`         | After `git commit` is invoked, before the commit message editor opens                               | Linting, formatting, running fast unit tests, blocking secrets                          | Yes (non-zero exit)                              |
-| `prepare-commit-msg` | Before the commit message editor opens, after the default message is generated                      | Pre-populating a message template (e.g., injecting a ticket ID from the branch name)    | Yes, but rarely used for that purpose            |
-| `commit-msg`         | After the message is written, before the commit is finalized                                        | Validating message format — e.g., enforcing Conventional Commits (§18)                  | Yes                                              |
-| `post-commit`        | After the commit is recorded                                                                        | Notifications, triggering local build tooling                                           | No (informational only; commit already happened) |
-| `post-checkout`      | After `git checkout`/`git switch` completes                                                         | Regenerating environment files, warning about stale dependencies, cache invalidation    | No                                               |
-| `post-merge`         | After a merge completes                                                                             | Reinstalling dependencies if a lockfile changed                                         | No                                               |
-| `pre-push`           | Before refs are pushed to a remote, after the remote has been contacted but before objects transfer | Running the full test suite, blocking pushes of `WIP` commits or protected branch names | Yes                                              |
-| `pre-rebase`         | Before a rebase begins                                                                              | Blocking rebase of already-published branches                                           | Yes                                              |
+| Hook                 | Fires                                                                                               | Typical use                                                                                                                               | Can abort the operation?                         |
+| -------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `pre-commit`         | After `git commit` is invoked, before the commit message editor opens                               | Linting, formatting, running fast unit tests, blocking secrets                                                                            | Yes (non-zero exit)                              |
+| `prepare-commit-msg` | Before the commit message editor opens, after the default message is generated                      | Pre-populating a message template (e.g., injecting a ticket ID from the branch name)                                                      | Yes, but rarely used for that purpose            |
+| `commit-msg`         | After the message is written, before the commit is finalized                                        | Validating message format — e.g., enforcing Conventional Commits ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) | Yes                                              |
+| `post-commit`        | After the commit is recorded                                                                        | Notifications, triggering local build tooling                                                                                             | No (informational only; commit already happened) |
+| `post-checkout`      | After `git checkout`/`git switch` completes                                                         | Regenerating environment files, warning about stale dependencies, cache invalidation                                                      | No                                               |
+| `post-merge`         | After a merge completes                                                                             | Reinstalling dependencies if a lockfile changed                                                                                           | No                                               |
+| `pre-push`           | Before refs are pushed to a remote, after the remote has been contacted but before objects transfer | Running the full test suite, blocking pushes of `WIP` commits or protected branch names                                                   | Yes                                              |
+| `pre-rebase`         | Before a rebase begins                                                                              | Blocking rebase of already-published branches                                                                                             | Yes                                              |
 
 ```bash
 # .git/hooks/pre-commit — must be executable: chmod +x .git/hooks/pre-commit
@@ -145,7 +145,7 @@ $ git commit -m "chore: add versioned pre-commit hook"
 
 ## 6. Server-Side Hooks
 
-These run on the machine hosting the bare repository that receives pushes — meaningful primarily for self-hosted Git servers (§23); major SaaS platforms (GitHub, GitLab, Bitbucket) don't expose raw server-side hooks to repository owners, offering equivalent functionality instead through branch protection rules, required status checks, and webhooks/CI integrations.
+These run on the machine hosting the bare repository that receives pushes — meaningful primarily for self-hosted Git servers ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)); major SaaS platforms (GitHub, GitLab, Bitbucket) don't expose raw server-side hooks to repository owners, offering equivalent functionality instead through branch protection rules, required status checks, and webhooks/CI integrations.
 
 | Hook           | Fires                                                                    | Typical use                                                                                                      |
 | -------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
@@ -173,7 +173,7 @@ Push arrives at server
 
 ## 7. Practical Example — `commit-msg` Enforcing Conventional Commits
 
-Building on the Conventional Commits format from §18 (`type(scope): description`), a `commit-msg` hook can reject any commit whose message doesn't match.
+Building on the Conventional Commits format from [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md) (`type(scope): description`), a `commit-msg` hook can reject any commit whose message doesn't match.
 
 ```bash
 # .githooks/commit-msg  (installed via core.hooksPath, see above)
@@ -197,7 +197,7 @@ $ git commit -m "fix(auth): correct token refresh race condition"
 [main 7c2a9f1] fix(auth): correct token refresh race condition
 ```
 
-**Expected outcome:** malformed messages never reach history at all, which matters because Conventional Commits' whole value (§18) — automated changelog generation, semantic-version bumping — depends on every commit reliably following the format; a hook is the only local enforcement point.
+**Expected outcome:** malformed messages never reach history at all, which matters because Conventional Commits' whole value ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) — automated changelog generation, semantic-version bumping — depends on every commit reliably following the format; a hook is the only local enforcement point.
 
 ## 8. Practical Example — `pre-push` Running the Test Suite
 
@@ -218,7 +218,7 @@ Running test suite before push...
 error: failed to push some refs — pre-push hook declined
 ```
 
-**Purpose and trade-off:** catches regressions before they reach a shared branch, but a slow full suite makes every push slower — teams commonly run only a fast subset locally (`pre-push`) and reserve the full suite for CI (§25), rather than duplicating the entire pipeline on every developer's machine.
+**Purpose and trade-off:** catches regressions before they reach a shared branch, but a slow full suite makes every push slower — teams commonly run only a fast subset locally (`pre-push`) and reserve the full suite for CI ([§25](./Section-25-Part6-Git-in-CICD-Pipelines.md)), rather than duplicating the entire pipeline on every developer's machine.
 
 ## 9. Bypassing Hooks
 
@@ -228,7 +228,7 @@ $ git commit --no-verify -m "emergency: revert broken deploy"
 $ git push --no-verify
 ```
 
-> ⚠️ **Critical clarification:** `--no-verify` only bypasses **client-side** hooks on your machine — it has no effect on server-side `pre-receive`/`update` hooks or on CI status checks (§25) or branch protection rules (§23), which run independently of anything the client requested. A developer who locally skips a check cannot force a server that enforces the same policy to also skip it.
+> ⚠️ **Critical clarification:** `--no-verify` only bypasses **client-side** hooks on your machine — it has no effect on server-side `pre-receive`/`update` hooks or on CI status checks ([§25](./Section-25-Part6-Git-in-CICD-Pipelines.md)) or branch protection rules ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)), which run independently of anything the client requested. A developer who locally skips a check cannot force a server that enforces the same policy to also skip it.
 
 ## 10. Interview Questions
 
@@ -242,16 +242,16 @@ $ git push --no-verify
 **Model answer:** The `pre-commit` framework (Python-distributed, language-agnostic) keeps its configuration in a committed `.pre-commit-config.yaml`; running `pre-commit install` once writes a small dispatcher into `.git/hooks/pre-commit` that reads that config at commit time. Husky, built for the Node ecosystem, instead points Git's `core.hooksPath` at a committed `.husky/` directory containing the actual hook scripts, and wires its own installation into npm's `prepare` lifecycle script so that anyone who runs `npm install` gets working hooks with no separate manual step. Both ultimately rely on committed, versioned files reaching `.git/hooks/` or an equivalent redirected path — they differ in ecosystem, installation trigger, and whether a manual one-time command is still required.
 
 **[Senior] Q4. A developer complains their commit was rejected locally by a `commit-msg` hook, so they ran `git commit --no-verify` to get around it — then their push was also rejected by the server. Explain what happened.**
-**Model answer:** `--no-verify` only disables client-side hooks on the developer's own machine — it skipped their local `commit-msg` check, letting a malformed commit get recorded locally. But if the team's Git server (self-hosted, §23) or CI/branch-protection layer (§25) independently enforces the same policy — via a server-side `update` hook, a required CI status check, or a branch protection rule — that enforcement runs on the server regardless of anything requested client-side, because the server has no way to know or honor a client's `--no-verify` flag. The lesson: client-side hooks are a convenience and an early warning, not a security or policy boundary; genuine enforcement that must hold for every contributor belongs server-side, exactly as `pre-receive`/`update` hooks or platform-level protections are designed to provide.
+**Model answer:** `--no-verify` only disables client-side hooks on the developer's own machine — it skipped their local `commit-msg` check, letting a malformed commit get recorded locally. But if the team's Git server (self-hosted, [§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)) or CI/branch-protection layer ([§25](./Section-25-Part6-Git-in-CICD-Pipelines.md)) independently enforces the same policy — via a server-side `update` hook, a required CI status check, or a branch protection rule — that enforcement runs on the server regardless of anything requested client-side, because the server has no way to know or honor a client's `--no-verify` flag. The lesson: client-side hooks are a convenience and an early warning, not a security or policy boundary; genuine enforcement that must hold for every contributor belongs server-side, exactly as `pre-receive`/`update` hooks or platform-level protections are designed to provide.
 
 **[Architect] Q5. Design a hook strategy for a 200-engineer monorepo where local hook execution time is becoming a productivity complaint.**
-**Model answer:** I'd separate hooks by cost and by what they can actually catch locally versus what only makes sense centrally. Fast, deterministic, file-scoped checks (formatting, basic linting on changed files only — using something like `lint-staged` to scope work to the diff rather than the whole repository) stay in `pre-commit`, since they run in well under a second and catch mistakes before they're even recorded. Anything requiring a broader build or the full test suite moves to `pre-push` at most, and ideally is trimmed to a fast, targeted subset (affected-package testing in a monorepo, not the entire suite) — with the authoritative full suite living in CI (§25), not duplicated locally. I'd standardize hook installation through `core.hooksPath` pointing at a committed directory (or Husky, if the stack is Node-heavy) wired into onboarding tooling, so no engineer has hooks silently missing. Finally, I'd make sure genuinely non-negotiable policy — commit signing (§28), branch protection, required status checks — is enforced server-side or at the platform level, never solely relied upon as a local hook, since local hooks are always bypassable with `--no-verify` and must never be the only line of defense for anything security- or compliance-relevant.
+**Model answer:** I'd separate hooks by cost and by what they can actually catch locally versus what only makes sense centrally. Fast, deterministic, file-scoped checks (formatting, basic linting on changed files only — using something like `lint-staged` to scope work to the diff rather than the whole repository) stay in `pre-commit`, since they run in well under a second and catch mistakes before they're even recorded. Anything requiring a broader build or the full test suite moves to `pre-push` at most, and ideally is trimmed to a fast, targeted subset (affected-package testing in a monorepo, not the entire suite) — with the authoritative full suite living in CI ([§25](./Section-25-Part6-Git-in-CICD-Pipelines.md)), not duplicated locally. I'd standardize hook installation through `core.hooksPath` pointing at a committed directory (or Husky, if the stack is Node-heavy) wired into onboarding tooling, so no engineer has hooks silently missing. Finally, I'd make sure genuinely non-negotiable policy — commit signing ([§28](../Part7/Section-28-Part7-Security.md)), branch protection, required status checks — is enforced server-side or at the platform level, never solely relied upon as a local hook, since local hooks are always bypassable with `--no-verify` and must never be the only line of defense for anything security- or compliance-relevant.
 
 ## 11. Common Misconceptions
 
 1. **"Hooks are automatically shared when you clone a repository."** They are not — `.git/hooks/` is local, unversioned content; sharing requires the `pre-commit` framework, Husky, or `core.hooksPath` pointed at a committed directory.
-2. **"`--no-verify` bypasses all checks, including CI."** It only bypasses client-side hooks on the local machine; server-side hooks, branch protection rules, and CI status checks (§23, §25) are entirely unaffected.
-3. **"Server-side hooks work the same way on GitHub/GitLab as on a self-hosted server."** SaaS platforms generally don't expose raw `pre-receive`/`update`/`post-receive` hooks to repository owners; they provide equivalent policy enforcement through branch protection rules, required status checks, and webhooks instead (§23).
+2. **"`--no-verify` bypasses all checks, including CI."** It only bypasses client-side hooks on the local machine; server-side hooks, branch protection rules, and CI status checks ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md), [§25](./Section-25-Part6-Git-in-CICD-Pipelines.md)) are entirely unaffected.
+3. **"Server-side hooks work the same way on GitHub/GitLab as on a self-hosted server."** SaaS platforms generally don't expose raw `pre-receive`/`update`/`post-receive` hooks to repository owners; they provide equivalent policy enforcement through branch protection rules, required status checks, and webhooks instead ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md)).
 4. **"A pre-commit hook and the `pre-commit` framework's `pre-commit` config key are the same thing."** They share a name by design, but one is a specific Git hook event; the other is a third-party tool's own naming convention for the checks it happens to run at that event — mind the overlap when reading documentation.
 
 ## 12. 🔑 Key Takeaways
@@ -260,8 +260,8 @@ $ git push --no-verify
 - `.git/hooks/` is never committed, which is the root cause of the "team-wide hook" problem — the `pre-commit` framework, Husky, and manual `core.hooksPath` are the three standard solutions, differing in ecosystem and installation mechanics but converging on the same fix: get versioned, committed scripts actually wired into Git's local hook dispatch.
 - Client-side hooks (`pre-commit`, `commit-msg`, `pre-push`) run on the developer's machine and are always bypassable with `--no-verify`; they are a convenience, not an enforcement guarantee.
 - Server-side hooks (`pre-receive`, `update`, `post-receive`) run on self-hosted Git servers and are the actual enforcement point that cannot be bypassed client-side; SaaS platforms offer equivalent policy through branch protection and status checks instead.
-- Real-world use: linting/formatting at `pre-commit`, Conventional Commits validation (§18) at `commit-msg`, test execution at `pre-push`.
+- Real-world use: linting/formatting at `pre-commit`, Conventional Commits validation ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md)) at `commit-msg`, test execution at `pre-push`.
 
 ## 13. Related Concepts & What's Next
 
-Hooks are Git's local automation entry point; §25 zooms out to how CI/CD systems build on top of Git events (push, PR open, tag creation) at a fleet scale hooks alone can't reach — the two are complementary layers, with hooks catching problems in seconds before code leaves a machine, and CI providing the authoritative, unbypassable check once it arrives at the shared remote.
+Hooks are Git's local automation entry point; [§25](./Section-25-Part6-Git-in-CICD-Pipelines.md) zooms out to how CI/CD systems build on top of Git events (push, PR open, tag creation) at a fleet scale hooks alone can't reach — the two are complementary layers, with hooks catching problems in seconds before code leaves a machine, and CI providing the authoritative, unbypassable check once it arrives at the shared remote.

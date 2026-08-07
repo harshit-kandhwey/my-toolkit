@@ -9,14 +9,14 @@
 ## 2. Why It Exists / Problem It Solves
 
 1. **Deduplication for free.** If two commits, two branches, or two files anywhere in the repo have byte-identical content, they hash to the same value and are stored **once**, physically. Renaming a file, or two unrelated files happening to contain the same text, costs zero extra storage.
-2. **Free integrity checking.** Because an object's address _is_ the hash of its content, any corruption changes the hash — meaning the object literally cannot be retrieved by its old name anymore, and `git fsck` (§29–30) can detect this systematically. This is the concrete mechanism behind the integrity guarantee promised conceptually in §2's design-philosophy discussion.
-3. **Fast, unambiguous identity with no central authority.** As established in §1's interview-question discussion, no counter-based ID scheme works without a central server. Content hashing lets any two independent clones compute the _same_ ID for the _same_ content with zero coordination.
-4. **Efficient snapshots, not diffs.** Storing a full tree-of-blobs per commit, rather than a diff against the previous commit, means retrieving _any_ historical version of the whole project is a direct graph walk from one commit object — not a replay of every change since the beginning. (Compression via delta-encoding still happens, but only inside packfiles as a storage optimization — §7 — and is completely invisible at this logical layer.)
+2. **Free integrity checking.** Because an object's address _is_ the hash of its content, any corruption changes the hash — meaning the object literally cannot be retrieved by its old name anymore, and `git fsck` ([§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)–[§30](../Part7/Section-30-Part7-Disaster-Recovery.md)) can detect this systematically. This is the concrete mechanism behind the integrity guarantee promised conceptually in [§2](../Part1/Section-02-Part1-Birth-of-Git.md)'s design-philosophy discussion.
+3. **Fast, unambiguous identity with no central authority.** As established in [§1](../Part1/Section-01-Part1-Version-Control-Fundamentals.md)'s interview-question discussion, no counter-based ID scheme works without a central server. Content hashing lets any two independent clones compute the _same_ ID for the _same_ content with zero coordination.
+4. **Efficient snapshots, not diffs.** Storing a full tree-of-blobs per commit, rather than a diff against the previous commit, means retrieving _any_ historical version of the whole project is a direct graph walk from one commit object — not a replay of every change since the beginning. (Compression via delta-encoding still happens, but only inside packfiles as a storage optimization — [§7](./Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md) — and is completely invisible at this logical layer.)
 
 ## 3. Prerequisites and Dependencies
 
 - SHA hashing as a concept (a function mapping arbitrary input to a fixed-length, effectively-unique digest) — explained inline below if unfamiliar.
-- The three-area model from §4 — objects are what actually gets written into `.git/objects` when you `git add` and `git commit`.
+- The three-area model from [§4](./Section-04-Part2-Git-Architecture-Three-Areas.md) — objects are what actually gets written into `.git/objects` when you `git add` and `git commit`.
 
 ## 4. The Hash Function Itself
 
@@ -25,7 +25,7 @@ Git has historically used **SHA-1**, producing a 40-character hexadecimal digest
 - **Determinism:** identical content always produces the identical hash, on any machine, forever.
 - **Avalanche effect:** changing even one byte of input produces a completely different, unrelated-looking hash — there is no "close" hash for "close" content, which is exactly what makes tampering detectable rather than merely inconvenient.
 
-> ⚠️ **Version-specific note, flagged per accuracy rules:** SHA-1 has known theoretical collision weaknesses (demonstrated practically in the 2017 "SHAttered" research against SHA-1 in general, not Git specifically). Git mitigates this with a hardened SHA-1 implementation (`sha1dc`) that detects known collision-attack patterns, and the project has an ongoing, still-partial migration path to **SHA-256** as an optional repository format. Treat "Git is transitioning to SHA-256" as accurate at a high level; treat exact current rollout completeness as something to verify against current documentation, since this is actively evolving — fully covered in §32.
+> ⚠️ **Version-specific note, flagged per accuracy rules:** SHA-1 has known theoretical collision weaknesses (demonstrated practically in the 2017 "SHAttered" research against SHA-1 in general, not Git specifically). Git mitigates this with a hardened SHA-1 implementation (`sha1dc`) that detects known collision-attack patterns, and the project has an ongoing, still-partial migration path to **SHA-256** as an optional repository format. Treat "Git is transitioning to SHA-256" as accurate at a high level; treat exact current rollout completeness as something to verify against current documentation, since this is actively evolving — fully covered in [§32](../Part8/Section-32-Part8-Gits-Evolution.md).
 
 ## 5. The Four Object Types
 
@@ -48,8 +48,8 @@ Git has historically used **SHA-1**, producing a 40-character hexadecimal digest
 - **Parent count and meaning:**
   - **0 parents** → a **root commit** (the very first commit in a repository's history).
   - **1 parent** → an ordinary commit.
-  - **2+ parents** → a **merge commit** (§13), recording that this point in history unites multiple prior lines of development.
-- **Why hashing a commit chains all of history:** a commit's hash is computed over its _own content_, which includes its parent's hash as literal text. Change anything about an old commit — its message, its tree, its parent — and its hash changes; anything that pointed to it (its child commit) now has different content, so _its_ hash changes too, cascading forward through every subsequent commit. This is the literal mechanism behind "history is cryptographically chained" from §2's design-philosophy discussion.
+  - **2+ parents** → a **merge commit** ([§13](../Part4/Section-13-Part4-Merging.md)), recording that this point in history unites multiple prior lines of development.
+- **Why hashing a commit chains all of history:** a commit's hash is computed over its _own content_, which includes its parent's hash as literal text. Change anything about an old commit — its message, its tree, its parent — and its hash changes; anything that pointed to it (its child commit) now has different content, so _its_ hash changes too, cascading forward through every subsequent commit. This is the literal mechanism behind "history is cryptographically chained" from [§2](../Part1/Section-02-Part1-Birth-of-Git.md)'s design-philosophy discussion.
 
 **Inspecting a real commit object** (`git cat-file -p <commit-hash>`):
 
@@ -66,15 +66,15 @@ Note precisely what's _absent_: no filenames, no diff, no per-file changes — a
 
 ### 5.4 Tag (Annotated Tag Object)
 
-- **What it stores:** a pointer to any other object (almost always a commit), plus its own metadata: tagger name/email/timestamp, a tag message, and optionally a cryptographic signature (§28).
+- **What it stores:** a pointer to any other object (almost always a commit), plus its own metadata: tagger name/email/timestamp, a tag message, and optionally a cryptographic signature ([§28](../Part7/Section-28-Part7-Security.md)).
 - **Critical distinction — annotated vs. lightweight:**
 
-|                           | Lightweight tag                                                                                                                                    | Annotated tag                                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **What it physically is** | Just a ref file under `.git/refs/tags/`, pointing straight at a commit — structurally identical to a branch pointer, just conventionally not moved | A real, distinct **tag object** in the object database, which itself is pointed to by a ref                            |
-| **Metadata carried**      | None — no tagger, no date, no message                                                                                                              | Tagger identity, timestamp, message, optional GPG/SSH signature                                                        |
-| **Command to create**     | `git tag v1.0.0`                                                                                                                                   | `git tag -a v1.0.0 -m "Release 1.0.0"`                                                                                 |
-| **When to use**           | Quick, throwaway personal markers                                                                                                                  | **Always, for any tag that will be shared, released, or matters** — the enterprise/production default, detailed in §18 |
+|                           | Lightweight tag                                                                                                                                    | Annotated tag                                                                                                                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What it physically is** | Just a ref file under `.git/refs/tags/`, pointing straight at a commit — structurally identical to a branch pointer, just conventionally not moved | A real, distinct **tag object** in the object database, which itself is pointed to by a ref                                                                                               |
+| **Metadata carried**      | None — no tagger, no date, no message                                                                                                              | Tagger identity, timestamp, message, optional GPG/SSH signature                                                                                                                           |
+| **Command to create**     | `git tag v1.0.0`                                                                                                                                   | `git tag -a v1.0.0 -m "Release 1.0.0"`                                                                                                                                                    |
+| **When to use**           | Quick, throwaway personal markers                                                                                                                  | **Always, for any tag that will be shared, released, or matters** — the enterprise/production default, detailed in [§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md) |
 
 > 💡 **Tip:** A lightweight tag is structurally indistinguishable from a branch pointer at the ref level — the only difference is _convention_ (you don't move it forward). This is why real releases should always use annotated tags: they're a genuinely distinct, auditable object type with an identity and signature of their own, appropriate for something you'll cite in a compliance audit or a support ticket a year later.
 
@@ -100,7 +100,7 @@ Note precisely what's _absent_: no filenames, no diff, no per-file changes — a
                                                              BLOB "test_utils.py"
 ```
 
-Walking this diagram: one commit → one root tree → that tree's entries point to blobs (files at the top level) and further trees (subdirectories), recursively, until every entry is a blob. **This structure is identical, conceptually, to how a filesystem represents directories and files** — precisely the "model it on filesystem thinking" design choice noted in §2.
+Walking this diagram: one commit → one root tree → that tree's entries point to blobs (files at the top level) and further trees (subdirectories), recursively, until every entry is a blob. **This structure is identical, conceptually, to how a filesystem represents directories and files** — precisely the "model it on filesystem thinking" design choice noted in [§2](../Part1/Section-02-Part1-Birth-of-Git.md).
 
 Now the crucial second half of the picture — **how commits chain together across history**:
 
@@ -150,7 +150,7 @@ $ git rev-parse HEAD
 
 If you amended this commit's message right now (`git commit --amend -m "changed message"`), `git rev-parse HEAD` would print a **completely different** hash — even though the tree (actual file content) is unchanged — because the commit object's content includes the message text, and any change to that content changes the hash by the avalanche effect.
 
-## 8. Commands (Full Documentation per §9 Template)
+## 8. Commands (Full Documentation per [§9](../Part3/Section-09-Part3-Creating-Cloning-Repositories.md) Template)
 
 ### `git cat-file`
 
@@ -170,7 +170,7 @@ If you amended this commit's message right now (`git commit --amend -m "changed 
   author ...
   ```
 - **Production usage:** used in debugging scripts, forensic history investigation ("what exactly did this object contain before it was garbage-collected"), and in custom Git tooling/hooks that need to inspect objects directly rather than through porcelain commands.
-- **Common errors:** `fatal: Not a valid object name <hash>` — the hash doesn't exist in this repository (typo, wrong repo, or the object was pruned by gc without ever being reachable — §7, §29).
+- **Common errors:** `fatal: Not a valid object name <hash>` — the hash doesn't exist in this repository (typo, wrong repo, or the object was pruned by gc without ever being reachable — [§7](./Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md), [§29](../Part7/Section-29-Part7-Maintenance-Performance-Troubleshooting.md)).
 - **Security impact:** read-only, no write risk; safe to run against any hash you're curious about.
 - **Performance impact:** negligible for single lookups; trivial even at scale since it's a direct hash-indexed retrieval, not a scan.
 
@@ -202,7 +202,7 @@ If you amended this commit's message right now (`git commit --amend -m "changed 
   $ git rev-parse --short HEAD
   7e4f9a2
   ```
-- **Production usage:** extremely common in CI/CD scripts and automation (§25) — e.g., tagging a built artifact with the exact short commit hash it was built from, so any deployed artifact can be traced back to precisely one commit.
+- **Production usage:** extremely common in CI/CD scripts and automation ([§25](../Part6/Section-25-Part6-Git-in-CICD-Pipelines.md)) — e.g., tagging a built artifact with the exact short commit hash it was built from, so any deployed artifact can be traced back to precisely one commit.
 - **Common errors:** `fatal: ambiguous argument '<ref>': unknown revision or path not in the working tree` — typo'd branch/tag name, or you're referring to a path that doesn't exist and Git can't tell if you meant a ref or a file.
 - **Security impact:** none; read-only resolution.
 - **Performance impact:** negligible; ref resolution is a fast lookup, not a history scan.
@@ -232,31 +232,31 @@ The third commit's tree entry for `file.txt` points to the **identical blob hash
 ## 10. Production & Enterprise Usage
 
 - **Immutable artifact tracing:** enterprise CI/CD pipelines routinely embed the exact short commit hash (via `git rev-parse --short HEAD`) into build artifact names, container image tags, and deployment metadata — giving a direct, unambiguous link from any running production artifact back to the exact source snapshot it was built from. This is a direct practical exploitation of content-addressing: the hash _is_ the identity.
-- **Compliance/audit trails:** because commit objects chain cryptographically, security and compliance teams can rely on `git log` history as tamper-evident evidence in SOX/ISO 27001-style audits — provided the repository's integrity hasn't been separately compromised (e.g., via force-pushes rewriting history on a shared server without protections — covered in §23, §28).
+- **Compliance/audit trails:** because commit objects chain cryptographically, security and compliance teams can rely on `git log` history as tamper-evident evidence in SOX/ISO 27001-style audits — provided the repository's integrity hasn't been separately compromised (e.g., via force-pushes rewriting history on a shared server without protections — covered in [§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md), [§28](../Part7/Section-28-Part7-Security.md)).
 - **Deduplication at scale:** in large monorepos, the same boilerplate file (license headers, generated code, vendored dependencies) appearing across thousands of directories costs storage for exactly **one** blob, not thousands — a meaningful, automatic space saving with zero configuration.
 
 ## 11. Security Considerations
 
 - **Integrity, not confidentiality (restated precisely here since this is where it becomes concrete):** anyone with read access to `.git/objects` can read every object's content directly via `git cat-file -p` — there is no encryption at this layer. Hashing prevents _undetected tampering_, not _reading_.
-- **SHA-1 collision risk:** Git's hardened `sha1dc` implementation is specifically designed to detect known SHA-1 collision-attack constructions and refuse to accept a maliciously crafted colliding object, mitigating (though the underlying algorithm's theoretical weakness remains a reason the ecosystem is moving toward SHA-256, §32).
-- **Signed commits/tags** (full treatment in §28) build directly on this section's annotated-tag and commit-object structure — a signature is cryptographic proof that a specific person, holding a specific key, vouched for a specific object's exact hash.
+- **SHA-1 collision risk:** Git's hardened `sha1dc` implementation is specifically designed to detect known SHA-1 collision-attack constructions and refuse to accept a maliciously crafted colliding object, mitigating (though the underlying algorithm's theoretical weakness remains a reason the ecosystem is moving toward SHA-256, [§32](../Part8/Section-32-Part8-Gits-Evolution.md)).
+- **Signed commits/tags** (full treatment in [§28](../Part7/Section-28-Part7-Security.md)) build directly on this section's annotated-tag and commit-object structure — a signature is cryptographic proof that a specific person, holding a specific key, vouched for a specific object's exact hash.
 
 ## 12. Performance Considerations
 
-- Loose objects (one file per object, as shown in §4's repository anatomy) are simple but inefficient at scale — many small files, each individually zlib-compressed. Git periodically consolidates them into **packfiles** with delta compression between similar objects, a purely storage-layer optimization covered in full in §7 that never changes the logical model taught in this section.
+- Loose objects (one file per object, as shown in [§4](./Section-04-Part2-Git-Architecture-Three-Areas.md)'s repository anatomy) are simple but inefficient at scale — many small files, each individually zlib-compressed. Git periodically consolidates them into **packfiles** with delta compression between similar objects, a purely storage-layer optimization covered in full in [§7](./Section-07-Part2-Inside-Git-Loose-Objects-Packfiles-GC.md) that never changes the logical model taught in this section.
 - Hash computation itself is fast (SHA-1/SHA-256 are designed for speed), so hashing overhead on `git add`/`git commit` is not a practical bottleneck even for large files — I/O (reading the file, writing the compressed object) dominates any real-world timing.
 
 ## 13. Troubleshooting
 
-| Symptom                                                                | Likely cause                                                                       | Fix                                                                                                     |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `fatal: Not a valid object name`                                       | Hash typo, wrong repository, or object was pruned because nothing referenced it    | Verify the hash with `git log --all` or check the reflog (§6, §30) for a reachable reference to it      |
-| Two files you expected to be "different objects" show identical hashes | Their content is genuinely byte-identical (including trailing whitespace/newlines) | Not a bug — this is deduplication working correctly; diff the actual file content if this is surprising |
-| Commit hash changes after only editing the commit message              | Expected behavior                                                                  | The commit object's content includes the message; any change changes the hash — this is not corruption  |
+| Symptom                                                                | Likely cause                                                                       | Fix                                                                                                                                                                                                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `fatal: Not a valid object name`                                       | Hash typo, wrong repository, or object was pruned because nothing referenced it    | Verify the hash with `git log --all` or check the reflog ([§6](./Section-06-Part2-References-Branches-HEAD-Tags-Reflog.md), [§30](../Part7/Section-30-Part7-Disaster-Recovery.md)) for a reachable reference to it |
+| Two files you expected to be "different objects" show identical hashes | Their content is genuinely byte-identical (including trailing whitespace/newlines) | Not a bug — this is deduplication working correctly; diff the actual file content if this is surprising                                                                                                            |
+| Commit hash changes after only editing the commit message              | Expected behavior                                                                  | The commit object's content includes the message; any change changes the hash — this is not corruption                                                                                                             |
 
 ## 14. Best Practices
 
-- Use **annotated tags** for anything that will be shared, released, or audited — never rely on a lightweight tag for a real release (§18 expands this into a full release-management discipline).
+- Use **annotated tags** for anything that will be shared, released, or audited — never rely on a lightweight tag for a real release ([§18](../Part4/Section-18-Part4-Tags-Versioning-Release-Management.md) expands this into a full release-management discipline).
 - When building tooling around Git, prefer resolving refs with `git rev-parse` rather than string-matching branch names yourself — it correctly and uniformly handles branches, tags, HEAD, and relative expressions.
 - Embed exact commit hashes (not branch names, which move) into anything requiring precise reproducibility — build artifacts, deployment records, audit logs.
 
@@ -277,7 +277,7 @@ The third commit's tree entry for `file.txt` points to the **identical blob hash
 **Model answer:** A commit object's hash is computed over its entire content as stored in the object database, and that content includes the commit message as literal text, alongside the tree pointer, parent pointer(s), and author/committer metadata. Changing any of that content — including just the message — produces different input to the hash function, which by the avalanche property produces a completely different, unrelated hash. The tree object itself (representing actual file content) is unaffected and keeps its original hash, but the commit object wrapping it is new. This is also why `git commit --amend` doesn't modify history in place; it creates a brand-new commit object and moves the branch pointer to it, leaving the original (now typically unreferenced) commit object still physically present until garbage collected.
 
 **[Architect] Q4. A security team asks: "Can someone tamper with our Git history without us knowing?" How do you answer, precisely?**
-**Model answer:** I'd separate two distinct claims. First: can someone silently alter an _existing_ commit's content and have it pass as the original, unnoticed? No — because commit hashes are chained (each commit's hash is partly derived from its parent's hash), changing any historical commit changes its hash, which changes every descendant commit's hash, and everyone else's clones would immediately show a divergent history the moment they fetch — this is detectable, not prevented outright. Second, and more precisely what attackers actually do: can someone construct an _entirely alternate_ history and force it to replace the shared one? Yes, via a force-push to a shared branch, if they have write access and branch protections aren't configured to prevent it — this is a permissions and governance problem, not a hash-collision problem, and it's exactly why enterprise setups add protected branches, mandatory code review, and commit/tag signing (§23, §28) on top of the base object model. I'd tell the security team: the object model gives you tamper-_evidence_, not tamper-_prevention_ by itself; prevention requires access control and process on top of it, and detection at the individual-object level relies on SHA-1's collision resistance holding, which is one reason the ecosystem is migrating toward SHA-256 as an available repository format.
+**Model answer:** I'd separate two distinct claims. First: can someone silently alter an _existing_ commit's content and have it pass as the original, unnoticed? No — because commit hashes are chained (each commit's hash is partly derived from its parent's hash), changing any historical commit changes its hash, which changes every descendant commit's hash, and everyone else's clones would immediately show a divergent history the moment they fetch — this is detectable, not prevented outright. Second, and more precisely what attackers actually do: can someone construct an _entirely alternate_ history and force it to replace the shared one? Yes, via a force-push to a shared branch, if they have write access and branch protections aren't configured to prevent it — this is a permissions and governance problem, not a hash-collision problem, and it's exactly why enterprise setups add protected branches, mandatory code review, and commit/tag signing ([§23](../Part5/Section-23-Part5-Git-Hosting-Enterprise-Platforms.md), [§28](../Part7/Section-28-Part7-Security.md)) on top of the base object model. I'd tell the security team: the object model gives you tamper-_evidence_, not tamper-_prevention_ by itself; prevention requires access control and process on top of it, and detection at the individual-object level relies on SHA-1's collision resistance holding, which is one reason the ecosystem is migrating toward SHA-256 as an available repository format.
 
 ## 17. Common Misconceptions
 
@@ -291,7 +291,7 @@ The third commit's tree entry for `file.txt` points to the **identical blob hash
 - Four object types — blob, tree, commit, tag — compose into a single content-addressed Merkle DAG; everything in Git is built from just these.
 - Blobs are pure content (no name); trees are directory listings pointing to blobs and other trees; commits point to one tree plus parent(s) plus metadata; annotated tags are a distinct, metadata-rich object type — always prefer them for real releases.
 - Content-addressing gives automatic deduplication and tamper-evidence for free, as direct consequences of the hash-as-identity design, not separate bolted-on features.
-- A commit's hash chains to its parent's hash, cryptographically linking all of history — the concrete mechanism behind §2's "Merkle DAG" claim.
+- A commit's hash chains to its parent's hash, cryptographically linking all of history — the concrete mechanism behind [§2](../Part1/Section-02-Part1-Birth-of-Git.md)'s "Merkle DAG" claim.
 - `git cat-file`, `git hash-object`, and `git rev-parse` are the plumbing tools that make this model directly inspectable rather than an abstraction you have to take on faith.
 
 ## 19. Related Concepts & What's Next

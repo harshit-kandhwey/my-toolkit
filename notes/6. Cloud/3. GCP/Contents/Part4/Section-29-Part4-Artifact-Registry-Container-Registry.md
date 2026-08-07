@@ -42,7 +42,7 @@ Each repository holds only one format — you don't mix npm packages and Docker 
 
 ## 5. Regional vs. Multi-Regional Repositories
 
-Every Artifact Registry repository has a declared **location**, following the same regional/multi-regional model introduced in Section 2:
+Every Artifact Registry repository has a declared **location**, following the same regional/multi-regional model introduced in [Section 2](../Part1/Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md):
 
 - **Regional repository** (e.g., `us-central1`): artifacts are stored in a single region. Lower latency for pulls from workloads in or near that region, and keeps data within a specific geography for residency requirements.
 - **Multi-regional repository** (e.g., `us`, `europe`, `asia`): artifacts are replicated across multiple regions within the broader geography, improving availability and giving lower average latency for consumers spread across that geography, at the cost of higher storage cost and write latency.
@@ -51,7 +51,7 @@ Every Artifact Registry repository has a declared **location**, following the sa
 
 ## 6. Vulnerability Scanning
 
-Artifact Registry integrates with **Container Scanning** (part of the broader Artifact Analysis capability), which automatically scans newly pushed container images against known vulnerability databases (CVEs) and continuously re-scans stored images as new vulnerabilities are discovered, without requiring a fresh push to trigger a re-scan. Scan results are queryable via the console, `gcloud`, or API, and can be gated in CI/CD pipelines (e.g., blocking a deploy if critical/high vulnerabilities are found) or fed directly into **Binary Authorization** (Section 43) as an attestation input before a workload is permitted to deploy to GKE.
+Artifact Registry integrates with **Container Scanning** (part of the broader Artifact Analysis capability), which automatically scans newly pushed container images against known vulnerability databases (CVEs) and continuously re-scans stored images as new vulnerabilities are discovered, without requiring a fresh push to trigger a re-scan. Scan results are queryable via the console, `gcloud`, or API, and can be gated in CI/CD pipelines (e.g., blocking a deploy if critical/high vulnerabilities are found) or fed directly into **Binary Authorization** ([Section 43](../Part5/Section-43-Part5-Binary-Authorization-Confidential-Computing.md)) as an attestation input before a workload is permitted to deploy to GKE.
 
 ## 7. Comparison: Artifact Registry vs. AWS ECR vs. Azure Container Registry
 
@@ -113,7 +113,7 @@ gcloud artifacts docker images list us-central1-docker.pkg.dev/PROJECT_ID/my-app
 
 - Enterprises typically create **one Artifact Registry repository per environment tier or team**, not one giant shared repository, so IAM permissions can be scoped tightly (e.g., only the CI service account for team A can push to team A's repository).
 - **Remote repositories** are standard practice for any organization pulling public base images (e.g., `node:20`, `python:3.12`) at scale, both to avoid public registry rate limits and to create a controlled, auditable single point through which all external dependencies flow.
-- CI/CD pipelines commonly gate promotion between environments on vulnerability scan results — e.g., an image cannot be promoted from a staging repository to a production repository if it has unresolved critical CVEs, often enforced together with Binary Authorization (Section 43).
+- CI/CD pipelines commonly gate promotion between environments on vulnerability scan results — e.g., an image cannot be promoted from a staging repository to a production repository if it has unresolved critical CVEs, often enforced together with Binary Authorization ([Section 43](../Part5/Section-43-Part5-Binary-Authorization-Confidential-Computing.md)).
 
 ## 10. Common Misconceptions
 
@@ -129,15 +129,15 @@ gcloud artifacts docker images list us-central1-docker.pkg.dev/PROJECT_ID/my-app
 **Model answer:** A standard repository stores artifacts you push yourself. A remote repository is a pass-through cache configured in front of an upstream registry like Docker Hub or PyPI — the first request for a given package/image fetches and caches it from upstream, and subsequent requests are served from the cache. Organizations use remote repositories to avoid repeatedly hitting public registry rate limits, improve pull latency and reliability for CI/CD, and create a single controlled path through which external dependencies enter the organization.
 
 **🎯 Senior/Architect:** _Design an Artifact Registry strategy for an enterprise with 20 development teams, strict production change control, and a requirement that no image with unresolved critical vulnerabilities reaches production._
-**Model answer:** I'd create per-team (or per-domain) standard Docker repositories for build outputs, scoped with IAM so each team's CI service account can only push to its own repository, plus a small number of shared remote repositories (Docker Hub, base OS images) so external dependencies flow through one controlled, cached path rather than each team pulling directly from the public internet. I'd separate repositories by environment tier (e.g., a `staging` repository and a `production` repository per team, or a promotion pipeline that copies a specific validated digest from staging to production rather than re-pulling by mutable tag). Every push triggers Artifact Analysis vulnerability scanning; the CI/CD pipeline gates promotion to the production repository on scan results, and I'd pair this with Binary Authorization (Section 43) attestations so GKE itself refuses to deploy any image lacking a valid "passed vulnerability scan" attestation, giving a policy-enforced backstop rather than relying solely on pipeline discipline.
+**Model answer:** I'd create per-team (or per-domain) standard Docker repositories for build outputs, scoped with IAM so each team's CI service account can only push to its own repository, plus a small number of shared remote repositories (Docker Hub, base OS images) so external dependencies flow through one controlled, cached path rather than each team pulling directly from the public internet. I'd separate repositories by environment tier (e.g., a `staging` repository and a `production` repository per team, or a promotion pipeline that copies a specific validated digest from staging to production rather than re-pulling by mutable tag). Every push triggers Artifact Analysis vulnerability scanning; the CI/CD pipeline gates promotion to the production repository on scan results, and I'd pair this with Binary Authorization ([Section 43](../Part5/Section-43-Part5-Binary-Authorization-Confidential-Computing.md)) attestations so GKE itself refuses to deploy any image lacking a valid "passed vulnerability scan" attestation, giving a policy-enforced backstop rather than relying solely on pipeline discipline.
 
 ## 12. Key Takeaways
 
 - 🔑 Artifact Registry is the multi-format successor to the Docker-only Container Registry, unifying container images, npm, Maven, Python, Go, and OS packages under one product and IAM model.
 - 🔑 Repositories are regional or multi-regional; colocating repository location with consuming workloads reduces pull latency and cost.
 - 🔑 Remote repositories cache upstream public registries; virtual repositories aggregate multiple underlying repositories behind one endpoint.
-- 🔑 Native, continuously updated vulnerability scanning integrates with Binary Authorization (Section 43) to enforce policy at deploy time, not just report findings after the fact.
+- 🔑 Native, continuously updated vulnerability scanning integrates with Binary Authorization ([Section 43](../Part5/Section-43-Part5-Binary-Authorization-Confidential-Computing.md)) to enforce policy at deploy time, not just report findings after the fact.
 
 ## 13. Related Concepts
 
-Container fundamentals and image basics (Section 28), GKE architecture that pulls images from Artifact Registry (Section 30), Binary Authorization for policy-gated deploys (Section 43), and Cloud Build/CI-CD pipelines that push to Artifact Registry (Section 50) all build directly on the concepts introduced here.
+Container fundamentals and image basics ([Section 28](./Section-28-Part4-Container-Fundamentals-Recap-on-GCP.md)), GKE architecture that pulls images from Artifact Registry ([Section 30](./Section-30-Part4-GKE-Architecture-Deep-Dive.md)), Binary Authorization for policy-gated deploys ([Section 43](../Part5/Section-43-Part5-Binary-Authorization-Confidential-Computing.md)), and Cloud Build/CI-CD pipelines that push to Artifact Registry ([Section 50](../Part7/Section-50-Part7-Cloud-Build-CICD.md)) all build directly on the concepts introduced here.

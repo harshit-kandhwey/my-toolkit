@@ -1,8 +1,8 @@
 # Section 44 — API Management
 
-**Part 8: Serverless & Integration | Section 44 of 70 (Final Section of Part 8)**
-**Prerequisites:** Section 40 (Azure Functions — HTTP triggers), Section 13 (App Service), Section 7 (OAuth2/OIDC), Section 24 (Load Balancer vs. Application Gateway)
-**Leads into:** Part 9 — DevOps & Infrastructure as Code (Section 45, Azure DevOps)
+**Part 8: Serverless & Integration | [Section 44](./Section-44-Part8-API-Management.md) of 70 (Final Section of Part 8)**
+**Prerequisites:** [Section 40](./Section-40-Part8-Azure-Functions-Deep-Dive.md) (Azure Functions — HTTP triggers), [Section 13](../Part3/Section-13-Part3-Azure-App-Service.md) (App Service), [Section 7](../Part2/Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md) (OAuth2/OIDC), [Section 24](../Part5/Section-24-Part5-Load-Balancer-vs-Application-Gateway.md) (Load Balancer vs. Application Gateway)
+**Leads into:** Part 9 — DevOps & Infrastructure as Code ([Section 45](../Part9/Section-45-Part9-Azure-DevOps.md), Azure DevOps)
 
 ---
 
@@ -77,11 +77,11 @@ API Consumer (app, partner, internal team)
 
 ### 3.2 Gateway Deployment Models (Tiers)
 
-| Tier Category                                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Classic / Developer / Basic / Standard / Premium tiers** | Microsoft-hosted, multi-tenant (or, at Premium, optionally dedicated-capacity) gateway infrastructure, with the tier determining throughput capacity, SLA, and advanced features (e.g., multi-region deployment and VNet integration are typically Premium-tier capabilities — verify exact current tier/feature mapping against documentation, as APIM's tier structure has evolved, including newer v2 tier offerings).                       |
-| **Consumption tier**                                       | A serverless, pay-per-call APIM tier with automatic scaling including scale-to-zero, mirroring the Consumption-plan philosophy already established for Azure Functions (Section 40.3.2) and Logic Apps (Section 42.3.1) — appropriate for lower-volume or intermittent API traffic wanting the same consumption-based economics.                                                                                                                |
-| **Self-hosted gateway**                                    | A containerized version of the APIM gateway component that can be deployed into a customer's own environment (including an AKS cluster, Section 36–38, or on-premises/other-cloud infrastructure), while still being managed/configured from the Azure-hosted APIM control plane — relevant for hybrid, multi-cloud, or strict data-residency/network-locality scenarios where API traffic must not traverse a Microsoft-hosted gateway at all. |
+| Tier Category                                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Classic / Developer / Basic / Standard / Premium tiers** | Microsoft-hosted, multi-tenant (or, at Premium, optionally dedicated-capacity) gateway infrastructure, with the tier determining throughput capacity, SLA, and advanced features (e.g., multi-region deployment and VNet integration are typically Premium-tier capabilities — verify exact current tier/feature mapping against documentation, as APIM's tier structure has evolved, including newer v2 tier offerings).                                                                                                                                          |
+| **Consumption tier**                                       | A serverless, pay-per-call APIM tier with automatic scaling including scale-to-zero, mirroring the Consumption-plan philosophy already established for Azure Functions ([Section 40](./Section-40-Part8-Azure-Functions-Deep-Dive.md).3.2) and Logic Apps ([Section 42](./Section-42-Part8-Logic-Apps.md).3.1) — appropriate for lower-volume or intermittent API traffic wanting the same consumption-based economics.                                                                                                                                            |
+| **Self-hosted gateway**                                    | A containerized version of the APIM gateway component that can be deployed into a customer's own environment (including an AKS cluster, [Section 36](../Part7/Section-36-Part7-AKS-Architecture.md)–[Section 38](../Part7/Section-38-Part7-AKS-Production-Operations.md), or on-premises/other-cloud infrastructure), while still being managed/configured from the Azure-hosted APIM control plane — relevant for hybrid, multi-cloud, or strict data-residency/network-locality scenarios where API traffic must not traverse a Microsoft-hosted gateway at all. |
 
 ⚠️ **Warning:** exact tier names, feature availability per tier, and pricing should be verified against current Microsoft documentation, as APIM's tier structure has been actively evolving (including the introduction of newer "v2" tiers), and outdated tier assumptions are a common source of stale architecture guidance.
 
@@ -123,7 +123,7 @@ A **policy** is an XML-configured statement applied at one of several pipeline s
 </policies>
 ```
 
-- **`validate-jwt`:** validates an incoming OAuth2/OIDC bearer token (Section 7 concepts applied directly) against a specified identity provider's configuration (here, Microsoft Entra ID) and required audience/claims — enforcing authentication centrally at the gateway rather than requiring every backend to independently implement token validation.
+- **`validate-jwt`:** validates an incoming OAuth2/OIDC bearer token ([Section 7](../Part2/Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md) concepts applied directly) against a specified identity provider's configuration (here, Microsoft Entra ID) and required audience/claims — enforcing authentication centrally at the gateway rather than requiring every backend to independently implement token validation.
 - **`rate-limit`:** enforces a request-count ceiling per defined period, protecting backend services from being overwhelmed and providing a governance lever independent of anything the backend itself implements.
 - **`set-header`:** demonstrates request/response transformation — adding, modifying, or removing headers as requests pass through, useful for both functional needs (forwarding client IP information) and security hardening (removing headers that leak backend implementation details, such as `X-Powered-By`).
 - **`<base />`:** a special element indicating "apply policies inherited from a broader scope here" (e.g., product-level or global policies) — policies can be defined at multiple scopes (global, product, API, operation), and `<base />` controls where inherited policies are applied relative to scope-specific ones, enabling a layered, override-capable policy model.
@@ -140,7 +140,7 @@ A **policy** is an XML-configured statement applied at one of several pipeline s
 
 ### 4.4 Production and Enterprise Usage
 
-- **Centralized authentication enforcement:** rather than each backend independently validating tokens (with the risk of inconsistent implementation/configuration across teams), APIM's `validate-jwt` policy provides one consistently configured, centrally auditable enforcement point — directly extending Section 7's OAuth2/OIDC concepts into a concrete governance mechanism.
+- **Centralized authentication enforcement:** rather than each backend independently validating tokens (with the risk of inconsistent implementation/configuration across teams), APIM's `validate-jwt` policy provides one consistently configured, centrally auditable enforcement point — directly extending [Section 7](../Part2/Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md)'s OAuth2/OIDC concepts into a concrete governance mechanism.
 - **Mock responses during backend development:** APIM policies can return a mocked response directly from the gateway (without forwarding to a not-yet-implemented backend), enabling API consumer teams to begin integration testing against the published API contract before the actual backend implementation is complete — a genuine parallel-development-enablement pattern.
 
 ---
@@ -185,21 +185,21 @@ The **developer portal** is a customizable, publicly (or internally) accessible 
 
 ### 7.2 Managed Identity for Backend Authentication
 
-- APIM can authenticate to its own backends using a Managed Identity (Section 9), rather than a stored credential, when the backend supports Entra ID-based authentication — consistent with the Managed Identity preference pattern established throughout this roadmap (Sections 35.4.2, 37.5.4, 40.7.2, 43.8).
+- APIM can authenticate to its own backends using a Managed Identity ([Section 9](../Part2/Section-09-Part2-Managed-Identities-and-Service-Principals.md)), rather than a stored credential, when the backend supports Entra ID-based authentication — consistent with the Managed Identity preference pattern established throughout this roadmap (Sections 35.4.2, 37.5.4, 40.7.2, 43.8).
 
 ### 7.3 Layered Authentication: Subscription Keys vs. OAuth2/OIDC
 
 - **Subscription keys** identify _which consumer/subscription_ is calling (for rate limiting, usage tracking, and product-level access control) but are not, on their own, a strong identity/authorization mechanism — they are more akin to an API-usage identifier than a robust authentication credential.
-- **OAuth2/OIDC token validation** (via `validate-jwt`, 44.4.2) provides genuine identity-based authentication and authorization, verifying _who_ the calling user/application actually is and what they are authorized to do, per Section 7's concepts.
+- **OAuth2/OIDC token validation** (via `validate-jwt`, 44.4.2) provides genuine identity-based authentication and authorization, verifying _who_ the calling user/application actually is and what they are authorized to do, per [Section 7](../Part2/Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md)'s concepts.
 - 💡 **Tip:** production APIs handling sensitive operations should generally layer both — a subscription key for consumption governance/tracking, and OAuth2/OIDC token validation for genuine identity-based authorization — rather than relying on the subscription key alone as if it were a sufficient security control.
 
 ---
 
 ## 8. Production and Enterprise Usage Patterns
 
-- **Facade over a heterogeneous backend landscape:** a single APIM instance commonly fronts a genuinely mixed set of backends — some Azure Functions (Section 40), some AKS-hosted microservices (Section 36–38), some legacy on-premises systems reached via a hybrid connectivity mechanism (VPN Gateway/ExpressRoute, Section 26) — presenting a single, consistent API surface to consumers regardless of this backend heterogeneity, directly realizing the "facade, not compute" framing from 44.1.
-- **Multi-region APIM deployment:** Premium-tier APIM supports deploying gateway instances across multiple Azure regions while sharing a single management plane/configuration, providing lower-latency access for geographically distributed consumers and regional resilience — architecturally parallel to the geo-replication concept already established for ACR in Section 35.7, now applied to the API gateway layer.
-- **Monitoring and analytics:** APIM integrates with Azure Monitor (Section 50) and provides built-in usage analytics (calls per API/product/consumer, latency, error rates) — a governance-relevant observability layer distinct from, but complementary to, Application Insights-level backend observability (Section 52).
+- **Facade over a heterogeneous backend landscape:** a single APIM instance commonly fronts a genuinely mixed set of backends — some Azure Functions ([Section 40](./Section-40-Part8-Azure-Functions-Deep-Dive.md)), some AKS-hosted microservices ([Section 36](../Part7/Section-36-Part7-AKS-Architecture.md)–[Section 38](../Part7/Section-38-Part7-AKS-Production-Operations.md)), some legacy on-premises systems reached via a hybrid connectivity mechanism (VPN Gateway/ExpressRoute, [Section 26](../Part5/Section-26-Part5-VPN-Gateway-and-ExpressRoute.md)) — presenting a single, consistent API surface to consumers regardless of this backend heterogeneity, directly realizing the "facade, not compute" framing from 44.1.
+- **Multi-region APIM deployment:** Premium-tier APIM supports deploying gateway instances across multiple Azure regions while sharing a single management plane/configuration, providing lower-latency access for geographically distributed consumers and regional resilience — architecturally parallel to the geo-replication concept already established for ACR in [Section 35](../Part7/Section-35-Part7-Azure-Container-Registry.md).7, now applied to the API gateway layer.
+- **Monitoring and analytics:** APIM integrates with Azure Monitor ([Section 50](../Part10/Section-50-Part10-Azure-Monitor-Fundamentals.md)) and provides built-in usage analytics (calls per API/product/consumer, latency, error rates) — a governance-relevant observability layer distinct from, but complementary to, Application Insights-level backend observability ([Section 52](../Part10/Section-52-Part10-Application-Insights.md)).
 
 ---
 
@@ -284,18 +284,18 @@ Section 44 (API Management)  ← this section
    governed, unified consumer-facing API surface fronting all of the above
 ```
 
-Part 8 is now complete. Every synchronous, consumer-facing API built on Functions, Logic Apps, or any AKS-hosted service (Part 7) can be exposed through the APIM governance layer covered in this section, while the messaging services from Section 43 provide the asynchronous integration backbone connecting these compute options to each other and to event sources.
+Part 8 is now complete. Every synchronous, consumer-facing API built on Functions, Logic Apps, or any AKS-hosted service (Part 7) can be exposed through the APIM governance layer covered in this section, while the messaging services from [Section 43](./Section-43-Part8-Event-Grid-Event-Hubs-Service-Bus.md) provide the asynchronous integration backbone connecting these compute options to each other and to event sources.
 
 ---
 
 ## 15. Related Concepts and What Comes Next
 
-- **Section 45 — Azure DevOps (Part 9, next):** shifts focus to the CI/CD and Infrastructure-as-Code tooling used to actually build, test, and deploy everything covered in Parts 7–8 (container images, Function App packages, Logic App definitions, APIM policy/configuration) in a governed, repeatable pipeline.
-- **Section 7 (prerequisite, completed):** OAuth2/OIDC concepts underlying 44.4.2's `validate-jwt` policy and 44.7.3's layered authentication guidance.
-- **Section 26 (prerequisite, completed):** VPN Gateway/ExpressRoute, relevant to the hybrid backend scenario in 44.8.
-- **Section 50/49 (upcoming, Part 10):** Azure Monitor and Application Insights, providing the fuller observability depth referenced in 44.8's monitoring/analytics material.
-- **Section 57 — Azure Policy (upcoming, Part 11):** relevant for governing APIM resource configuration itself at the Azure-resource level, distinct from APIM's own request-level policy engine.
+- **[Section 45](../Part9/Section-45-Part9-Azure-DevOps.md) — Azure DevOps (Part 9, next):** shifts focus to the CI/CD and Infrastructure-as-Code tooling used to actually build, test, and deploy everything covered in Parts 7–8 (container images, Function App packages, Logic App definitions, APIM policy/configuration) in a governed, repeatable pipeline.
+- **[Section 7](../Part2/Section-07-Part2-AuthN-vs-AuthZ-OAuth2-OIDC-SAML.md) (prerequisite, completed):** OAuth2/OIDC concepts underlying 44.4.2's `validate-jwt` policy and 44.7.3's layered authentication guidance.
+- **[Section 26](../Part5/Section-26-Part5-VPN-Gateway-and-ExpressRoute.md) (prerequisite, completed):** VPN Gateway/ExpressRoute, relevant to the hybrid backend scenario in 44.8.
+- **[Section 50](../Part10/Section-50-Part10-Azure-Monitor-Fundamentals.md)/49 (upcoming, Part 10):** Azure Monitor and Application Insights, providing the fuller observability depth referenced in 44.8's monitoring/analytics material.
+- **[Section 57](../Part11/Section-57-Part11-Azure-Policy-Blueprints.md) — Azure Policy (upcoming, Part 11):** relevant for governing APIM resource configuration itself at the Azure-resource level, distinct from APIM's own request-level policy engine.
 
 ---
 
-_End of Section 44. End of Part 8 — Serverless & Integration. Next: Section 45 — Azure DevOps (Part 9 — DevOps & Infrastructure as Code)._
+_End of [Section 44](./Section-44-Part8-API-Management.md). End of Part 8 — Serverless & Integration. Next: [Section 45](../Part9/Section-45-Part9-Azure-DevOps.md) — Azure DevOps (Part 9 — DevOps & Infrastructure as Code)._

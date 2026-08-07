@@ -154,6 +154,6 @@ Senior - Key-naming and operational considerations for a data lake growing to hu
 
 ## Related Concepts (forward links)
 
-- S3 storage classes and lifecycle policies for cost optimization -> §40
-- S3 security, encryption, and Block Public Access in full depth -> §41
-- Versioning, replication, and performance tuning -> §42
+- S3 storage classes and lifecycle policies for cost optimization -> [§40](./Section-40-Part5-S3-Storage-Classes-Lifecycle.md)
+- S3 security, encryption, and Block Public Access in full depth -> [§41](./Section-41-Part5-S3-Security-Encryption-AccessControl.md)
+- Versioning, replication, and performance tuning -> [§42](./Section-42-Part5-S3-Advanced-Versioning-Replication-Performance.md)

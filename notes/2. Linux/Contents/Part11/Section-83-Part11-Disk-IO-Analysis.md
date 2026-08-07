@@ -2,7 +2,7 @@
 
 ## 1. `df -h`: Filesystem-Level Space Usage
 
-§82 covered memory diagnostics as the second of §80's four resource-specific continuations — and touched on how page cache and dirty pages relate to when writes actually land on disk, a thread this section picks back up when discussing why space and throughput are different questions entirely. This section moves to disk, starting with the most basic question: how full is each filesystem.
+[§82](./Section-82-Part11-Memory-Analysis.md) covered memory diagnostics as the second of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s four resource-specific continuations — and touched on how page cache and dirty pages relate to when writes actually land on disk, a thread this section picks back up when discussing why space and throughput are different questions entirely. This section moves to disk, starting with the most basic question: how full is each filesystem.
 
 **Purpose:** Show space usage per mounted filesystem — total, used, available, and percent used.
 
@@ -28,7 +28,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 tmpfs           3.9G     0  3.9G   0% /dev/shm
 ```
 
-> ⚠️ **Warning:** A filesystem reporting `100%` used immediately after a large file was deleted — and staying at 100% — is a genuinely common and confusing gotcha, and it isn't a `df` bug. If a process still has that file **open** at the time it was deleted, the underlying disk blocks are **not released** until every process holding it open closes it (or exits). The directory entry (the name) is gone, `ls` won't show it, but the inode and its data blocks persist, still counted as used space, for as long as any file descriptor referencing it remains open — a direct consequence of the inode/link-count model §19 (Part 3) covers. The fix is finding and dealing with the holding process, not deleting the (already invisible) file again.
+> ⚠️ **Warning:** A filesystem reporting `100%` used immediately after a large file was deleted — and staying at 100% — is a genuinely common and confusing gotcha, and it isn't a `df` bug. If a process still has that file **open** at the time it was deleted, the underlying disk blocks are **not released** until every process holding it open closes it (or exits). The directory entry (the name) is gone, `ls` won't show it, but the inode and its data blocks persist, still counted as used space, for as long as any file descriptor referencing it remains open — a direct consequence of the inode/link-count model [§19](../Part3/Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md) covers. The fix is finding and dealing with the holding process, not deleting the (already invisible) file again.
 >
 > **Diagnostic command:**
 >
@@ -74,7 +74,7 @@ $ du -h --max-depth=1 /var
 
 This two-step pattern — total first with `-sh`, then one level deeper with `--max-depth=1` — repeated on whichever subdirectory looks disproportionately large, is the standard way to walk down a filesystem tree toward the actual offender without recursing through every file individually.
 
-> 💡 **Tip:** `du`'s totals and `df`'s totals for the same filesystem can legitimately disagree, and it's worth knowing why before assuming one of them is wrong. Beyond the deleted-but-open-file scenario in §1 (which `du` never sees, since it can't count a file with no directory entry, while `df` still counts its blocks as used), **sparse files** are the other common cause — a file can report a large logical size but occupy far fewer actual disk blocks, and `du` by default reports actual block usage while some tools report logical size, producing numbers that look inconsistent unless the sparse-file behavior is understood.
+> 💡 **Tip:** `du`'s totals and `df`'s totals for the same filesystem can legitimately disagree, and it's worth knowing why before assuming one of them is wrong. Beyond the deleted-but-open-file scenario in [§1](../Part1/Section-01-Part1-What-Linux-Is-Kernel-vs-OS-vs-Distribution.md) (which `du` never sees, since it can't count a file with no directory entry, while `df` still counts its blocks as used), **sparse files** are the other common cause — a file can report a large logical size but occupy far fewer actual disk blocks, and `du` by default reports actual block usage while some tools report logical size, producing numbers that look inconsistent unless the sparse-file behavior is understood.
 
 ## 3. `iostat`: Throughput and Latency, Not Space
 
@@ -90,10 +90,10 @@ iostat -x 1
 
 **Key flags:**
 
-| Flag | Meaning                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------- |
-| `-x` | Extended statistics — utilization, average queue size, and latency breakdowns, not just raw throughput              |
-| `1`  | Repeat every 1 second, since a single snapshot (like `vmstat`, §81) is far less informative than watching the trend |
+| Flag | Meaning                                                                                                                                                         |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-x` | Extended statistics — utilization, average queue size, and latency breakdowns, not just raw throughput                                                          |
+| `1`  | Repeat every 1 second, since a single snapshot (like `vmstat`, [§81](./Section-81-Part11-CPU-Load-Analysis.md)) is far less informative than watching the trend |
 
 **Example usage and expected output:**
 
@@ -118,7 +118,7 @@ sda              12.0    85.0   480.0  6800.0   45.20   1.10  92.30
 
 ## 4. `iotop`: Per-Process I/O Attribution
 
-`iostat` confirms a device is saturated; it says nothing about **which process** is generating the load. `iotop` is to disk I/O what `top` is to CPU (§81) — a live, per-process view of who's actually responsible.
+`iostat` confirms a device is saturated; it says nothing about **which process** is generating the load. `iotop` is to disk I/O what `top` is to CPU ([§81](./Section-81-Part11-CPU-Load-Analysis.md)) — a live, per-process view of who's actually responsible.
 
 **Purpose:** Show real-time disk I/O usage broken down by process, identifying the specific process generating read/write load.
 
@@ -154,10 +154,10 @@ $ sudo iotop -oa
 A vague report like "the disk is slow" or "the app feels sluggish and we suspect storage" benefits from a fixed sequence rather than jumping straight to any one tool:
 
 1. **Rule out space pressure first** — `df -h` (1) to confirm the filesystem isn't near 100% full (some filesystems degrade in write performance as they approach capacity, independent of raw I/O throughput), and `du -sh --max-depth=1` (2) if it is, to find what's actually consuming the space.
-2. **Confirm throughput/latency saturation** — `iostat -x 1` (3), watching `%util` and `await` over a live window rather than a single snapshot. If `%util` is low and `await` is small, the underlying storage isn't actually struggling, and the "slowness" likely has a different root cause entirely (application logic, network, a different resource from §80's model).
+2. **Confirm throughput/latency saturation** — `iostat -x 1` (3), watching `%util` and `await` over a live window rather than a single snapshot. If `%util` is low and `await` is small, the underlying storage isn't actually struggling, and the "slowness" likely has a different root cause entirely (application logic, network, a different resource from [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s model).
 3. **Attribute the load to a specific process** — `iotop` (4), once storage saturation is confirmed, to identify exactly which process is driving it, distinguishing "the whole workload legitimately needs this much I/O" from "one unexpected process (a backup job, a runaway log write, a misbehaving service) is consuming disk capacity that should be going to something else."
 
-This space-then-throughput-then-attribution ordering mirrors §81's CPU sequence (load average → `top`'s `wa` → `mpstat`) and §82's memory sequence (`free`'s `available` → `/proc/meminfo` detail → OOM evidence) — each resource-specific section in this Part follows the same broad shape: a coarse signal, a more detailed breakdown, then per-process attribution, all in service of §80's general bottleneck-identification model.
+This space-then-throughput-then-attribution ordering mirrors [§81](./Section-81-Part11-CPU-Load-Analysis.md)'s CPU sequence (load average → `top`'s `wa` → `mpstat`) and [§82](./Section-82-Part11-Memory-Analysis.md)'s memory sequence (`free`'s `available` → `/proc/meminfo` detail → OOM evidence) — each resource-specific section in this Part follows the same broad shape: a coarse signal, a more detailed breakdown, then per-process attribution, all in service of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s general bottleneck-identification model.
 
 ## 6. Common Misconceptions
 
@@ -189,11 +189,11 @@ _What the interviewer is probing for:_ Turning a diagnostic sequence into a repe
 - `df -h`'s "100% full after deleting files" gotcha is caused by a process still holding the deleted file open — space isn't reclaimed until every open handle closes; `lsof | grep deleted` is the diagnostic (1).
 - `du -sh` and `du -h --max-depth=1` are the practical drill-down workflow for finding what's consuming space within a full filesystem, and can legitimately disagree with `df`'s totals due to open-deleted-files or sparse files (2).
 - `iostat -x` measures throughput and latency (`%util`, `await` vs. `svctm`, queue depth), a fundamentally different question from `df`/`du`'s space usage — a disk can be nearly empty and still be the bottleneck (3).
-- `iotop` attributes I/O load to specific processes, the disk equivalent of what `top` does for CPU (§81) — necessary once `iostat` confirms saturation but before it's clear who's causing it (4).
-- The standard "disk is slow" diagnostic flow is space (`df`/`du`) → throughput/latency (`iostat`) → attribution (`iotop`), mirroring the coarse-to-detailed-to-per-process pattern used for CPU (§81) and memory (§82) (5).
+- `iotop` attributes I/O load to specific processes, the disk equivalent of what `top` does for CPU ([§81](./Section-81-Part11-CPU-Load-Analysis.md)) — necessary once `iostat` confirms saturation but before it's clear who's causing it (4).
+- The standard "disk is slow" diagnostic flow is space (`df`/`du`) → throughput/latency (`iostat`) → attribution (`iotop`), mirroring the coarse-to-detailed-to-per-process pattern used for CPU ([§81](./Section-81-Part11-CPU-Load-Analysis.md)) and memory ([§82](./Section-82-Part11-Memory-Analysis.md)) (5).
 
 ## 9. Related Concepts & What's Next
 
-This section connects to §82's page-cache/dirty-page discussion (Part 11, prior) for when buffered writes actually reach disk, and depends on §19's inode/hard-link model (Part 3) for the deleted-but-open-file mechanism, along with §18's filesystem types and §76's `fsck`/repair coverage (Parts 3 and 10) for related filesystem-health context. It's the third of §80's four resource-specific continuations. §84 (next) closes out the sequence with network performance analysis — `iftop`, `nload`, `sar` — the fourth and final resource in §80's unified model.
+This section connects to [§82](./Section-82-Part11-Memory-Analysis.md)'s page-cache/dirty-page discussion (Part 11, prior) for when buffered writes actually reach disk, and depends on [§19](../Part3/Section-19-Part3-Inodes-Hard-Links-Symbolic-Links.md)'s inode/hard-link model (Part 3) for the deleted-but-open-file mechanism, along with [§18](../Part3/Section-18-Part3-Filesystem-Types.md)'s filesystem types and [§76](../Part10/Section-76-Part10-Filesystem-Creation-Checking-Repair.md)'s `fsck`/repair coverage (Parts 3 and 10) for related filesystem-health context. It's the third of [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s four resource-specific continuations. [§84](./Section-84-Part11-Network-Performance-Analysis.md) (next) closes out the sequence with network performance analysis — `iftop`, `nload`, `sar` — the fourth and final resource in [§80](./Section-80-Part11-Performance-Fundamentals-Unified-Model.md)'s unified model.
 
-**Next Section:** §84 — `Section-84-Part11-Network-Performance-Analysis.md`
+**Next Section:** [§84](./Section-84-Part11-Network-Performance-Analysis.md) — `Section-84-Part11-Network-Performance-Analysis.md`

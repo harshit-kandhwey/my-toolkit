@@ -2,13 +2,13 @@
 
 ## 1. Definition
 
-**Plain language:** An Azure Virtual Machine (VM) is a software-based emulation of a physical computer, running on Microsoft's shared hardware, that you can create in minutes, choose the size and OS of, and fully control from the OS level upward — the core IaaS compute building block introduced conceptually in Section 2.4.
+**Plain language:** An Azure Virtual Machine (VM) is a software-based emulation of a physical computer, running on Microsoft's shared hardware, that you can create in minutes, choose the size and OS of, and fully control from the OS level upward — the core IaaS compute building block introduced conceptually in [Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).4.
 
 **Precise definition:** An Azure VM is a virtualized compute instance running atop the Azure Hypervisor on physical host hardware within an Azure data center, provisioned from a disk image, allocated a defined quantity of virtual CPU, memory, and network/storage bandwidth according to its selected VM size (SKU), and billed based on that size, running duration, and any attached resources (disks, public IPs).
 
 ## 2. Why It Exists / Problem It Solves
 
-Some workloads require full operating-system-level control: custom kernel parameters, specific unsupported legacy software, direct hardware-adjacent configuration, or simply an exact lift-and-shift replica of an existing on-premises server with minimal re-engineering. Azure VMs solve this by providing IaaS-level compute (Section 2.4) — Microsoft manages only the physical host and hypervisor, while the customer retains full control of everything from the guest OS upward, at the cost of taking on OS patching, security hardening, and availability configuration as their own responsibility.
+Some workloads require full operating-system-level control: custom kernel parameters, specific unsupported legacy software, direct hardware-adjacent configuration, or simply an exact lift-and-shift replica of an existing on-premises server with minimal re-engineering. Azure VMs solve this by providing IaaS-level compute ([Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).4) — Microsoft manages only the physical host and hypervisor, while the customer retains full control of everything from the guest OS upward, at the cost of taking on OS patching, security hardening, and availability configuration as their own responsibility.
 
 ## 3. Internal Working — Virtualization Architecture
 
@@ -59,7 +59,7 @@ Each VM:
 - **Cost** — larger sizes cost proportionally more; right-sizing (matching the smallest size that meets actual sustained load, augmented with autoscaling for peaks rather than statically over-provisioning) is a core cost-optimization practice covered further in Part 12.
 - **Availability in the target region** — not every size is available in every region; verify with `az vm list-skus --location <region>` before committing to a design.
 
-💡 **Tip:** A very common real-world mistake is over-provisioning "just in case" rather than right-sizing based on actual measured utilization and using autoscaling (Section 12, VM Scale Sets) to handle genuine peak demand — right-sizing plus autoscaling is almost always more cost-effective than a permanently oversized static VM.
+💡 **Tip:** A very common real-world mistake is over-provisioning "just in case" rather than right-sizing based on actual measured utilization and using autoscaling ([Section 12](./Section-12-Part3-VM-Scale-Sets.md), VM Scale Sets) to handle genuine peak demand — right-sizing plus autoscaling is almost always more cost-effective than a permanently oversized static VM.
 
 ## 5. VM Images
 
@@ -91,7 +91,7 @@ az vm create \
   --generate-ssh-keys
 ```
 
-- **Purpose:** Explicitly selects a general-purpose VM size (`Standard_D2s_v5`, illustrative — verify current series naming) rather than accepting a default, following the right-sizing principle from Section 11.4.
+- **Purpose:** Explicitly selects a general-purpose VM size (`Standard_D2s_v5`, illustrative — verify current series naming) rather than accepting a default, following the right-sizing principle from [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md).4.
 - **Important arguments explained individually:**
   - `--size` — the VM SKU; omitting this parameter lets Azure choose a default size, which is rarely the ideal choice for a real workload and should generally be explicitly specified after actual sizing analysis.
 - **Common error:** `SkuNotAvailable` — the requested size isn't available in the target region or for the target subscription's quota; resolved by choosing a different size, a different region, or requesting a quota increase.
@@ -113,11 +113,11 @@ az image create --resource-group rg-myapp-prod --name img-webapp-golden --source
 
 ## 7. Production & Enterprise Usage
 
-Enterprises rarely create VMs manually and repeatedly from marketplace images for ongoing operations — instead, they build and maintain a small set of standardized, hardened **golden images** (via Azure Compute Gallery) that bake in required security agents, monitoring agents, and baseline configuration, then deploy new VMs (often via VM Scale Sets, Section 12, rather than individual VMs) from those standardized images through Infrastructure as Code pipelines. VM sizing decisions at enterprise scale are typically informed by actual usage telemetry (via Azure Monitor, Part 10) rather than guesswork, with periodic right-sizing reviews as part of cost governance (Part 12).
+Enterprises rarely create VMs manually and repeatedly from marketplace images for ongoing operations — instead, they build and maintain a small set of standardized, hardened **golden images** (via Azure Compute Gallery) that bake in required security agents, monitoring agents, and baseline configuration, then deploy new VMs (often via VM Scale Sets, [Section 12](./Section-12-Part3-VM-Scale-Sets.md), rather than individual VMs) from those standardized images through Infrastructure as Code pipelines. VM sizing decisions at enterprise scale are typically informed by actual usage telemetry (via Azure Monitor, Part 10) rather than guesswork, with periodic right-sizing reviews as part of cost governance (Part 12).
 
 ## 8. Security Considerations
 
-- The guest OS is entirely the customer's responsibility to patch and harden under the IaaS model (Section 2.4) — unpatched VM operating systems are a common real-world breach vector, making automated patch management (or automated VM replacement from updated golden images) an operational necessity, not optional.
+- The guest OS is entirely the customer's responsibility to patch and harden under the IaaS model ([Section 2](../Part1/Section-02-Part1-Cloud-Service-and-Deployment-Models.md).4) — unpatched VM operating systems are a common real-world breach vector, making automated patch management (or automated VM replacement from updated golden images) an operational necessity, not optional.
 - Golden images should have security baselines (disabled unnecessary services, applied hardening benchmarks, pre-installed required security/monitoring agents) baked in before being used as a deployment template, rather than relying on post-deployment configuration to achieve consistent hardening.
 - Direct public internet exposure of a VM's management ports (like SSH port 22 or RDP port 3389) is a common and serious misconfiguration; this is addressed via Network Security Groups and just-in-time VM access, covered in Part 5 and Part 11 respectively.
 
@@ -137,7 +137,7 @@ Basic VM health and performance metrics (CPU utilization, disk I/O, network thro
 | VM created from a "specialized" image conflicts with an identical sibling VM | Machine-specific identifiers weren't removed before capture                | Recapture the image after properly generalizing (sysprep/waagent deprovision) the source VM                          |
 | VM performance doesn't improve after resizing to more vCPUs                  | The actual bottleneck is disk or network throughput, not CPU               | Re-profile the workload's actual resource bottleneck; choose a size that increases the specific constrained resource |
 
-## 12. Interview Questions — Section 11
+## 12. Interview Questions — [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md)
 
 ### 🎯 Beginner
 
@@ -173,15 +173,15 @@ _What the interviewer is probing:_ whether the candidate thinks about image mana
 
 Azure provides three distinct, sometimes-confused mechanisms for VM-level resilience, each addressing a different scope of failure and suited to a different scenario:
 
-| Mechanism                                         | What It Protects Against                                                | How It Works                                                                                                                                                                                            | Typical Use                                                                                                                   |
-| ------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Availability Set**                              | Rack-level failure (power, network switch) within a single data center  | Groups VMs across multiple **Fault Domains** (distinct racks/power/network) and **Update Domains** (groups patched/rebooted at different times during platform maintenance), all within one data center | Regions/scenarios where Availability Zones (Section 3.3.2) aren't available, or for legacy deployments predating zone support |
-| **Availability Zone** (applied to standalone VMs) | Data-center/zone-level failure                                          | Manually pinning individual VMs to specific, different zones (e.g., VM1 in Zone 1, VM2 in Zone 2, VM3 in Zone 3)                                                                                        | Manually-managed small fleets of standalone VMs needing zone-level resilience without full VM Scale Set automation            |
-| **VM Scale Set** (Section 12)                     | Rack- or zone-level failure, PLUS automatic elastic capacity management | Automatically distributes and scales instances across zones/fault domains, with autoscaling and rolling upgrades built in                                                                               | The standard modern choice for any horizontally-scalable, stateless workload — combines resilience with elasticity            |
+| Mechanism                                                            | What It Protects Against                                                | How It Works                                                                                                                                                                                            | Typical Use                                                                                                                                                                               |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Availability Set**                                                 | Rack-level failure (power, network switch) within a single data center  | Groups VMs across multiple **Fault Domains** (distinct racks/power/network) and **Update Domains** (groups patched/rebooted at different times during platform maintenance), all within one data center | Regions/scenarios where Availability Zones ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2) aren't available, or for legacy deployments predating zone support |
+| **Availability Zone** (applied to standalone VMs)                    | Data-center/zone-level failure                                          | Manually pinning individual VMs to specific, different zones (e.g., VM1 in Zone 1, VM2 in Zone 2, VM3 in Zone 3)                                                                                        | Manually-managed small fleets of standalone VMs needing zone-level resilience without full VM Scale Set automation                                                                        |
+| **VM Scale Set** ([Section 12](./Section-12-Part3-VM-Scale-Sets.md)) | Rack- or zone-level failure, PLUS automatic elastic capacity management | Automatically distributes and scales instances across zones/fault domains, with autoscaling and rolling upgrades built in                                                                               | The standard modern choice for any horizontally-scalable, stateless workload — combines resilience with elasticity                                                                        |
 
-⚠️ **A critical, frequently tested distinction:** Availability Sets and Availability Zones are **not combinable** for the same VM — a VM is deployed into either an Availability Set (data-center-local fault/update domains) or a specific Availability Zone, not both simultaneously, since they represent different, mutually exclusive resiliency scopes. VM Scale Sets, by contrast, can be configured to span multiple zones directly (Section 12.3.3), making them the more capable and generally preferred mechanism when the workload is suited to horizontal, elastic scaling. Availability Sets remain relevant primarily for singleton or small, non-elastic VM groups in regions without zone support, or where legacy architecture constraints require them.
+⚠️ **A critical, frequently tested distinction:** Availability Sets and Availability Zones are **not combinable** for the same VM — a VM is deployed into either an Availability Set (data-center-local fault/update domains) or a specific Availability Zone, not both simultaneously, since they represent different, mutually exclusive resiliency scopes. VM Scale Sets, by contrast, can be configured to span multiple zones directly ([Section 12](./Section-12-Part3-VM-Scale-Sets.md).3.3), making them the more capable and generally preferred mechanism when the workload is suited to horizontal, elastic scaling. Availability Sets remain relevant primarily for singleton or small, non-elastic VM groups in regions without zone support, or where legacy architecture constraints require them.
 
-💡 **Tip:** For genuinely stateful, non-horizontally-scalable singleton workloads (e.g., a single legacy database VM that can't run as multiple identical replicas), neither Availability Sets nor Availability Zones alone provide _failover_ — they only reduce the _likelihood_ of simultaneous failure. True failover for a stateful singleton workload requires a database/application-level HA mechanism (such as SQL Server Always On Availability Groups on IaaS, or a managed PaaS alternative like Azure SQL Database's built-in HA, Section 29.3.4) layered on top of the chosen placement strategy.
+💡 **Tip:** For genuinely stateful, non-horizontally-scalable singleton workloads (e.g., a single legacy database VM that can't run as multiple identical replicas), neither Availability Sets nor Availability Zones alone provide _failover_ — they only reduce the _likelihood_ of simultaneous failure. True failover for a stateful singleton workload requires a database/application-level HA mechanism (such as SQL Server Always On Availability Groups on IaaS, or a managed PaaS alternative like Azure SQL Database's built-in HA, [Section 29](../Part6/Section-29-Part6-Azure-SQL-Database-and-Managed-Instance.md).3.4) layered on top of the chosen placement strategy.
 
 ### 15.2 VM Backup
 
@@ -193,11 +193,11 @@ Azure provides three distinct, sometimes-confused mechanisms for VM-level resili
 
 - **Backup Policy** — defines backup frequency (e.g., daily) and retention duration (how long each recovery point is kept, e.g., 30 days daily, 12 months monthly, 7 years yearly).
 - **Application-consistent snapshots** — Azure Backup coordinates with the VM's guest OS (via the VM agent) to quiesce the file system and, where supported, application-level state (like a database's transaction log) before taking the snapshot, ensuring the recovery point is usable without corruption, rather than a purely crash-consistent snapshot that might capture data mid-write.
-- **Recovery Services Vault** — the storage container holding backup data, itself benefiting from its own redundancy configuration (LRS/GRS, conceptually similar to Section 20's Storage Account redundancy options).
+- **Recovery Services Vault** — the storage container holding backup data, itself benefiting from its own redundancy configuration (LRS/GRS, conceptually similar to [Section 20](../Part4/Section-20-Part4-Data-Redundancy-and-Replication.md)'s Storage Account redundancy options).
 
 ### 15.3 Disaster Recovery Options for VMs
 
-**Azure Site Recovery (ASR)** (introduced by name here, covered in full in Section 62, Part 12) provides VM-level disaster recovery by continuously replicating a VM's disk changes to a secondary region, allowing the VM to be failed over and brought online in that secondary region if the primary region becomes unavailable — a fundamentally different capability from backup (which restores data to a point in time, generally with some recovery _time_, i.e. it isn't designed for rapid regional failover) and from Availability Zones (which protect within a region, not across regions).
+**Azure Site Recovery (ASR)** (introduced by name here, covered in full in [Section 62](../Part12/Section-62-Part12-Azure-Site-Recovery-Backup.md)) provides VM-level disaster recovery by continuously replicating a VM's disk changes to a secondary region, allowing the VM to be failed over and brought online in that secondary region if the primary region becomes unavailable — a fundamentally different capability from backup (which restores data to a point in time, generally with some recovery _time_, i.e. it isn't designed for rapid regional failover) and from Availability Zones (which protect within a region, not across regions).
 
 **Summary of the three-layer VM resilience model:**
 
@@ -209,7 +209,7 @@ These three layers address genuinely different failure modes and are not interch
 
 🎯 **Interview Tip:** "We have Availability Zones configured — are we protected against data corruption or a full regional outage?" is a common trap question. The correct answer is no on both counts: Availability Zones protect against a zone-level infrastructure failure only; data corruption requires Backup, and a full regional outage requires Site Recovery (or an equivalent DR strategy). Being able to clearly separate these three concerns is one of the most reliable signals of genuine, practical Azure resilience design experience.
 
-### 15.4 Interview Questions — Section 11.15
+### 15.4 Interview Questions — [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md).15
 
 **🎯 Intermediate**
 **Q: Can a single VM be placed in both an Availability Set and a specific Availability Zone simultaneously?**
@@ -225,7 +225,7 @@ _Model answer:_ I'd clarify that Availability Zones protect specifically against
 
 _What the interviewer is probing:_ whether the candidate can correctly identify and communicate the gap between infrastructure-level HA and the separate concerns of data protection and regional DR — a genuinely common real-world miscommunication this question is designed to surface.
 
-### 15.5 Key Takeaways — Section 11.15
+### 15.5 Key Takeaways — [Section 11](./Section-11-Part3-Azure-Virtual-Machines.md).15
 
 - 🔑 Availability Sets (data-center-local fault/update domains) and Availability Zones (data-center-level separation) are mutually exclusive per VM; VM Scale Sets can span zones directly and are the generally preferred modern mechanism for horizontally-scalable workloads.
 - 🔑 Azure Backup protects against data-level loss/corruption (a concern HA mechanisms do not address); Azure Site Recovery protects against full regional loss (a concern neither HA nor Backup alone addresses).
@@ -233,4 +233,4 @@ _What the interviewer is probing:_ whether the candidate can correctly identify 
 
 ## 16. Related Concepts (Next Up)
 
-Section 12 covers **VM Scale Sets** — the mechanism for running and automatically scaling a fleet of identical VMs (built from the same images and sizing principles just covered) to handle variable load and provide high availability across Availability Zones (Section 3.3.2), directly extending the single-VM concepts covered in this section to a managed, elastic group.
+[Section 12](./Section-12-Part3-VM-Scale-Sets.md) covers **VM Scale Sets** — the mechanism for running and automatically scaling a fleet of identical VMs (built from the same images and sizing principles just covered) to handle variable load and provide high availability across Availability Zones ([Section 3](../Part1/Section-03-Part1-Azure-Global-Infrastructure.md).3.2), directly extending the single-VM concepts covered in this section to a managed, elastic group.

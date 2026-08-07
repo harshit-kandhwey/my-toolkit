@@ -2,11 +2,11 @@
 
 ## 1. Overview: Two Layers, One Family
 
-§59 established the general concepts every package manager has to solve — dependency resolution, repositories, and the split between a low-level tool that installs packages and a high-level tool that resolves dependencies and talks to repositories on top of it. This section is that layering made concrete for the Debian family (Debian, Ubuntu, and their many derivatives): **dpkg** is the low-level tool, **apt**/**apt-get** is the high-level tool built on top of it, and the **.deb** file is the package format both of them operate on.
+[§59](./Section-59-Part8-Package-Management-Concepts.md) established the general concepts every package manager has to solve — dependency resolution, repositories, and the split between a low-level tool that installs packages and a high-level tool that resolves dependencies and talks to repositories on top of it. This section is that layering made concrete for the Debian family (Debian, Ubuntu, and their many derivatives): **dpkg** is the low-level tool, **apt**/**apt-get** is the high-level tool built on top of it, and the **.deb** file is the package format both of them operate on.
 
 The relationship is strict and one-directional. apt does not replace dpkg — it _drives_ dpkg. Every `apt install` ultimately ends in dpkg being invoked to actually unpack a `.deb` and register it in the system's package database. Understanding this layering isn't academic: it's exactly what explains why dpkg can leave a system in a broken dependency state that only apt can climb out of, as the broken-dependency recovery section below covers, and why "just use dpkg" is fine for a single offline `.deb` but the wrong tool the moment dependencies are involved.
 
-> 💡 **Tip:** Keep the same two-question discipline §13 recommended for init systems: (1) _"what tool actually unpacks files and writes to the package database?"_ — always dpkg, no exceptions — and (2) _"what tool decided what to unpack, in what order, resolving what dependencies?"_ — apt, when repositories and dependency resolution are involved at all.
+> 💡 **Tip:** Keep the same two-question discipline [§13](../Part2/Section-13-Part2-Init-Systems.md) recommended for init systems: (1) _"what tool actually unpacks files and writes to the package database?"_ — always dpkg, no exceptions — and (2) _"what tool decided what to unpack, in what order, resolving what dependencies?"_ — apt, when repositories and dependency resolution are involved at all.
 
 ## 2. dpkg: The Low-Level Tool
 
@@ -43,7 +43,7 @@ dpkg -s package-name          # show status/metadata of an installed package
 
 ## 3. apt / apt-get: The High-Level, Repository-Aware Tool
 
-**apt** (and its older sibling `apt-get`) is the dependency-resolving, repository-aware layer built on top of dpkg. It reads the repository list at `/etc/apt/sources.list` and `/etc/apt/sources.list.d/*.list` (full depth on repositories and GPG signing: §64), maintains a local cache of what each configured repository currently offers, downloads `.deb` files as needed, works out the correct install order given the full dependency graph, and then hands each `.deb` off to dpkg to actually perform the unpack-and-register step.
+**apt** (and its older sibling `apt-get`) is the dependency-resolving, repository-aware layer built on top of dpkg. It reads the repository list at `/etc/apt/sources.list` and `/etc/apt/sources.list.d/*.list` (full depth on repositories and GPG signing: [§64](./Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md)), maintains a local cache of what each configured repository currently offers, downloads `.deb` files as needed, works out the correct install order given the full dependency graph, and then hands each `.deb` off to dpkg to actually perform the unpack-and-register step.
 
 ### 3.1 Updating the package index vs. upgrading packages
 
@@ -181,6 +181,6 @@ _What the interviewer is probing for:_ Correctly scoping dpkg's role to true edg
 
 ## 11. Related Concepts & What's Next
 
-This section is the concrete Debian-family instance of the low-level/high-level tool layering §59 introduced generally — dpkg as the local, dependency-blind installer and apt/apt-get as the repository-aware resolver built on top of it. The repository configuration apt reads from (`/etc/apt/sources.list` and friends) and the GPG signing that secures it are only sketched here and get full treatment in §64. §61 (next) covers the RHEL-family parallel to this same layering — `rpm` as the low-level tool, `yum`/`dnf` as the high-level tool — worth reading back-to-back with this section to see where the two families' tooling philosophies converge and where they genuinely differ.
+This section is the concrete Debian-family instance of the low-level/high-level tool layering [§59](./Section-59-Part8-Package-Management-Concepts.md) introduced generally — dpkg as the local, dependency-blind installer and apt/apt-get as the repository-aware resolver built on top of it. The repository configuration apt reads from (`/etc/apt/sources.list` and friends) and the GPG signing that secures it are only sketched here and get full treatment in [§64](./Section-64-Part8-Managing-Repositories-GPG-Signing-Keys.md). [§61](./Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md) (next) covers the RHEL-family parallel to this same layering — `rpm` as the low-level tool, `yum`/`dnf` as the high-level tool — worth reading back-to-back with this section to see where the two families' tooling philosophies converge and where they genuinely differ.
 
-**Next Section:** §61 — `Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md`
+**Next Section:** [§61](./Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md) — `Section-61-Part8-RHEL-Tooling-Rpm-Yum-Dnf.md`

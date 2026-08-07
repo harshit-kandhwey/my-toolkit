@@ -8,7 +8,7 @@
 
 ## 2. Why It Exists / Problem It Solves
 
-Not every workload fits a managed PaaS or serverless model (Sections 6–8): legacy applications requiring a specific OS kernel version, software requiring root/administrator access to install custom drivers, workloads needing GPUs for specialized computation, or simply organizations "lifting and shifting" an existing on-premises VM fleet without immediately re-architecting it. Compute Engine exists to give full control over the OS and runtime — maximum flexibility — at the cost of taking on OS patching, scaling logic, and instance-level operational responsibility yourself (revisited in the full compute decision matrix, Section 10).
+Not every workload fits a managed PaaS or serverless model (Sections 6–8): legacy applications requiring a specific OS kernel version, software requiring root/administrator access to install custom drivers, workloads needing GPUs for specialized computation, or simply organizations "lifting and shifting" an existing on-premises VM fleet without immediately re-architecting it. Compute Engine exists to give full control over the OS and runtime — maximum flexibility — at the cost of taking on OS patching, scaling logic, and instance-level operational responsibility yourself (revisited in the full compute decision matrix, [Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)).
 
 ## 3. Machine Families and Types
 
@@ -23,7 +23,7 @@ Not every workload fits a managed PaaS or serverless model (Sections 6–8): leg
 
 ## 4. Boot Disks and Images
 
-Every instance boots from a **boot disk** (a Persistent Disk, Section 12) created from an **image** — either a Google-provided public image (Debian, Ubuntu, Windows Server, Rocky Linux, etc.), a **custom image** built from a configured VM (baking application dependencies in ahead of time for faster, more consistent startup), or a **container-optimized image** for running a container directly as the VM's primary workload.
+Every instance boots from a **boot disk** (a Persistent Disk, [Section 12](../Part2/Section-12-Part2-Persistent-Disks-and-Filestore.md)) created from an **image** — either a Google-provided public image (Debian, Ubuntu, Windows Server, Rocky Linux, etc.), a **custom image** built from a configured VM (baking application dependencies in ahead of time for faster, more consistent startup), or a **container-optimized image** for running a container directly as the VM's primary workload.
 
 ## 5. Instance Templates and Managed Instance Groups
 
@@ -38,7 +38,7 @@ A **Managed Instance Group** is a collection of identical VM instances created f
 - **Autoscaling:** Automatically adding/removing instances based on CPU utilization, load balancer capacity, custom Cloud Monitoring metrics, or a schedule.
 - **Self-healing:** Automatically recreating an instance that fails its configured health check, without manual intervention.
 - **Rolling updates:** Deploying a new instance template version gradually across the group, with configurable surge/unavailability tolerances, rather than replacing every instance simultaneously.
-- **Regional vs. zonal MIGs:** A regional MIG spreads instances across multiple zones within a region automatically for higher availability (Section 2.9's intermediate interview answer covers exactly this trade-off); a zonal MIG keeps all instances in a single zone.
+- **Regional vs. zonal MIGs:** A regional MIG spreads instances across multiple zones within a region automatically for higher availability ([Section 2](./Section-02-Part1-GCP-Global-Infrastructure-Regions-Zones-Edge.md).9's intermediate interview answer covers exactly this trade-off); a zonal MIG keeps all instances in a single zone.
 
 ## 6. Preemptible / Spot VMs and Sole-Tenant Nodes
 
@@ -130,7 +130,7 @@ web-mig  us-central1   region  web-mig              3     3
 
 ## 10. Production & Enterprise Usage
 
-- **MIGs behind a Global Load Balancer** (Section 22) are the standard pattern for stateless web/API tiers needing both autoscaling and multi-region resilience.
+- **MIGs behind a Global Load Balancer** ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)) are the standard pattern for stateless web/API tiers needing both autoscaling and multi-region resilience.
 - **Sole-tenant nodes** are reserved for specific licensing/compliance workloads (e.g., certain enterprise database licenses billed per-socket) rather than general use, since they forfeit the cost efficiency of shared-host placement.
 - **Spot VMs at fleet scale:** Large batch-processing or CI/CD fleets commonly mix a baseline of on-demand/committed-use instances with a much larger pool of Spot VMs, tolerating interruption for the bulk of throughput while guaranteeing a minimum floor of always-available capacity.
 
@@ -148,7 +148,7 @@ web-mig  us-central1   region  web-mig              3     3
 **Model answer:** When a workload's actual CPU/memory requirement falls between two predefined shapes — for example, needing more memory than an `e2-standard-2` provides but not needing the extra vCPUs of an `e2-standard-4` — a custom machine type lets you specify the exact vCPU and memory combination needed, avoiding paying for unused headroom on either dimension. It's most valuable for well-profiled, steady-state workloads where the cost savings from precise sizing at scale outweigh the minor operational overhead of a non-standard shape.
 
 **🎯 Senior/Architect:** _Design a cost-efficient, resilient compute architecture for a batch image-processing pipeline that needs to process 10,000 jobs nightly, tolerating individual job failures, with a hard deadline by morning._
-**Model answer:** I'd use a regional Managed Instance Group backed primarily by Spot VMs for cost efficiency, since individual job interruption is tolerable as long as the job-processing logic checkpoints progress and can be picked up by another instance (or simply retried) — the MIG's autoscaler would scale the fleet size up based on a custom Cloud Monitoring metric tracking queue depth rather than CPU alone, since the real constraint is job throughput against the deadline, not CPU saturation. To guarantee the hard morning deadline isn't jeopardized by Spot reclamation spikes, I'd maintain a smaller baseline of on-demand instances as a guaranteed-capacity floor, sized to what's needed to finish the queue alone if Spot capacity became entirely unavailable overnight. I'd also evaluate whether Cloud Batch (Section 9) is a better fit than hand-rolling this on a MIG directly, since Cloud Batch provides job/task-group orchestration semantics purpose-built for exactly this kind of workload, reducing the custom scaling logic I'd otherwise need to build myself.
+**Model answer:** I'd use a regional Managed Instance Group backed primarily by Spot VMs for cost efficiency, since individual job interruption is tolerable as long as the job-processing logic checkpoints progress and can be picked up by another instance (or simply retried) — the MIG's autoscaler would scale the fleet size up based on a custom Cloud Monitoring metric tracking queue depth rather than CPU alone, since the real constraint is job throughput against the deadline, not CPU saturation. To guarantee the hard morning deadline isn't jeopardized by Spot reclamation spikes, I'd maintain a smaller baseline of on-demand instances as a guaranteed-capacity floor, sized to what's needed to finish the queue alone if Spot capacity became entirely unavailable overnight. I'd also evaluate whether Cloud Batch ([Section 9](./Section-09-Part1-Cloud-Batch.md)) is a better fit than hand-rolling this on a MIG directly, since Cloud Batch provides job/task-group orchestration semantics purpose-built for exactly this kind of workload, reducing the custom scaling logic I'd otherwise need to build myself.
 
 ## 13. Key Takeaways
 
@@ -160,4 +160,4 @@ web-mig  us-central1   region  web-mig              3     3
 
 ## 14. Related Concepts
 
-Persistent Disks backing boot disks (Section 12), Load Balancing fronting MIGs (Section 22), the full compute decision matrix weighing Compute Engine against every other compute option (Section 10), GKE as a container-orchestration alternative (Section 30), and Cloud Batch for purpose-built batch orchestration (Section 9) all build on the VM fundamentals introduced here.
+Persistent Disks backing boot disks ([Section 12](../Part2/Section-12-Part2-Persistent-Disks-and-Filestore.md)), Load Balancing fronting MIGs ([Section 22](../Part3/Section-22-Part3-Cloud-Load-Balancing.md)), the full compute decision matrix weighing Compute Engine against every other compute option ([Section 10](./Section-10-Part1-Compute-Decision-Matrix.md)), GKE as a container-orchestration alternative ([Section 30](../Part4/Section-30-Part4-GKE-Architecture-Deep-Dive.md)), and Cloud Batch for purpose-built batch orchestration ([Section 9](./Section-09-Part1-Cloud-Batch.md)) all build on the VM fundamentals introduced here.
