@@ -17,27 +17,27 @@ planning/reference index, not a knowledge-base topic itself.
 
 ## 1. AWS Certifications
 
-| Certification                                           | Folder(s) Needed                                      | Status                            |
-| ------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
-| AWS Certified Cloud Practitioner (CLF-C02)              | `6. Cloud/1. AWS`                                     | ✅ Ready                          |
-| AWS Certified Solutions Architect – Associate (SAA-C03) | `6. Cloud/1. AWS`                                     | ✅ Ready (explicit domain map)    |
-| AWS Certified SysOps Administrator – Associate          | `6. Cloud/1. AWS` + `2. Linux`                        | ✅ Ready                          |
-| AWS Certified Solutions Architect – Professional        | `6. Cloud/1. AWS`                                     | ✅ Ready (explicit domain map)    |
-| AWS Certified Security – Specialty                      | `6. Cloud/1. AWS`                                     | ✅ Ready (explicit domain map)    |
-| AWS Certified Advanced Networking – Specialty           | `6. Cloud/1. AWS`                                     | ⚠️ Partial (single-Part coverage) |
-| AWS Certified DevOps Engineer – Professional            | `6. Cloud/1. AWS` + `9. CI-CD` 🟡 + `7. Terraform` 🟡 | ⚠️ Partial (cloud half ready)     |
+| Certification                                           | Folder(s) Needed                                   | Status                                            |
+| ------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
+| AWS Certified Cloud Practitioner (CLF-C02)              | `6. Cloud/1. AWS`                                  | ✅ Ready                                          |
+| AWS Certified Solutions Architect – Associate (SAA-C03) | `6. Cloud/1. AWS`                                  | ✅ Ready (explicit domain map)                    |
+| AWS Certified SysOps Administrator – Associate          | `6. Cloud/1. AWS` + `2. Linux`                     | ✅ Ready                                          |
+| AWS Certified Solutions Architect – Professional        | `6. Cloud/1. AWS`                                  | ✅ Ready (explicit domain map)                    |
+| AWS Certified Security – Specialty                      | `6. Cloud/1. AWS`                                  | ✅ Ready (explicit domain map)                    |
+| AWS Certified Advanced Networking – Specialty           | `6. Cloud/1. AWS`                                  | ⚠️ Partial (single-Part coverage)                 |
+| AWS Certified DevOps Engineer – Professional            | `6. Cloud/1. AWS` + `9. CI-CD` 🟡 + `7. Terraform` | ⚠️ Partial (cloud + Terraform ready, needs CI-CD) |
 
 ## 2. Microsoft Azure Certifications
 
-| Certification                                                          | Folder(s) Needed                                                   | Status                                                               |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| AZ-900: Azure Fundamentals                                             | `6. Cloud/2. Azure`                                                | ✅ Ready                                                             |
-| SC-900: Security, Compliance, Identity Fundamentals                    | `6. Cloud/2. Azure`                                                | ✅ Ready                                                             |
-| AZ-104: Azure Administrator Associate                                  | `6. Cloud/2. Azure`                                                | ✅ Ready (explicit domain map)                                       |
-| AZ-305: Azure Solutions Architect Expert                               | `6. Cloud/2. Azure`                                                | ✅ Ready (explicit domain map)                                       |
-| AZ-500: Azure Security Engineer Associate                              | `6. Cloud/2. Azure`                                                | ✅ Ready                                                             |
-| AZ-400: Azure DevOps Engineer Expert                                   | `6. Cloud/2. Azure` + `9. CI-CD` 🟡 + `7. Terraform` 🟡 + `1. GIT` | ⚠️ Partial (cloud + Git ready)                                       |
-| Azure Specialty certs (SAP Workloads, Virtual Desktop, IoT Operations) | N/A                                                                | ⚠️ Not covered — narrow verticals outside this KB's generalist scope |
+| Certification                                                          | Folder(s) Needed                                                | Status                                                               |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------- |
+| AZ-900: Azure Fundamentals                                             | `6. Cloud/2. Azure`                                             | ✅ Ready                                                             |
+| SC-900: Security, Compliance, Identity Fundamentals                    | `6. Cloud/2. Azure`                                             | ✅ Ready                                                             |
+| AZ-104: Azure Administrator Associate                                  | `6. Cloud/2. Azure`                                             | ✅ Ready (explicit domain map)                                       |
+| AZ-305: Azure Solutions Architect Expert                               | `6. Cloud/2. Azure`                                             | ✅ Ready (explicit domain map)                                       |
+| AZ-500: Azure Security Engineer Associate                              | `6. Cloud/2. Azure`                                             | ✅ Ready                                                             |
+| AZ-400: Azure DevOps Engineer Expert                                   | `6. Cloud/2. Azure` + `9. CI-CD` 🟡 + `7. Terraform` + `1. GIT` | ⚠️ Partial (cloud + Terraform + Git ready, needs CI-CD)              |
+| Azure Specialty certs (SAP Workloads, Virtual Desktop, IoT Operations) | N/A                                                             | ⚠️ Not covered — narrow verticals outside this KB's generalist scope |
 
 ## 3. Google Cloud Certifications
 
@@ -64,13 +64,15 @@ CNCF has no separate "Professional" or "Specialty" tier above CKA/CKAD/CKS — t
 
 ## 5. Vendor-Neutral / Tool-Specific Certifications
 
-| Certification                                      | Folder(s) Needed             | Status                   |
-| -------------------------------------------------- | ---------------------------- | ------------------------ |
-| HashiCorp Certified: Terraform Associate           | `7. Terraform` 🟡            | 🟡 Roadmap Only          |
-| Docker Certified Associate (DCA)                   | `4. Docker` 🟡               | 🟡 Roadmap Only          |
-| Red Hat Certified Specialist in Ansible Automation | `8. Ansible` 🟡 + `2. Linux` | ⚠️ Partial (Linux ready) |
-| CNCF Prometheus Certified Associate (PCA)          | `10. Prometheus` 🟡          | 🟡 Roadmap Only          |
-| GitHub Foundations / GitHub Actions certification  | `1. GIT` + `9. CI-CD` 🟡     | ⚠️ Partial (Git ready)   |
+| Certification                                      | Folder(s) Needed             | Status                         |
+| -------------------------------------------------- | ---------------------------- | ------------------------------ |
+| HashiCorp Certified: Terraform Associate           | `7. Terraform`               | ✅ Ready (explicit domain map) |
+| Docker Certified Associate (DCA)                   | `4. Docker` 🟡               | 🟡 Roadmap Only                |
+| Red Hat Certified Specialist in Ansible Automation | `8. Ansible` 🟡 + `2. Linux` | ⚠️ Partial (Linux ready)       |
+| CNCF Prometheus Certified Associate (PCA)          | `10. Prometheus` 🟡          | 🟡 Roadmap Only                |
+| GitHub Foundations / GitHub Actions certification  | `1. GIT` + `9. CI-CD` 🟡     | ⚠️ Partial (Git ready)         |
+
+HashiCorp has no separate "Professional" or "Specialty" tier above Terraform Associate — it is the ceiling for Terraform-specific credentials (HashiCorp's Vault/Consul Associate certs are separate products, not higher tiers of the same cert).
 
 ## 6. Networking Certifications
 
@@ -112,13 +114,13 @@ No single industry-standard Git certification exists analogous to the AWS/Azure/
 | `6. Cloud/1. AWS`   | ✅ Ready (131 sections, 15 parts) — SAA-C03 domain map              |
 | `6. Cloud/2. Azure` | ✅ Ready (100 sections, 18 parts) — AZ-104 & AZ-305 domain maps     |
 | `6. Cloud/3. GCP`   | ✅ Ready (85 sections, 13 parts) — PCA domain map                   |
-| `7. Terraform`      | 🟡 Roadmap Only — 120 sections planned, 17 parts                    |
+| `7. Terraform`      | ✅ Ready (120 sections, 17 parts) — Terraform Associate domain map  |
 | `8. Ansible`        | 🟡 Roadmap Only — 119 sections planned                              |
 | `9. CI-CD`          | 🟡 Roadmap Only — 130 sections planned, 16 parts                    |
 | `10. Prometheus`    | 🟡 Roadmap Only — 99 sections planned, 14 parts                     |
 | `11. Grafana`       | 🟡 Roadmap Only — 95 sections planned, 13 parts                     |
 | `12. Kubernetes`    | ✅ Ready (141 sections, 18 parts) — CKA/CKAD/CKS domain maps        |
 
-**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `6. Cloud/*`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `7. Terraform`, `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, `3. Networking`, `4. Docker`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
+**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `6. Cloud/*`, `7. Terraform`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, `3. Networking`, `4. Docker`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
 
 This file should be updated whenever a folder moves from 🟡 Roadmap Only to ✅ Ready, or whenever a README's certification mapping changes.

@@ -150,7 +150,7 @@ The tables above cover Associate-level SAA-C03. This KB was not written against 
 | Continuous Improvement for Existing Solutions   | ~25%   | Part 8 (Observability & Management), Part 15 (Resilience Testing)                                                                |
 | Accelerate Workload Migration and Modernization | ~20%   | Part 10 (migration strategies), Part 12 (AI/ML & GenAI modernization patterns)                                                   |
 
-**AWS Certified DevOps Engineer – Professional** — Part 9 (Developer Tools, CI/CD & IaC) covers the AWS-native half of this exam; pair with the `9. CI-CD` and `7. Terraform` KBs (currently roadmap-only) for the tool-agnostic half. See `Certification-Map.md` for current readiness.
+**AWS Certified DevOps Engineer – Professional** — Part 9 (Developer Tools, CI/CD & IaC) covers the AWS-native half of this exam; pair with the `7. Terraform` KB (ready) for the tool-agnostic IaC half, and the `9. CI-CD` KB (currently roadmap-only) for the pipeline-tooling half. See `Certification-Map.md` for current readiness.
 
 ### Specialty Level
 
