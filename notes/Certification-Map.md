@@ -78,8 +78,8 @@ HashiCorp has no separate "Professional" or "Specialty" tier above Terraform Ass
 
 | Certification    | Folder(s) Needed   | Status          |
 | ---------------- | ------------------ | --------------- |
-| CompTIA Network+ | `3. Networking` 🟡 | 🟡 Roadmap Only |
-| Cisco CCNA       | `3. Networking` 🟡 | 🟡 Roadmap Only |
+| CompTIA Network+ | `3. Networking`    | ✅ Ready (explicit domain map) |
+| Cisco CCNA       | `3. Networking`    | ⚠️ Partial (conceptual switching/routing depth, not full hardware-configuration depth) |
 
 ## 7. Language / Scripting Certifications
 
@@ -108,7 +108,7 @@ No single industry-standard Git certification exists analogous to the AWS/Azure/
 | ------------------- | ------------------------------------------------------------------- |
 | `1. GIT`            | ✅ Ready (36 sections, 8 parts) — no cert applicable                |
 | `2. Linux`          | ✅ Ready (125 sections, 17 parts) — LFCS domain map, RHCSA-adjacent |
-| `3. Networking`     | 🟡 Roadmap Only — 145 sections planned, 17 parts                    |
+| `3. Networking`     | ✅ Ready (145 sections, 17 parts) — CompTIA Network+ domain map      |
 | `4. Docker`         | 🟡 Roadmap Only — 109 sections planned, 15 parts                    |
 | `5. Python`         | 🟡 Roadmap Only — 130 sections planned, 16 parts                    |
 | `6. Cloud/1. AWS`   | ✅ Ready (131 sections, 15 parts) — SAA-C03 domain map              |
@@ -121,6 +121,6 @@ No single industry-standard Git certification exists analogous to the AWS/Azure/
 | `11. Grafana`       | 🟡 Roadmap Only — 95 sections planned, 13 parts                     |
 | `12. Kubernetes`    | ✅ Ready (141 sections, 18 parts) — CKA/CKAD/CKS domain maps        |
 
-**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `6. Cloud/*`, `7. Terraform`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, `3. Networking`, `4. Docker`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
+**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `3. Networking`, `6. Cloud/*`, `7. Terraform`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, `4. Docker`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
 
 This file should be updated whenever a folder moves from 🟡 Roadmap Only to ✅ Ready, or whenever a README's certification mapping changes.
