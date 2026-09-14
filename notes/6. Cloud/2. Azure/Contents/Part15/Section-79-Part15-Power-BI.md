@@ -76,13 +76,13 @@ Power BI Desktop (authoring)
    │  publish .pbix
    ▼
 Power BI Service — Workspace
-   ├── Dataset ──DirectQuery──▶ Synapse dedicated SQL pool (curated/gold)
-   │         └──Import────────▶ Databricks SQL Warehouse (scheduled refresh)
+   ├── Dataset ──DirectQuery──► Synapse dedicated SQL pool (curated/gold)
+   │         └──Import────────► Databricks SQL Warehouse (scheduled refresh)
    ├── Report (interactive visuals, RLS applied per viewer)
    └── Dashboard (pinned visuals across reports)
         │
         ▼
-   Power BI App ──▶ distributed to broad business-user audience (view-only)
+   Power BI App ──► distributed to broad business-user audience (view-only)
 ```
 
 ## 9. Configuration & Hands-On Example

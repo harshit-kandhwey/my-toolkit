@@ -33,7 +33,7 @@ Cognito solves this with User Pools as a fully managed, standards-based (OAuth 2
 - This is the mechanism that lets a mobile app's end user **directly and securely upload a file to a specific S3 prefix**, or **write directly to a specific DynamoDB table row scoped to their own user ID**, without the application's own backend needing to proxy every such request — genuinely useful for reducing backend load and latency for exactly this class of user-scoped, direct-to-AWS-resource access pattern.
 
 ```
-End User ──▶ Cognito User Pool (sign-up/sign-in, MFA, federation)
+End User ──► Cognito User Pool (sign-up/sign-in, MFA, federation)
                      │
               JWT (ID token, access token, refresh token)
                      │

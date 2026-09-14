@@ -81,7 +81,7 @@ Synapse workspaces use **linked services** — connection definitions to externa
 ```
                      Synapse Workspace ("Synapse Studio")
                     ┌───────────────────────────────────┐
-Source systems ────▶│  Synapse Pipelines (orchestration)  │
+Source systems ────►│  Synapse Pipelines (orchestration)  │
                     │        │                            │
                     │        ▼                            │
                     │   ADLS Gen2 (primary storage,        │

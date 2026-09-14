@@ -56,9 +56,9 @@ Azure Front Door (global edge, Points of Presence — Section 3.3.5)
    │  - Edge caching for cacheable content
    │  - Path-based routing: /api/* vs /static/*
    │
-   ├──▶ Region: Australia East   (App Service / Application Gateway + backend pool)
-   ├──▶ Region: East US          (App Service / Application Gateway + backend pool)
-   └──▶ Region: West Europe      (App Service / Application Gateway + backend pool)
+   ├──► Region: Australia East   (App Service / Application Gateway + backend pool)
+   ├──► Region: East US          (App Service / Application Gateway + backend pool)
+   └──► Region: West Europe      (App Service / Application Gateway + backend pool)
 
 If East US becomes unhealthy (fails Front Door's health probes):
    Front Door automatically stops routing traffic there,

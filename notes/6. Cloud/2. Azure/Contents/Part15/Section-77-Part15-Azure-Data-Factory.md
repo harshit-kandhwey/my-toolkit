@@ -68,9 +68,9 @@ This is also precisely why Synapse Pipelines ([Section 76](./Section-76-Part15-A
 ## 7. Architecture Diagram
 
 ```
-On-Premises SQL Server ──▶ Self-Hosted Integration Runtime ──▶┐
+On-Premises SQL Server ──► Self-Hosted Integration Runtime ──►┐
                               (outbound-only connection)        │
-SaaS API / FTP Partner Feed ──▶ Azure Integration Runtime ────┤
+SaaS API / FTP Partner Feed ──► Azure Integration Runtime ────┤
                                                                  ▼
                                             Azure Data Factory Pipeline
                                             ┌─────────────────────────┐

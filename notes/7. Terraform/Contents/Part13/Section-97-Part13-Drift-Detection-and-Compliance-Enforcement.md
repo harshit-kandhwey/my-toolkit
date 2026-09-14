@@ -37,7 +37,7 @@ This section directly follows [§96](./Section-96-Part13-Static-Analysis-and-Sec
               │
               ▼
    ┌─────────────────────────┐        compare against
-   │  Real Infrastructure    │◀──── actual cloud API state
+   │  Real Infrastructure    │◄──── actual cloud API state
    │  (actual cloud state)   │
    └─────────────────────────┘
               │

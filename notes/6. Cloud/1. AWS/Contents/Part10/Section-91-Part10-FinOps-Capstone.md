@@ -41,13 +41,13 @@ This capstone section exists to answer the "how do you make this stick" question
 - **Savings Plans/Reserved Instance purchasing decisions** are made centrally by the FinOps function based on aggregated, cross-team usage data ([§90](./Section-90-Part10-Cost-Optimization-FinOps.md)'s discussion of committing to _stable baseline_ usage), since a central view of aggregate steady-state demand across the whole organization produces better-informed, lower-risk commitment decisions than each team purchasing commitments independently and inconsistently.
 
 ```
-IaC Pipeline (§86) ──▶ Tagging enforcement at validate stage (mandatory gate)
+IaC Pipeline (§86) ──► Tagging enforcement at validate stage (mandatory gate)
         │
         ▼
-Resources deployed, tagged ──▶ CUR → S3 → Athena ──▶ Per-team cost dashboards (showback)
+Resources deployed, tagged ──► CUR → S3 → Athena ──► Per-team cost dashboards (showback)
         │                                                        │
         ▼                                                        ▼
-Config Rules (§74) ──▶ detective backstop for       Monthly FinOps review (Inform → Optimize → Operate)
+Config Rules (§74) ──► detective backstop for       Monthly FinOps review (Inform → Optimize → Operate)
    untagged/non-compliant resources                       cross-functional, tracks progress over time
 ```
 

@@ -72,7 +72,7 @@ Microsoft Fabric Tenant
 │   └── Power BI report/dataset (DirectQuery to Lakehouse/     │
 │        Warehouse, or Import)                                 │
 │                                                            │
-│   Shortcut ──▶ external ADLS Gen2 account (Section 75)      │
+│   Shortcut ──► external ADLS Gen2 account (Section 75)      │
 │               (referenced, not copied)                       │
 └───────────────────────────────────────────────────────────┘
                 All billed through one Fabric Capacity

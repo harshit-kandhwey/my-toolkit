@@ -27,10 +27,10 @@ Neptune ML exists specifically to close this gap: rather than manually engineeri
 Neptune Graph Database (property graph / RDF)
          │
          ▼
-Neptune ML: export graph data ──▶ SageMaker: automatic GNN model selection & training
+Neptune ML: export graph data ──► SageMaker: automatic GNN model selection & training
          │                                          │
          ▼                                          ▼
-Trained GNN model ◀──────────────────────── deployed for inference
+Trained GNN model ◄──────────────────────── deployed for inference
          │
          ▼
 Gremlin/openCypher query with predictive element

@@ -32,11 +32,11 @@ Systems Manager solves this by providing **centralized, auditable, agent-based m
 Managed EC2 Instance (SSM Agent, outbound-only connection)
         │
         ▼
-Systems Manager Service ──▶ Session Manager (interactive shell, no SSH/bastion)
-        │              ──▶ Run Command (ad hoc commands/documents, fleet-wide via tags)
-        │              ──▶ Patch Manager (baseline-driven patching, maintenance windows)
-        │              ──▶ State Manager (continuous desired-state enforcement)
-        │              ──▶ Automation (multi-step runbooks)
+Systems Manager Service ──► Session Manager (interactive shell, no SSH/bastion)
+        │              ──► Run Command (ad hoc commands/documents, fleet-wide via tags)
+        │              ──► Patch Manager (baseline-driven patching, maintenance windows)
+        │              ──► State Manager (continuous desired-state enforcement)
+        │              ──► Automation (multi-step runbooks)
         │
 Parameter Store (hierarchical config/secrets, referenced by name from anywhere)
 ```

@@ -65,11 +65,11 @@ Storage Account with GRS redundancy:
 
 Primary Region "East US"                    Secondary Region "West US" (paired, Section 3.3.3)
   ┌─────────────────────────┐                ┌─────────────────────────┐
-  │  LRS: 3 sync copies      │  ──async──▶    │  LRS: 3 sync copies      │
-  │  within East US          │  replication   │  within West US          │
-  │  (actively served)        │                │  (failover target;       │
-  │                            │                │   also readable if       │
-  │                            │                │   RA-GRS is enabled)     │
+  │  LRS: 3 sync copies     │  ──async──►    │  LRS: 3 sync copies     │
+  │  within East US         │  replication   │  within West US         │
+  │  (actively served)      │                │  (failover target;      │
+  │                         │                │   also readable if      │
+  │                         │                │   RA-GRS is enabled)    │
   └─────────────────────────┘                └─────────────────────────┘
 
 Replication lag exists between primary write and secondary availability

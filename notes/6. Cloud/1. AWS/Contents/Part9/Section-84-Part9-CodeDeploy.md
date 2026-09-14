@@ -28,10 +28,10 @@ CodeDeploy solves this by providing a **battle-tested, declarative deployment en
 - **Automatic rollback** triggers when a deployment's health checks (CloudWatch alarms, [§71](../Part8/Section-71-Part8-CloudWatch-Alarms-Dashboards.md), can be directly wired as rollback triggers) fail, or when the deployment lifecycle itself reports a failure — CodeDeploy then reverts to the last known-good deployed revision, without requiring manual intervention to initiate the rollback.
 
 ```
-CodeBuild artifact ──▶ CodeDeploy Deployment
+CodeBuild artifact ──► CodeDeploy Deployment
                               │
               ┌───────────────┼───────────────┐
-              ▼                ▼               ▼
+              ▼                ▼              ▼
          EC2/On-Prem         Lambda            ECS
     (AppSpec lifecycle    (weighted alias    (task set traffic
      hooks: BeforeInstall, traffic shift     shift behind
@@ -39,7 +39,7 @@ CodeBuild artifact ──▶ CodeDeploy Deployment
      ApplicationStart,
      ValidateService)
               │
-    Health check failure ──▶ Automatic Rollback to last known-good revision
+    Health check failure ──► Automatic Rollback to last known-good revision
 ```
 
 ## 5. Architecture & Components

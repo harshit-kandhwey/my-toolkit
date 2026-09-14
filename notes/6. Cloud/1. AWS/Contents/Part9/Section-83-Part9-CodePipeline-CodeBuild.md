@@ -28,10 +28,10 @@ CodePipeline and CodeBuild solve this the AWS-native way: CodePipeline provides 
 - CodeBuild's behavior is defined by a **buildspec.yml** file (checked into the source repository, alongside the application code itself) specifying phases (`install`, `pre_build`, `build`, `post_build`) and the commands to run in each — directly analogous in spirit to a CI configuration file in any other CI system (GitHub Actions YAML, GitLab CI YAML), but AWS-native.
 
 ```
-Source Change (Git commit) ──▶ EventBridge trigger ──▶ CodePipeline
+Source Change (Git commit) ──► EventBridge trigger ──► CodePipeline
                                                               │
                         ┌─────────────────────────────────────┼─────────────────────────────────────┐
-                        ▼                                     ▼                                       ▼
+                        ▼                                     ▼                                     ▼
                  Stage: Source                         Stage: Build                           Stage: Deploy
                  (pull from CodeCommit/                (CodeBuild runs buildspec.yml:          (CodeDeploy, CloudFormation,
                   GitHub/Bitbucket)                     install → pre_build → build →           or other deploy action —
