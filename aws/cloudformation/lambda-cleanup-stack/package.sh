@@ -11,7 +11,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../lambda-functions" && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-for fn in resource-cleanup resource-protect resource-inventory; do
+for fn in resource-cleanup resource-protect resource-inventory cost-report; do
   (cd "$root/$fn" && zip -q -j "$tmp/$fn.zip" lambda_function.py)
   aws s3 cp ${profile_args[@]+"${profile_args[@]}"} "$tmp/$fn.zip" "s3://$bucket/$fn.zip"
 done

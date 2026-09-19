@@ -28,6 +28,21 @@ Parameters:
     Type: String
     Default: resource-inventory.zip
 
+  CostReportCodeKey:
+    Type: String
+    Default: cost-report.zip
+
+  EnableCostReport:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Deploys the cost-report function, its DynamoDB table and its hourly and monthly schedules.
+
+  CostReportBucket:
+    Type: String
+    Default: ""
+    Description: Optional. Existing S3 bucket that receives the monthly cost report JSON.
+
   DryRun:
     Type: String
     Default: "true"
@@ -107,6 +122,10 @@ Parameters:
 
 Conditions:
   HasNoticeEmail: !Not [!Equals [!Ref NoticeEmail, ""]]
+  CostReportOn: !Equals [!Ref EnableCostReport, "true"]
+  HasCostReportBucket: !And
+    - !Equals [!Ref EnableCostReport, "true"]
+    - !Not [!Equals [!Ref CostReportBucket, ""]]
   HasInventoryBucket: !Not [!Equals [!Ref InventoryOutputBucket, ""]]
 
 Resources:
@@ -482,6 +501,146 @@ Resources:
           REGIONS: !Join [",", !Ref Regions]
           OUTPUT_S3_BUCKET: !Ref InventoryOutputBucket
 
+  # ------------------------------------------------------------ cost report
+  CostTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CostReportOn
+    Properties:
+      TableName: !Sub "${ResourcePrefix}-cost-hours"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ExpiresAt
+        Enabled: true
+
+  CostLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: CostReportOn
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ResourcePrefix}-cost-report"
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CostRole:
+    Type: AWS::IAM::Role
+    Condition: CostReportOn
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: cost-report
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt CostLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeRegions
+                  - ec2:DescribeInstances
+                  - rds:DescribeDBInstances
+                  - ce:GetCostAndUsage
+                Resource: "*"
+              - Effect: Allow
+                Action: [dynamodb:UpdateItem, dynamodb:Scan]
+                Resource: !GetAtt CostTable.Arn
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref NoticeTopic
+              - !If
+                - HasCostReportBucket
+                - Effect: Allow
+                  Action: s3:PutObject
+                  Resource: !Sub "arn:${AWS::Partition}:s3:::${CostReportBucket}/cost-report/*"
+                - !Ref AWS::NoValue
+
+  CostFunction:
+    Type: AWS::Lambda::Function
+    Condition: CostReportOn
+    DependsOn: CostLogGroup
+    Properties:
+      FunctionName: !Sub "${ResourcePrefix}-cost-report"
+      Runtime: python3.13
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt CostRole.Arn
+      Timeout: 300
+      MemorySize: 256
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CostReportCodeKey
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref CostTable
+          REGIONS: !Join [",", !Ref Regions]
+          SAMPLE_HOURS: "1"
+          REPORT_BUCKET: !Ref CostReportBucket
+          SNS_TOPIC_ARN: !Ref NoticeTopic
+
+  CostScheduleRole:
+    Type: AWS::IAM::Role
+    Condition: CostReportOn
+    Properties:
+      Description: Assumed by EventBridge Scheduler to invoke the cost-report function.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: invoke-cost-report
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt CostFunction.Arn
+
+  CostRecordSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: CostReportOn
+    Properties:
+      Name: !Sub "${ResourcePrefix}-cost-record-hourly"
+      ScheduleExpression: rate(1 hour)
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt CostFunction.Arn
+        RoleArn: !GetAtt CostScheduleRole.Arn
+        Input: '{"action": "record"}'
+
+  CostReportSchedule:
+    Type: AWS::Scheduler::Schedule
+    Condition: CostReportOn
+    Properties:
+      Name: !Sub "${ResourcePrefix}-cost-report-monthly"
+      ScheduleExpression: cron(0 6 3 * ? *)
+      ScheduleExpressionTimezone: UTC
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt CostFunction.Arn
+        RoleArn: !GetAtt CostScheduleRole.Arn
+        Input: '{"action": "report"}'
+
 Outputs:
   CleanupFunctionName:
     Value: !Ref CleanupFunction
@@ -493,3 +652,9 @@ Outputs:
     Value: !Ref NoticeTopic
   CleanupBoundaryArn:
     Value: !Ref CleanupBoundary
+  CostReportFunctionName:
+    Condition: CostReportOn
+    Value: !Ref CostFunction
+  CostTableName:
+    Condition: CostReportOn
+    Value: !Ref CostTable

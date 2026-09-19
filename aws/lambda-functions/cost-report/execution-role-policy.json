@@ -1,0 +1,53 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowLogging",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:<ACCOUNT_ID>:log-group:/aws/lambda/<FUNCTION_NAME>*"
+    },
+    {
+      "Sid": "AllowSampleRunningResources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeRegions",
+        "ec2:DescribeInstances",
+        "rds:DescribeDBInstances",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowReadEffectiveRates",
+      "Effect": "Allow",
+      "Action": "ce:GetCostAndUsage",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowHoursTable",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:UpdateItem",
+        "dynamodb:Scan"
+      ],
+      "Resource": "arn:aws:dynamodb:<REGION>:<ACCOUNT_ID>:table/<TABLE_NAME>"
+    },
+    {
+      "Sid": "AllowWriteReport",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::<REPORT_BUCKET>/<REPORT_PREFIX>*"
+    },
+    {
+      "Sid": "AllowPublishSummary",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "<SNS_TOPIC_ARN>"
+    }
+  ]
+}

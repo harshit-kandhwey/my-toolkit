@@ -30,7 +30,7 @@ jobs:
 
       - name: pytest (moto)
         run: |
-          for d in resource-inventory resource-cleanup resource-protect; do
+          for d in resource-inventory resource-cleanup resource-protect cost-report; do
             (cd aws/lambda-functions/$d && pytest -q)
           done
 
