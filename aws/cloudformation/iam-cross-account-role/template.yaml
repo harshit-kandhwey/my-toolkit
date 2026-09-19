@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  IAM role assumable from a trusted account, guarded by an external ID,
+  with a managed policy attached for its permissions.
+
+Parameters:
+  TrustedAccountId:
+    Type: String
+    Description: 12-digit AWS account ID allowed to assume this role.
+    AllowedPattern: "\\d{12}"
+
+  ExternalId:
+    Type: String
+    Description: Confused-deputy guard token required to assume this role (not a secret; visible in the trust policy).
+    MinLength: 2
+    MaxLength: 1224
+    AllowedPattern: '[\w+=,.@:/-]*'
+
+  ManagedPolicyArn:
+    Type: String
+    Default: arn:aws:iam::aws:policy/SecurityAudit
+    Description: Managed policy ARN defining what the assumed role can do.
+
+Resources:
+  CrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${TrustedAccountId}:root"
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - !Ref ManagedPolicyArn
+      MaxSessionDuration: 3600
+
+Outputs:
+  RoleArn:
+    Value: !GetAtt CrossAccountRole.Arn

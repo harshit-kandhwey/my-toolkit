@@ -1,0 +1,30 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowLogging",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:<ACCOUNT_ID>:log-group:/aws/lambda/<FUNCTION_NAME>*"
+    },
+    {
+      "Sid": "AllowFindAndRetagQueuedResources",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeRegions",
+        "tag:GetResources",
+        "tag:TagResources",
+        "tag:UntagResources",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "rds:AddTagsToResource",
+        "rds:RemoveTagsFromResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

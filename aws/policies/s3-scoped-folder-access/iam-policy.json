@@ -1,0 +1,63 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListAllBucketsStatement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::*"
+      ]
+    },
+    {
+      "Sid": "ListFoldersInBucketStatement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "<S3_BUCKET_ARN>"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "s3:prefix": [
+            "<FOLDER>/"
+          ],
+          "s3:delimiter": [
+            "/"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ListContentInFolderStatement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "<S3_BUCKET_ARN>"
+      ],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "<FOLDER>/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "AllowPermissionsOfFolderStatement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:*"
+      ],
+      "Resource": [
+        "<FOLDER_ARN>/*"
+      ]
+    }
+  ]
+}

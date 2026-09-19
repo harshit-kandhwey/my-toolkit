@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/aws-cloudformation/cfn-lint
+    rev: v1.57.0
+    hooks:
+      - id: cfn-lint
+        files: ^aws/cloudformation/.*\.yaml$
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        files: ^aws/scripts/.*\.sh$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff-check
+        files: ^aws/lambda-functions/.*\.py$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks

@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowCrossAccountList",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "<IAM_USER_ARN>"
+      },
+      "Action": "s3:ListBucket",
+      "Resource": "<S3_BUCKET_ARN>"
+    },
+    {
+      "Sid": "AllowCrossAccountWriteWithOwnerControl",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "<IAM_USER_ARN>"
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": "<S3_BUCKET_ARN>/*",
+      "Condition": {
+        "StringEquals": {
+          "s3:x-amz-acl": "bucket-owner-full-control"
+        }
+      }
+    }
+  ]
+}

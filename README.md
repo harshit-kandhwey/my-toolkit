@@ -11,11 +11,13 @@ Personal reference repository for DevOps & Cloud engineering — reusable config
 ```
 my-toolkit/
 ├── aws/
-│   ├── AWS-Access-Policies/    # Reusable IAM & S3 bucket policies
-│   └── cloudformation/         # Reusable CFT templates
-├── terraform/                  # Reusable Terraform modules and snippets
-├── linux/                      # Linux commands and shell cheatsheets
-└── notes/                      # Study notes and learning references
+│   ├── policies/                # Reusable IAM & resource-based policy JSON
+│   ├── cloudformation/          # Reusable CloudFormation templates
+│   ├── scripts/                 # AWS CLI automation scripts (audits, cleanup, reports)
+│   └── lambda-functions/        # Deployable Lambda functions (inventory, cleanup, protect)
+├── terraform/                   # Reusable Terraform modules and snippets
+├── linux/                       # Linux commands and shell cheatsheets
+└── notes/                       # Study notes and learning references
 ```
 
 ---
@@ -23,10 +25,11 @@ my-toolkit/
 ## 🔧 What's Inside
 
 ### `aws/`
-AWS-specific configs and policies, organized by service.
+AWS-specific configs, templates, and scripts — see [aws/README.md](aws/README.md) for the full index.
 
-- **`AWS-Access-Policies/`** — Reusable IAM and resource-based policies for common patterns (e.g. S3 cross-account access, scoped folder access).
-- **`cloudformation/`** — CloudFormation templates for common AWS infrastructure patterns.
+- **`policies/`** — Reusable IAM and resource-based policies for common patterns (S3 cross-account/scoped-folder/read-only access, MFA enforcement, cross-account role assumption, developer permissions boundary).
+- **`cloudformation/`** — CloudFormation templates for common AWS infrastructure patterns (VPC, secure S3 bucket, EC2 instance, IAM cross-account role, Lambda function).
+- **`scripts/`** — AWS CLI + `jq` scripts for recurring audit/cleanup/reporting tasks.
 
 ### `terraform/`
 Reusable modules and config snippets across environments — VPC, EC2, ECS, RDS, IAM, S3, and more. Structured for multi-env setups (dev/prod) with remote state patterns.

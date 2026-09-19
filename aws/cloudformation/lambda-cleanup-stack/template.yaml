@@ -1,0 +1,495 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Deploys the resource-cleanup, resource-protect and resource-inventory Lambda
+  functions with least-privilege roles, a permissions boundary for the cleanup
+  role, an SNS notice topic, a daily schedule and the role EventBridge
+  Scheduler uses for the cleanup follow-up runs. DryRun is true by default.
+
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: toolkit
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9-]{0,30}'
+    Description: Prefix for every resource name. The cleanup function is named <prefix>-resource-cleanup.
+
+  CodeBucket:
+    Type: String
+    Description: S3 bucket in this region holding the three zips built by package.sh.
+
+  CleanupCodeKey:
+    Type: String
+    Default: resource-cleanup.zip
+
+  ProtectCodeKey:
+    Type: String
+    Default: resource-protect.zip
+
+  InventoryCodeKey:
+    Type: String
+    Default: resource-inventory.zip
+
+  DryRun:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Keep true until a dry run has been reviewed. false enables tagging, stopping and deleting.
+
+  Regions:
+    Type: CommaDelimitedList
+    Default: ap-south-1
+    Description: Region allowlist the cleanup and protect functions may touch.
+
+  ResourceTypes:
+    Type: String
+    Default: ec2,ebs,snapshot,rds,report
+    Description: Groups the cleanup handles (ec2, ebs, snapshot, rds, report, s3).
+
+  AgeThresholdDays:
+    Type: Number
+    Default: 30
+    MinValue: 1
+
+  NoticeHours:
+    Type: Number
+    Default: 2
+    MinValue: 1
+
+  MaxActionsPerRun:
+    Type: Number
+    Default: 10
+    MinValue: 1
+
+  ProtectTagValue:
+    Type: String
+    Default: "true"
+    AllowedPattern: '[\w+=,.@:/-]{1,256}'
+
+  ExtraProtectTags:
+    Type: String
+    Default: ""
+    Description: Optional, code-level only. Comma-separated tag keys or key=value pairs that also protect a resource. The IAM Deny only covers the fixed Protect tag (CloudFormation cannot parameterize a condition key).
+
+  FastTrackTagKey:
+    Type: String
+    Default: ""
+    AllowedPattern: '[\w+=,.@:/-]{0,128}'
+    Description: Optional. Enables fast track for EC2 instances carrying this tag. Leave empty on accounts that do not need it.
+
+  FastTrackTagValue:
+    Type: String
+    Default: "true"
+
+  FastTrackAmiAffixes:
+    Type: String
+    Default: ""
+    Description: Optional comma-separated AMI name prefixes or suffixes. Empty means the fast-track AMI is never deleted.
+
+  DailyRunCron:
+    Type: String
+    Default: cron(0 10 * * ? *)
+    Description: UTC. The default is 15:30 IST. Keep it away from other automation windows.
+
+  NoticeEmail:
+    Type: String
+    Default: ""
+    AllowedPattern: '^$|[^@\s]+@[^@\s]+'
+    Description: Optional. Address subscribed to the notice topic (it must confirm the subscription).
+
+  InventoryOutputBucket:
+    Type: String
+    Default: ""
+    Description: Optional. Existing S3 bucket the inventory function writes its report to.
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731]
+
+Conditions:
+  HasNoticeEmail: !Not [!Equals [!Ref NoticeEmail, ""]]
+  HasInventoryBucket: !Not [!Equals [!Ref InventoryOutputBucket, ""]]
+
+Resources:
+  NoticeTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ResourcePrefix}-cleanup-notices"
+
+  NoticeSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasNoticeEmail
+    Properties:
+      TopicArn: !Ref NoticeTopic
+      Protocol: email
+      Endpoint: !Ref NoticeEmail
+
+  # ---------------------------------------------------------------- cleanup
+  CleanupLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ResourcePrefix}-resource-cleanup"
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CleanupBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Permissions boundary (ceiling) for the resource-cleanup role.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CeilingLogging
+            Effect: Allow
+            Action: [logs:CreateLogStream, logs:PutLogEvents]
+            Resource: !GetAtt CleanupLogGroup.Arn
+          - Sid: CeilingReadAndTagAndAct
+            Effect: Allow
+            Action:
+              - ec2:DescribeRegions
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceAttribute
+              - ec2:DescribeVolumes
+              - ec2:DescribeSnapshots
+              - ec2:DescribeImages
+              - ec2:DescribeNatGateways
+              - ec2:DescribeAddresses
+              - rds:DescribeDBInstances
+              - rds:ListTagsForResource
+              - lambda:ListFunctions
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeTargetGroups
+              - s3:ListAllMyBuckets
+              - s3:ListBucket
+              - ec2:CreateTags
+              - ec2:DeleteTags
+              - rds:AddTagsToResource
+              - ec2:StopInstances
+              - ec2:TerminateInstances
+              - ec2:DeleteVolume
+              - ec2:DeleteSnapshot
+              - ec2:DeregisterImage
+              - rds:StopDBInstance
+              - rds:CreateDBSnapshot
+            Resource: "*"
+          - Sid: CeilingNotifyAndSchedule
+            Effect: Allow
+            Action: [sns:Publish, "scheduler:CreateSchedule"]
+            Resource:
+              - !Ref NoticeTopic
+              - !Sub "arn:${AWS::Partition}:scheduler:*:${AWS::AccountId}:schedule/default/${ResourcePrefix}-resource-cleanup-*"
+          - Sid: CeilingPassSchedulerRole
+            Effect: Allow
+            Action: iam:PassRole
+            Resource: !GetAtt SchedulerRole.Arn
+            Condition:
+              StringEquals:
+                iam:PassedToService: scheduler.amazonaws.com
+          - Sid: DenyActionsOnProtectedResources
+            Effect: Deny
+            Action:
+              - ec2:StopInstances
+              - ec2:TerminateInstances
+              - ec2:DeleteVolume
+              - ec2:DeleteSnapshot
+              - ec2:DeregisterImage
+              - rds:StopDBInstance
+            Resource: "*"
+            Condition:
+              StringEqualsIgnoreCase:
+                "aws:ResourceTag/Protect": !Ref ProtectTagValue
+          - Sid: NeverDeleteOrStartDatabases
+            Effect: Deny
+            Action:
+              - rds:DeleteDBInstance
+              - rds:DeleteDBCluster
+              - rds:StartDBInstance
+            Resource: "*"
+
+  CleanupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      PermissionsBoundary: !Ref CleanupBoundary
+      Policies:
+        - PolicyName: cleanup
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AllowLogging
+                Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt CleanupLogGroup.Arn
+              - Sid: AllowReadForEligibilityChecks
+                Effect: Allow
+                Action:
+                  - ec2:DescribeRegions
+                  - ec2:DescribeInstances
+                  - ec2:DescribeInstanceAttribute
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeImages
+                  - ec2:DescribeNatGateways
+                  - ec2:DescribeAddresses
+                  - rds:DescribeDBInstances
+                  - rds:ListTagsForResource
+                  - lambda:ListFunctions
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - elasticloadbalancing:DescribeTargetGroups
+                  - s3:ListAllMyBuckets
+                  - s3:ListBucket
+                Resource: "*"
+              - Sid: AllowCleanupStateTags
+                Effect: Allow
+                Action: [ec2:CreateTags, ec2:DeleteTags, rds:AddTagsToResource]
+                Resource: "*"
+              - Sid: AllowCleanupActions
+                Effect: Allow
+                Action:
+                  - ec2:StopInstances
+                  - ec2:TerminateInstances
+                  - ec2:DeleteVolume
+                  - ec2:DeleteSnapshot
+                  - ec2:DeregisterImage
+                  - rds:StopDBInstance
+                  - rds:CreateDBSnapshot
+                Resource: "*"
+              - Sid: DenyActionsOnProtectedResources
+                Effect: Deny
+                Action:
+                  - ec2:StopInstances
+                  - ec2:TerminateInstances
+                  - ec2:DeleteVolume
+                  - ec2:DeleteSnapshot
+                  - ec2:DeregisterImage
+                  - rds:StopDBInstance
+                Resource: "*"
+                Condition:
+                  StringEqualsIgnoreCase:
+                    "aws:ResourceTag/Protect": !Ref ProtectTagValue
+              - Sid: NeverDeleteOrStartDatabases
+                Effect: Deny
+                Action:
+                  - rds:DeleteDBInstance
+                  - rds:DeleteDBCluster
+                  - rds:StartDBInstance
+                Resource: "*"
+              - Sid: AllowPublishNotices
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref NoticeTopic
+              - Sid: AllowBookFollowUpSchedules
+                Effect: Allow
+                Action: "scheduler:CreateSchedule"
+                Resource: !Sub "arn:${AWS::Partition}:scheduler:*:${AWS::AccountId}:schedule/default/${ResourcePrefix}-resource-cleanup-*"
+              - Sid: AllowPassSchedulerRole
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt SchedulerRole.Arn
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: scheduler.amazonaws.com
+
+  CleanupFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: CleanupLogGroup
+    Properties:
+      FunctionName: !Sub "${ResourcePrefix}-resource-cleanup"
+      Runtime: python3.13
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt CleanupRole.Arn
+      Timeout: 300
+      MemorySize: 256
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CleanupCodeKey
+      Environment:
+        Variables:
+          DRY_RUN: !Ref DryRun
+          REGIONS: !Join [",", !Ref Regions]
+          RESOURCE_TYPES: !Ref ResourceTypes
+          AGE_THRESHOLD_DAYS: !Ref AgeThresholdDays
+          NOTICE_HOURS: !Ref NoticeHours
+          MAX_ACTIONS_PER_RUN: !Ref MaxActionsPerRun
+          PROTECT_TAG_KEY: Protect
+          PROTECT_TAG_VALUE: !Ref ProtectTagValue
+          EXTRA_PROTECT_TAGS: !Ref ExtraProtectTags
+          FAST_TRACK_TAG_KEY: !Ref FastTrackTagKey
+          FAST_TRACK_TAG_VALUE: !Ref FastTrackTagValue
+          FAST_TRACK_AMI_AFFIXES: !Ref FastTrackAmiAffixes
+          SNS_TOPIC_ARN: !Ref NoticeTopic
+          SCHEDULER_ROLE_ARN: !GetAtt SchedulerRole.Arn
+          SCHEDULER_GROUP: default
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Assumed by EventBridge Scheduler to invoke the cleanup function.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Policies:
+        - PolicyName: invoke-cleanup
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${ResourcePrefix}-resource-cleanup"
+
+  DailySchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: !Sub "${ResourcePrefix}-cleanup-daily"
+      Description: Daily discovery run of the resource-cleanup function.
+      ScheduleExpression: !Ref DailyRunCron
+      ScheduleExpressionTimezone: UTC
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt CleanupFunction.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        Input: "{}"
+
+  # ---------------------------------------------------------------- protect
+  ProtectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ResourcePrefix}-resource-protect"
+      RetentionInDays: !Ref LogRetentionInDays
+
+  ProtectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: protect
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt ProtectLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeRegions
+                  - tag:GetResources
+                  - tag:TagResources
+                  - tag:UntagResources
+                  - ec2:CreateTags
+                  - ec2:DeleteTags
+                  - rds:AddTagsToResource
+                  - rds:RemoveTagsFromResource
+                Resource: "*"
+
+  ProtectFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ProtectLogGroup
+    Properties:
+      FunctionName: !Sub "${ResourcePrefix}-resource-protect"
+      Runtime: python3.13
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt ProtectRole.Arn
+      Timeout: 60
+      MemorySize: 128
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref ProtectCodeKey
+      Environment:
+        Variables:
+          REGIONS: !Join [",", !Ref Regions]
+          PROTECT_TAG_KEY: Protect
+          PROTECT_TAG_VALUE: !Ref ProtectTagValue
+
+  # -------------------------------------------------------------- inventory
+  InventoryLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ResourcePrefix}-resource-inventory"
+      RetentionInDays: !Ref LogRetentionInDays
+
+  InventoryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: inventory
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt InventoryLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeRegions
+                  - ec2:DescribeInstances
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeNatGateways
+                  - ec2:DescribeAddresses
+                  - rds:DescribeDBInstances
+                  - lambda:ListFunctions
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - s3:ListAllMyBuckets
+                  - s3:GetBucketLocation
+                  - tag:GetResources
+                Resource: "*"
+              - !If
+                - HasInventoryBucket
+                - Effect: Allow
+                  Action: s3:PutObject
+                  Resource: !Sub "arn:${AWS::Partition}:s3:::${InventoryOutputBucket}/*"
+                - !Ref AWS::NoValue
+
+  InventoryFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: InventoryLogGroup
+    Properties:
+      FunctionName: !Sub "${ResourcePrefix}-resource-inventory"
+      Runtime: python3.13
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt InventoryRole.Arn
+      Timeout: 300
+      MemorySize: 256
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref InventoryCodeKey
+      Environment:
+        Variables:
+          REGIONS: !Join [",", !Ref Regions]
+          OUTPUT_S3_BUCKET: !Ref InventoryOutputBucket
+
+Outputs:
+  CleanupFunctionName:
+    Value: !Ref CleanupFunction
+  ProtectFunctionName:
+    Value: !Ref ProtectFunction
+  InventoryFunctionName:
+    Value: !Ref InventoryFunction
+  NoticeTopicArn:
+    Value: !Ref NoticeTopic
+  CleanupBoundaryArn:
+    Value: !Ref CleanupBoundary

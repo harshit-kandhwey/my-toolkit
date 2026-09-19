@@ -1,0 +1,46 @@
+name: lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        run: pip install cfn-lint==1.57.0 ruff==0.16.3 shellcheck-py==0.11.0.1 pytest moto boto3
+
+      - name: cfn-lint
+        run: cfn-lint aws/cloudformation/*/template.yaml
+
+      - name: shellcheck
+        run: shellcheck aws/scripts/*.sh
+
+      - name: ruff
+        run: ruff check aws/lambda-functions
+
+      - name: pytest (moto)
+        run: |
+          for d in resource-inventory resource-cleanup resource-protect; do
+            (cd aws/lambda-functions/$d && pytest -q)
+          done
+
+      - name: JSON policies parse
+        run: |
+          for f in $(find aws/policies -name '*.json'); do
+            python -c "import json,sys; json.load(open(sys.argv[1]))" "$f"
+          done
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
