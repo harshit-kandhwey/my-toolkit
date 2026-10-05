@@ -58,7 +58,7 @@ planning/reference index, not a knowledge-base topic itself.
 | CKA — Certified Kubernetes Administrator          | `12. Kubernetes` + `2. Linux`     | ✅ Ready (explicit domain map) |
 | CKAD — Certified Kubernetes Application Developer | `12. Kubernetes`                  | ✅ Ready (explicit domain map) |
 | CKS — Certified Kubernetes Security Specialist    | `12. Kubernetes` + `2. Linux`     | ✅ Ready (explicit domain map) |
-| KCNA — Kubernetes and Cloud Native Associate      | `12. Kubernetes` + `4. Docker` 🟡 | ⚠️ Partial (Kubernetes ready)  |
+| KCNA — Kubernetes and Cloud Native Associate      | `12. Kubernetes` + `4. Docker`    | ✅ Ready                       |
 
 CNCF has no separate "Professional" or "Specialty" tier above CKA/CKAD/CKS — those three ARE the ceiling for Kubernetes-specific credentials.
 
@@ -67,7 +67,7 @@ CNCF has no separate "Professional" or "Specialty" tier above CKA/CKAD/CKS — t
 | Certification                                      | Folder(s) Needed             | Status                         |
 | -------------------------------------------------- | ---------------------------- | ------------------------------ |
 | HashiCorp Certified: Terraform Associate           | `7. Terraform`               | ✅ Ready (explicit domain map) |
-| Docker Certified Associate (DCA)                   | `4. Docker` 🟡               | 🟡 Roadmap Only                |
+| Docker Certified Associate (DCA)                   | `4. Docker`                  | ✅ Ready (explicit domain map; exam retired) |
 | Red Hat Certified Specialist in Ansible Automation | `8. Ansible` 🟡 + `2. Linux` | ⚠️ Partial (Linux ready)       |
 | CNCF Prometheus Certified Associate (PCA)          | `10. Prometheus` 🟡          | 🟡 Roadmap Only                |
 | GitHub Foundations / GitHub Actions certification  | `1. GIT` + `9. CI-CD` 🟡     | ⚠️ Partial (Git ready)         |
@@ -109,7 +109,7 @@ No single industry-standard Git certification exists analogous to the AWS/Azure/
 | `1. GIT`            | ✅ Ready (36 sections, 8 parts) — no cert applicable                |
 | `2. Linux`          | ✅ Ready (125 sections, 17 parts) — LFCS domain map, RHCSA-adjacent |
 | `3. Networking`     | ✅ Ready (145 sections, 17 parts) — CompTIA Network+ domain map      |
-| `4. Docker`         | 🟡 Roadmap Only — 109 sections planned, 15 parts                    |
+| `4. Docker`         | ✅ Ready (109 sections, 15 parts) — DCA domain map (exam retired)   |
 | `5. Python`         | 🟡 Roadmap Only — 130 sections planned, 16 parts                    |
 | `6. Cloud/1. AWS`   | ✅ Ready (131 sections, 15 parts) — SAA-C03 domain map              |
 | `6. Cloud/2. Azure` | ✅ Ready (100 sections, 18 parts) — AZ-104 & AZ-305 domain maps     |
@@ -121,6 +121,6 @@ No single industry-standard Git certification exists analogous to the AWS/Azure/
 | `11. Grafana`       | 🟡 Roadmap Only — 95 sections planned, 13 parts                     |
 | `12. Kubernetes`    | ✅ Ready (141 sections, 18 parts) — CKA/CKAD/CKS domain maps        |
 
-**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `3. Networking`, `6. Cloud/*`, `7. Terraform`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, `4. Docker`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
+**Bottom line:** every certification whose folder combination touches only `1. GIT`, `2. Linux`, `3. Networking`, `4. Docker`, `6. Cloud/*`, `7. Terraform`, or `12. Kubernetes` is fully coverable today, with an explicit domain-weight mapping in the relevant README wherever a real exam blueprint exists. Every certification that also needs `8. Ansible`, `9. CI-CD`, `10. Prometheus`, `11. Grafana`, or `5. Python` is currently ⚠️ Partial until that folder's roadmap is authored into sections.
 
 This file should be updated whenever a folder moves from 🟡 Roadmap Only to ✅ Ready, or whenever a README's certification mapping changes.
