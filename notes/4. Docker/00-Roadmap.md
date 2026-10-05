@@ -305,20 +305,20 @@ _(Empty at project start. Populated when the user requests additions, gap covera
 
 | #   | Part                                                              | Section   | Status         |
 | --- | ----------------------------------------------------------------- | --------- | -------------- |
-| 01  | Part 1 — Foundations and History                                  | 1.1–1.7   | ⬜ Not Started |
-| 02  | Part 2 — Architecture and the Container Runtime                   | 2.1–2.8   | ⬜ Not Started |
-| 03  | Part 3 — Images and Dockerfile Authoring                          | 3.1–3.10  | ⬜ Not Started |
-| 04  | Part 4 — Container Lifecycle and CLI                              | 4.1–4.8   | ⬜ Not Started |
-| 05  | Part 5 — Docker Compose and Multi-Container Apps                  | 5.1–5.8   | ⬜ Not Started |
-| 06  | Part 6 — Networking                                               | 6.1–6.8   | ⬜ Not Started |
-| 07  | Part 7 — Storage and Volumes                                      | 7.1–7.7   | ⬜ Not Started |
-| 08  | Part 8 — Security and Hardening                                   | 8.1–8.9   | ⬜ Not Started |
-| 09  | Part 9 — Registries and Image Distribution                        | 9.1–9.7   | ⬜ Not Started |
-| 10  | Part 10 — Build Optimization and Multi-Stage Builds               | 10.1–10.7 | ⬜ Not Started |
-| 11  | Part 11 — CI/CD Integration                                       | 11.1–11.6 | ⬜ Not Started |
-| 12  | Part 12 — Production Operations and Monitoring                    | 12.1–12.8 | ⬜ Not Started |
-| 13  | Part 13 — Mastery: Best Practices, Anti-Patterns, and Comparisons | 13.1–13.6 | ⬜ Not Started |
-| 14  | Part 14 — Interview Preparation                                   | 14.1–14.6 | ⬜ Not Started |
-| 15  | Part 15 — Wrap-Up                                                 | 15.1–15.4 | ⬜ Not Started |
+| 01  | Part 1 — Foundations and History                                  | 1.1–1.7   | ✅ Done        |
+| 02  | Part 2 — Architecture and the Container Runtime                   | 2.1–2.8   | ✅ Done        |
+| 03  | Part 3 — Images and Dockerfile Authoring                          | 3.1–3.10  | ✅ Done        |
+| 04  | Part 4 — Container Lifecycle and CLI                              | 4.1–4.8   | ✅ Done        |
+| 05  | Part 5 — Docker Compose and Multi-Container Apps                  | 5.1–5.8   | ✅ Done        |
+| 06  | Part 6 — Networking                                               | 6.1–6.8   | ✅ Done        |
+| 07  | Part 7 — Storage and Volumes                                      | 7.1–7.7   | ✅ Done        |
+| 08  | Part 8 — Security and Hardening                                   | 8.1–8.9   | ✅ Done        |
+| 09  | Part 9 — Registries and Image Distribution                        | 9.1–9.7   | ✅ Done        |
+| 10  | Part 10 — Build Optimization and Multi-Stage Builds               | 10.1–10.7 | ✅ Done        |
+| 11  | Part 11 — CI/CD Integration                                       | 11.1–11.6 | ✅ Done        |
+| 12  | Part 12 — Production Operations and Monitoring                    | 12.1–12.8 | ✅ Done        |
+| 13  | Part 13 — Mastery: Best Practices, Anti-Patterns, and Comparisons | 13.1–13.6 | ✅ Done        |
+| 14  | Part 14 — Interview Preparation                                   | 14.1–14.6 | ✅ Done        |
+| 15  | Part 15 — Wrap-Up                                                 | 15.1–15.4 | ✅ Done        |
 
-**Next Section:** Part 1 — Foundations and History (§1–§7)
+**Next Section:** None. All 109 sections (§1–§109) are authored. Remaining: README.md, INDEX.md, Certification-Map update.
